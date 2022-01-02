@@ -1,6 +1,6 @@
 use eyre::Result;
 use time::macros::format_description;
-use tracing::info;
+use tracing::{info, error};
 use tracing_subscriber::{fmt::time::UtcTime, prelude::*, EnvFilter};
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
@@ -8,14 +8,20 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-fn main() -> Result<()> {
+use crate::renderer::Renderer;
+
+mod renderer;
+
+#[tokio::main]
+async fn main() -> Result<()> {
     init();
     info!("rustaria v{}", env!("CARGO_PKG_VERSION"));
 
     let evloop = EventLoop::new();
     let mut window = WindowBuilder::new().build(&evloop)?;
+    let mut renderer = Renderer::new(&window).await;
 
-    evloop.run(move |event, target, cf| event_loop(&mut window, event, target, cf))
+    evloop.run(move |event, target, cf| event_loop(&mut window, &mut renderer, event, target, cf))
 }
 
 fn init() {
@@ -37,12 +43,11 @@ fn init() {
 
 fn event_loop(
     window: &mut Window,
+    renderer: &mut Renderer,
     event: Event<()>,
     _target: &EventLoopWindowTarget<()>,
     cf: &mut ControlFlow,
 ) {
-    *cf = ControlFlow::Poll;
-
     match event {
         Event::WindowEvent {
             ref event,
@@ -58,8 +63,24 @@ fn event_loop(
                     },
                 ..
             } => *cf = ControlFlow::Exit,
+            WindowEvent::Resized(physical_size) => renderer.resize(*physical_size),
+            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                renderer.resize(**new_inner_size)
+            }
             _ => {}
         },
+        Event::MainEventsCleared => {
+            renderer.update();
+            match renderer.render() {
+                Ok(_) => {}
+                // Reconfigure the surface if lost
+                Err(wgpu::SurfaceError::Lost) => renderer.resize(renderer.size),
+                // The system is out of memory, we should probably quit
+                Err(wgpu::SurfaceError::OutOfMemory) => *cf = ControlFlow::Exit,
+                Err(e) => error!("{:?}", e),
+            }
+        }
         _ => {}
     }
+
 }
