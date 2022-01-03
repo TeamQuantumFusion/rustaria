@@ -3,9 +3,9 @@ name = "rustaria"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+wasmer = "2.1.1"
+wasm-bindgen = "0.2.78"
 wgpu = "0.12.0"
 winit = "0.26.0"
 tokio = { version = "1.15.0", features = ["rt-multi-thread", "macros"] }
@@ -15,3 +15,13 @@ tracing-subscriber = { version = "0.3.5", features = ["env-filter", "time"] }
 time = { version = "0.3.5", features = ["macros"] }
 eyre = "0.6.5"
 color-eyre = "0.5.11"
+
+rustaria-api = { path = "rustaria-api" }
+
+[workspace]
+members = ["rustaria-api", "rustaria-core"]
+
+[profile.release]
+panic = "abort"
+opt-level = "z"  # Optimize for size.
+lto = true

@@ -1,6 +1,6 @@
 use eyre::Result;
 use time::macros::format_description;
-use tracing::{info, error};
+use tracing::{error, info};
 use tracing_subscriber::{fmt::time::UtcTime, prelude::*, EnvFilter};
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
@@ -8,8 +8,10 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use crate::renderer::Renderer;
+use crate::{plugin::PluginLoader, renderer::Renderer};
 
+mod api_impl;
+mod plugin;
 mod renderer;
 
 #[tokio::main]
@@ -17,11 +19,17 @@ async fn main() -> Result<()> {
     init();
     info!("rustaria v{}", env!("CARGO_PKG_VERSION"));
 
-    let evloop = EventLoop::new();
-    let mut window = WindowBuilder::new().build(&evloop)?;
-    let mut renderer = Renderer::new(&window).await;
+    let plugins = PluginLoader::new();
+    plugins.load_plugin_from_bytes(include_bytes!(
+        "/home/leocth/coding/rust/rustaria/target/wasm32-wasi/debug/rustaria_core.wasm"
+    ))?;
+    Ok(())
 
-    evloop.run(move |event, target, cf| event_loop(&mut window, &mut renderer, event, target, cf))
+    // let evloop = EventLoop::new();
+    // let mut window = WindowBuilder::new().build(&evloop)?;
+    // let mut renderer = Renderer::new(&window).await;
+
+    // evloop.run(move |event, target, cf| event_loop(&mut window, &mut renderer, event, target, cf))
 }
 
 fn init() {
@@ -82,5 +90,4 @@ fn event_loop(
         }
         _ => {}
     }
-
 }
