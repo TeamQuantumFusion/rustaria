@@ -10,19 +10,19 @@ rem so this script assumes having 7zip installed in PATH.
 
 cargo wasi build --release
 mkdir plugin-pack-tmp
-cd plugin-pack-tmp
 
 rem code
-copy ../../target/wasm32-wasi/release/rustaria_core.wasm main.wasm
+copy src/main.lua main.lua
 
 rem manifest
-copy ../manifest.json manifest.json
+copy manifest.json manifest.json
 
 rem pack it all up
+cd plugin-pack-tmp
 7z a -tzip rustaria-core.zip *
-
-if not exist "../../run/plugins" mkdir "../../run/plugins"
-move rustaria-core.zip ../../run/plugins
-
 cd ..
+
+if not exist "../run/plugins" mkdir "../run/plugins"
+move rustaria-core.zip ../run/plugins
+
 rmdir /s plugin-pack-tmp

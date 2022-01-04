@@ -10,7 +10,6 @@ use winit::{
 
 use crate::{plugin::PluginLoader, renderer::Renderer};
 
-mod api_impl;
 mod plugin;
 mod renderer;
 

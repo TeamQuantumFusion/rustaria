@@ -2,34 +2,23 @@ use std::{ffi::OsStr, io::Read, path::Path};
 
 use eyre::{Context, Result};
 use futures::StreamExt;
+use mlua::Lua;
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 use tokio_stream::wrappers::ReadDirStream;
 use tracing::{info, warn};
-use wasmer::{Exports, Instance, Module, Store};
-use wasmer_wasi::{WasiEnv, WasiState};
 use zip::ZipArchive;
 
-use crate::api_impl;
-
 pub struct PluginLoader {
-    store: Store,
-    wasi_env: WasiEnv,
-    exports: Exports,
     pub plugins: Vec<Plugin>,
+    lua: Lua,
 }
 
 impl PluginLoader {
     pub fn new() -> Result<Self> {
-        let store = Store::default();
-        let wasi_env = WasiState::new("hello").finalize()?;
-        let exports = api_impl::dump_exports(&store);
-
         Ok(Self {
-            store,
-            wasi_env,
-            exports,
             plugins: vec![],
+            lua: Lua::new(),
         })
     }
 
@@ -76,10 +65,8 @@ impl PluginLoader {
                 manifest.executable_path
             )
         })?;
-        let mut buf = vec![];
-        executable.read_to_end(&mut buf)?;
-        let module =
-            Module::new(&self.store, &buf).wrap_err("Failed to compile main executable")?;
+        let mut code = vec![];
+        executable.read_to_end(&mut code)?;
 
         info!(
             "Loaded plugin {} v{} from [{}]",
@@ -87,18 +74,12 @@ impl PluginLoader {
             manifest.version,
             file_name_or_unknown(&path)
         );
-        Ok(Plugin { manifest, module })
+        Ok(Plugin { manifest, code })
     }
 
     pub fn run(&mut self) -> Result<()> {
-        for Plugin { module, .. } in &self.plugins {
-            let mut imports = self.wasi_env.import_object(module)?;
-            imports.register("env", self.exports.clone());
-            let instance = Instance::new(module, &imports)?;
-            instance
-                .exports
-                .get_native_function::<(), ()>("initialize")?
-                .call()?;
+        for Plugin { code, .. } in &self.plugins {
+            self.lua.load(code).exec()?
         }
         Ok(())
     }
@@ -106,7 +87,7 @@ impl PluginLoader {
 
 pub struct Plugin {
     manifest: Manifest,
-    module: Module,
+    code: Vec<u8>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

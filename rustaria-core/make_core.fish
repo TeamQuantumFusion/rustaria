@@ -5,22 +5,21 @@
 
 cargo wasi build --release
 mkdir plugin-pack-tmp
-cd plugin-pack-tmp
 
 # code
-cp ../../target/wasm32-wasi/release/rustaria_core.wasm main.wasm
+cp src/main.lua plugin-pack-tmp/main.wasm
 
 # manifest
-cp ../manifest.json manifest.json
+cp manifest.json plugin-pack-tmp/manifest.json
 
 # pack it all up
+cd plugin-pack-tmp
 zip rustaria-core *
+cd ..
 
-if not test -d ../../run/plugins
-    mkdir ../../run/plugins
+if not test -d ../run/plugins
+    mkdir ../run/plugins
 end
 
-mv rustaria-core.zip ../../run/plugins
-
-cd ..
+mv rustaria-core.zip ../run/plugins
 rm -rf plugin-pack-tmp
