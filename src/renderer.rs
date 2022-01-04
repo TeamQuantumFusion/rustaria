@@ -22,29 +22,32 @@ impl Renderer {
         let mut shader_dir = std::env::current_dir().unwrap();
         shader_dir = shader_dir.join("shaders");
 
-
         let size = window.inner_size();
 
         // The instance is a handle to our GPU
         // Backends::all => Vulkan + Metal + DX12 + Browser WebGPU
         let instance = wgpu::Instance::new(wgpu::Backends::all());
         let surface = unsafe { instance.create_surface(window) };
-        let adapter = instance.request_adapter(
-            &wgpu::RequestAdapterOptions {
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
-            },
-        ).await.unwrap();
+            })
+            .await
+            .unwrap();
 
-        let (device, queue) = adapter.request_device(
-            &wgpu::DeviceDescriptor {
-                features: wgpu::Features::empty(),
-                limits: wgpu::Limits::default(),
-                label: None,
-            },
-            None,
-        ).await.unwrap();
+        let (device, queue) = adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    features: wgpu::Features::empty(),
+                    limits: wgpu::Limits::default(),
+                    label: None,
+                },
+                None,
+            )
+            .await
+            .unwrap();
 
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -66,12 +69,14 @@ impl Renderer {
             label: Some("Render Pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &device.create_shader_module(&get_shader_module("triangle-vs", &shader_dir)),
+                module: &device
+                    .create_shader_module(&get_shader_module("triangle-vs", &shader_dir)),
                 entry_point: "main",
                 buffers: &[],
             },
             fragment: Some(wgpu::FragmentState {
-                module: &device.create_shader_module(&get_shader_module("triangle-fs", &shader_dir)),
+                module: &device
+                    .create_shader_module(&get_shader_module("triangle-fs", &shader_dir)),
                 entry_point: "main",
                 targets: &[wgpu::ColorTargetState {
                     format: config.format,
@@ -120,10 +125,14 @@ impl Renderer {
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
-        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Render Encoder"),
-        });
+        let view = output
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Render Encoder"),
+            });
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Render Pass"),
@@ -158,10 +167,19 @@ impl Renderer {
 
 pub fn get_shader_module<'a>(name: &'a str, dir: &Path) -> ShaderModuleDescriptor<'a> {
     let mut code = Vec::new();
-    File::open(dir.join(name.to_owned() + ".glsl.spv")).unwrap().read_to_end(&mut code).unwrap();
-    let code: Vec<u32> = code.chunks(4).map(|values| {
-        ((values[3] as u32) << 24 | (values[2] as u32) << 16 | (values[1] as u32) << 8 | (values[0] as u32)) as u32
-    }).collect();
+    File::open(dir.join(name.to_owned() + ".glsl.spv"))
+        .unwrap()
+        .read_to_end(&mut code)
+        .unwrap();
+    let code: Vec<u32> = code
+        .chunks(4)
+        .map(|values| {
+            ((values[3] as u32) << 24
+                | (values[2] as u32) << 16
+                | (values[1] as u32) << 8
+                | (values[0] as u32)) as u32
+        })
+        .collect();
 
     ShaderModuleDescriptor {
         label: Some(name),

@@ -40,7 +40,7 @@ fn init() {
         .compact();
     let fmt_layer = tracing_subscriber::fmt::layer().event_format(format);
     let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info,regalloc=warn,wasmer_compiler_cranelift=warn"))
+        .or_else(|_| EnvFilter::try_new("info"))
         .expect("`info` is not a valid EnvFilter... what?");
     tracing_subscriber::registry()
         .with(fmt_layer)

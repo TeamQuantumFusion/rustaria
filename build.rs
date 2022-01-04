@@ -24,13 +24,16 @@ fn main() {
                 }
             });
             if let Some(shader_kind) = shader_type {
-                use std::io::Read;
-
                 let source = std::fs::read_to_string(&in_path).unwrap();
-                let binary_result = compiler.compile_into_spirv(
-                    &*source, shader_kind,
-                    &*in_path.file_name().unwrap().to_str().unwrap(), "main", None).unwrap();
-
+                let binary_result = compiler
+                    .compile_into_spirv(
+                        &source,
+                        shader_kind,
+                        in_path.file_name().unwrap().to_str().unwrap(),
+                        "main",
+                        None,
+                    )
+                    .unwrap();
 
                 let out_path = format!(
                     "run/shaders/{}.spv",
@@ -40,6 +43,5 @@ fn main() {
                 std::fs::write(&out_path, &binary_result.as_binary_u8()).unwrap();
             }
         }
-
     }
 }
