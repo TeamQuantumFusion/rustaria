@@ -21,7 +21,7 @@ copy ../manifest.json manifest.json
 rem pack it all up
 7z a -tzip rustaria-core.zip *
 
-if not exist "../../run/plugins" mkdir ../../run/plugins
+if not exist "../../run/plugins" mkdir "../../run/plugins"
 move rustaria-core.zip ../../run/plugins
 
 cd ..
