@@ -51,7 +51,9 @@ impl PluginLoader {
 
     // TODO: async-ify
     pub async fn load_plugin(&self, path: &Path) -> Result<Plugin> {
-        let zip = std::fs::File::open(path)?;
+        let zip = std::fs::File::open(path).wrap_err_with(|| {
+            format!("Plugin archive [{}] not found", file_name_or_unknown(path))
+        })?;
         let mut zip = ZipArchive::new(zip)?;
 
         let manifest = zip
