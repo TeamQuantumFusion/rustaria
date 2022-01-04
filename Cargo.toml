@@ -3,10 +3,12 @@ name = "rustaria"
 version = "0.1.0"
 edition = "2021"
 
+build = "build.rs"
+
 [dependencies]
 wasmer = "2.1.1"
 wasmer-wasi = "2.1.1"
-wgpu = "0.12.0"
+wgpu = { version = "0.12.0", features = ["spirv"] }
 winit = "0.26.0"
 futures = "0.3.19"
 tokio = { version = "1.15.0", features = ["rt-multi-thread", "macros", "fs"] }
@@ -22,6 +24,9 @@ serde_json = "1.0.74"
 serde = "1.0.133"
 
 rustaria-api = { path = "rustaria-api" }
+
+[build-dependencies]
+shaderc = "0.7"
 
 [workspace]
 members = ["rustaria-api", "rustaria-core"]
