@@ -20,16 +20,16 @@ async fn main() -> Result<()> {
     info!("rustaria v{}", env!("CARGO_PKG_VERSION"));
 
     let mut plugins = PluginLoader::new()?;
-    plugins.load_plugin_from_bytes(include_bytes!(
-        "/home/leocth/coding/rust/rustaria/target/wasm32-wasi/release/rustaria_core.wasm"
-    ))?;
-    Ok(())
 
-    // let evloop = EventLoop::new();
-    // let mut window = WindowBuilder::new().build(&evloop)?;
-    // let mut renderer = Renderer::new(&window).await;
+    let mut plugins_dir = std::env::current_dir()?;
+    plugins_dir.push("plugins");
+    plugins.scan_and_load_plugins(&plugins_dir).await?;
 
-    // evloop.run(move |event, target, cf| event_loop(&mut window, &mut renderer, event, target, cf))
+    let evloop = EventLoop::new();
+    let mut window = WindowBuilder::new().build(&evloop)?;
+    let mut renderer = Renderer::new(&window).await;
+
+    evloop.run(move |event, target, cf| event_loop(&mut window, &mut renderer, event, target, cf))
 }
 
 fn init() {
@@ -41,7 +41,7 @@ fn init() {
         .compact();
     let fmt_layer = tracing_subscriber::fmt::layer().event_format(format);
     let filter_layer = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("info"))
+        .or_else(|_| EnvFilter::try_new("info,regalloc=warn,wasmer_compiler_cranelift=warn"))
         .expect("`info` is not a valid EnvFilter... what?");
     tracing_subscriber::registry()
         .with(fmt_layer)

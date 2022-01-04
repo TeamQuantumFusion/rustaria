@@ -1,0 +1,5 @@
+{
+    "name": "rustaria-core",
+    "version": "0.1.0",
+    "executablePath": "main.wasm"
+}
