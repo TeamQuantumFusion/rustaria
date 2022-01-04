@@ -10,10 +10,10 @@ rem so this script assumes having 7zip installed in PATH.
 mkdir plugin-pack-tmp
 
 rem code
-copy src/main.lua main.lua
+copy src/main.lua plugin-pack-tmp/main.lua
 
 rem manifest
-copy manifest.json manifest.json
+copy manifest.json plugin-pack-tmp/manifest.json
 
 rem pack it all up
 cd plugin-pack-tmp
