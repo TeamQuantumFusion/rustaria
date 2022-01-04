@@ -19,9 +19,9 @@ async fn main() -> Result<()> {
     init();
     info!("rustaria v{}", env!("CARGO_PKG_VERSION"));
 
-    let plugins = PluginLoader::new();
+    let mut plugins = PluginLoader::new()?;
     plugins.load_plugin_from_bytes(include_bytes!(
-        "/home/leocth/coding/rust/rustaria/target/wasm32-wasi/debug/rustaria_core.wasm"
+        "/home/leocth/coding/rust/rustaria/target/wasm32-wasi/release/rustaria_core.wasm"
     ))?;
     Ok(())
 

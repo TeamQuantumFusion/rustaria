@@ -17,6 +17,7 @@ eyre = "0.6.5"
 color-eyre = "0.5.11"
 
 rustaria-api = { path = "rustaria-api" }
+wasmer-wasi = "2.1.1"
 
 [workspace]
 members = ["rustaria-api", "rustaria-core"]

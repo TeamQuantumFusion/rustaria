@@ -7,4 +7,4 @@ edition = "2021"
 rustaria-api = { path = "../rustaria-api" }
 
 [lib]
-crate-type = ['cdylib']
+crate-type = ["cdylib"]
