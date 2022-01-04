@@ -3,10 +3,10 @@ use std::{ffi::OsStr, io::Read, path::Path};
 use eyre::{Context, Result};
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
-use tokio::fs::{self, File};
+use tokio::fs;
 use tokio_stream::wrappers::ReadDirStream;
 use tracing::{info, warn};
-use wasmer::{Exports, Function, Module, Store};
+use wasmer::{Exports, Instance, Module, Store};
 use wasmer_wasi::{WasiEnv, WasiState};
 use zip::ZipArchive;
 
@@ -23,12 +23,8 @@ impl PluginLoader {
     pub fn new() -> Result<Self> {
         let store = Store::default();
         let wasi_env = WasiState::new("hello").finalize()?;
-        let mut exports = Exports::new();
+        let exports = api_impl::dump_exports(&store);
 
-        exports.insert(
-            "it_adds_two",
-            Function::new_native(&store, api_impl::it_adds_two),
-        );
         Ok(Self {
             store,
             wasi_env,
@@ -64,6 +60,7 @@ impl PluginLoader {
         Ok(())
     }
 
+    // TODO: async-ify
     pub async fn load_plugin(&self, path: &Path) -> Result<Plugin> {
         let zip = std::fs::File::open(path)?;
         let mut zip = ZipArchive::new(zip)?;
@@ -91,6 +88,19 @@ impl PluginLoader {
             file_name_or_unknown(&path)
         );
         Ok(Plugin { manifest, module })
+    }
+
+    pub fn run(&mut self) -> Result<()> {
+        for Plugin { module, .. } in &self.plugins {
+            let mut imports = self.wasi_env.import_object(module)?;
+            imports.register("env", self.exports.clone());
+            let instance = Instance::new(module, &imports)?;
+            instance
+                .exports
+                .get_native_function::<(), ()>("initialize")?
+                .call()?;
+        }
+        Ok(())
     }
 }
 

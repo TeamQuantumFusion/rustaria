@@ -1636,7 +1636,6 @@ dependencies = [
  "tracing",
  "tracing-futures",
  "tracing-subscriber 0.3.5",
- "wasm-bindgen",
  "wasmer",
  "wasmer-wasi",
  "wgpu",

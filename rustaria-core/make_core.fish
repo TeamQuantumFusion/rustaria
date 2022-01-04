@@ -6,8 +6,14 @@
 cargo wasi build --release
 mkdir plugin-pack-tmp
 cd plugin-pack-tmp
+
+# code
 cp ../../target/wasm32-wasi/release/rustaria_core.wasm main.wasm
+
+# manifest
 cp ../manifest.json manifest.json
+
+# pack it all up
 zip rustaria-core *
 
 if not test -d ../../run/plugins

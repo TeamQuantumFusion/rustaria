@@ -20,10 +20,10 @@ async fn main() -> Result<()> {
     info!("rustaria v{}", env!("CARGO_PKG_VERSION"));
 
     let mut plugins = PluginLoader::new()?;
-
     let mut plugins_dir = std::env::current_dir()?;
     plugins_dir.push("plugins");
     plugins.scan_and_load_plugins(&plugins_dir).await?;
+    plugins.run()?;
 
     let evloop = EventLoop::new();
     let mut window = WindowBuilder::new().build(&evloop)?;
