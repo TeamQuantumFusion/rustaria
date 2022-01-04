@@ -3,9 +3,11 @@ name = "rustaria"
 version = "0.1.0"
 edition = "2021"
 
+build = "build.rs"
+
 [dependencies]
 mlua = { version = "0.7.1", features = ["lua54"] }
-wgpu = "0.12.0"
+wgpu = { version = "0.12.0", features = ["spirv"] }
 winit = "0.26.0"
 futures = "0.3.19"
 tokio = { version = "1.15.0", features = ["rt-multi-thread", "macros", "fs"] }
@@ -19,6 +21,9 @@ color-eyre = "0.5.11"
 zip = "0.5.13"
 serde_json = "1.0.74"
 serde = "1.0.133"
+
+[build-dependencies]
+shaderc = "0.7"
 
 [profile.release]
 panic = "abort"

@@ -1,5 +1,11 @@
+use std::borrow::Cow;
+use std::fs::File;
+use std::io::Read;
+use std::path::{Path, PathBuf};
+
 use eyre::Result;
-use wgpu::include_wgsl;
+use serde_json::Value::String;
+use wgpu::{include_wgsl, ShaderModule, ShaderModuleDescriptor, ShaderSource};
 use winit::window::Window;
 
 pub struct Renderer {
@@ -13,6 +19,10 @@ pub struct Renderer {
 
 impl Renderer {
     pub async fn new(window: &Window) -> Self {
+        let mut shader_dir = std::env::current_dir().unwrap();
+        shader_dir = shader_dir.join("shaders");
+
+
         let size = window.inner_size();
 
         // The instance is a handle to our GPU
@@ -45,25 +55,24 @@ impl Renderer {
         };
         surface.configure(&device, &config);
 
-        let shader = device.create_shader_module(&include_wgsl!("shader.wgsl"));
         let render_pipeline_layout =
-        device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[],
-            push_constant_ranges: &[],
-        });
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Render Pipeline Layout"),
+                bind_group_layouts: &[],
+                push_constant_ranges: &[],
+            });
 
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: "vs_main",
+                module: &device.create_shader_module(&get_shader_module("triangle-vs", &shader_dir)),
+                entry_point: "main",
                 buffers: &[],
             },
             fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: "fs_main",
+                module: &device.create_shader_module(&get_shader_module("triangle-fs", &shader_dir)),
+                entry_point: "main",
                 targets: &[wgpu::ColorTargetState {
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -107,9 +116,7 @@ impl Renderer {
         }
     }
 
-    pub fn update(&mut self) {
-        
-    }
+    pub fn update(&mut self) {}
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
@@ -141,10 +148,23 @@ impl Renderer {
 
         // drop render pass here because it mutably borrows `encoder`,
         // and we wanna use it later
-        drop(render_pass); 
+        drop(render_pass);
 
         self.queue.submit(std::iter::once(encoder.finish()));
-        output.present();    
+        output.present();
         Ok(())
+    }
+}
+
+pub fn get_shader_module<'a>(name: &'a str, dir: &Path) -> ShaderModuleDescriptor<'a> {
+    let mut code = Vec::new();
+    File::open(dir.join(name.to_owned() + ".glsl.spv")).unwrap().read_to_end(&mut code).unwrap();
+    let code: Vec<u32> = code.chunks(4).map(|values| {
+        ((values[3] as u32) << 24 | (values[2] as u32) << 16 | (values[1] as u32) << 8 | (values[0] as u32)) as u32
+    }).collect();
+
+    ShaderModuleDescriptor {
+        label: Some(name),
+        source: ShaderSource::SpirV(Cow::from(code)),
     }
 }
