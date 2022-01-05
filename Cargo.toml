@@ -3,12 +3,8 @@ name = "rustaria"
 version = "0.1.0"
 edition = "2021"
 
-build = "build.rs"
-
 [dependencies]
 mlua = { version = "0.7.1", features = ["lua54", "vendored"] }
-wgpu = { version = "0.12.0", features = ["spirv"] }
-winit = "0.26.0"
 futures = "0.3.19"
 tokio = { version = "1.15.0", features = ["rt-multi-thread", "macros", "fs"] }
 tokio-stream = { version = "0.1.8", features = ["fs"] }
@@ -22,9 +18,6 @@ serde_json = "1.0.74"
 serde = { version = "1.0.133", features = ["derive"] }
 piz = "0.4.0"
 memmap = "0.7.0"
-
-[build-dependencies]
-shaderc = "0.7"
 
 [profile.release]
 panic = "abort"

@@ -1,4 +1,4 @@
-#version 330
+#version 440
 
 void main() {
     float x = float(1 - int(gl_VertexIndex)) * 0.5;

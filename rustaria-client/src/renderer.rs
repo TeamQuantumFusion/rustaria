@@ -1,11 +1,10 @@
 use std::borrow::Cow;
 use std::fs::File;
 use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::{Path};
+use naga::ShaderStage;
 
-use eyre::Result;
-use serde_json::Value::String;
-use wgpu::{include_wgsl, ShaderModule, ShaderModuleDescriptor, ShaderSource};
+use wgpu::{ShaderModuleDescriptor, ShaderSource};
 use winit::window::Window;
 
 pub struct Renderer {
@@ -65,18 +64,18 @@ impl Renderer {
                 push_constant_ranges: &[],
             });
 
+        let fragment_module = get_shader_module("triangle-fs", include_str!("shader/triangle-fs.glsl"), ShaderStage::Fragment);
+        let vertex_module = get_shader_module("triangle-vs", include_str!("shader/triangle-vs.glsl"), ShaderStage::Vertex);
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &device
-                    .create_shader_module(&get_shader_module("triangle-vs", &shader_dir)),
+                module: &device.create_shader_module(&vertex_module),
                 entry_point: "main",
                 buffers: &[],
             },
             fragment: Some(wgpu::FragmentState {
-                module: &device
-                    .create_shader_module(&get_shader_module("triangle-fs", &shader_dir)),
+                module: &device.create_shader_module(&fragment_module),
                 entry_point: "main",
                 targets: &[wgpu::ColorTargetState {
                     format: config.format,
@@ -165,24 +164,13 @@ impl Renderer {
     }
 }
 
-pub fn get_shader_module<'a>(name: &'a str, dir: &Path) -> ShaderModuleDescriptor<'a> {
-    let mut code = Vec::new();
-    File::open(dir.join(name.to_owned() + ".glsl.spv"))
-        .unwrap()
-        .read_to_end(&mut code)
-        .unwrap();
-    let code: Vec<u32> = code
-        .chunks(4)
-        .map(|values| {
-            ((values[3] as u32) << 24
-                | (values[2] as u32) << 16
-                | (values[1] as u32) << 8
-                | (values[0] as u32)) as u32
-        })
-        .collect();
-
+pub fn get_shader_module<'a>(name: &'static str, code: &'static str, stage: ShaderStage) -> ShaderModuleDescriptor<'a> {
     ShaderModuleDescriptor {
         label: Some(name),
-        source: ShaderSource::SpirV(Cow::from(code)),
+        source: ShaderSource::Glsl {
+            shader: Cow::from(code),
+            stage,
+            defines: Default::default()
+        }
     }
 }
