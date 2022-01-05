@@ -14,6 +14,8 @@ mod entity;
 mod gen;
 mod physics;
 mod plugin;
+mod world;
+mod player;
 
 #[tokio::main]
 async fn main() -> Result<()> {
