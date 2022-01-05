@@ -9,18 +9,16 @@ rem packs zip files *despite being perfectly able to do it in file explorer*,
 rem so this script assumes having 7zip installed in PATH.
 mkdir plugin-pack-tmp
 
-rem code
-copy src/main.lua plugin-pack-tmp/main.lua
+copy .\src\main.lua .\plugin-pack-tmp\
 
-rem manifest
-copy manifest.json plugin-pack-tmp/manifest.json
+copy .\manifest.json .\plugin-pack-tmp\
 
 rem pack it all up
 cd plugin-pack-tmp
-7z a -tzip rustaria-core.zip *
+7z a -tzip rustaria-core.zip
 cd ..
 
 if not exist "../run/plugins" mkdir "../run/plugins"
-move plugin-pack-tmp/rustaria-core.zip ../run/plugins
+move .\plugin-pack-tmp\rustaria-core.zip ..\run\plugins\
 
-rmdir /s plugin-pack-tmp
+rd /s /q .\plugin-pack-tmp\
