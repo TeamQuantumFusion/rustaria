@@ -1,10 +1,13 @@
 use std::borrow::Cow;
 use std::fs::File;
 use std::io::Read;
-use std::path::{Path};
-use naga::ShaderStage;
+use std::mem::size_of;
+use std::path::Path;
 
-use wgpu::{ShaderModuleDescriptor, ShaderSource};
+use bytemuck::Pod;
+use naga::ShaderStage;
+use wgpu::{Buffer, BufferDescriptor, BufferUsages, Device, Instance, ShaderModuleDescriptor, ShaderSource, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
+use wgpu::util::DeviceExt;
 use winit::window::Window;
 
 pub struct Renderer {
@@ -14,6 +17,14 @@ pub struct Renderer {
     pub config: wgpu::SurfaceConfiguration,
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipeline: wgpu::RenderPipeline,
+    buffer: Buffer,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct QuadPos {
+    x: f32,
+    y: f32,
 }
 
 impl Renderer {
@@ -48,12 +59,13 @@ impl Renderer {
             .await
             .unwrap();
 
+
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface.get_preferred_format(&adapter).unwrap(),
             width: size.width,
             height: size.height,
-            present_mode: wgpu::PresentMode::Mailbox,
+            present_mode: wgpu::PresentMode::Immediate,
         };
         surface.configure(&device, &config);
 
@@ -72,7 +84,19 @@ impl Renderer {
             vertex: wgpu::VertexState {
                 module: &device.create_shader_module(&vertex_module),
                 entry_point: "main",
-                buffers: &[],
+                buffers: &[
+                    VertexBufferLayout {
+                        array_stride: std::mem::size_of::<(f32, f32)>() as wgpu::BufferAddress,
+                        step_mode: VertexStepMode::Vertex,
+                        attributes: &[
+                            VertexAttribute {
+                                format: VertexFormat::Float32x2,
+                                offset: 0,
+                                shader_location: 0,
+                            }
+                        ],
+                    }
+                ],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &device.create_shader_module(&fragment_module),
@@ -87,7 +111,7 @@ impl Renderer {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
+                cull_mode: None,
                 polygon_mode: wgpu::PolygonMode::Fill,
                 unclipped_depth: false,
                 conservative: false,
@@ -100,6 +124,13 @@ impl Renderer {
             },
             multiview: None,
         });
+        let buffer = create_buffer(&device, "stuff", &[
+            QuadPos { x: -0.5, y: 0.5 },
+            QuadPos { x: -0.5, y: -0.5 },
+            QuadPos { x: 0.5, y: 0.5 },
+            QuadPos { x: 0.5, y: 0.5 },
+            QuadPos { x: -0.5, y: -0.5 },
+            QuadPos { x: 0.5, y: -0.5 }], BufferUsages::VERTEX);
 
         Self {
             surface,
@@ -108,6 +139,7 @@ impl Renderer {
             config,
             size,
             render_pipeline,
+            buffer,
         }
     }
 
@@ -140,10 +172,10 @@ impl Renderer {
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.1,
-                        g: 0.2,
-                        b: 0.3,
-                        a: 1.0,
+                        r: 0.0,
+                        g: 0.0,
+                        b: 0.0,
+                        a: 0.0,
                     }),
                     store: true,
                 },
@@ -151,8 +183,10 @@ impl Renderer {
             depth_stencil_attachment: None,
         });
 
+
         render_pass.set_pipeline(&self.render_pipeline);
-        render_pass.draw(0..4, 0..1);
+        render_pass.set_vertex_buffer(0, self.buffer.slice(..));
+        render_pass.draw(0..6, 0..(24 * 24));
 
         // drop render pass here because it mutably borrows `encoder`,
         // and we wanna use it later
@@ -170,7 +204,17 @@ pub fn get_shader_module<'a>(name: &'static str, code: &'static str, stage: Shad
         source: ShaderSource::Glsl {
             shader: Cow::from(code),
             stage,
-            defines: Default::default()
-        }
+            defines: Default::default(),
+        },
     }
+}
+
+pub fn create_buffer<V: Pod>(device: &Device, label: &str, contents: &[V], usage: BufferUsages) -> Buffer {
+    device.create_buffer_init(
+        &wgpu::util::BufferInitDescriptor {
+            label: Some(label),
+            contents: bytemuck::cast_slice(contents),
+            usage,
+        }
+    )
 }

@@ -1,3 +1,4 @@
+use std::time::Instant;
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
@@ -19,7 +20,10 @@ async fn main() -> Result<()> {
     let mut renderer = Renderer::new(&window).await;
 
     println!("f");
-    evloop.run(move |event, target, cf| event_loop(&mut window, &mut renderer, event, target, cf));
+
+    let mut profiler = Profiler { last_fps: Instant::now(), fps: 0 };
+
+    evloop.run(move |event, target, cf| event_loop(&mut window, &mut renderer, event, target, cf, &mut profiler));
 
     Ok(())
 }
@@ -31,6 +35,7 @@ fn event_loop(
     event: Event<()>,
     _target: &EventLoopWindowTarget<()>,
     cf: &mut ControlFlow,
+    profiler: &mut Profiler
 ) {
     match event {
         Event::WindowEvent {
@@ -56,7 +61,15 @@ fn event_loop(
         Event::MainEventsCleared => {
             renderer.update();
             match renderer.render() {
-                Ok(_) => {}
+                Ok(_) => {
+                    profiler.fps += 1;
+                    if profiler.last_fps.elapsed().as_millis() > 1000 {
+                        println!("FPS: {}", profiler.fps);
+
+                        profiler.fps = 0;
+                        profiler.last_fps = Instant::now();
+                    }
+                }
                 // Reconfigure the surface if lost
                 Err(wgpu::SurfaceError::Lost) => renderer.resize(renderer.size),
                 // The system is out of memory, we should probably quit
@@ -66,4 +79,9 @@ fn event_loop(
         }
         _ => {}
     }
+}
+
+pub struct Profiler {
+    last_fps: Instant,
+    fps: u128
 }

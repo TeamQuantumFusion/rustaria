@@ -1,7 +1,10 @@
 #version 440
 
+layout(location = 0) in vec2 v_in_Pos;
+
+
 void main() {
-    float x = float(1 - int(gl_VertexIndex)) * 0.5;
-    float y = float(int(gl_VertexIndex & 1) * 2 - 1) * 0.5;
-    gl_Position = vec4(x, y, 0.0, 1.0);
+    int x = int(gl_InstanceIndex) % 24;
+    int y = (int(gl_InstanceIndex) /24) % 24;
+    gl_Position = vec4((v_in_Pos.x + (x)) / 100, (v_in_Pos.y + y) / 100, 0.0, 1.0);
 }
