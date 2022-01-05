@@ -2,12 +2,16 @@ use std::{ffi::OsStr, io::Read, path::Path};
 
 use eyre::{Context, Result};
 use futures::StreamExt;
+use memmap::Mmap;
 use mlua::Lua;
+use piz::{
+    read::{as_tree, FileTree},
+    ZipArchive,
+};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 use tokio_stream::wrappers::ReadDirStream;
 use tracing::{info, warn};
-use zip::ZipArchive;
 
 pub struct PluginLoader {
     pub plugins: Vec<Plugin>,
@@ -54,19 +58,27 @@ impl PluginLoader {
         let zip = std::fs::File::open(path).wrap_err_with(|| {
             format!("Plugin archive [{}] not found", file_name_or_unknown(path))
         })?;
-        let mut zip = ZipArchive::new(zip)?;
+        let mapping = unsafe { Mmap::map(&zip)? };
+        let zip = ZipArchive::new(&mapping).wrap_err_with(|| {
+            format!(
+                "Archive file [{}] could not be read",
+                file_name_or_unknown(path)
+            )
+        })?;
+        let tree = as_tree(zip.entries())?;
 
-        let manifest = zip
-            .by_name("manifest.json")
+        let manifest = tree
+            .lookup("manifest.json")
             .wrap_err("manifest.json not found")?;
 
-        let manifest: Manifest = serde_json::from_reader(manifest)?;
-        let mut executable = zip.by_name(&manifest.executable_path).wrap_err_with(|| {
+        let manifest: Manifest = serde_json::from_reader(zip.read(manifest)?)?;
+        let executable = tree.lookup(&manifest.executable_path).wrap_err_with(|| {
             format!(
                 "Main executable not found at path {}!",
                 manifest.executable_path
             )
         })?;
+        let mut executable = zip.read(executable)?;
         let mut code = vec![];
         executable.read_to_end(&mut code)?;
 
