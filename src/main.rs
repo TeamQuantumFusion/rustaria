@@ -16,6 +16,7 @@ mod physics;
 mod plugin;
 mod world;
 mod player;
+mod registry;
 
 #[tokio::main]
 async fn main() -> Result<()> {

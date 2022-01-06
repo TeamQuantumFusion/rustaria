@@ -5,13 +5,13 @@ mod foliage;
 mod tile;
 mod tree;
 mod wall;
-mod water;
+mod fluid;
 
 pub const CHUNK_SIZE: usize = 24;
 
 pub struct Chunk {
-    tiles: [[Tile; CHUNK_SIZE]; CHUNK_SIZE],
-    walls: [[Wall; CHUNK_SIZE]; CHUNK_SIZE],
+    tiles: ChunkGrid<Tile>,
+    walls: ChunkGrid<Wall>,
 }
 
 pub struct ChunkSubPos {
@@ -21,12 +21,21 @@ pub struct ChunkSubPos {
 
 impl Chunk {
     pub fn get_tile(&self, pos: ChunkSubPos) -> &Tile {
-        debug_assert!(pos.x < CHUNK_SIZE as u8 && pos.y < CHUNK_SIZE as u8, "ChunkSubPos is too big.");
-        &self.tiles[pos.y as usize][pos.x as usize]
+        self.tiles.get(pos)
     }
 
     pub fn get_wall(&self, pos: ChunkSubPos) -> &Wall {
+        self.walls.get(pos)
+    }
+}
+
+struct ChunkGrid<V> {
+    grid: [[V; CHUNK_SIZE]; CHUNK_SIZE],
+}
+
+impl<V> ChunkGrid<V> {
+    fn get(&self, pos: ChunkSubPos) -> &V {
         debug_assert!(pos.x < CHUNK_SIZE as u8 && pos.y < CHUNK_SIZE as u8, "ChunkSubPos is too big.");
-        &self.walls[pos.y as usize][pos.x as usize]
+        &self.grid[pos.y as usize][pos.x  as usize]
     }
 }
