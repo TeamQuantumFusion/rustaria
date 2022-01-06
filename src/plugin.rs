@@ -1,4 +1,5 @@
 use std::{ffi::OsStr, io::Read, path::Path};
+use std::any::Any;
 
 use eyre::{Context, Result};
 use futures::StreamExt;
@@ -12,12 +13,21 @@ use serde::{Deserialize, Serialize};
 use tokio::fs;
 use tokio_stream::wrappers::ReadDirStream;
 use tracing::{info, warn};
+use crate::chunk::tile;
+use crate::chunk::tile::Tile;
 
 pub struct PluginLoader {
     pub plugins: Vec<Plugin>,
     lua: Lua,
 }
 
+macro_rules! lua_func {
+    ($LUA:expr => $($METHOD:ident),*) => {
+        $(
+        $LUA.globals().set(stringify!($METHOD), $LUA.create_function(|_, v| $METHOD(v))?)?;
+        )*
+    };
+}
 impl PluginLoader {
     pub fn new() -> Result<Self> {
         Ok(Self {
@@ -42,7 +52,7 @@ impl PluginLoader {
                                 }
                             }
                         }
-                    },
+                    }
                     Err(e) => warn!("Unable to access file `{}` for reading! Permissions are perhaps insufficient!", e)
                 }
                 None
@@ -92,12 +102,25 @@ impl PluginLoader {
     }
 
     pub fn run(&mut self) -> Result<()> {
+
         for Plugin { code, .. } in &self.plugins {
-            self.lua.load(code).exec()?
+            self.lua.globals().set("tile", tile::Tile { flavour: 3 });
+            lua_func!(self.lua => register_tile);
+
+            let chunk = self.lua.load(code);
+            chunk.exec()?;
         }
         Ok(())
     }
 }
+
+type LuaResult = Result<(), mlua::Error>;
+
+pub fn register_tile((tag, value): (String, Tile)) -> LuaResult {
+    println!("{}", value.flavour);
+    Ok(())
+}
+
 
 pub struct Plugin {
     manifest: Manifest,

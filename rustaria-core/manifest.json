@@ -1,5 +1,5 @@
 {
     "name": "rustaria-core",
     "version": "0.1.0",
-    "executablePath": "src/main.lua"
+    "executablePath": "main.lua"
 }

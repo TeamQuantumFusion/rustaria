@@ -2,7 +2,7 @@ use crate::chunk::tile::Tile;
 use crate::chunk::wall::Wall;
 
 mod foliage;
-mod tile;
+pub mod tile;
 mod tree;
 mod wall;
 mod fluid;

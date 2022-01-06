@@ -7,7 +7,6 @@ use tracing_subscriber::{fmt::time::UtcTime, prelude::*, EnvFilter};
 use crate::{plugin::PluginLoader};
 
 
-mod api;
 mod biome;
 mod chunk;
 mod entity;
