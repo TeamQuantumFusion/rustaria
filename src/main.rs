@@ -1,11 +1,9 @@
 use eyre::Result;
 use time::macros::format_description;
 use tracing::{error, info};
-use tracing_subscriber::{fmt::time::UtcTime, prelude::*, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt::time::UtcTime, prelude::*};
 
-
-use crate::{plugin::PluginLoader};
-
+use crate::plugin::PluginLoader;
 
 mod biome;
 mod chunk;
@@ -22,12 +20,15 @@ async fn main() -> Result<()> {
     init();
     info!("Rustaria v{}", env!("CARGO_PKG_VERSION"));
 
-    let mut plugins = PluginLoader::new()?;
+
     let mut plugins_dir = std::env::current_dir()?;
     plugins_dir.push("plugins");
-    plugins.scan_and_load_plugins(&plugins_dir).await?;
-    plugins.run()?;
 
+    let mut plugins = PluginLoader::new()?;
+    // TODO sensei this is your problem now.
+    plugins.scan_and_load_plugins_internal(&plugins_dir).await?;
+    plugins.bootstrap()?;
+    plugins.init()?;
     Ok(())
 }
 

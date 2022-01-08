@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-mlua = { version = "0.7.1", features = ["lua54", "vendored"] }
+mlua = { version = "0.7.1", features = ["luajit", "vendored"] }
 futures = "0.3.19"
 tokio = { version = "1.15.0", features = ["rt-multi-thread", "macros", "fs"] }
 tokio-stream = { version = "0.1.8", features = ["fs"] }

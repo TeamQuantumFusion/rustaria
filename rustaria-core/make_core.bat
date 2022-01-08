@@ -10,6 +10,7 @@ rem so this script assumes having 7zip installed in PATH.
 mkdir plugin-pack-tmp
 
 copy .\src\main.lua .\plugin-pack-tmp\
+copy .\src\bootstrap.lua .\plugin-pack-tmp\
 
 copy .\manifest.json .\plugin-pack-tmp\
 

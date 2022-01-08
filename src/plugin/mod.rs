@@ -1,23 +1,24 @@
 use std::{ffi::OsStr, io::Read, path::Path};
-use std::any::Any;
 
 use eyre::{Context, Result};
 use futures::StreamExt;
 use memmap::Mmap;
-use mlua::Lua;
+use mlua::{Function, Lua};
 use piz::{
     read::{as_tree, FileTree},
     ZipArchive,
 };
+use piz::read::DirectoryContents;
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 use tokio_stream::wrappers::ReadDirStream;
 use tracing::{info, warn};
+
 use crate::chunk::tile;
 use crate::chunk::tile::Tile;
 
-pub struct PluginLoader {
-    pub plugins: Vec<Plugin>,
+pub struct PluginLoader<'lua> {
+    plugins: Vec<Plugin<'lua>>,
     lua: Lua,
 }
 
@@ -28,24 +29,28 @@ macro_rules! lua_func {
         )*
     };
 }
-impl PluginLoader {
-    pub fn new() -> Result<Self> {
-        Ok(Self {
+impl<'lua: 'load, 'load> PluginLoader<'lua> {
+    pub fn new() -> Result<PluginLoader<'lua>> {
+        let lua = Lua::new();
+        Ok(PluginLoader {
             plugins: vec![],
-            lua: Lua::new(),
+            lua,
         })
     }
 
-    pub async fn scan_and_load_plugins(&mut self, dir: &Path) -> Result<()> {
+    pub async fn scan_and_load_plugins_internal(&'lua mut self, dir: &Path) -> Result<()> {
         info!("Scanning for plugins in directory {:?}", dir);
-        self.plugins = ReadDirStream::new(fs::read_dir(&dir).await?)
+
+        let lua = &self.lua;
+
+        let x: Vec<Plugin<'lua>> = ReadDirStream::new(fs::read_dir(&dir).await?)
             .filter_map(|entry| async {
                 match entry {
                     Ok(entry) => {
                         // only look at zip files
                         let path = entry.path();
                         if let Some("zip") = path.extension().and_then(OsStr::to_str) {
-                            match self.load_plugin(&path).await {
+                            match Self::load_plugin(&path, lua).await {
                                 Ok(plugin) => return Some(plugin),
                                 Err(e) => {
                                     warn!("Error loading plugin [{}]: {}", file_name_or_unknown(&path), e)
@@ -59,12 +64,13 @@ impl PluginLoader {
             })
             .collect()
             .await;
+        self.plugins = x;
+
 
         Ok(())
     }
 
-    // TODO: async-ify
-    pub async fn load_plugin(&self, path: &Path) -> Result<Plugin> {
+    pub async fn load_plugin(path: &Path, lua: &'load Lua) -> Result<Plugin<'load>> {
         let zip = std::fs::File::open(path).wrap_err_with(|| {
             format!("Plugin archive [{}] not found", file_name_or_unknown(path))
         })?;
@@ -82,33 +88,47 @@ impl PluginLoader {
             .wrap_err("manifest.json not found")?;
 
         let manifest: Manifest = serde_json::from_reader(zip.read(manifest)?)?;
-        let executable = tree.lookup(&manifest.executable_path).wrap_err_with(|| {
-            format!(
-                "Main executable not found at path {}!",
-                manifest.executable_path
-            )
-        })?;
-        let mut executable = zip.read(executable)?;
-        let mut code = vec![];
-        executable.read_to_end(&mut code)?;
 
+        let bootstrap_code = Self::load_code(&zip, &tree, &lua, &manifest.bootstrap_path)?;
+        let init_code = Self::load_code(&zip, &tree, &lua, &manifest.init_path)?;
         info!(
             "Loaded plugin {} v{} from [{}]",
             manifest.name,
             manifest.version,
             file_name_or_unknown(&path)
         );
-        Ok(Plugin { manifest, code })
+        Ok(Plugin { manifest, bootstrap_code, init_code })
     }
 
-    pub fn run(&mut self) -> Result<()> {
+    fn load_code(zip: &ZipArchive, tree: &DirectoryContents, lua: &'load Lua, path: &String) -> Result<Function<'load>> {
+        let metadata = tree.lookup(&path).wrap_err_with(|| {
+            format!(
+                "Main executable not found at path {}!",
+                path
+            )
+        })?;
 
-        for Plugin { code, .. } in &self.plugins {
-            self.lua.globals().set("tile", tile::Tile { flavour: 3 });
+        let mut executable = zip.read(metadata)?;
+        let mut code = Vec::with_capacity(metadata.size);
+        executable.read_to_end(&mut code)?;
+
+
+        Ok(lua.load(&code).into_function()?)
+    }
+
+    pub fn bootstrap(&self) -> Result<()> {
+        for Plugin { bootstrap_code, .. } in &self.plugins {
             lua_func!(self.lua => register_tile);
 
-            let chunk = self.lua.load(code);
-            chunk.exec()?;
+            bootstrap_code.call(())?;
+        }
+        Ok(())
+    }
+
+    pub fn init(&self) -> Result<()> {
+        for Plugin { init_code, .. } in &self.plugins {
+            lua_func!(self.lua => register_tile);
+            init_code.call(())?;
         }
         Ok(())
     }
@@ -121,18 +141,20 @@ pub fn register_tile((tag, value): (String, Tile)) -> LuaResult {
     Ok(())
 }
 
-
-pub struct Plugin {
+pub struct Plugin<'lua> {
     manifest: Manifest,
-    code: Vec<u8>,
+    bootstrap_code: Function<'lua>,
+    init_code: Function<'lua>,
 }
+
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Manifest {
     name: String,
     version: String,
-    executable_path: String,
+    bootstrap_path: String,
+    init_path: String,
 }
 
 fn file_name_or_unknown(path: &Path) -> &str {
