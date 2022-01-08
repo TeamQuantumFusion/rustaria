@@ -1,3 +1,6 @@
+mod tile;
+mod util;
+
 use std::{ffi::OsStr, io::Read, path::Path};
 
 use eyre::{Context, Result};

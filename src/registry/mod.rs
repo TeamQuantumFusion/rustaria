@@ -53,3 +53,11 @@ pub enum TagCategory {
 pub struct Id {
     id: u32
 }
+
+pub struct LanguageKey {
+
+}
+
+pub struct AssetLocation {
+
+}
