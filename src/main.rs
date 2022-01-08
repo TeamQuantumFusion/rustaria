@@ -24,11 +24,11 @@ async fn main() -> Result<()> {
     let mut plugins_dir = std::env::current_dir()?;
     plugins_dir.push("plugins");
 
-    let mut plugins = PluginLoader::new()?;
+    let loader = PluginLoader::new();
     // TODO sensei this is your problem now.
-    plugins.scan_and_load_plugins_internal(&plugins_dir).await?;
-    plugins.bootstrap()?;
-    plugins.init()?;
+    let plugins = loader.scan_and_load_plugins_internal(&plugins_dir).await?;
+    plugins.bootstrap(&loader.lua)?;
+    plugins.init(&loader.lua)?;
     Ok(())
 }
 

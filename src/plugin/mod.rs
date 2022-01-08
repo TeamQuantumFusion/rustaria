@@ -14,12 +14,10 @@ use tokio::fs;
 use tokio_stream::wrappers::ReadDirStream;
 use tracing::{info, warn};
 
-use crate::chunk::tile;
 use crate::chunk::tile::Tile;
 
-pub struct PluginLoader<'lua> {
-    plugins: Vec<Plugin<'lua>>,
-    lua: Lua,
+pub struct PluginLoader {
+    pub lua: Lua,
 }
 
 macro_rules! lua_func {
@@ -29,28 +27,24 @@ macro_rules! lua_func {
         )*
     };
 }
-impl<'lua: 'load, 'load> PluginLoader<'lua> {
-    pub fn new() -> Result<PluginLoader<'lua>> {
-        let lua = Lua::new();
-        Ok(PluginLoader {
-            plugins: vec![],
-            lua,
-        })
+impl PluginLoader {
+    pub fn new() -> Self {
+        PluginLoader {
+            lua: Lua::new(),
+        }
     }
 
-    pub async fn scan_and_load_plugins_internal(&'lua mut self, dir: &Path) -> Result<()> {
+    pub async fn scan_and_load_plugins_internal<'lua>(&'lua self, dir: &Path) -> Result<Plugins<'lua>> {
         info!("Scanning for plugins in directory {:?}", dir);
 
-        let lua = &self.lua;
-
-        let x: Vec<Plugin<'lua>> = ReadDirStream::new(fs::read_dir(&dir).await?)
+        let plugins = ReadDirStream::new(fs::read_dir(&dir).await?)
             .filter_map(|entry| async {
                 match entry {
                     Ok(entry) => {
                         // only look at zip files
                         let path = entry.path();
                         if let Some("zip") = path.extension().and_then(OsStr::to_str) {
-                            match Self::load_plugin(&path, lua).await {
+                            match self.load_plugin(&path).await {
                                 Ok(plugin) => return Some(plugin),
                                 Err(e) => {
                                     warn!("Error loading plugin [{}]: {}", file_name_or_unknown(&path), e)
@@ -64,13 +58,10 @@ impl<'lua: 'load, 'load> PluginLoader<'lua> {
             })
             .collect()
             .await;
-        self.plugins = x;
-
-
-        Ok(())
+        Ok(Plugins(plugins))
     }
 
-    pub async fn load_plugin(path: &Path, lua: &'load Lua) -> Result<Plugin<'load>> {
+    pub async fn load_plugin<'lua>(&'lua self, path: &Path) -> Result<Plugin<'lua>> {
         let zip = std::fs::File::open(path).wrap_err_with(|| {
             format!("Plugin archive [{}] not found", file_name_or_unknown(path))
         })?;
@@ -89,8 +80,8 @@ impl<'lua: 'load, 'load> PluginLoader<'lua> {
 
         let manifest: Manifest = serde_json::from_reader(zip.read(manifest)?)?;
 
-        let bootstrap_code = Self::load_code(&zip, &tree, &lua, &manifest.bootstrap_path)?;
-        let init_code = Self::load_code(&zip, &tree, &lua, &manifest.init_path)?;
+        let bootstrap_code = self.load_code(&zip, &tree, &manifest.bootstrap_path)?;
+        let init_code = self.load_code(&zip, &tree, &manifest.init_path)?;
         info!(
             "Loaded plugin {} v{} from [{}]",
             manifest.name,
@@ -100,7 +91,7 @@ impl<'lua: 'load, 'load> PluginLoader<'lua> {
         Ok(Plugin { manifest, bootstrap_code, init_code })
     }
 
-    fn load_code(zip: &ZipArchive, tree: &DirectoryContents, lua: &'load Lua, path: &String) -> Result<Function<'load>> {
+    fn load_code<'lua>(&'lua self, zip: &ZipArchive, tree: &DirectoryContents, path: &String) -> Result<Function<'lua>> {
         let metadata = tree.lookup(&path).wrap_err_with(|| {
             format!(
                 "Main executable not found at path {}!",
@@ -113,26 +104,31 @@ impl<'lua: 'load, 'load> PluginLoader<'lua> {
         executable.read_to_end(&mut code)?;
 
 
-        Ok(lua.load(&code).into_function()?)
-    }
+        Ok(self.lua.load(&code).into_function()?)
+    }    
+}
 
-    pub fn bootstrap(&self) -> Result<()> {
-        for Plugin { bootstrap_code, .. } in &self.plugins {
-            lua_func!(self.lua => register_tile);
+pub struct Plugins<'lua>(Vec<Plugin<'lua>>);
+
+impl<'lua> Plugins<'lua> {
+    pub fn bootstrap(&self, lua: &'lua Lua) -> Result<()> {
+        for Plugin { bootstrap_code, .. } in &self.0 {
+            lua_func!(lua => register_tile);
 
             bootstrap_code.call(())?;
         }
         Ok(())
     }
 
-    pub fn init(&self) -> Result<()> {
-        for Plugin { init_code, .. } in &self.plugins {
-            lua_func!(self.lua => register_tile);
+    pub fn init(&self, lua: &'lua Lua) -> Result<()> {
+        for Plugin { init_code, .. } in &self.0 {
+            lua_func!(lua => register_tile);
             init_code.call(())?;
         }
         Ok(())
     }
 }
+
 
 type LuaResult = Result<(), mlua::Error>;
 
