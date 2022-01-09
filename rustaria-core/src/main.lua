@@ -1,0 +1,1 @@
+print("IDK what alpha's on, one entrypoint is good enough")

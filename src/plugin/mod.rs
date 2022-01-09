@@ -1,74 +1,76 @@
-mod tile;
-mod util;
-
-use std::{ffi::OsStr, io::Read, path::Path};
+use std::{
+    ffi::OsStr,
+    io::Read,
+    path::{Path, PathBuf},
+};
 
 use eyre::{Context, Result};
 use futures::StreamExt;
 use memmap::Mmap;
-use mlua::{Function, Lua};
+use mlua::{prelude::*, Function};
+use piz::read::DirectoryContents;
 use piz::{
     read::{as_tree, FileTree},
     ZipArchive,
 };
-use piz::read::DirectoryContents;
 use serde::{Deserialize, Serialize};
-use tokio::fs;
+use tokio::fs::{self, File};
 use tokio_stream::wrappers::ReadDirStream;
 use tracing::{info, warn};
 
 use crate::chunk::tile::Tile;
 
+mod tile;
+mod util;
+
 pub struct PluginLoader {
-    pub lua: Lua,
+    pub plugins_dir: PathBuf,
 }
 
-macro_rules! lua_func {
-    ($LUA:expr => $($METHOD:ident),*) => {
-        $(
-        $LUA.globals().set(stringify!($METHOD), $LUA.create_function(|_, v| $METHOD(v))?)?;
-        )*
-    };
-}
 impl PluginLoader {
-    pub fn new() -> Self {
-        PluginLoader {
-            lua: Lua::new(),
-        }
-    }
+    pub async fn scan_and_load_plugins_internal<'lua>(
+        &self,
+        lua: &'lua Lua,
+    ) -> Result<Plugins<'lua>> {
+        info!("Scanning for plugins in directory {:?}", self.plugins_dir);
 
-    pub async fn scan_and_load_plugins_internal<'lua>(&'lua self, dir: &Path) -> Result<Plugins<'lua>> {
-        info!("Scanning for plugins in directory {:?}", dir);
+        let read_dir = fs::read_dir(&self.plugins_dir)
+            .await
+            .wrap_err("Plugins directory not found")?;
 
-        let plugins = ReadDirStream::new(fs::read_dir(&dir).await?)
-            .filter_map(|entry| async {
-                match entry {
-                    Ok(entry) => {
-                        // only look at zip files
-                        let path = entry.path();
-                        if let Some("zip") = path.extension().and_then(OsStr::to_str) {
-                            match self.load_plugin(&path).await {
-                                Ok(plugin) => return Some(plugin),
-                                Err(e) => {
-                                    warn!("Error loading plugin [{}]: {}", file_name_or_unknown(&path), e)
-                                }
+        let plugins = ReadDirStream::new(read_dir).filter_map(|entry| async {
+            match entry {
+                Ok(entry) => {
+                    // only look at zip files
+                    let path = entry.path();
+                    if let Some("zip") = path.extension().and_then(OsStr::to_str) {
+                        match self.load_plugin(&path, lua).await {
+                            Ok(plugin) => return Some(plugin),
+                            Err(e) => {
+                                warn!(
+                                    "Error loading plugin [{}]: {}",
+                                    file_name_or_unknown(&path),
+                                    e
+                                )
                             }
                         }
                     }
-                    Err(e) => warn!("Unable to access file `{}` for reading! Permissions are perhaps insufficient!", e)
                 }
-                None
-            })
-            .collect()
-            .await;
-        Ok(Plugins(plugins))
+                Err(e) => warn!(
+                    "Unable to access file `{}` for reading! Permissions are perhaps insufficient!",
+                    e
+                ),
+            }
+            None
+        });
+        Ok(Plugins(plugins.collect().await))
     }
 
-    pub async fn load_plugin<'lua>(&'lua self, path: &Path) -> Result<Plugin<'lua>> {
-        let zip = std::fs::File::open(path).wrap_err_with(|| {
+    pub async fn load_plugin<'lua>(&self, path: &Path, lua: &'lua Lua) -> Result<Plugin<'lua>> {
+        let zip = File::open(path).await.wrap_err_with(|| {
             format!("Plugin archive [{}] not found", file_name_or_unknown(path))
         })?;
-        let mapping = unsafe { Mmap::map(&zip)? };
+        let mapping = unsafe { Mmap::map(&zip.into_std().await)? };
         let zip = ZipArchive::new(&mapping).wrap_err_with(|| {
             format!(
                 "Archive file [{}] could not be read",
@@ -83,22 +85,27 @@ impl PluginLoader {
 
         let manifest: Manifest = serde_json::from_reader(zip.read(manifest)?)?;
 
-        let bootstrap_code = self.load_code(&zip, &tree, &manifest.bootstrap_path)?;
-        let init_code = self.load_code(&zip, &tree, &manifest.init_path)?;
+        let init = self.load_code(&zip, &tree, &manifest.init_path.as_ref(), lua)?;
         info!(
             "Loaded plugin {} v{} from [{}]",
             manifest.name,
             manifest.version,
             file_name_or_unknown(&path)
         );
-        Ok(Plugin { manifest, bootstrap_code, init_code })
+        Ok(Plugin { manifest, init })
     }
 
-    fn load_code<'lua>(&'lua self, zip: &ZipArchive, tree: &DirectoryContents, path: &String) -> Result<Function<'lua>> {
+    fn load_code<'lua>(
+        &self,
+        zip: &ZipArchive,
+        tree: &DirectoryContents,
+        path: &Path,
+        lua: &'lua Lua,
+    ) -> Result<Function<'lua>> {
         let metadata = tree.lookup(&path).wrap_err_with(|| {
             format!(
-                "Main executable not found at path {}!",
-                path
+                "Could not find file containing code (looking for {})!",
+                file_name_or_unknown(path)
             )
         })?;
 
@@ -106,53 +113,31 @@ impl PluginLoader {
         let mut code = Vec::with_capacity(metadata.size);
         executable.read_to_end(&mut code)?;
 
-
-        Ok(self.lua.load(&code).into_function()?)
-    }    
+        Ok(lua.load(&code).into_function()?)
+    }
 }
 
 pub struct Plugins<'lua>(Vec<Plugin<'lua>>);
 
 impl<'lua> Plugins<'lua> {
-    pub fn bootstrap(&self, lua: &'lua Lua) -> Result<()> {
-        for Plugin { bootstrap_code, .. } in &self.0 {
-            lua_func!(lua => register_tile);
-
-            bootstrap_code.call(())?;
+    pub fn init(&self) -> Result<()> {
+        for Plugin { init, .. } in &self.0 {
+            init.call(())?;
         }
         Ok(())
     }
-
-    pub fn init(&self, lua: &'lua Lua) -> Result<()> {
-        for Plugin { init_code, .. } in &self.0 {
-            lua_func!(lua => register_tile);
-            init_code.call(())?;
-        }
-        Ok(())
-    }
-}
-
-
-type LuaResult = Result<(), mlua::Error>;
-
-pub fn register_tile((tag, value): (String, Tile)) -> LuaResult {
-    println!("{}", value.flavour);
-    Ok(())
 }
 
 pub struct Plugin<'lua> {
     manifest: Manifest,
-    bootstrap_code: Function<'lua>,
-    init_code: Function<'lua>,
+    init: Function<'lua>,
 }
-
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Manifest {
     name: String,
     version: String,
-    bootstrap_path: String,
     init_path: String,
 }
 
@@ -160,4 +145,33 @@ fn file_name_or_unknown(path: &Path) -> &str {
     path.file_name()
         .and_then(OsStr::to_str)
         .unwrap_or("<unknown>")
+}
+
+macro_rules! lua_func {
+    ($LUA:expr => $($METHOD:ident),*) => {
+        $(
+            $LUA.globals().set(stringify!($METHOD), $LUA.create_function(|_, v| $METHOD(v))?)?;
+        )*
+    };
+}
+
+/// Creates a [Lua runtime][mlua::Lua] with Rustaria's API [preconfigured][register_rustaria_api].
+pub fn create_lua_runtime() -> LuaResult<Lua> {
+    let lua = Lua::new();
+    register_rustaria_api(&lua)?;
+    Ok(lua)
+}
+
+/// Registers Rustaria's Lua modding APIs.
+pub fn register_rustaria_api(lua: &Lua) -> LuaResult<()> {
+    lua_func!(lua => register_tile);
+    Ok(())
+}
+
+// Implementations of the modding API
+// ==================================
+
+fn register_tile((tag, value): (String, Tile)) -> LuaResult<()> {
+    println!("{}", value.flavour);
+    Ok(())
 }

@@ -1,6 +1,6 @@
 use eyre::Result;
 use time::macros::format_description;
-use tracing::{error, info};
+use tracing::info;
 use tracing_subscriber::{EnvFilter, fmt::time::UtcTime, prelude::*};
 
 use crate::plugin::PluginLoader;
@@ -24,11 +24,10 @@ async fn main() -> Result<()> {
     let mut plugins_dir = std::env::current_dir()?;
     plugins_dir.push("plugins");
 
-    let loader = PluginLoader::new();
-    // TODO sensei this is your problem now.
-    let plugins = loader.scan_and_load_plugins_internal(&plugins_dir).await?;
-    plugins.bootstrap(&loader.lua)?;
-    plugins.init(&loader.lua)?;
+    let lua = plugin::create_lua_runtime()?;
+    let loader = PluginLoader { plugins_dir };
+    let plugins = loader.scan_and_load_plugins_internal(&lua).await?;
+    plugins.init()?;
     Ok(())
 }
 

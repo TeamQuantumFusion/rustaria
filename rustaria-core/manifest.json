@@ -1,6 +1,5 @@
 {
     "name": "rustaria-core",
     "version": "0.1.0",
-    "bootstrapPath": "bootstrap.lua",
-    "initPath": "main.lua"
+    "initPath": "src/main.lua"
 }
