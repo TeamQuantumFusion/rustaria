@@ -54,10 +54,12 @@ pub struct Id {
     id: u32
 }
 
+#[derive(Clone)]
 pub struct LanguageKey {
 
 }
 
+#[derive(Clone)]
 pub struct AssetLocation {
 
 }

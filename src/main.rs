@@ -1,4 +1,5 @@
 use eyre::Result;
+use mlua::Lua;
 use time::macros::format_description;
 use tracing::info;
 use tracing_subscriber::{EnvFilter, fmt::time::UtcTime, prelude::*};
@@ -14,6 +15,7 @@ mod plugin;
 mod world;
 mod player;
 mod registry;
+mod api;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -24,7 +26,8 @@ async fn main() -> Result<()> {
     let mut plugins_dir = std::env::current_dir()?;
     plugins_dir.push("plugins");
 
-    let lua = plugin::create_lua_runtime()?;
+    let lua = Lua::new();
+    api::register_rustaria_api(&lua)?;
     let loader = PluginLoader { plugins_dir };
     let plugins = loader.scan_and_load_plugins_internal(&lua).await?;
     plugins.init()?;

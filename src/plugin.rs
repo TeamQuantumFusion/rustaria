@@ -7,7 +7,7 @@ use std::{
 use eyre::{Context, Result};
 use futures::StreamExt;
 use memmap::Mmap;
-use mlua::{prelude::*, Function};
+use mlua::prelude::*;
 use piz::read::DirectoryContents;
 use piz::{
     read::{as_tree, FileTree},
@@ -17,11 +17,6 @@ use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
 use tokio_stream::wrappers::ReadDirStream;
 use tracing::{info, warn};
-
-use crate::chunk::tile::Tile;
-
-mod tile;
-mod util;
 
 pub struct PluginLoader {
     pub plugins_dir: PathBuf,
@@ -101,7 +96,7 @@ impl PluginLoader {
         tree: &DirectoryContents,
         path: &Path,
         lua: &'lua Lua,
-    ) -> Result<Function<'lua>> {
+    ) -> Result<LuaFunction<'lua>> {
         let metadata = tree.lookup(&path).wrap_err_with(|| {
             format!(
                 "Could not find file containing code (looking for {})!",
@@ -130,7 +125,7 @@ impl<'lua> Plugins<'lua> {
 
 pub struct Plugin<'lua> {
     manifest: Manifest,
-    init: Function<'lua>,
+    init: LuaFunction<'lua>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -148,30 +143,9 @@ fn file_name_or_unknown(path: &Path) -> &str {
 }
 
 macro_rules! lua_func {
-    ($LUA:expr => $($METHOD:ident),*) => {
+    ($lua:expr; $($name:expr => $method:expr),*) => {
         $(
-            $LUA.globals().set(stringify!($METHOD), $LUA.create_function(|_, v| $METHOD(v))?)?;
+            $lua.globals().set($name, $lua.create_function(|_, v| $method(v))?)?;
         )*
     };
-}
-
-/// Creates a [Lua runtime][mlua::Lua] with Rustaria's API [preconfigured][register_rustaria_api].
-pub fn create_lua_runtime() -> LuaResult<Lua> {
-    let lua = Lua::new();
-    register_rustaria_api(&lua)?;
-    Ok(lua)
-}
-
-/// Registers Rustaria's Lua modding APIs.
-pub fn register_rustaria_api(lua: &Lua) -> LuaResult<()> {
-    lua_func!(lua => register_tile);
-    Ok(())
-}
-
-// Implementations of the modding API
-// ==================================
-
-fn register_tile((tag, value): (String, Tile)) -> LuaResult<()> {
-    println!("{}", value.flavour);
-    Ok(())
 }
