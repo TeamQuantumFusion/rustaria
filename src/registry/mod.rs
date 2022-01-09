@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
+use serde::Deserialize;
+
 pub struct Registry {
+    // TODO(leocth): use BiMap from `bimap`
     tag_to_id: HashMap<Tag, Id>,
     // uses vec instead of hashmap to save 1ns of time in our lifetime
     id_to_tag: Vec<Tag>,
@@ -17,8 +20,8 @@ impl Registry {
     }
 
     pub fn register(&mut self, tag: Tag) -> Id {
-        let id = Id { id: self.current_id };
-        self.id_to_tag.insert(id.id as usize, tag.clone());
+        let id = Id (self.current_id);
+        self.id_to_tag.insert(id.0 as usize, tag.clone());
         self.tag_to_id.insert(tag, id);
         id
     }
@@ -28,19 +31,20 @@ impl Registry {
     }
 
     pub fn get_tag(&self, id: &Id) -> Option<&Tag> {
-        self.id_to_tag.get(id.id as usize)
+        self.id_to_tag.get(id.0 as usize)
     }
 }
 
 // This is lua input (or rust) that gets converted to id,
 // by the registry map.
-#[derive(Clone, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Deserialize)]
 pub struct Tag {
     tag: String,
     category: TagCategory
 }
 
-#[derive(Clone, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum TagCategory {
     Item,
     Tile,
@@ -50,16 +54,15 @@ pub enum TagCategory {
 
 // kernel identification
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
-pub struct Id {
-    id: u32
-}
+pub struct Id(u32);
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct LanguageKey {
-
+    // TODO
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct AssetLocation {
+    // TODO
 
 }

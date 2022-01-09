@@ -1,7 +1,7 @@
-use std::{collections::HashSet, marker::PhantomData};
+use std::{collections::HashSet, convert::Infallible, marker::PhantomData, str::FromStr, hash::Hash};
 
 use mlua::prelude::*;
-use serde::{Deserialize, Serialize};
+use serde::{de::{Visitor, self, MapAccess}, Deserialize, Deserializer, Serialize};
 
 use crate::registry::{AssetLocation, LanguageKey, Tag};
 
@@ -9,22 +9,35 @@ use crate::registry::{AssetLocation, LanguageKey, Tag};
 pub struct Tile {
     // name: LanguageKey,
     // sprite_path: AssetLocation,
-    // transitional: bool,
-    // collision: DynamicValue<bool>,
-    // opaque: DynamicValue<bool>,
+    #[serde(default)]
+    transitional: bool,
+    #[serde(default = "Tile::default_collision")]
+    collision: DynamicValue<bool>,
+    #[serde(default = "Tile::default_opaque")]
+    opaque: DynamicValue<bool>,
+    #[serde(default = "Tile::default_blast_resistance")]
     blast_resistance: BlastResistance,
+    #[serde(default = "Tile::default_break_resistance")]
     break_resistance: BreakResistance,
-    // tile_type: TileType<Tag>,
+    #[serde(default)]
+    tile_type: TileType<Tag>,
+}
+impl Tile {
+    fn default_collision() -> DynamicValue<bool> { DynamicValue::Fixed(true) }
+    fn default_opaque() -> DynamicValue<bool> { DynamicValue::Fixed(true) }
+    fn default_blast_resistance() -> BlastResistance { BlastResistance::Some(3) }
+    fn default_break_resistance() -> BreakResistance { BreakResistance::Any }
 }
 
 impl LuaUserData for Tile {}
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum DynamicValue<T> {
     // stored in the global tile
-    Fixed,
+    Fixed(T),
     // stored per tile
-    Dynamic(T),
+    Dynamic,
 }
 
 #[derive(Clone, Debug)]
@@ -34,7 +47,7 @@ pub enum BlastResistance {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum BreakResistance {
     Any,
     Indestructible,
@@ -43,17 +56,24 @@ pub enum BreakResistance {
     Hammer(u32),
 }
 
-#[derive(Clone)]
-pub enum TileType<T> {
+#[derive(Clone, Debug, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum TileType<T: Hash + Eq> {
     Default,
     Spreadable {
         spread_chance: f32,
         filter: Filter<T>,
     },
 }
+impl<T: Hash + Eq> Default for TileType<T> {
+    fn default() -> Self {
+        Self::Default
+    }
+}
 
-#[derive(Clone)]
-pub enum Filter<T> {
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Filter<T: Hash + Eq> {
     All,
     None,
     Whitelist(HashSet<T>),
