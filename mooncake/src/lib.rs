@@ -1,23 +1,56 @@
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
-    parse_macro_input, parse_quote, AttributeArgs, FnArg, ItemFn, Meta, NestedMeta, PatType,
+    parse::{Parse, ParseStream},
+    parse_macro_input, parse_quote, FnArg, ItemFn, Meta, NestedMeta, PatType,
 };
 
+struct Attrs {
+    lua: Lua,
+}
+impl Attrs {
+    fn parse_lua(m: NestedMeta) -> Lua {
+        if let NestedMeta::Meta(Meta::Path(p)) = m {
+            if let Some(id) = p.get_ident() {
+                if id == "lua" {
+                    return Lua::Ref;
+                } else if id == "lua_mut" {
+                    return Lua::Mut;
+                }
+            }
+        }
+        Lua::Hidden
+    }
+}
+
+impl Parse for Attrs {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let m = input.parse();
+        let lua = m.map(Self::parse_lua).unwrap_or(Lua::Hidden);
+        Ok(Self { lua })
+    }
+}
+
+enum Lua {
+    /// If set to this setting, a *shared* reference to the [`mlua::Lua`] instance
+    /// is supplied to the function. Best paired together with [`mlua::Lua::create_function`].
+    Ref,
+    /// If set to this setting, a *mutable* reference to the [`mlua::Lua`] instance
+    /// is supplied to the function. Best paired together with [`mlua::Lua::create_function_mut`].
+    Mut,
+    /// If set to this setting, the provided *shared* Lua instance is hidden from the callee.
+    /// Use with [`mlua::Lua::create_function`].
+    Hidden,
+}
+
+/// A handy, albeit a bit janky macro for converting idiomatic Rust functions
+/// to a function interoperable with `mlua`.
 #[proc_macro_attribute]
 pub fn mooncake(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let args = parse_macro_input!(attr as AttributeArgs);
-    let enable_lua = args.into_iter().any(|m| {
-        if let NestedMeta::Meta(Meta::Path(p)) = m {
-            p.is_ident("lua")
-        } else {
-            false
-        }
-    });
-
+    let attrs = parse_macro_input!(attr as Attrs);
     let mut input = parse_macro_input!(item as ItemFn);
+
     let mut inputs = input.sig.inputs;
-    // ignore any parameter containing Lua; we'll consider them in a sec
 
     if inputs.is_empty() {
         inputs.push(parse_quote!(_: ()));
@@ -32,10 +65,10 @@ pub fn mooncake(attr: TokenStream, item: TokenStream) -> TokenStream {
         inputs = parse_quote!((#(#pats),*): (#(#tys),*));
     }
 
-    let lua_param = if enable_lua {
-        parse_quote!(lua: &mlua::Lua)
-    } else {
-        parse_quote!(_lua: &mlua::Lua)
+    let lua_param = match attrs.lua {
+        Lua::Ref => parse_quote!(lua: &mlua::Lua),
+        Lua::Mut => parse_quote!(lua: &mut mlua::Lua),
+        Lua::Hidden => parse_quote!(_lua: &mlua::Lua),
     };
     inputs.insert(0, lua_param);
     input.sig.inputs = inputs;

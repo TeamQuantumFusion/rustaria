@@ -4,18 +4,15 @@ use mlua::prelude::*;
 use mooncake::mooncake;
 use tracing::info;
 
-use crate::chunk::tile::Tile;
+use crate::{chunk::tile::Tile, package};
 
-pub fn package(lua: &Lua) -> LuaResult<LuaTable<'_>> {
-    lua.create_table_from([
-        ("register", lua.create_function(register)?),
-        ("default", lua.create_function(default)?),
-    ])
+package! {
+    register, default
 }
 
 #[mooncake]
-fn register(t: HashMap<String, Tile>) -> LuaResult<()> {
-    for (key, tile) in t {
+fn register(tiles: HashMap<String, Tile>) -> LuaResult<()> {
+    for (key, tile) in tiles {
         info!(?key, ?tile, "Registered tile");
     }
     Ok(())
