@@ -1,7 +1,8 @@
 local tile = require "tile"
 local log = require "log"
 
-log.info "IDK what alpha's on, one entrypoint is good enough"
+log.warn "IDK what alpha's on, one entrypoint is good enough"
+log.debug "use dash, not froge"
 
 tile.register {
     -- all default settings
@@ -21,3 +22,5 @@ tile.register {
         }
     }
 }
+
+log.error "that's it, lmao"

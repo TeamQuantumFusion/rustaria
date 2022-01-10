@@ -16,7 +16,7 @@ use piz::{
 use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
 use tokio_stream::wrappers::ReadDirStream;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 pub struct PluginLoader {
     pub plugins_dir: PathBuf,
@@ -116,8 +116,11 @@ pub struct Plugins<'lua>(Vec<Plugin<'lua>>);
 
 impl<'lua> Plugins<'lua> {
     pub fn init(&self) -> Result<()> {
-        for Plugin { init, .. } in &self.0 {
+        info!("Initializing plugins");
+        for Plugin { manifest, init } in &self.0 {
+            debug!("Initializing plugin {}", manifest.name);
             init.call(())?;
+            debug!("Finished initializing plugin {}", manifest.name);
         }
         Ok(())
     }
@@ -140,12 +143,4 @@ fn file_name_or_unknown(path: &Path) -> &str {
     path.file_name()
         .and_then(OsStr::to_str)
         .unwrap_or("<unknown>")
-}
-
-macro_rules! lua_func {
-    ($lua:expr; $($name:expr => $method:expr),*) => {
-        $(
-            $lua.globals().set($name, $lua.create_function(|_, v| $method(v))?)?;
-        )*
-    };
 }
