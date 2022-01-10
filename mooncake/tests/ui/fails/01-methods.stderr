@@ -1,0 +1,7 @@
+error: custom attribute panicked
+  --> tests/ui/fails/01-methods.rs:11:5
+   |
+11 |     #[mooncake]
+   |     ^^^^^^^^^^^
+   |
+   = help: message: methods are currently unsupported
