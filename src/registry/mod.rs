@@ -1,3 +1,5 @@
+#![allow(unused)] // alpha, remove this when you're done - leocth
+
 use std::collections::HashMap;
 
 use serde::Deserialize;
@@ -7,7 +9,7 @@ pub struct Registry {
     tag_to_id: HashMap<Tag, Id>,
     // uses vec instead of hashmap to save 1ns of time in our lifetime
     id_to_tag: Vec<Tag>,
-    current_id: u32
+    current_id: u32,
 }
 
 impl Registry {
@@ -15,12 +17,12 @@ impl Registry {
         Self {
             tag_to_id: Default::default(),
             id_to_tag: Default::default(),
-            current_id: 0
+            current_id: 0,
         }
     }
 
     pub fn register(&mut self, tag: Tag) -> Id {
-        let id = Id (self.current_id);
+        let id = Id(self.current_id);
         self.id_to_tag.insert(id.0 as usize, tag.clone());
         self.tag_to_id.insert(tag, id);
         id
@@ -40,7 +42,7 @@ impl Registry {
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Deserialize)]
 pub struct Tag {
     tag: String,
-    category: TagCategory
+    category: TagCategory,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Deserialize)]
@@ -49,7 +51,7 @@ pub enum TagCategory {
     Item,
     Tile,
     Wall,
-    Tree
+    Tree,
 }
 
 // kernel identification
@@ -64,5 +66,4 @@ pub struct LanguageKey {
 #[derive(Clone, Debug, Deserialize)]
 pub struct AssetLocation {
     // TODO
-
 }

@@ -2,26 +2,25 @@ use eyre::Result;
 use mlua::Lua;
 use time::macros::format_description;
 use tracing::info;
-use tracing_subscriber::{EnvFilter, fmt::time::UtcTime, prelude::*};
+use tracing_subscriber::{fmt::time::UtcTime, prelude::*, EnvFilter};
 
 use crate::plugin::PluginLoader;
 
+mod api;
 mod biome;
 mod chunk;
 mod entity;
 mod gen;
 mod physics;
-mod plugin;
-mod world;
 mod player;
+mod plugin;
 mod registry;
-mod api;
+mod world;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     init();
     info!("Rustaria v{}", env!("CARGO_PKG_VERSION"));
-
 
     let mut plugins_dir = std::env::current_dir()?;
     plugins_dir.push("plugins");
@@ -29,7 +28,7 @@ async fn main() -> Result<()> {
     let lua = Lua::new();
     api::register_rustaria_api(&lua)?;
     let loader = PluginLoader { plugins_dir };
-    let plugins = loader.scan_and_load_plugins_internal(&lua).await?;
+    let plugins = loader.scan_and_load_plugins(&lua).await?;
     plugins.init()?;
     Ok(())
 }
@@ -50,4 +49,3 @@ fn init() {
         .with(filter_layer)
         .init();
 }
-

@@ -1,11 +1,13 @@
+#![allow(unused)] // alpha, remove this when you're done - leocth
+
 use crate::chunk::tile::Tile;
 use crate::chunk::wall::Wall;
 
+mod fluid;
 mod foliage;
 pub mod tile;
 mod tree;
 mod wall;
-mod fluid;
 
 pub const CHUNK_SIZE: usize = 24;
 
@@ -35,7 +37,10 @@ struct ChunkGrid<V> {
 
 impl<V> ChunkGrid<V> {
     fn get(&self, pos: ChunkSubPos) -> &V {
-        debug_assert!(pos.x < CHUNK_SIZE as u8 && pos.y < CHUNK_SIZE as u8, "ChunkSubPos is too big.");
-        &self.grid[pos.y as usize][pos.x  as usize]
+        debug_assert!(
+            pos.x < CHUNK_SIZE as u8 && pos.y < CHUNK_SIZE as u8,
+            "ChunkSubPos is too big."
+        );
+        &self.grid[pos.y as usize][pos.x as usize]
     }
 }

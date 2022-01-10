@@ -1,9 +1,9 @@
-use std::{collections::HashSet, convert::Infallible, marker::PhantomData, str::FromStr, hash::Hash};
+use std::{collections::HashSet, hash::Hash};
 
 use mlua::prelude::*;
-use serde::{de::{Visitor, self, MapAccess}, Deserialize, Deserializer, Serialize};
+use serde::Deserialize;
 
-use crate::registry::{AssetLocation, LanguageKey, Tag};
+use crate::registry::Tag;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Tile {
@@ -23,10 +23,18 @@ pub struct Tile {
     tile_type: TileType<Tag>,
 }
 impl Tile {
-    fn default_collision() -> DynamicValue<bool> { DynamicValue::Fixed(true) }
-    fn default_opaque() -> DynamicValue<bool> { DynamicValue::Fixed(true) }
-    fn default_blast_resistance() -> BlastResistance { BlastResistance::Some(3) }
-    fn default_break_resistance() -> BreakResistance { BreakResistance::Any }
+    fn default_collision() -> DynamicValue<bool> {
+        DynamicValue::Fixed(true)
+    }
+    fn default_opaque() -> DynamicValue<bool> {
+        DynamicValue::Fixed(true)
+    }
+    fn default_blast_resistance() -> BlastResistance {
+        BlastResistance::Some(3)
+    }
+    fn default_break_resistance() -> BreakResistance {
+        BreakResistance::Any
+    }
 }
 
 impl LuaUserData for Tile {}

@@ -1,3 +1,5 @@
+#![allow(clippy::needless_lifetimes)]
+
 use std::{
     ffi::OsStr,
     io::Read,
@@ -23,10 +25,7 @@ pub struct PluginLoader {
 }
 
 impl PluginLoader {
-    pub async fn scan_and_load_plugins_internal<'lua>(
-        &self,
-        lua: &'lua Lua,
-    ) -> Result<Plugins<'lua>> {
+    pub async fn scan_and_load_plugins<'lua>(&self, lua: &'lua Lua) -> Result<Plugins<'lua>> {
         info!("Scanning for plugins in directory {:?}", self.plugins_dir);
 
         let read_dir = fs::read_dir(&self.plugins_dir)
@@ -80,12 +79,12 @@ impl PluginLoader {
 
         let manifest: Manifest = serde_json::from_reader(zip.read(manifest)?)?;
 
-        let init = self.load_code(&zip, &tree, &manifest.init_path.as_ref(), lua)?;
+        let init = self.load_code(&zip, &tree, manifest.init_path.as_ref(), lua)?;
         info!(
             "Loaded plugin {} v{} from [{}]",
             manifest.name,
             manifest.version,
-            file_name_or_unknown(&path)
+            file_name_or_unknown(path)
         );
         Ok(Plugin { manifest, init })
     }

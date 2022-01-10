@@ -1,3 +1,5 @@
+#![allow(unused)] // alpha, remove this when you're done - leocth
+
 use crate::chunk::Chunk;
 use crate::player::Player;
 
@@ -63,10 +65,11 @@ impl World {
             return None;
         }
 
-        self.chunks.get((internal_y as usize * world_h as usize) + internal_x as usize)
+        self.chunks
+            .get((internal_y as usize * world_h as usize) + internal_x as usize)
     }
 }
 
 pub enum WorldCreationError {
-    InvalidWorldSize
+    InvalidWorldSize,
 }
