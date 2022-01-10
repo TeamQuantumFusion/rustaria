@@ -21,12 +21,11 @@ fn main() {
         .filter_map(|e| e.ok())
         .skip(1)
     {
-        let path = entry.path();
-        println!("Adding file [{}]", path.display());
-        let mut file = File::open(path).expect("Could not open entry for reading");
+        let file_path = entry.path();
+        println!("Adding file [{}]", file_path.display());
         let options = FileOptions::default().compression_method(CompressionMethod::Deflated);
 
-        let path = path.strip_prefix(&core_path).unwrap().to_string_lossy();
+        let path = file_path.strip_prefix(&core_path).unwrap().to_string_lossy();
         let file_type = entry.file_type();
 
         if file_type.is_dir() {
@@ -34,6 +33,7 @@ fn main() {
         } else if file_type.is_file() {
             zip.start_file(path, options)
                 .expect("Could not start file for writing");
+            let mut file = File::open(file_path).expect("Could not open entry for reading");
             io::copy(&mut file, &mut zip).expect("Failed to add and compress file");
         }
     }
