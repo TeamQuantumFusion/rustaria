@@ -1,14 +1,11 @@
 #![allow(unused)] // alpha, remove this when you're done - leocth
 
+use bimap::BiHashMap;
+use serde::Deserialize;
 use std::collections::HashMap;
 
-use serde::Deserialize;
-
 pub struct Registry {
-    // TODO(leocth): use BiMap from `bimap`
-    tag_to_id: HashMap<Tag, Id>,
-    // uses vec instead of hashmap to save 1ns of time in our lifetime
-    id_to_tag: Vec<Tag>,
+    tag_to_id: BiHashMap<Tag, Id>,
     current_id: u32,
 }
 
@@ -16,24 +13,22 @@ impl Registry {
     pub fn new() -> Self {
         Self {
             tag_to_id: Default::default(),
-            id_to_tag: Default::default(),
             current_id: 0,
         }
     }
 
     pub fn register(&mut self, tag: Tag) -> Id {
         let id = Id(self.current_id);
-        self.id_to_tag.insert(id.0 as usize, tag.clone());
         self.tag_to_id.insert(tag, id);
         id
     }
 
     pub fn get_id(&self, tag: &Tag) -> Option<&Id> {
-        self.tag_to_id.get(tag)
+        self.tag_to_id.get_by_left(tag)
     }
 
     pub fn get_tag(&self, id: &Id) -> Option<&Tag> {
-        self.id_to_tag.get(id.0 as usize)
+        self.tag_to_id.get_by_right(id)
     }
 }
 

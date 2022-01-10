@@ -1,5 +1,7 @@
 #![allow(unused)] // alpha, remove this when you're done - leocth
 
+use std::collections::HashMap;
+
 use crate::chunk::Chunk;
 use crate::player::Player;
 
@@ -9,10 +11,7 @@ pub struct World {
     // 4x4 chunk grid look like this in the vec
     // y[x,x,x,x], y[x,x,x,x], y[x,x,x,x], y[x,x,x,x]
     chunks: Vec<Chunk>,
-    // Every player has an id that they get when they join which is the index in the vec.
-    // When a player leaves the index of the player will become None
-    // Which preserves order and allows persistent Player identification.
-    players: Vec<Option<Player>>,
+    players: HashMap<PlayerId, Player>,
 }
 
 pub struct ChunkPos {
@@ -20,9 +19,8 @@ pub struct ChunkPos {
     y: u32,
 }
 
-pub struct PlayerId {
-    index: usize,
-}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct PlayerId(usize);
 
 impl World {
     pub fn new(size: (u32, u32), chunks: Vec<Chunk>) -> Result<World, WorldCreationError> {
@@ -33,26 +31,22 @@ impl World {
         Ok(Self {
             size,
             chunks,
-            players: vec![],
+            players: HashMap::new(),
         })
     }
 
     pub fn player_join(&mut self, player: Player) -> PlayerId {
-        let index = self.players.len();
-        self.players.push(Some(player));
-        PlayerId { index }
+        let id = PlayerId(self.players.len());
+        self.players.insert(id, player);
+        id
     }
 
     pub fn player_leave(&mut self, player_id: PlayerId) {
-        self.players.insert(player_id.index, None);
+        self.players.remove(&player_id);
     }
 
     pub fn get_player(&self, player_id: PlayerId) -> Option<&Player> {
-        if let Some(Some(player)) = self.players.get(player_id.index) {
-            Some(player)
-        } else {
-            None
-        }
+        self.players.get(&player_id)
     }
 
     pub fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
