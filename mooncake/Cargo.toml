@@ -1,0 +1,16 @@
+[package]
+name = "mooncake"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+syn = { version = "1.0.82", features = ["full", "extra-traits"] }
+quote = "1.0.10"
+proc-macro2 = "1.0.36"
+
+[dev-dependencies]
+trybuild = "1.0"
+mlua = { version = "0.7.1", features = ["luajit", "vendored"] }
+
+[lib]
+proc-macro = true
