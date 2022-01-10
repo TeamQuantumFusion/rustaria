@@ -5,14 +5,13 @@ use tracing::info;
 
 use crate::chunk::tile::Tile;
 
-
 pub fn package(lua: &Lua) -> LuaResult<LuaTable<'_>> {
     lua.create_table_from([
-        ("register", lua.create_function(|_, v| register(v))?),
-        ("default", lua.create_function(|l, v| default(l, v))?),
+        ("register", lua.create_function(register)?),
+        ("default", lua.create_function(default)?),
     ])
 }
-fn register(t: LuaTable<'_>) -> LuaResult<()> {
+fn register(_lua: &Lua, t: LuaTable<'_>) -> LuaResult<()> {
     for pair in t.pairs::<String, Tile>() {
         let (key, tile) = pair?;
         info!(?key, ?tile, "Registered tile");
