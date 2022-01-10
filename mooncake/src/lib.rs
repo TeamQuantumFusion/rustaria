@@ -11,12 +11,8 @@ struct Attrs {
 impl Attrs {
     fn parse_lua(m: NestedMeta) -> Lua {
         if let NestedMeta::Meta(Meta::Path(p)) = m {
-            if let Some(id) = p.get_ident() {
-                if id == "lua" {
-                    return Lua::Ref;
-                } else if id == "lua_mut" {
-                    return Lua::Mut;
-                }
+            if p.is_ident("lua") {
+                return Lua::Ref;
             }
         }
         Lua::Hidden
@@ -33,13 +29,9 @@ impl Parse for Attrs {
 
 enum Lua {
     /// If set to this setting, a *shared* reference to the [`mlua::Lua`] instance
-    /// is supplied to the function. Best paired together with [`mlua::Lua::create_function`].
+    /// is supplied to the function.
     Ref,
-    /// If set to this setting, a *mutable* reference to the [`mlua::Lua`] instance
-    /// is supplied to the function. Best paired together with [`mlua::Lua::create_function_mut`].
-    Mut,
     /// If set to this setting, the provided *shared* Lua instance is hidden from the callee.
-    /// Use with [`mlua::Lua::create_function`].
     Hidden,
 }
 
@@ -67,7 +59,6 @@ pub fn mooncake(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let lua_param = match attrs.lua {
         Lua::Ref => parse_quote!(lua: &mlua::Lua),
-        Lua::Mut => parse_quote!(lua: &mut mlua::Lua),
         Lua::Hidden => parse_quote!(_lua: &mlua::Lua),
     };
     inputs.insert(0, lua_param);
