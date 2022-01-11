@@ -10,7 +10,6 @@ keywords = ["lua", "macros", "wrapper", "mlua"]
 categories = ["api-bindings"]
 
 license = "MIT"
-license-file = "LICENSE"
 edition = "2021"
 rust-version = "1.57"
 

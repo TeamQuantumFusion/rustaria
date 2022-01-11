@@ -27,7 +27,7 @@ zip = "0.5.0"
 walkdir = "2.3.2"
 
 [workspace]
-members = ["mooncake"]
+members = ["mooncake", "rustaria-client"]
 
 [profile.release]
 panic = "abort"
