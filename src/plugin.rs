@@ -28,36 +28,38 @@ impl PluginLoader {
     pub async fn scan_and_load_plugins<'lua>(&self, lua: &'lua Lua) -> Result<Plugins<'lua>> {
         info!("Scanning for plugins in directory {:?}", self.plugins_dir);
 
-        let read_dir = fs::read_dir(&self.plugins_dir)
-            .await
-            .wrap_err("Plugins directory not found")?;
-
-        let plugins = ReadDirStream::new(read_dir).filter_map(|entry| async {
-            match entry {
-                Ok(entry) => {
-                    // only look at zip files
-                    let path = entry.path();
-                    if let Some("zip") = path.extension().and_then(OsStr::to_str) {
-                        match self.load_plugin(&path, lua).await {
-                            Ok(plugin) => return Some(plugin),
-                            Err(e) => {
-                                warn!(
-                                    "Error loading plugin [{}]: {}",
-                                    file_name_or_unknown(&path),
-                                    e
-                                )
+        if let Ok(read_dir) = fs::read_dir(&self.plugins_dir).await {
+            let plugins = ReadDirStream::new(read_dir).filter_map(|entry| async {
+                match entry {
+                    Ok(entry) => {
+                        // only look at zip files
+                        let path = entry.path();
+                        if let Some("zip") = path.extension().and_then(OsStr::to_str) {
+                            match self.load_plugin(&path, lua).await {
+                                Ok(plugin) => return Some(plugin),
+                                Err(e) => {
+                                    warn!(
+                                        "Error loading plugin [{}]: {}",
+                                        file_name_or_unknown(&path),
+                                        e
+                                    )
+                                }
                             }
                         }
                     }
+                    Err(e) => warn!(
+                        "Unable to access file `{}` for reading! Permissions are perhaps insufficient!",
+                        e
+                    ),
                 }
-                Err(e) => warn!(
-                    "Unable to access file `{}` for reading! Permissions are perhaps insufficient!",
-                    e
-                ),
-            }
-            None
-        });
-        Ok(Plugins(plugins.collect().await))
+                None
+            });
+            Ok(Plugins(plugins.collect().await))
+        } else {
+            warn!("Plugin directory not found! Creating one...");
+            fs::create_dir_all("plugins").await?;
+            Ok(Plugins(vec![]))
+        }
     }
 
     pub async fn load_plugin<'lua>(&self, path: &Path, lua: &'lua Lua) -> Result<Plugin<'lua>> {
