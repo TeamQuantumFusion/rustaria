@@ -1,7 +1,12 @@
 [package]
 name = "rustaria"
 version = "0.1.0"
+authors = ["leocth <leocth31@gmail.com>", "alphaqu <leocth31@gmail.com>"]
+description = "A Terraria rework in Rust"
+repository = "https://github.com/rustaria/rustaria/"
+license = "GPL-3.0-or-later"
 edition = "2021"
+rust-version = "1.57"
 
 [dependencies]
 mlua = { version = "0.7.1", features = ["luajit", "vendored", "serialize"] }
@@ -31,5 +36,5 @@ members = ["mooncake", "rustaria-client"]
 
 [profile.release]
 panic = "abort"
-opt-level = "z"
+opt-level = 3
 lto = "thin"

@@ -1,23 +1,11 @@
 use eyre::Result;
 use mlua::Lua;
+use rustaria::{api, plugin::PluginLoader};
 use std::{collections::HashSet, env};
 use time::macros::format_description;
 use tracing::info;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt::time::UtcTime, prelude::*, EnvFilter};
-
-use crate::plugin::PluginLoader;
-
-mod api;
-mod biome;
-mod chunk;
-mod entity;
-mod gen;
-mod physics;
-mod player;
-mod plugin;
-mod registry;
-mod world;
 
 #[tokio::main]
 async fn main() -> Result<()> {
