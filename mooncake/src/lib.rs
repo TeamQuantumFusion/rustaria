@@ -1,8 +1,8 @@
-//! A handy, albeit a bit janky macro for converting idiomatic Rust functions
-//! to a function interoperable with `mlua`.
+//! A handy, albeit a bit janky proc macro for converting idiomatic Rust
+//! functions to a function interoperable with `mlua`.
 //!
 //! # Example
-//! ```ignore
+//! ```
 //! use mlua::prelude::*;
 //! use mooncake::mooncake;
 //! use std::collections::HashMap;
@@ -12,8 +12,12 @@
 //!     // ...
 //! # Ok(())
 //! }
-//!
-//! // gets transformed to this:
+//! ```
+//! The generated code looks like this:
+//! ```
+//! # use mlua::prelude::*;
+//! # use mooncake::mooncake;
+//! # use std::collections::HashMap;
 //! fn register(_: &mlua::Lua, (tiles, id): (HashMap<String, u8>, String)) -> LuaResult<()> {
 //!     // ...
 //! # Ok(())
@@ -23,15 +27,20 @@
 //! # Supported Parameters
 //! If the parameter `lua` is provided, the normally inaccessible provided Lua
 //! instance becomes accessible to the user under the parameter named `lua`.
-//! ```ignore
-//! // before
+//! ```
+//! use mlua::prelude::*;
+//! use mooncake::mooncake;
+//!
 //! #[mooncake]
 //! fn without_lua(i: u8) -> LuaResult<()> { Ok(()) }
 //!
 //! #[mooncake(lua)]
 //! fn with_lua(i: u8) -> LuaResult<()> { Ok(()) }
-//!
-//! // after
+//! ```
+//! The macro expands into something like this:
+//! ```
+//! # use mlua::prelude::*;
+//! # use mooncake::mooncake;
 //! fn without_lua(_: &mlua::Lua, (i): (u8)) -> LuaResult<()> { Ok(()) }
 //!
 //! fn with_lua(lua: &mlua::Lua, (i): (u8)) -> LuaResult<()> { Ok(()) }
@@ -45,7 +54,10 @@
 //! accessible for the caller, [depending on the attribute provided](#supported-parameters).
 //!
 //! It also packs other parameters into a tuple:
-//! ```ignore
+//! ```
+//! use mlua::prelude::*;
+//! use mooncake::mooncake;
+//!
 //! #[mooncake]
 //! fn no_args() -> LuaResult<()> { Ok(()) }
 //! #[mooncake]
@@ -54,10 +66,11 @@
 //! fn two_args(a: u8, b: String) -> LuaResult<()> { Ok(()) }
 //! #[mooncake]
 //! fn three_args(a: u8, b: String, c: f32) -> LuaResult<()> { Ok(()) }
-//! // and so on
-//!
-//! // after
-//!
+//! ```
+//! Expanded:
+//! ```
+//! # use mlua::prelude::*;
+//! # use mooncake::mooncake;
 //! // a blank parameter is needed here
 //! fn no_args(_: &mlua::Lua, _: ()) -> LuaResult<()> { Ok(()) }
 //! fn one_arg(_: &mlua::Lua, (a): (u8)) -> LuaResult<()> { Ok(()) }

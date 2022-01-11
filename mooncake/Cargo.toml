@@ -1,7 +1,18 @@
 [package]
 name = "mooncake"
 version = "0.1.0"
+authors = ["leocth <leocth31@gmail.com>"]
+description = """
+A handy, albeit a bit janky proc macro for converting idiomatic Rust functions to a function interoperable with `mlua`.
+"""
+repository = "https://github.com/rustaria/rustaria/"
+keywords = ["lua", "macros", "wrapper", "mlua"]
+categories = ["api-bindings"]
+
+license = "MIT"
+license-file = "LICENSE"
 edition = "2021"
+rust-version = "1.57"
 
 [dependencies]
 syn = { version = "1.0.82", features = ["full", "extra-traits"] }
