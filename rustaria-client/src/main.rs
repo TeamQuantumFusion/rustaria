@@ -12,7 +12,6 @@ pub mod renderer;
 use eyre::Result;
 use tracing::error;
 
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let evloop = EventLoop::new();
@@ -21,13 +20,15 @@ async fn main() -> Result<()> {
 
     println!("f");
 
-    let mut profiler = Profiler { last_fps: Instant::now(), fps: 0 };
+    let mut profiler = Profiler {
+        last_fps: Instant::now(),
+        fps: 0,
+    };
 
-    evloop.run(move |event, target, cf| event_loop(&mut window, &mut renderer, event, target, cf, &mut profiler));
-
-    Ok(())
+    evloop.run(move |event, target, cf| {
+        event_loop(&mut window, &mut renderer, event, target, cf, &mut profiler)
+    });
 }
-
 
 fn event_loop(
     window: &mut Window,
@@ -35,7 +36,7 @@ fn event_loop(
     event: Event<()>,
     _target: &EventLoopWindowTarget<()>,
     cf: &mut ControlFlow,
-    profiler: &mut Profiler
+    profiler: &mut Profiler,
 ) {
     match event {
         Event::WindowEvent {
@@ -45,11 +46,11 @@ fn event_loop(
             WindowEvent::CloseRequested
             | WindowEvent::KeyboardInput {
                 input:
-                KeyboardInput {
-                    state: ElementState::Pressed,
-                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                    ..
-                },
+                    KeyboardInput {
+                        state: ElementState::Pressed,
+                        virtual_keycode: Some(VirtualKeyCode::Escape),
+                        ..
+                    },
                 ..
             } => *cf = ControlFlow::Exit,
             WindowEvent::Resized(physical_size) => renderer.resize(*physical_size),
@@ -83,5 +84,5 @@ fn event_loop(
 
 pub struct Profiler {
     last_fps: Instant,
-    fps: u128
+    fps: u128,
 }

@@ -1,13 +1,12 @@
 use std::borrow::Cow;
-use std::fs::File;
-use std::io::Read;
-use std::mem::size_of;
-use std::path::Path;
 
 use bytemuck::Pod;
 use naga::ShaderStage;
-use wgpu::{Buffer, BufferDescriptor, BufferUsages, Device, Instance, ShaderModuleDescriptor, ShaderSource, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
 use wgpu::util::DeviceExt;
+use wgpu::{
+    Buffer, BufferUsages, Device, ShaderModuleDescriptor, ShaderSource, VertexAttribute,
+    VertexBufferLayout, VertexFormat, VertexStepMode,
+};
 use winit::window::Window;
 
 pub struct Renderer {
@@ -30,7 +29,7 @@ pub struct QuadPos {
 impl Renderer {
     pub async fn new(window: &Window) -> Self {
         let mut shader_dir = std::env::current_dir().unwrap();
-        shader_dir = shader_dir.join("shaders");
+        shader_dir.push("shaders");
 
         let size = window.inner_size();
 
@@ -59,7 +58,6 @@ impl Renderer {
             .await
             .unwrap();
 
-
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface.get_preferred_format(&adapter).unwrap(),
@@ -76,27 +74,31 @@ impl Renderer {
                 push_constant_ranges: &[],
             });
 
-        let fragment_module = get_shader_module("triangle-fs", include_str!("shader/triangle-fs.glsl"), ShaderStage::Fragment);
-        let vertex_module = get_shader_module("triangle-vs", include_str!("shader/triangle-vs.glsl"), ShaderStage::Vertex);
+        let fragment_module = get_shader_module(
+            "triangle-fs",
+            include_str!("shader/triangle-fs.glsl"),
+            ShaderStage::Fragment,
+        );
+        let vertex_module = get_shader_module(
+            "triangle-vs",
+            include_str!("shader/triangle-vs.glsl"),
+            ShaderStage::Vertex,
+        );
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &device.create_shader_module(&vertex_module),
                 entry_point: "main",
-                buffers: &[
-                    VertexBufferLayout {
-                        array_stride: std::mem::size_of::<(f32, f32)>() as wgpu::BufferAddress,
-                        step_mode: VertexStepMode::Vertex,
-                        attributes: &[
-                            VertexAttribute {
-                                format: VertexFormat::Float32x2,
-                                offset: 0,
-                                shader_location: 0,
-                            }
-                        ],
-                    }
-                ],
+                buffers: &[VertexBufferLayout {
+                    array_stride: std::mem::size_of::<(f32, f32)>() as wgpu::BufferAddress,
+                    step_mode: VertexStepMode::Vertex,
+                    attributes: &[VertexAttribute {
+                        format: VertexFormat::Float32x2,
+                        offset: 0,
+                        shader_location: 0,
+                    }],
+                }],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &device.create_shader_module(&fragment_module),
@@ -124,13 +126,19 @@ impl Renderer {
             },
             multiview: None,
         });
-        let buffer = create_buffer(&device, "stuff", &[
-            QuadPos { x: -0.5, y: 0.5 },
-            QuadPos { x: -0.5, y: -0.5 },
-            QuadPos { x: 0.5, y: 0.5 },
-            QuadPos { x: 0.5, y: 0.5 },
-            QuadPos { x: -0.5, y: -0.5 },
-            QuadPos { x: 0.5, y: -0.5 }], BufferUsages::VERTEX);
+        let buffer = create_buffer(
+            &device,
+            "stuff",
+            &[
+                QuadPos { x: -0.5, y: 0.5 },
+                QuadPos { x: -0.5, y: -0.5 },
+                QuadPos { x: 0.5, y: 0.5 },
+                QuadPos { x: 0.5, y: 0.5 },
+                QuadPos { x: -0.5, y: -0.5 },
+                QuadPos { x: 0.5, y: -0.5 },
+            ],
+            BufferUsages::VERTEX,
+        );
 
         Self {
             surface,
@@ -183,7 +191,6 @@ impl Renderer {
             depth_stencil_attachment: None,
         });
 
-
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_vertex_buffer(0, self.buffer.slice(..));
         render_pass.draw(0..6, 0..(24 * 24));
@@ -198,7 +205,11 @@ impl Renderer {
     }
 }
 
-pub fn get_shader_module<'a>(name: &'static str, code: &'static str, stage: ShaderStage) -> ShaderModuleDescriptor<'a> {
+pub fn get_shader_module<'a>(
+    name: &'static str,
+    code: &'static str,
+    stage: ShaderStage,
+) -> ShaderModuleDescriptor<'a> {
     ShaderModuleDescriptor {
         label: Some(name),
         source: ShaderSource::Glsl {
@@ -209,12 +220,15 @@ pub fn get_shader_module<'a>(name: &'static str, code: &'static str, stage: Shad
     }
 }
 
-pub fn create_buffer<V: Pod>(device: &Device, label: &str, contents: &[V], usage: BufferUsages) -> Buffer {
-    device.create_buffer_init(
-        &wgpu::util::BufferInitDescriptor {
-            label: Some(label),
-            contents: bytemuck::cast_slice(contents),
-            usage,
-        }
-    )
+pub fn create_buffer<V: Pod>(
+    device: &Device,
+    label: &str,
+    contents: &[V],
+    usage: BufferUsages,
+) -> Buffer {
+    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some(label),
+        contents: bytemuck::cast_slice(contents),
+        usage,
+    })
 }
