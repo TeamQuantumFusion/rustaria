@@ -3,31 +3,38 @@ use std::{collections::HashSet, hash::Hash};
 use mlua::prelude::*;
 use serde::Deserialize;
 
-use crate::registry::Tag;
+use crate::registry::{Id, Tag};
+
+pub struct Tile {
+    id: Id,
+    collision: LockableValue<bool>,
+    opaque: LockableValue<bool>,
+}
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct Tile {
+pub struct TilePrototype {
     // name: LanguageKey,
     // sprite_path: AssetLocation,
     #[serde(default)]
     transitional: bool,
-    #[serde(default = "Tile::default_collision")]
-    collision: DynamicValue<bool>,
-    #[serde(default = "Tile::default_opaque")]
-    opaque: DynamicValue<bool>,
-    #[serde(default = "Tile::default_blast_resistance")]
+    #[serde(default = "TilePrototype::default_collision")]
+    collision: LockableValue<bool>,
+    #[serde(default = "TilePrototype::default_opaque")]
+    opaque: LockableValue<bool>,
+    #[serde(default = "TilePrototype::default_blast_resistance")]
     blast_resistance: BlastResistance,
-    #[serde(default = "Tile::default_break_resistance")]
+    #[serde(default = "TilePrototype::default_break_resistance")]
     break_resistance: BreakResistance,
     #[serde(default)]
     tile_type: TileType<Tag>,
 }
-impl Tile {
-    fn default_collision() -> DynamicValue<bool> {
-        DynamicValue::Fixed(true)
+
+impl TilePrototype {
+    fn default_collision() -> LockableValue<bool> {
+        LockableValue::Dynamic(true)
     }
-    fn default_opaque() -> DynamicValue<bool> {
-        DynamicValue::Fixed(true)
+    fn default_opaque() -> LockableValue<bool> {
+        LockableValue::Dynamic(true)
     }
     fn default_blast_resistance() -> BlastResistance {
         BlastResistance::Some(3)
@@ -37,15 +44,12 @@ impl Tile {
     }
 }
 
-impl LuaUserData for Tile {}
+impl LuaUserData for TilePrototype {}
 
 #[derive(Clone, Debug, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum DynamicValue<T> {
-    // stored in the global tile
+pub enum LockableValue<T> {
     Fixed(T),
-    // stored per tile
-    Dynamic,
+    Dynamic(T),
 }
 
 #[derive(Clone, Debug)]
@@ -73,6 +77,7 @@ pub enum TileType<T: Hash + Eq> {
         filter: Filter<T>,
     },
 }
+
 impl<T: Hash + Eq> Default for TileType<T> {
     fn default() -> Self {
         Self::Default
@@ -89,8 +94,8 @@ pub enum Filter<T: Hash + Eq> {
 }
 
 mod blast_resistance_serde {
-    use serde::de::{Error, Visitor};
     use serde::{Deserialize, Deserializer};
+    use serde::de::{Error, Visitor};
 
     use super::BlastResistance;
 

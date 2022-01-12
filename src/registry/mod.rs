@@ -9,6 +9,12 @@ pub struct Registry {
     current_id: u32,
 }
 
+impl Default for Registry {
+    fn default() -> Self {
+        Registry::new()
+    }
+}
+
 impl Registry {
     pub fn new() -> Self {
         Self {

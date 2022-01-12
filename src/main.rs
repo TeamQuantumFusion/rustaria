@@ -6,6 +6,8 @@ use time::macros::format_description;
 use tracing::info;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt::time::UtcTime, prelude::*, EnvFilter};
+use rustaria::registry::Registry;
+
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -21,6 +23,9 @@ async fn main() -> Result<()> {
     api::register_rustaria_api(&lua)?;
     let loader = PluginLoader { plugins_dir };
     let plugins = loader.scan_and_load_plugins(&lua).await?;
+
+
+    let registry = Registry::new();
     plugins.init()?;
 
     Ok(())

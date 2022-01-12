@@ -19,6 +19,7 @@ use serde::{Deserialize, Serialize};
 use tokio::fs::{self, File};
 use tokio_stream::wrappers::ReadDirStream;
 use tracing::{debug, info, warn};
+use crate::registry::Registry;
 
 pub struct PluginLoader {
     pub plugins_dir: PathBuf,
@@ -116,7 +117,7 @@ impl PluginLoader {
 pub struct Plugins<'lua>(Vec<Plugin<'lua>>);
 
 impl<'lua> Plugins<'lua> {
-    pub fn init(&self) -> Result<()> {
+    pub fn init(&self, registry: &mut Registry) -> Result<()> {
         info!("Initializing plugins");
         for Plugin { manifest, init } in &self.0 {
             debug!("Initializing plugin {}", manifest.name);
