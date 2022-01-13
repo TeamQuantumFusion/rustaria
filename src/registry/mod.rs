@@ -3,6 +3,7 @@
 use bimap::BiHashMap;
 use serde::Deserialize;
 use std::collections::HashMap;
+use tracing::debug;
 
 pub struct Registry<P> {
     tag_to_id: BiHashMap<Tag, Id>,
@@ -26,6 +27,7 @@ impl<P> Registry<P> {
     }
 
     pub fn register(&mut self, tag: Tag, prototype: P) -> Id {
+        debug!("Registered {:?}", tag);
         let id = Id(self.current_id);
         self.tag_to_id.insert(tag, id);
         self.entries.insert(self.current_id as usize, prototype);

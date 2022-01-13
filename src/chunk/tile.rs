@@ -47,6 +47,7 @@ impl TilePrototype {
 impl LuaUserData for TilePrototype {}
 
 #[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum LockableValue<T> {
     Fixed(T),
     Dynamic(T),
