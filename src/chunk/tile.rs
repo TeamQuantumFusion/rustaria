@@ -2,9 +2,11 @@ use std::{collections::HashSet, hash::Hash};
 
 use mlua::prelude::*;
 use serde::Deserialize;
+use crate::api::Prototype;
 
 use crate::registry::{Id, Tag};
 
+#[derive(Copy, Clone, Debug)]
 pub struct Tile {
     id: Id,
     collision: LockableValue<bool>,
@@ -29,6 +31,16 @@ pub struct TilePrototype {
     tile_type: TileType<Tag>,
 }
 
+impl Prototype<Tile> for TilePrototype {
+    fn create(&self, id: Id) -> Tile {
+        Tile {
+            id,
+            collision: self.collision,
+            opaque: self.opaque
+        }
+    }
+}
+
 impl TilePrototype {
     fn default_collision() -> LockableValue<bool> {
         LockableValue::Dynamic(true)
@@ -46,20 +58,20 @@ impl TilePrototype {
 
 impl LuaUserData for TilePrototype {}
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Copy, Clone, Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LockableValue<T> {
     Fixed(T),
     Dynamic(T),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum BlastResistance {
     Some(u32),
     Indestructible,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Copy, Clone, Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BreakResistance {
     Any,

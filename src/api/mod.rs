@@ -2,7 +2,7 @@ use mlua::prelude::*;
 use tokio::sync::mpsc::{Sender, UnboundedReceiver, UnboundedSender};
 use crate::chunk::tile::TilePrototype;
 use crate::chunk::wall::WallPrototype;
-use crate::registry::Tag;
+use crate::registry::{Id, Tag};
 
 mod log;
 #[macro_use]
@@ -10,7 +10,7 @@ pub(crate) mod macros;
 mod tile;
 
 /// Registers Rustaria's Lua modding APIs.
-pub fn register_rustaria_api(lua: &Lua) -> LuaResult<UnboundedReceiver<Prototype>> {
+pub fn register_rustaria_api(lua: &Lua) -> LuaResult<UnboundedReceiver<PrototypeRequest>> {
     let (send, rec) = tokio::sync::mpsc::unbounded_channel();
     let package: LuaTable = lua.globals().get("package")?;
     let preload: LuaTable = package.get("preload")?;
@@ -22,7 +22,11 @@ pub fn register_rustaria_api(lua: &Lua) -> LuaResult<UnboundedReceiver<Prototype
     Ok(rec)
 }
 
-pub enum Prototype {
+pub enum PrototypeRequest {
     Tile(Tag, TilePrototype),
     Wall(Tag, WallPrototype),
+}
+
+pub trait Prototype<T> {
+    fn create(&self, id: Id) -> T;
 }

@@ -1,9 +1,18 @@
 #![allow(unused)] // alpha, remove this when you're done - leocth
 
-use bimap::BiHashMap;
-use serde::Deserialize;
 use std::collections::HashMap;
+
+use bimap::BiHashMap;
+use eyre::{Report, Result};
+use serde::Deserialize;
 use tracing::debug;
+use crate::chunk::tile::TilePrototype;
+use crate::chunk::wall::WallPrototype;
+
+pub struct RegistryStack {
+    pub tile: Registry<TilePrototype>,
+    pub wall: Registry<WallPrototype>,
+}
 
 pub struct Registry<P> {
     tag_to_id: BiHashMap<Tag, Id>,
@@ -51,16 +60,25 @@ impl<P> Registry<P> {
 // This is lua input (or rust) that gets converted to id,
 // by the registry map.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Deserialize)]
-pub struct Tag(String);
+pub struct Tag(String, String);
 
 impl Tag {
-    pub fn new(string: String) -> Self {
-        Self(string)
+    pub fn new(mod_id: String, string: String) -> Self {
+        Self(mod_id, string)
+    }
+
+    pub fn parse(string: &str) -> Result<Self> {
+        if let Some(colon) = string.find(':') {
+            let (mod_id, string) = string.split_at(colon);
+            Ok(Self(mod_id.to_string(), string.to_string()))
+        } else {
+            Err(Report::msg("Could not find delimiter :"))
+        }
     }
 }
 
 // kernel identification
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Id(u32);
 
 #[derive(Clone, Debug, Deserialize)]

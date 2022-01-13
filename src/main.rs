@@ -1,16 +1,18 @@
 use std::{collections::HashSet, env};
 
-use eyre::Result;
+use eyre::{ContextCompat, Error, Result};
 use mlua::Lua;
 use time::macros::format_description;
 use tracing::info;
 use tracing_error::ErrorLayer;
-use tracing_subscriber::{fmt::time::UtcTime, prelude::*, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt::time::UtcTime, prelude::*};
 
-use rustaria::api::Prototype;
-use rustaria::registry::Registry;
 use rustaria::{api, plugin};
-
+use rustaria::api::PrototypeRequest;
+use rustaria::chunk::Chunk;
+use rustaria::player::Player;
+use rustaria::registry::{Id, Registry, RegistryStack, Tag};
+use rustaria::world::World;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -29,19 +31,32 @@ async fn main() -> Result<()> {
     let plugins = plugin::scan_and_load_plugins(&plugins_dir, &lua).await?;
 
     // call initPath files
-    plugins.init()?;
+    plugins.init(&lua)?;
 
     // register all prototypes
     let mut tile_registry = Registry::new();
     let mut wall_registry = Registry::new();
     while let Some(prototype) = receiver.recv().await {
         match prototype {
-            Prototype::Tile(id, pt) => tile_registry.register(id, pt),
-            Prototype::Wall(id, pt) => wall_registry.register(id, pt),
+            PrototypeRequest::Tile(id, pt) => tile_registry.register(id, pt),
+            PrototypeRequest::Wall(id, pt) => wall_registry.register(id, pt),
         };
     }
 
+    let stack = RegistryStack {
+        tile: tile_registry,
+        wall: wall_registry,
+    };
+
     // create runtime
+    let air_tile = stack.tile.get_id(&Tag::parse("rustaria-core:air")?).wrap_err("Could not find air tile?")?;
+    let air_wall = stack.wall.get_id(&Tag::parse("rustaria-core:air")?).wrap_err("Could not find air wall?")?;
+    let empty_chunk = Chunk::new(&stack, air_tile, air_wall).wrap_err("Could not create empty Chunk")?;
+    let mut world = World::new((2, 2), vec![
+        empty_chunk, empty_chunk,
+        empty_chunk, empty_chunk,
+    ]).map_err(Error::msg)?;
+    world.player_join(Player::new(0.0, 0.0, "dev".to_string()));
 
     Ok(())
 }

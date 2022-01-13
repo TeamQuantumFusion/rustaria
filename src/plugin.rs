@@ -110,10 +110,11 @@ fn load_code<'lua>(
 pub struct Plugins<'lua>(Vec<Plugin<'lua>>);
 
 impl<'lua> Plugins<'lua> {
-    pub fn init(&self) -> Result<()> {
+    pub fn init(&self, lua: &Lua) -> Result<()> {
         info!("Initializing plugins");
         for Plugin { manifest, init } in &self.0 {
             debug!("Initializing plugin {}", manifest.name);
+            lua.globals().set("mod_id", manifest.name.clone());
             init.call(())?;
             debug!("Finished initializing plugin {}", manifest.name);
         }
