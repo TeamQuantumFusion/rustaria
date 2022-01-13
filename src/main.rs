@@ -5,11 +5,12 @@ use mlua::Lua;
 use time::macros::format_description;
 use tracing::info;
 use tracing_error::ErrorLayer;
-use tracing_subscriber::{EnvFilter, fmt::time::UtcTime, prelude::*};
+use tracing_subscriber::{fmt::time::UtcTime, prelude::*, EnvFilter};
 
-use rustaria::{api, plugin::PluginLoader};
 use rustaria::api::Prototype;
 use rustaria::registry::Registry;
+use rustaria::{api, plugin};
+
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -21,21 +22,26 @@ async fn main() -> Result<()> {
     let mut plugins_dir = env::current_dir()?;
     plugins_dir.push("plugins");
 
+    // init lua api
     let lua = Lua::new();
+    let mut receiver = api::register_rustaria_api(&lua)?;
 
-    let (send, mut rec) = tokio::sync::mpsc::unbounded_channel();
-    api::register_rustaria_api(&lua, send.clone())?;
+    let plugins = plugin::scan_and_load_plugins(&plugins_dir, &lua).await?;
 
-    let loader = PluginLoader { plugins_dir };
-    let plugins = loader.scan_and_load_plugins(&lua).await?;
+    // call initPath files
     plugins.init()?;
 
-    while let Some(Prototype::Tile(name, data)) = rec.recv().await {
-        info!("Registering Prototype {} value {:?}", name, data )
+    // register all prototypes
+    let mut tile_registry = Registry::new();
+    let mut wall_registry = Registry::new();
+    while let Some(prototype) = receiver.recv().await {
+        match prototype {
+            Prototype::Tile(id, pt) => tile_registry.register(id, pt),
+            Prototype::Wall(id, pt) => wall_registry.register(id, pt),
+        };
     }
 
-
-    let registry = Registry::new();
+    // create runtime
 
     Ok(())
 }

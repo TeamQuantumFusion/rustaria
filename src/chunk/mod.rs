@@ -3,11 +3,11 @@
 use crate::chunk::tile::{Tile};
 use crate::chunk::wall::Wall;
 
-mod fluid;
-mod foliage;
+pub mod fluid;
+pub mod foliage;
 pub mod tile;
-mod tree;
-mod wall;
+pub mod tree;
+pub mod wall;
 
 pub const CHUNK_SIZE: usize = 24;
 
