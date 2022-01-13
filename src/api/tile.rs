@@ -1,19 +1,31 @@
 use std::collections::HashMap;
+use mlua::Error;
 
 use mlua::prelude::*;
-use mooncake::mooncake;
+use tokio::sync::mpsc::{UnboundedSender};
 use tracing::info;
 
-use crate::{chunk::tile::TilePrototype, package};
+use mooncake::mooncake;
 
-package! {
-    register, default
+use crate::{chunk::tile::TilePrototype};
+use crate::api::Prototype;
+
+
+pub fn package(lua: &Lua, sender: UnboundedSender<Prototype>) -> LuaResult<LuaTable> {
+    lua.create_table_from([
+        ("register", lua.create_function(move |_, tiles| register(tiles, sender.clone()))?),
+        ("default", lua.create_function(default)?)
+    ])
 }
 
-#[mooncake]
-fn register(tiles: HashMap<String, TilePrototype>) -> LuaResult<()> {
+
+fn register(tiles: HashMap<String, TilePrototype>, sender: UnboundedSender<Prototype>) -> LuaResult<()> {
     for (key, tile) in tiles {
         info!(?key, ?tile, "Registered tile");
+        let result = sender.send(Prototype::Tile(key, tile));
+        if let Err(er) = result {
+            return Err(Error::RuntimeError(er.to_string()));
+        }
     }
     Ok(())
 }

@@ -1,13 +1,15 @@
+use std::{collections::HashSet, env};
+
 use eyre::Result;
 use mlua::Lua;
-use rustaria::{api, plugin::PluginLoader};
-use std::{collections::HashSet, env};
 use time::macros::format_description;
 use tracing::info;
 use tracing_error::ErrorLayer;
-use tracing_subscriber::{fmt::time::UtcTime, prelude::*, EnvFilter};
-use rustaria::registry::Registry;
+use tracing_subscriber::{EnvFilter, fmt::time::UtcTime, prelude::*};
 
+use rustaria::{api, plugin::PluginLoader};
+use rustaria::api::Prototype;
+use rustaria::registry::Registry;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -20,13 +22,20 @@ async fn main() -> Result<()> {
     plugins_dir.push("plugins");
 
     let lua = Lua::new();
-    api::register_rustaria_api(&lua)?;
+
+    let (send, mut rec) = tokio::sync::mpsc::unbounded_channel();
+    api::register_rustaria_api(&lua, send.clone())?;
+
     let loader = PluginLoader { plugins_dir };
     let plugins = loader.scan_and_load_plugins(&lua).await?;
+    plugins.init()?;
+
+    while let Some(Prototype::Tile(name, data)) = rec.recv().await {
+        info!("Registering Prototype {} value {:?}", name, data )
+    }
 
 
     let registry = Registry::new();
-    plugins.init()?;
 
     Ok(())
 }
