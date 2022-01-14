@@ -2,32 +2,51 @@ use std::{collections::HashSet, hash::Hash};
 
 use mlua::prelude::*;
 use serde::Deserialize;
+use crate::api::Prototype;
 
-use crate::registry::Tag;
+use crate::registry::{Id, Tag};
+
+#[derive(Copy, Clone, Debug)]
+pub struct Tile {
+    id: Id,
+    collision: LockableValue<bool>,
+    opaque: LockableValue<bool>,
+}
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct Tile {
+pub struct TilePrototype {
     // name: LanguageKey,
     // sprite_path: AssetLocation,
     #[serde(default)]
     transitional: bool,
-    #[serde(default = "Tile::default_collision")]
-    collision: DynamicValue<bool>,
-    #[serde(default = "Tile::default_opaque")]
-    opaque: DynamicValue<bool>,
-    #[serde(default = "Tile::default_blast_resistance")]
+    #[serde(default = "TilePrototype::default_collision")]
+    collision: LockableValue<bool>,
+    #[serde(default = "TilePrototype::default_opaque")]
+    opaque: LockableValue<bool>,
+    #[serde(default = "TilePrototype::default_blast_resistance")]
     blast_resistance: BlastResistance,
-    #[serde(default = "Tile::default_break_resistance")]
+    #[serde(default = "TilePrototype::default_break_resistance")]
     break_resistance: BreakResistance,
     #[serde(default)]
     tile_type: TileType<Tag>,
 }
-impl Tile {
-    fn default_collision() -> DynamicValue<bool> {
-        DynamicValue::Fixed(true)
+
+impl Prototype<Tile> for TilePrototype {
+    fn create(&self, id: Id) -> Tile {
+        Tile {
+            id,
+            collision: self.collision,
+            opaque: self.opaque
+        }
     }
-    fn default_opaque() -> DynamicValue<bool> {
-        DynamicValue::Fixed(true)
+}
+
+impl TilePrototype {
+    fn default_collision() -> LockableValue<bool> {
+        LockableValue::Dynamic(true)
+    }
+    fn default_opaque() -> LockableValue<bool> {
+        LockableValue::Dynamic(true)
     }
     fn default_blast_resistance() -> BlastResistance {
         BlastResistance::Some(3)
@@ -37,24 +56,22 @@ impl Tile {
     }
 }
 
-impl LuaUserData for Tile {}
+impl LuaUserData for TilePrototype {}
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Copy, Clone, Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum DynamicValue<T> {
-    // stored in the global tile
+pub enum LockableValue<T> {
     Fixed(T),
-    // stored per tile
-    Dynamic,
+    Dynamic(T),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum BlastResistance {
     Some(u32),
     Indestructible,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Copy, Clone, Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BreakResistance {
     Any,
@@ -73,6 +90,7 @@ pub enum TileType<T: Hash + Eq> {
         filter: Filter<T>,
     },
 }
+
 impl<T: Hash + Eq> Default for TileType<T> {
     fn default() -> Self {
         Self::Default
@@ -89,15 +107,15 @@ pub enum Filter<T: Hash + Eq> {
 }
 
 mod blast_resistance_serde {
-    use serde::de::{Error, Visitor};
     use serde::{Deserialize, Deserializer};
+    use serde::de::{Error, Visitor};
 
     use super::BlastResistance;
 
     impl<'de> Deserialize<'de> for BlastResistance {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+            where
+                D: Deserializer<'de>,
         {
             struct BRVisitor;
             impl<'de> Visitor<'de> for BRVisitor {
@@ -107,15 +125,15 @@ mod blast_resistance_serde {
                     write!(formatter, r#"either a string "indestructible" or a number"#)
                 }
                 fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
-                where
-                    E: Error,
+                    where
+                        E: Error,
                 {
                     let v = u32::try_from(v).map_err(Error::custom)?;
                     Ok(BlastResistance::Some(v))
                 }
                 fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-                where
-                    E: Error,
+                    where
+                        E: Error,
                 {
                     if v.eq_ignore_ascii_case("indestructible") {
                         Ok(BlastResistance::Indestructible)

@@ -9,6 +9,12 @@ use tracing::info;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt::time::UtcTime, prelude::*, EnvFilter};
 
+use rustaria::api::{self, PrototypeRequest};
+use rustaria::chunk::Chunk;
+use rustaria::player::Player;
+use rustaria::registry::{Id, Registry, RegistryStack, Tag};
+use rustaria::world::World;
+
 mod plugin;
 
 #[derive(Debug, StructOpt)]
@@ -36,7 +42,42 @@ async fn main() -> Result<()> {
         plugins_dir: opt.plugins_dir,
     };
     let plugins = loader.scan_and_load_plugins(&lua).await?;
-    plugins.init()?;
+
+    // call initPath files
+    plugins.init(&lua)?;
+
+    // register all prototypes
+    let mut tile_registry = Registry::new();
+    let mut wall_registry = Registry::new();
+    while let Some(prototype) = receiver.recv().await {
+        match prototype {
+            PrototypeRequest::Tile(id, pt) => tile_registry.register(id, pt),
+            PrototypeRequest::Wall(id, pt) => wall_registry.register(id, pt),
+        };
+    }
+
+    let stack = RegistryStack {
+        tile: tile_registry,
+        wall: wall_registry,
+    };
+
+    // create runtime
+    let air_tile = stack
+        .tile
+        .get_id(&Tag::parse("rustaria-core:air")?)
+        .wrap_err("Could not find air tile?")?;
+    let air_wall = stack
+        .wall
+        .get_id(&Tag::parse("rustaria-core:air")?)
+        .wrap_err("Could not find air wall?")?;
+    let empty_chunk =
+        Chunk::new(&stack, air_tile, air_wall).wrap_err("Could not create empty Chunk")?;
+    let mut world = World::new(
+        (2, 2),
+        vec![empty_chunk, empty_chunk, empty_chunk, empty_chunk],
+    )
+    .map_err(Error::msg)?;
+    world.player_join(Player::new(0.0, 0.0, "dev".to_string()));
 
     Ok(())
 }

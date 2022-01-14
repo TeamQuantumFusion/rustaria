@@ -1,5 +1,6 @@
 #[macro_export]
-macro_rules! package {
+macro_rules!
+package {
     ($($func:expr),*) => {
         #[mooncake::mooncake(lua)]
         pub fn package() -> LuaResult<LuaTable<'_>> {

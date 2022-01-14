@@ -1,13 +1,14 @@
 #![allow(unused)] // alpha, remove this when you're done - leocth
 
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 
 use crate::chunk::Chunk;
 use crate::player::Player;
 
 pub struct World {
     // size is chunks x chunks
-    size: (u32, u32),
+    chunk_size: (u32, u32),
     // 4x4 chunk grid look like this in the vec
     // y[x,x,x,x], y[x,x,x,x], y[x,x,x,x], y[x,x,x,x]
     chunks: Vec<Chunk>,
@@ -23,13 +24,13 @@ pub struct ChunkPos {
 pub struct PlayerId(usize);
 
 impl World {
-    pub fn new(size: (u32, u32), chunks: Vec<Chunk>) -> Result<World, WorldCreationError> {
-        if size.0 as usize * size.1 as usize != chunks.len() {
+    pub fn new(chunk_size: (u32, u32), chunks: Vec<Chunk>) -> Result<World, WorldCreationError> {
+        if chunk_size.0 as usize * chunk_size.1 as usize != chunks.len() {
             return Err(WorldCreationError::InvalidWorldSize);
         }
 
         Ok(Self {
-            size,
+            chunk_size,
             chunks,
             players: HashMap::new(),
         })
@@ -50,8 +51,8 @@ impl World {
     }
 
     pub fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
-        let world_w = self.size.0;
-        let world_h = self.size.1;
+        let world_w = self.chunk_size.0;
+        let world_h = self.chunk_size.1;
         let internal_x = pos.x.checked_add(world_w as i32 / 2)? as u32;
         let internal_y = pos.y;
 
@@ -64,6 +65,15 @@ impl World {
     }
 }
 
+#[derive(Debug)]
 pub enum WorldCreationError {
     InvalidWorldSize,
+}
+
+impl Display for WorldCreationError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            WorldCreationError::InvalidWorldSize =>  write!(f, "InvalidWorldSize: Chunk size does not match Chunk Storage."),
+        }
+    }
 }

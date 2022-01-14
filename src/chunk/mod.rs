@@ -1,19 +1,33 @@
 #![allow(unused)] // alpha, remove this when you're done - leocth
 
-use crate::chunk::tile::Tile;
+use crate::api::Prototype;
+use crate::chunk::tile::{Tile};
 use crate::chunk::wall::Wall;
+use crate::registry::{Id, RegistryStack, Tag};
 
-mod fluid;
-mod foliage;
+pub mod fluid;
+pub mod foliage;
 pub mod tile;
-mod tree;
-mod wall;
+pub mod tree;
+pub mod wall;
 
 pub const CHUNK_SIZE: usize = 24;
 
+#[derive(Copy, Clone)]
 pub struct Chunk {
-    tiles: ChunkGrid<Tile>,
-    walls: ChunkGrid<Wall>,
+    pub tiles: ChunkGrid<Tile>,
+    pub walls: ChunkGrid<Wall>,
+}
+
+impl Chunk {
+    pub fn new(stack: &RegistryStack, default_tile: &Id, default_wall: &Id) -> Option<Chunk> {
+        let tile = stack.tile.get_entry(default_tile)?;
+        let wall = stack.wall.get_entry(default_wall)?;
+        Some(Chunk {
+            tiles: ChunkGrid::new(tile.create(*default_tile)),
+            walls:ChunkGrid::new(wall.create(*default_wall))
+        })
+    }
 }
 
 pub struct ChunkSubPos {
@@ -21,26 +35,31 @@ pub struct ChunkSubPos {
     y: u8,
 }
 
-impl Chunk {
-    pub fn get_tile(&self, pos: ChunkSubPos) -> &Tile {
-        self.tiles.get(pos)
-    }
-
-    pub fn get_wall(&self, pos: ChunkSubPos) -> &Wall {
-        self.walls.get(pos)
-    }
-}
-
-struct ChunkGrid<V> {
+#[derive(Copy, Clone)]
+pub struct ChunkGrid<V: Clone + Copy> {
     grid: [[V; CHUNK_SIZE]; CHUNK_SIZE],
 }
 
-impl<V> ChunkGrid<V> {
+impl<V: Clone + Copy> ChunkGrid<V> {
+    pub fn new(value: V) -> ChunkGrid<V> {
+        ChunkGrid {
+            grid: [[value; CHUNK_SIZE]; CHUNK_SIZE]
+        }
+    }
+
     fn get(&self, pos: ChunkSubPos) -> &V {
         debug_assert!(
             pos.x < CHUNK_SIZE as u8 && pos.y < CHUNK_SIZE as u8,
             "ChunkSubPos is too big."
         );
         &self.grid[pos.y as usize][pos.x as usize]
+    }
+
+    fn set(&mut self, pos: ChunkSubPos, value: V) {
+        debug_assert!(
+            pos.x < CHUNK_SIZE as u8 && pos.y < CHUNK_SIZE as u8,
+            "ChunkSubPos is too big."
+        );
+        self.grid[pos.y as usize][pos.x as usize] = value;
     }
 }

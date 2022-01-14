@@ -11,14 +11,14 @@ tile.register {
     -- a full example of a tile setting
     ["alpha"] = tile.default {
         transitional = true,
-        collision = "dynamic",
-        opaque = {fixed = false},
+        collision = { fixed = false },
+        opaque = { fixed = false },
         blast_resistance = 69,
         break_resistance = "indestructible",
         tile_type = {
             type = "spreadable",
             spread_chance = 0.618,
-            filter = {whitelist = {{tag = "leo", category = "tile"}}}
+            filter = { whitelist = { { mod_id, "leo" } } }
         }
     }
 }
