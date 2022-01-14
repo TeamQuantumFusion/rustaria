@@ -1,7 +1,7 @@
 [package]
 name = "rustaria"
 version = "0.1.0"
-authors = ["leocth <leocth31@gmail.com>", "alphaqu <leocth31@gmail.com>"]
+authors = ["leocth <leocth31@gmail.com>", "alphaqu <yan.gyunashyan@gmail.com>"]
 description = "A Terraria rework in Rust"
 repository = "https://github.com/rustaria/rustaria/"
 license = "GPL-3.0-or-later"
