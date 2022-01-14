@@ -1,25 +1,40 @@
+use crate::plugin::PluginLoader;
 use eyre::Result;
 use mlua::Lua;
-use rustaria::{api, plugin::PluginLoader};
-use std::{collections::HashSet, env};
+use rustaria::api;
+use std::{env, path::PathBuf};
+use structopt::StructOpt;
 use time::macros::format_description;
 use tracing::info;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt::time::UtcTime, prelude::*, EnvFilter};
 
+mod plugin;
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "rustaria-server", about = "The serverside face of Rustaria")]
+struct Opt {
+    /// Activate debug mode (equivalent to setting RUST_LOG to "debug")
+    #[structopt(long)]
+    debug: bool,
+
+    /// Plugin directory. Defaults to `./plugins`.
+    #[structopt(long = "plugins_dir", parse(from_os_str), default_value = "plugins")]
+    plugins_dir: PathBuf,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
-    let args: HashSet<_> = env::args().collect();
-    init(args.contains("--debug"))?;
+    let opt = Opt::from_args();
+    init(opt.debug)?;
 
     info!("Rustaria v{}", env!("CARGO_PKG_VERSION"));
 
-    let mut plugins_dir = env::current_dir()?;
-    plugins_dir.push("plugins");
-
     let lua = Lua::new();
     api::register_rustaria_api(&lua)?;
-    let loader = PluginLoader { plugins_dir };
+    let loader = PluginLoader {
+        plugins_dir: opt.plugins_dir,
+    };
     let plugins = loader.scan_and_load_plugins(&lua).await?;
     plugins.init()?;
 

@@ -16,7 +16,7 @@ use piz::{
     ZipArchive,
 };
 use serde::{Deserialize, Serialize};
-use tokio::fs::{self, File};
+use tokio::fs::{self, DirEntry, File};
 use tokio_stream::wrappers::ReadDirStream;
 use tracing::{debug, info, warn};
 
@@ -32,27 +32,16 @@ impl PluginLoader {
             let plugins = ReadDirStream::new(read_dir).filter_map(|entry| async {
                 match entry {
                     Ok(entry) => {
-                        // only look at zip files
-                        let path = entry.path();
-                        if let Some("zip") = path.extension().and_then(OsStr::to_str) {
-                            match self.load_plugin(&path, lua).await {
-                                Ok(plugin) => return Some(plugin),
-                                Err(e) => {
-                                    warn!(
-                                        "Error loading plugin [{}]: {}",
-                                        file_name_or_unknown(&path),
-                                        e
-                                    )
-                                }
-                            }
-                        }
+                        self.process_file(entry, lua).await
                     }
-                    Err(e) => warn!(
-                        "Unable to access file `{}` for reading! Permissions are perhaps insufficient!",
-                        e
-                    ),
+                    Err(e) => {
+                        warn!(
+                            "Unable to access file `{}` for reading! Permissions are perhaps insufficient!",
+                            e
+                        );
+                        None
+                    }
                 }
-                None
             });
             Ok(Plugins(plugins.collect().await))
         } else {
@@ -60,6 +49,25 @@ impl PluginLoader {
             fs::create_dir_all("plugins").await?;
             Ok(Plugins(vec![]))
         }
+    }
+
+    async fn process_file<'lua>(&self, entry: DirEntry, lua: &'lua Lua) -> Option<Plugin<'lua>> {
+        let path = entry.path();
+
+        // only look at zip files
+        if let Some("zip") = path.extension().and_then(OsStr::to_str) {
+            match self.load_plugin(&path, lua).await {
+                Ok(plugin) => return Some(plugin),
+                Err(e) => {
+                    warn!(
+                        "Error loading plugin [{}]: {}",
+                        file_name_or_unknown(&path),
+                        e
+                    )
+                }
+            }
+        }
+        None
     }
 
     pub async fn load_plugin<'lua>(&self, path: &Path, lua: &'lua Lua) -> Result<Plugin<'lua>> {

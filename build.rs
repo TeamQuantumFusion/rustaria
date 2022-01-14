@@ -1,7 +1,7 @@
 use std::{
     fs::{self, File},
     io::{self, BufWriter},
-    path::PathBuf
+    path::PathBuf,
 };
 
 use walkdir::WalkDir;
@@ -25,7 +25,10 @@ fn main() {
         println!("Adding file [{}]", file_path.display());
         let options = FileOptions::default().compression_method(CompressionMethod::Deflated);
 
-        let path = file_path.strip_prefix(&core_path).unwrap().to_string_lossy();
+        let path = file_path
+            .strip_prefix(&core_path)
+            .unwrap()
+            .to_string_lossy();
         let file_type = entry.file_type();
 
         if file_type.is_dir() {
