@@ -1,17 +1,12 @@
-use rustaria::plugin::PluginLoader;
 use eyre::{eyre, Result};
-use mlua::Lua;
 use std::{env, path::PathBuf};
 use structopt::StructOpt;
-use time::macros::format_description;
 use tracing::info;
-use tracing_error::ErrorLayer;
-use tracing_subscriber::{EnvFilter, fmt::time::UtcTime, prelude::*};
 
-use rustaria::api::{self, PrototypeRequest};
+use rustaria::api::{self, LuaRuntime};
 use rustaria::chunk::Chunk;
 use rustaria::player::Player;
-use rustaria::registry::{Registry, RegistryStack, Tag};
+use rustaria::registry::{Tag};
 use rustaria::world::World;
 
 #[derive(Debug, StructOpt)]
@@ -32,16 +27,16 @@ async fn main() -> Result<()> {
     rustaria::init_console(opt.debug)?;
 
     info!("Rustaria Dedicated Server v{}", env!("CARGO_PKG_VERSION"));
-    let lua = Lua::new();
+    let lua = LuaRuntime::new();
     let stack = api::launch_rustaria_api(opt.plugins_dir, &lua).await?;
 
     // create runtime
     let air_tile = stack
-        .tile
+        .tiles
         .get_id(&Tag::parse("rustaria-core:air")?)
         .ok_or_else(|| eyre!("Could not find air tile"))?;
     let air_wall = stack
-        .wall
+        .walls
         .get_id(&Tag::parse("rustaria-core:air")?)
         .ok_or_else(|| eyre!("Could not find air wall"))?;
     let empty_chunk = Chunk::new(&stack, air_tile, air_wall)

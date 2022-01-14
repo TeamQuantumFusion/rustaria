@@ -1,15 +1,25 @@
 use std::path::PathBuf;
-use crate::chunk::tile::TilePrototype;
-use crate::chunk::wall::WallPrototype;
-use crate::registry::{Id, Registry, RegistryStack, Tag};
+
 use mlua::prelude::*;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
-use crate::plugin::PluginLoader;
+
+use crate::chunk::tile::TilePrototype;
+use crate::chunk::wall::WallPrototype;
+use crate::plugin::{PluginLoader, Plugins};
+use crate::registry::{Id, Registry, Tag};
 
 mod log;
 #[macro_use]
 pub(crate) mod macros;
 mod tile;
+
+pub struct RustariaApi<'lua> {
+    lua: &'lua Lua,
+    plugins: Plugins<'lua>,
+
+    pub tiles: Registry<TilePrototype>,
+    pub walls: Registry<WallPrototype>,
+}
 
 /// Registers Rustaria's Lua modding APIs.
 pub fn register_rustaria_api(lua: &Lua) -> LuaResult<UnboundedReceiver<PrototypeRequest>> {
@@ -25,31 +35,41 @@ pub fn register_rustaria_api(lua: &Lua) -> LuaResult<UnboundedReceiver<Prototype
     Ok(rec)
 }
 
-pub async fn launch_rustaria_api(plugins_dir: PathBuf, lua: &Lua) -> eyre::Result<RegistryStack> {
-    register_rustaria_api(&lua)?;
-    let loader = PluginLoader {
-        plugins_dir,
-    };
-    let plugins = loader.scan_and_load_plugins(&lua).await?;
-    let mut receiver = register_rustaria_api(&lua)?;
-    // call initPath files
-    plugins.init(&lua)?;
+pub async fn launch_rustaria_api<'lua>(plugins_dir: PathBuf, runtime: &'lua LuaRuntime) -> eyre::Result<RustariaApi<'lua>> {
+    let lua = &runtime.lua;
 
-    // register all prototypes
-    let mut tile_registry = Registry::new();
-    let mut wall_registry = Registry::new();
-    while let Some(prototype) = receiver.recv().await {
+    let mut receiver = register_rustaria_api(lua)?;
+    let plugins = PluginLoader { plugins_dir }.scan_and_load_plugins(lua).await?;
+    plugins.init(lua)?;
+
+    let mut tile = Registry::new();
+    let mut wall = Registry::new();
+    while let Ok(prototype) = receiver.try_recv() {
         match prototype {
-            PrototypeRequest::Tile(id, pt) => tile_registry.register(id, pt),
-            PrototypeRequest::Wall(id, pt) => wall_registry.register(id, pt),
+            PrototypeRequest::Tile(id, pt) => tile.register(id, pt),
+            PrototypeRequest::Wall(id, pt) => wall.register(id, pt),
         };
     }
 
-    let stack = RegistryStack {
-        tile: tile_registry,
-        wall: wall_registry,
-    };
-    Ok(stack)
+
+    Ok(RustariaApi {
+        lua,
+        plugins,
+        tiles: tile,
+        walls: wall
+    })
+}
+
+pub struct LuaRuntime {
+    lua: Lua
+}
+
+impl LuaRuntime {
+    pub fn new() -> Self {
+        Self {
+            lua: Lua::new()
+        }
+    }
 }
 
 pub enum PrototypeRequest {

@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::time::Instant;
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
@@ -9,16 +10,48 @@ use crate::renderer::Renderer;
 
 pub mod renderer;
 
-use eyre::Result;
-use tracing::error;
+use eyre::{eyre, Result};
+use tracing::{error, info};
+use rustaria::api;
+use rustaria::api::LuaRuntime;
+use rustaria::chunk::Chunk;
+use rustaria::player::Player;
+use rustaria::registry::Tag;
+use rustaria::world::World;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+
+    rustaria::init_console(true)?;
+
+    info!("Rustaria Dedicated Server v{}", env!("CARGO_PKG_VERSION"));
+    let runtime = LuaRuntime::new();
+    let api = api::launch_rustaria_api(PathBuf::from("./plugins"), &runtime).await?;
+
+    // create runtime
+    let air_tile = api
+        .tiles
+        .get_id(&Tag::parse("rustaria-core:air")?)
+        .ok_or_else(|| eyre!("Could not find air tile"))?;
+    let air_wall = api
+        .walls
+        .get_id(&Tag::parse("rustaria-core:air")?)
+        .ok_or_else(|| eyre!("Could not find air wall"))?;
+    let empty_chunk = Chunk::new(&api, air_tile, air_wall)
+        .ok_or_else(|| eyre!("Could not create empty chunk"))?;
+    let mut world = World::new(
+        (2, 2),
+        vec![empty_chunk, empty_chunk, empty_chunk, empty_chunk],
+    )?;
+
+    info!("f");
+
+    world.player_join(Player::new(0.0, 0.0, "dev".to_string()));
     let evloop = EventLoop::new();
     let mut window = WindowBuilder::new().build(&evloop)?;
-    let mut renderer = Renderer::new(&window).await;
 
-    println!("f");
+    let mut renderer = Renderer::new(&window).await;
+    info!("f");
 
     let mut profiler = Profiler {
         last_fps: Instant::now(),

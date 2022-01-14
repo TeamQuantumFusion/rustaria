@@ -7,6 +7,7 @@ log.debug "use dash, not froge "
 tile.register {
     -- all default settings
     ["dirt"] = tile.default {},
+    ["air"] = tile.default {},
 
     -- a full example of a tile setting
     ["alpha"] = tile.default {

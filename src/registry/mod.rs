@@ -9,11 +9,6 @@ use tracing::debug;
 use crate::chunk::tile::TilePrototype;
 use crate::chunk::wall::WallPrototype;
 
-pub struct RegistryStack {
-    pub tile: Registry<TilePrototype>,
-    pub wall: Registry<WallPrototype>,
-}
-
 pub struct Registry<P> {
     tag_to_id: BiHashMap<Tag, Id>,
     entries: Vec<P>,
@@ -69,8 +64,8 @@ impl Tag {
 
     pub fn parse(string: &str) -> Result<Self> {
         if let Some(colon) = string.find(':') {
-            let (mod_id, string) = string.split_at(colon);
-            Ok(Self(mod_id.to_string(), string.to_string()))
+            let (mod_id, obj_id) = string.split_at(colon);
+            Ok(Self(mod_id.to_string(), obj_id[1..].to_string()))
         } else {
             Err(Report::msg("Could not find delimiter :"))
         }
