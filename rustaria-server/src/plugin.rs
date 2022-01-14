@@ -50,20 +50,6 @@ impl PluginLoader {
             Ok(Plugins(vec![]))
         }
     }
-}
-
-pub async fn load_plugin<'lua>(path: &Path, lua: &'lua Lua) -> Result<Plugin<'lua>> {
-    let zip = File::open(path)
-        .await
-        .wrap_err_with(|| format!("Plugin archive [{}] not found", file_name_or_unknown(path)))?;
-    let mapping = unsafe { Mmap::map(&zip.into_std().await)? };
-    let zip = ZipArchive::new(&mapping).wrap_err_with(|| {
-        format!(
-            "Archive file [{}] could not be read",
-            file_name_or_unknown(path)
-        )
-    })?;
-    let tree = as_tree(zip.entries())?;
 
     async fn process_file<'lua>(&self, entry: DirEntry, lua: &'lua Lua) -> Option<Plugin<'lua>> {
         let path = entry.path();
@@ -114,6 +100,7 @@ pub async fn load_plugin<'lua>(path: &Path, lua: &'lua Lua) -> Result<Plugin<'lu
     }
 
     fn load_code<'lua>(
+        &self,
         zip: &ZipArchive,
         tree: &DirectoryContents,
         path: &Path,
@@ -137,11 +124,11 @@ pub async fn load_plugin<'lua>(path: &Path, lua: &'lua Lua) -> Result<Plugin<'lu
 pub struct Plugins<'lua>(Vec<Plugin<'lua>>);
 
 impl<'lua> Plugins<'lua> {
-    pub fn init(&self, lua: &Lua) -> Result<()> {
+    pub fn init(&self, lua: &'lua Lua) -> Result<()> {
         info!("Initializing plugins");
         for Plugin { manifest, init } in &self.0 {
             debug!("Initializing plugin {}", manifest.name);
-            lua.globals().set("mod_id", manifest.name.clone());
+            lua.globals().set("mod_id", manifest.name.clone())?;
             init.call(())?;
             debug!("Finished initializing plugin {}", manifest.name);
         }

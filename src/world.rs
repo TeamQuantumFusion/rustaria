@@ -65,6 +65,7 @@ impl World {
     }
 }
 
+// NOTE(leocth): `thiserror` might be appropriate here
 #[derive(Debug)]
 pub enum WorldCreationError {
     InvalidWorldSize,
@@ -73,7 +74,11 @@ pub enum WorldCreationError {
 impl Display for WorldCreationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            WorldCreationError::InvalidWorldSize =>  write!(f, "InvalidWorldSize: Chunk size does not match Chunk Storage."),
+            WorldCreationError::InvalidWorldSize => write!(
+                f,
+                "InvalidWorldSize: Chunk size does not match Chunk Storage."
+            ),
         }
     }
 }
+impl std::error::Error for WorldCreationError {}
