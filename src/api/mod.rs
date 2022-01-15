@@ -54,7 +54,6 @@ macro_rules! proto {
     };
 }
 
-
 /// Registers Rustaria's Lua modding APIs.
 pub fn register_rustaria_api(lua: &Lua) -> LuaResult<UnboundedReceiver<PrototypeRequest>> {
     let (send, rec) = unbounded_channel();
@@ -79,8 +78,8 @@ pub async fn launch_rustaria_api<'lua>(plugins_dir: PathBuf, runtime: &'lua LuaR
     let plugins = plugin::scan_and_load_plugins(&plugins_dir, lua).await?;
     plugins.init(lua)?;
 
-    let mut tile = Registry::new();
-    let mut wall = Registry::new();
+    let mut tile = Registry::new("tile");
+    let mut wall = Registry::new("wall");
     while let Ok(prototype) = receiver.try_recv() {
         match prototype {
             PrototypeRequest::Tile(id, pt) => tile.register(id, pt),

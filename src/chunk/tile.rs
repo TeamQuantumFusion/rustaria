@@ -18,7 +18,8 @@ pub struct Tile {
 pub struct TilePrototype {
     // name: LanguageKey,
     // sprite_path: AssetLocation,
-    pub sprite: AssetLocation,
+    #[serde(default)]
+    pub sprite: Option<AssetLocation>,
     #[serde(default)]
     pub transitional: bool,
     #[serde(default = "TilePrototype::default_collision")]

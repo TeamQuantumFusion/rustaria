@@ -11,20 +11,18 @@ use crate::chunk::tile::TilePrototype;
 use crate::chunk::wall::WallPrototype;
 
 pub struct Registry<P> {
+    name: &'static str,
     tag_to_id: BiHashMap<Tag, Id>,
     entries: Vec<P>,
     current_id: u32,
 }
 
-impl<P> Default for Registry<P> {
-    fn default() -> Self {
-        Registry::new()
-    }
-}
+
 
 impl<P> Registry<P> {
-    pub fn new() -> Self {
+    pub fn new(name: &'static str) -> Self {
         Self {
+            name,
             tag_to_id: Default::default(),
             entries: Default::default(),
             current_id: 0,
@@ -32,7 +30,8 @@ impl<P> Registry<P> {
     }
 
     pub fn register(&mut self, tag: Tag, prototype: P) -> Id {
-        debug!("Registered {:?}", tag);
+        let name = self.name;
+        debug!(target: "registry", "{}: Registered {:?}",name, tag);
         let id = Id(self.current_id);
         self.tag_to_id.insert(tag, id);
         self.entries.insert(self.current_id as usize, prototype);
