@@ -2,11 +2,8 @@ use std::borrow::Cow;
 
 use bytemuck::Pod;
 use naga::ShaderStage;
+use wgpu::{Buffer, BufferUsages, Device, Face, ShaderModuleDescriptor, ShaderSource, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
 use wgpu::util::DeviceExt;
-use wgpu::{
-    Buffer, BufferUsages, Device, ShaderModuleDescriptor, ShaderSource, VertexAttribute,
-    VertexBufferLayout, VertexFormat, VertexStepMode,
-};
 use winit::window::Window;
 
 pub struct Renderer {
@@ -17,6 +14,7 @@ pub struct Renderer {
     pub size: winit::dpi::PhysicalSize<u32>,
     pub render_pipeline: wgpu::RenderPipeline,
     buffer: Buffer,
+    index_buffer: Buffer,
 }
 
 #[repr(C)]
@@ -113,7 +111,7 @@ impl Renderer {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
-                cull_mode: None,
+                cull_mode: Some(Face::Back),
                 polygon_mode: wgpu::PolygonMode::Fill,
                 unclipped_depth: false,
                 conservative: false,
@@ -126,6 +124,7 @@ impl Renderer {
             },
             multiview: None,
         });
+
         let buffer = create_buffer(
             &device,
             "stuff",
@@ -133,11 +132,16 @@ impl Renderer {
                 QuadPos { x: -0.5, y: 0.5 },
                 QuadPos { x: -0.5, y: -0.5 },
                 QuadPos { x: 0.5, y: 0.5 },
-                QuadPos { x: 0.5, y: 0.5 },
-                QuadPos { x: -0.5, y: -0.5 },
                 QuadPos { x: 0.5, y: -0.5 },
             ],
             BufferUsages::VERTEX,
+        );
+
+        let index_buffer = create_buffer(
+            &device,
+            "Quad Index Buffer",
+            &[0u16, 1u16, 2u16, 2u16, 1u16, 3u16],
+            BufferUsages::INDEX,
         );
 
         Self {
@@ -148,6 +152,7 @@ impl Renderer {
             size,
             render_pipeline,
             buffer,
+            index_buffer,
         }
     }
 
@@ -180,10 +185,10 @@ impl Renderer {
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.0,
-                        g: 0.0,
-                        b: 0.0,
-                        a: 0.0,
+                        r: 0.41,
+                        g: 0.57,
+                        b: 0.97,
+                        a: 1.0,
                     }),
                     store: true,
                 },
@@ -193,7 +198,8 @@ impl Renderer {
 
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_vertex_buffer(0, self.buffer.slice(..));
-        render_pass.draw(0..6, 0..(24 * 24));
+        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+        render_pass.draw_indexed(0..6, 0, 0..(24 * 24));
 
         // drop render pass here because it mutably borrows `encoder`,
         // and we wanna use it later
