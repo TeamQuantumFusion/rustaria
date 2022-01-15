@@ -2,9 +2,25 @@ use std::borrow::Cow;
 
 use bytemuck::Pod;
 use naga::ShaderStage;
-use wgpu::{Buffer, BufferUsages, Device, Face, ShaderModuleDescriptor, ShaderSource, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
+use wgpu::{Buffer, BufferUsages, CommandBuffer, Device, Face, PrimitiveState, Queue, ShaderModuleDescriptor, ShaderSource, Surface, SurfaceConfiguration, TextureView, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
 use wgpu::util::DeviceExt;
+use wgpu::VertexStepMode::Vertex;
+use winit::dpi::PhysicalSize;
 use winit::window::Window;
+use crate::renderer::tile_drawer::TileDrawer;
+
+mod tile_drawer;
+
+const DEFAULT_PRIMITIVE: PrimitiveState = PrimitiveState {
+    topology: wgpu::PrimitiveTopology::TriangleList,
+    strip_index_format: None,
+    front_face: wgpu::FrontFace::Ccw,
+    cull_mode: Some(Face::Back),
+    polygon_mode: wgpu::PolygonMode::Fill,
+    unclipped_depth: false,
+    conservative: false,
+};
+
 
 pub struct Renderer {
     pub surface: wgpu::Surface,
@@ -12,9 +28,7 @@ pub struct Renderer {
     pub queue: wgpu::Queue,
     pub config: wgpu::SurfaceConfiguration,
     pub size: winit::dpi::PhysicalSize<u32>,
-    pub render_pipeline: wgpu::RenderPipeline,
-    buffer: Buffer,
-    index_buffer: Buffer,
+    tile_drawer: TileDrawer,
 }
 
 #[repr(C)]
@@ -22,6 +36,12 @@ pub struct Renderer {
 pub struct QuadPos {
     x: f32,
     y: f32,
+}
+
+pub trait Drawer {
+    fn new(device: &Device, config: &SurfaceConfiguration) -> Self;
+    fn resize(&mut self, new_size: PhysicalSize<u32>);
+    fn draw(&mut self, view: &TextureView, device: &Device) -> Result<CommandBuffer, wgpu::SurfaceError> ;
 }
 
 impl Renderer {
@@ -65,103 +85,24 @@ impl Renderer {
         };
         surface.configure(&device, &config);
 
-        let render_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[],
-                push_constant_ranges: &[],
-            });
-
-        let fragment_module = get_shader_module(
-            "triangle-fs",
-            include_str!("shader/triangle-fs.glsl"),
-            ShaderStage::Fragment,
-        );
-        let vertex_module = get_shader_module(
-            "triangle-vs",
-            include_str!("shader/triangle-vs.glsl"),
-            ShaderStage::Vertex,
-        );
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &device.create_shader_module(&vertex_module),
-                entry_point: "main",
-                buffers: &[VertexBufferLayout {
-                    array_stride: std::mem::size_of::<(f32, f32)>() as wgpu::BufferAddress,
-                    step_mode: VertexStepMode::Vertex,
-                    attributes: &[VertexAttribute {
-                        format: VertexFormat::Float32x2,
-                        offset: 0,
-                        shader_location: 0,
-                    }],
-                }],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &device.create_shader_module(&fragment_module),
-                entry_point: "main",
-                targets: &[wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                }],
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(Face::Back),
-                polygon_mode: wgpu::PolygonMode::Fill,
-                unclipped_depth: false,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            multiview: None,
-        });
-
-        let buffer = create_buffer(
-            &device,
-            "stuff",
-            &[
-                QuadPos { x: -0.5, y: 0.5 },
-                QuadPos { x: -0.5, y: -0.5 },
-                QuadPos { x: 0.5, y: 0.5 },
-                QuadPos { x: 0.5, y: -0.5 },
-            ],
-            BufferUsages::VERTEX,
-        );
-
-        let index_buffer = create_buffer(
-            &device,
-            "Quad Index Buffer",
-            &[0u16, 1u16, 2u16, 2u16, 1u16, 3u16],
-            BufferUsages::INDEX,
-        );
-
+        let tile_drawer = TileDrawer::new(&device, &config);
         Self {
             surface,
             device,
             queue,
             config,
             size,
-            render_pipeline,
-            buffer,
-            index_buffer,
+            tile_drawer
         }
     }
 
-    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+    pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
             self.size = new_size;
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
+            self.tile_drawer.resize(new_size);
         }
     }
 
@@ -169,43 +110,13 @@ impl Renderer {
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
-        let view = output
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
-            });
+        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("Render Pass"),
-            color_attachments: &[wgpu::RenderPassColorAttachment {
-                view: &view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.41,
-                        g: 0.57,
-                        b: 0.97,
-                        a: 1.0,
-                    }),
-                    store: true,
-                },
-            }],
-            depth_stencil_attachment: None,
-        });
 
-        render_pass.set_pipeline(&self.render_pipeline);
-        render_pass.set_vertex_buffer(0, self.buffer.slice(..));
-        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-        render_pass.draw_indexed(0..6, 0, 0..(24 * 24));
+        self.queue.submit(vec![
+            self.tile_drawer.draw(&view, &self.device)?
+        ]);
 
-        // drop render pass here because it mutably borrows `encoder`,
-        // and we wanna use it later
-        drop(render_pass);
-
-        self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
         Ok(())
     }
