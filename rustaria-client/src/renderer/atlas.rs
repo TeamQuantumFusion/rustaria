@@ -6,6 +6,8 @@ use image::{EncodableLayout, RgbaImage};
 use rectangle_pack::{contains_smallest_box, GroupedRectsToPlace, pack_rects, RectanglePackError, RectanglePackOk, RectToInsert, TargetBin, volume_heuristic};
 use tracing::debug;
 use wgpu::{Device, Extent3d, Queue, Sampler, Texture, TextureView};
+use rustaria::api::RustariaApi;
+use rustaria::registry::AssetLocation;
 
 pub struct Atlas<I: Debug + Hash + Ord + Clone> {
     image_locations: HashMap<I, AtlasLocation>,

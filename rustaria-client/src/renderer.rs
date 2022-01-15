@@ -2,11 +2,15 @@ use std::borrow::Cow;
 
 use bytemuck::Pod;
 use naga::ShaderStage;
-use wgpu::{Buffer, BufferUsages, CommandBuffer, Device, Face, PrimitiveState, Queue, ShaderModuleDescriptor, ShaderSource, Surface, SurfaceConfiguration, TextureView, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
+use tracing::debug;
+use wgpu::{AdapterInfo, Buffer, BufferUsages, CommandBuffer, Device, Face, PrimitiveState, Queue, ShaderModuleDescriptor, ShaderSource, Surface, SurfaceConfiguration, TextureView, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
 use wgpu::util::DeviceExt;
 use wgpu::VertexStepMode::Vertex;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
+
+use rustaria::api::RustariaApi;
+
 use crate::renderer::tile_drawer::TileDrawer;
 
 mod tile_drawer;
@@ -40,13 +44,13 @@ pub struct QuadPos {
 }
 
 pub trait Drawer {
-    fn new(device: &Device, config: &SurfaceConfiguration) -> Self;
+    fn new(queue: &Queue, device: &Device, config: &SurfaceConfiguration, api: &mut RustariaApi<'_>) -> Self;
     fn resize(&mut self, new_size: PhysicalSize<u32>);
-    fn draw(&mut self, view: &TextureView, device: &Device) -> Result<CommandBuffer, wgpu::SurfaceError> ;
+    fn draw(&mut self, view: &TextureView, device: &Device) -> Result<CommandBuffer, wgpu::SurfaceError>;
 }
 
 impl Renderer {
-    pub async fn new(window: &Window) -> Self {
+    pub async fn new(window: &Window, api: &mut RustariaApi<'_>) -> Self {
         let mut shader_dir = std::env::current_dir().unwrap();
         shader_dir.push("shaders");
 
@@ -86,15 +90,35 @@ impl Renderer {
         };
         surface.configure(&device, &config);
 
-        let tile_drawer = TileDrawer::new(&device, &config);
+        let tile_drawer = TileDrawer::new(&queue, &device, &config, api);
+
+        Self::print_adapter_info(adapter.get_info());
+
         Self {
             surface,
             device,
             queue,
             config,
             size,
-            tile_drawer
+            tile_drawer,
         }
+    }
+
+    fn print_adapter_info(info: AdapterInfo) {
+        debug!("Rustaria Client Rendering System Report.");
+        debug!("Running {:?} \"{}\"", info.device_type, info.name);
+        debug!("With {:?} Backend", info.backend);
+
+        let vendor_guess = match info.vendor {
+            0x1002 => "(AMD) ",
+            0x10DE => "(Nvidia) ",
+            0x8086 => "(Intel) ",
+            0x1010 => "(ImgTec) ",
+            0x13B5 => "(arm) ",
+            0x5143 => "(Qualcomm) ",
+            _ => ""
+        };
+        debug!("Vendor ID {} {}Device ID {}", info.vendor, vendor_guess, info.device)
     }
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {

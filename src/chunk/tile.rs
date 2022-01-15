@@ -2,9 +2,10 @@ use std::{collections::HashSet, hash::Hash};
 
 use mlua::prelude::*;
 use serde::Deserialize;
+use crate::api::plugin::AssetPath;
 use crate::api::Prototype;
 
-use crate::registry::{Id, Tag};
+use crate::registry::{AssetLocation, Id, Tag};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Tile {
@@ -17,18 +18,19 @@ pub struct Tile {
 pub struct TilePrototype {
     // name: LanguageKey,
     // sprite_path: AssetLocation,
+    pub sprite: AssetLocation,
     #[serde(default)]
-    transitional: bool,
+    pub transitional: bool,
     #[serde(default = "TilePrototype::default_collision")]
-    collision: LockableValue<bool>,
+    pub collision: LockableValue<bool>,
     #[serde(default = "TilePrototype::default_opaque")]
-    opaque: LockableValue<bool>,
+    pub opaque: LockableValue<bool>,
     #[serde(default = "TilePrototype::default_blast_resistance")]
-    blast_resistance: BlastResistance,
+    pub blast_resistance: BlastResistance,
     #[serde(default = "TilePrototype::default_break_resistance")]
-    break_resistance: BreakResistance,
+    pub break_resistance: BreakResistance,
     #[serde(default)]
-    tile_type: TileType<Tag>,
+    pub tile_type: TileType<Tag>,
 }
 
 impl Prototype<Tile> for TilePrototype {

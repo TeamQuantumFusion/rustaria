@@ -1,8 +1,16 @@
+use eyre::ContextCompat;
+use image::RgbaImage;
 use naga::ShaderStage;
-use wgpu::{Buffer, BufferUsages, CommandBuffer, Device, FragmentState, RenderPipeline, SurfaceConfiguration, TextureView, VertexAttribute, VertexBufferLayout, VertexFormat, VertexState, VertexStepMode};
+use tracing::debug;
+use wgpu::{Buffer, BufferUsages, CommandBuffer, Device, FragmentState, Queue, RenderPipeline, SurfaceConfiguration, TextureView, VertexAttribute, VertexBufferLayout, VertexFormat, VertexState, VertexStepMode};
 use winit::dpi::PhysicalSize;
 
+use rustaria::api::RustariaApi;
+use rustaria::chunk::tile::TilePrototype;
+use rustaria::registry::{AssetLocation, Id};
+
 use crate::renderer::{create_buffer, DEFAULT_PRIMITIVE, Drawer, get_shader_module, QuadPos};
+use crate::renderer::atlas::Atlas;
 
 pub struct TileDrawer {
     // Pipeline
@@ -10,6 +18,7 @@ pub struct TileDrawer {
     // Buffers
     tile_buffer: Buffer,
     quad_index_buffer: Buffer,
+    atlas: Atlas<Id>
 }
 
 #[repr(C)]
@@ -20,7 +29,27 @@ pub struct TileTexturePos {
 }
 
 impl Drawer for TileDrawer {
-    fn new(device: &Device, config: &SurfaceConfiguration) -> Self {
+    fn new(queue: &Queue, device: &Device, config: &SurfaceConfiguration, api: &mut RustariaApi<'_>) -> Self {
+        let mut images = Vec::new();
+
+        fn read_image(id: usize, tile: &AssetLocation, api: &mut RustariaApi<'_>) -> eyre::Result<(Id, RgbaImage)> {
+            let plugin_name = tile.0.clone();
+            let archive = api.get_plugin_assets(plugin_name.clone()).wrap_err(format!("Could not find plugin {}", plugin_name))?;
+            let data = archive.get_asset(tile.1.clone())?;
+            let image = image::load_from_memory(data.as_slice())?;
+            Ok((Id(id as u32), image.into_rgba8()))
+        }
+
+        let map: Vec<_> = api.tiles.get_all().iter().enumerate().map(|(id, prototype)| (id, prototype.sprite.clone())).collect();
+        for (id, tile) in map {
+            match read_image(id, &tile, api) {
+                Ok(image) => images.push(image),
+                Err(err) => debug!("Tile Image Skipped {}", err)
+            }
+        }
+
+        let atlas = Atlas::new(queue, device, images);
+
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Tile Pipeline layout"),
@@ -97,13 +126,14 @@ impl Drawer for TileDrawer {
             pipeline,
             tile_buffer,
             quad_index_buffer,
+            atlas
         }
     }
 
     fn resize(&mut self, _: PhysicalSize<u32>) {}
 
     fn draw(&mut self, view: &TextureView, device: &Device) -> Result<CommandBuffer, wgpu::SurfaceError> {
-        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("Render Encoder"), });
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("Render Encoder") });
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Render Pass"),

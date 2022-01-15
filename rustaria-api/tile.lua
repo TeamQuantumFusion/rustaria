@@ -15,6 +15,7 @@ local function default(settings)
 end
 
 -- Type annotations
+---@alias sprite asset
 ---@alias blast_resistance number | '"indestructible"'
 ---@alias break_resistance '"any"' | '"indestructible"' | { axe: number } | { pickaxe: number } | { hammer: number }
 ---@alias dynamic_bool '"dynamic"' | { fixed: boolean }]

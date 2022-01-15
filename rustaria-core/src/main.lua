@@ -3,7 +3,7 @@ local wall = require "wall"
 local log = require "log"
 
 log.warn "IDK what alpha's on, one entrypoint is good enough"
-log.debug "use dash, not froge "
+log.debug "use dash, not froge"
 
 tile.register {
     -- all default settings
@@ -12,6 +12,7 @@ tile.register {
 
     -- a full example of a tile setting
     ["alpha"] = tile.default {
+        asset = { mod_id, "your mom"},
         transitional = true,
         collision = { fixed = false },
         opaque = { fixed = false },
@@ -27,6 +28,7 @@ tile.register {
 
 wall.register {
     ["air"] = wall.default {},
+    ["another"] = wall.default {},
 }
 
 log.error "that's it, lmao"

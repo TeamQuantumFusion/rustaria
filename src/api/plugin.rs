@@ -8,6 +8,7 @@ use std::{
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
+use std::sync::Mutex;
 
 use eyre::{ContextCompat, Report};
 use futures::StreamExt;
@@ -35,12 +36,12 @@ pub async fn scan_and_load_plugins<'lua>(plugins_dir: &Path, lua: &'lua Lua) -> 
                     None
                 }
             }
-        });
+        }).map(|plugin| (plugin.manifest.name.clone(), plugin));
         Ok(Plugins(plugins.collect().await))
     } else {
         warn!("Plugin directory not found! Creating one...");
         fs::create_dir_all("plugins").await?;
-        Ok(Plugins(vec![]))
+        Ok(Plugins(HashMap::new()))
     }
 }
 
@@ -66,10 +67,10 @@ async fn process_file<'lua>(entry: DirEntry, lua: &'lua Lua) -> Option<Plugin<'l
 async fn load_plugin<'lua>(path: &Path, lua: &'lua Lua) -> eyre::Result<Plugin<'lua>> {
     let mut archive = PluginArchive::new(path)?;
 
-    let data = archive.read_asset(AssetPath::Manifest)?;
+    let data = archive.get_asset(AssetPath::Manifest)?;
     let manifest: Manifest = serde_json::from_reader(data.as_slice())?;
 
-    let source = archive.read_asset(AssetPath::Src(PathBuf::from(&manifest.init_path)))?;
+    let source = archive.get_asset(AssetPath::Src(PathBuf::from(&manifest.init_path)))?;
     let init = lua.load(&source).into_function()?;
     info!(
             "Loaded plugin {} v{} from [{}]",
@@ -77,16 +78,16 @@ async fn load_plugin<'lua>(path: &Path, lua: &'lua Lua) -> eyre::Result<Plugin<'
             manifest.version,
             file_name_or_unknown(path)
         );
-    Ok(Plugin { archive, manifest, init })
+    Ok(Plugin { archive , manifest, init })
 }
 
 
-pub struct Plugins<'lua>(Vec<Plugin<'lua>>);
+pub struct Plugins<'lua>(pub(crate) HashMap<String, Plugin<'lua>>);
 
 impl<'lua> Plugins<'lua> {
     pub fn init(&self, lua: &'lua Lua) -> eyre::Result<()> {
         info!("Initializing plugins");
-        for Plugin { manifest, init, .. } in &self.0 {
+        for Plugin { manifest, init, .. } in self.0.values() {
             debug!("Initializing plugin {}", manifest.name);
             lua.globals().set("mod_id", manifest.name.clone())?;
             init.call(())?;
@@ -122,7 +123,7 @@ pub struct PluginArchive {
     zip: Option<ZipArchive<File>>,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Deserialize)]
 pub enum AssetPath {
     Asset(PathBuf),
     Src(PathBuf),
@@ -172,7 +173,7 @@ impl PluginArchive {
         self.zip = None;
     }
 
-    pub fn read_asset(&mut self, path: AssetPath) -> eyre::Result<Vec<u8>> {
+    pub fn get_asset(&mut self, path: AssetPath) -> eyre::Result<Vec<u8>> {
         match &mut self.zip {
             Some(zip) => {
                 let index = self.index.get(&path).wrap_err(format!("Could not find file {:?}", path))?;

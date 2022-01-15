@@ -5,7 +5,7 @@ use mlua::{Error, Function};
 use mlua::prelude::*;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
-use crate::api::plugin::Plugins;
+use crate::api::plugin::{PluginArchive, Plugins};
 use crate::chunk::tile::TilePrototype;
 use crate::chunk::wall::WallPrototype;
 use crate::registry::{Id, Registry, Tag};
@@ -21,6 +21,12 @@ pub struct RustariaApi<'lua> {
 
     pub tiles: Registry<TilePrototype>,
     pub walls: Registry<WallPrototype>,
+}
+
+impl<'lua> RustariaApi<'lua> {
+    pub fn get_plugin_assets(&mut self, plugin: String) -> Option<&mut PluginArchive> {
+        self.plugins.0.get_mut(&plugin).map(|plugin| &mut plugin.archive)
+    }
 }
 
 macro_rules! proto {
@@ -56,14 +62,14 @@ pub fn register_rustaria_api(lua: &Lua) -> LuaResult<UnboundedReceiver<Prototype
     let preload: LuaTable = package.get("preload")?;
 
     preload.set("log", lua.create_function(log::package)?)?;
-    preload.set("tile", tile(lua, send.clone())?)?;
-    preload.set("wall", wall(lua, send.clone())?)?;
+    preload.set("wall", wall_methods(lua, send.clone())?)?;
+    preload.set("tile", tile_methods(lua, send.clone())?)?;
     Ok(rec)
 }
 
 proto! {
-    tile => TilePrototype | Tile,
-    wall => WallPrototype | Wall
+    wall_methods => WallPrototype | Wall,
+    tile_methods => TilePrototype | Tile
 }
 
 pub async fn launch_rustaria_api<'lua>(plugins_dir: PathBuf, runtime: &'lua LuaRuntime) -> eyre::Result<RustariaApi<'lua>> {

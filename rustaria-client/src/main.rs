@@ -22,11 +22,11 @@ use rustaria::world::World;
 #[tokio::main]
 async fn main() -> Result<()> {
 
-    rustaria::init_console(false)?;
+    rustaria::init_console(true)?;
 
     info!("Rustaria Dedicated Server v{}", env!("CARGO_PKG_VERSION"));
     let runtime = LuaRuntime::new();
-    let api = api::launch_rustaria_api(PathBuf::from("./plugins"), &runtime).await?;
+    let mut api = api::launch_rustaria_api(PathBuf::from("./plugins"), &runtime).await?;
 
     // create runtime
     let air_tile = api
@@ -50,7 +50,7 @@ async fn main() -> Result<()> {
     let evloop = EventLoop::new();
     let mut window = WindowBuilder::new().build(&evloop)?;
 
-    let mut renderer = Renderer::new(&window).await;
+    let mut renderer = Renderer::new(&window, &mut api).await;
     info!("f");
 
     let mut profiler = Profiler {

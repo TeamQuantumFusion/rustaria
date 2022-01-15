@@ -6,6 +6,7 @@ use bimap::BiHashMap;
 use eyre::{Report, Result};
 use serde::Deserialize;
 use tracing::debug;
+use crate::api::plugin::AssetPath;
 use crate::chunk::tile::TilePrototype;
 use crate::chunk::wall::WallPrototype;
 
@@ -37,6 +38,10 @@ impl<P> Registry<P> {
         self.entries.insert(self.current_id as usize, prototype);
         self.current_id += 1;
         id
+    }
+
+    pub fn get_all(&self) -> &Vec<P> {
+        &self.entries
     }
 
     pub fn get_id(&self, tag: &Tag) -> Option<&Id> {
@@ -73,8 +78,8 @@ impl Tag {
 }
 
 // kernel identification
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct Id(u32);
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
+pub struct Id(pub u32);
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct LanguageKey {
@@ -82,6 +87,5 @@ pub struct LanguageKey {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct AssetLocation {
-    // TODO
-}
+pub struct AssetLocation(pub String,pub AssetPath);
+
