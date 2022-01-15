@@ -1,4 +1,5 @@
 local tile = require "tile"
+local wall = require "wall"
 local log = require "log"
 
 log.warn "IDK what alpha's on, one entrypoint is good enough"
@@ -22,6 +23,10 @@ tile.register {
             filter = { whitelist = { { mod_id, "leo" } } }
         }
     }
+}
+
+wall.register {
+    ["air"] = wall.default {},
 }
 
 log.error "that's it, lmao"

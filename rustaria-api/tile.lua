@@ -23,11 +23,6 @@ end
 ---@alias tile userdata
 local dummy = {}
 
----@class tag
----@field tag string
----@field category '"tile"' | '"item"' | '"wall"' | '"tree"'
-local tag = {}
-
 ---@class default_tile_settings
 ---@field transitional boolean
 ---@field collision dynamic_bool

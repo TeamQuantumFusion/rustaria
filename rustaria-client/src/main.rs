@@ -22,7 +22,7 @@ use rustaria::world::World;
 #[tokio::main]
 async fn main() -> Result<()> {
 
-    rustaria::init_console(true)?;
+    rustaria::init_console(false)?;
 
     info!("Rustaria Dedicated Server v{}", env!("CARGO_PKG_VERSION"));
     let runtime = LuaRuntime::new();
