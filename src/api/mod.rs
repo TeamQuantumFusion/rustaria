@@ -5,14 +5,15 @@ use mlua::{Error, Function};
 use mlua::prelude::*;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
+use crate::api::plugin::Plugins;
 use crate::chunk::tile::TilePrototype;
 use crate::chunk::wall::WallPrototype;
-use crate::plugin::{PluginLoader, Plugins};
 use crate::registry::{Id, Registry, Tag};
 
 mod log;
 #[macro_use]
 pub(crate) mod macros;
+pub mod plugin;
 
 pub struct RustariaApi<'lua> {
     lua: &'lua Lua,
@@ -69,7 +70,7 @@ pub async fn launch_rustaria_api<'lua>(plugins_dir: PathBuf, runtime: &'lua LuaR
     let lua = &runtime.lua;
 
     let mut receiver = register_rustaria_api(lua)?;
-    let plugins = PluginLoader { plugins_dir }.scan_and_load_plugins(lua).await?;
+    let plugins = plugin::scan_and_load_plugins(&plugins_dir, lua).await?;
     plugins.init(lua)?;
 
     let mut tile = Registry::new();
@@ -93,6 +94,7 @@ pub async fn launch_rustaria_api<'lua>(plugins_dir: PathBuf, runtime: &'lua LuaR
 pub struct LuaRuntime {
     lua: Lua,
 }
+
 
 impl LuaRuntime {
     pub fn new() -> Self {

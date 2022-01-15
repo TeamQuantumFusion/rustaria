@@ -10,6 +10,7 @@ use winit::window::Window;
 use crate::renderer::tile_drawer::TileDrawer;
 
 mod tile_drawer;
+mod atlas;
 
 const DEFAULT_PRIMITIVE: PrimitiveState = PrimitiveState {
     topology: wgpu::PrimitiveTopology::TriangleList,
