@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use bytemuck::Pod;
 use naga::ShaderStage;
-use tracing::debug;
+use tracing::{debug, info};
 use wgpu::{AdapterInfo, Buffer, BufferUsages, CommandBuffer, Device, Face, PrimitiveState, Queue, ShaderModuleDescriptor, ShaderSource, Surface, SurfaceConfiguration, TextureView, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
 use wgpu::util::DeviceExt;
 use wgpu::VertexStepMode::Vertex;
@@ -105,9 +105,9 @@ impl Renderer {
     }
 
     fn print_adapter_info(info: AdapterInfo) {
-        debug!("Rustaria Client Rendering System Report.");
-        debug!("Running {:?} \"{}\"", info.device_type, info.name);
-        debug!("With {:?} Backend", info.backend);
+        info!("Rustaria Client Rendering System Report.");
+        info!("Running {:?} \"{}\"", info.device_type, info.name);
+        info!("With {:?} Backend", info.backend);
 
         let vendor_guess = match info.vendor {
             0x1002 => "(AMD) ",
@@ -118,7 +118,7 @@ impl Renderer {
             0x5143 => "(Qualcomm) ",
             _ => ""
         };
-        debug!("Vendor ID {} {}Device ID {}", info.vendor, vendor_guess, info.device)
+        info!("Vendor ID {} {}Device ID {}", info.vendor, vendor_guess, info.device)
     }
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
@@ -150,15 +150,10 @@ impl Renderer {
 pub fn get_shader_module<'a>(
     name: &'static str,
     code: &'static str,
-    stage: ShaderStage,
 ) -> ShaderModuleDescriptor<'a> {
     ShaderModuleDescriptor {
         label: Some(name),
-        source: ShaderSource::Glsl {
-            shader: Cow::from(code),
-            stage,
-            defines: Default::default(),
-        },
+        source: ShaderSource::Wgsl(Cow::from(code)),
     }
 }
 

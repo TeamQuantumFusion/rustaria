@@ -5,7 +5,7 @@ use serde::Deserialize;
 use crate::api::plugin::AssetPath;
 use crate::api::Prototype;
 
-use crate::registry::{AssetLocation, Id, Tag};
+use crate::registry::{AssetLocation, Id, LuaAssetLocation, Tag};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Tile {
@@ -19,7 +19,7 @@ pub struct TilePrototype {
     // name: LanguageKey,
     // sprite_path: AssetLocation,
     #[serde(default)]
-    pub sprite: Option<AssetLocation>,
+    pub sprite: Option<LuaAssetLocation>,
     #[serde(default)]
     pub transitional: bool,
     #[serde(default = "TilePrototype::default_collision")]

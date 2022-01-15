@@ -1,6 +1,6 @@
 ---@class tag
----@field tag string
----@field category '"tile"' | '"item"' | '"wall"' | '"tree"'
+---@field mod_id string
+---@field obj_id string
 local tag = {}
 
 ---@class asset

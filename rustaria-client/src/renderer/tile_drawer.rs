@@ -1,13 +1,13 @@
 use eyre::ContextCompat;
 use image::RgbaImage;
 use naga::ShaderStage;
-use tracing::debug;
+use tracing::{debug, info};
 use wgpu::{Buffer, BufferUsages, CommandBuffer, Device, FragmentState, Queue, RenderPipeline, SurfaceConfiguration, TextureView, VertexAttribute, VertexBufferLayout, VertexFormat, VertexState, VertexStepMode};
 use winit::dpi::PhysicalSize;
 
 use rustaria::api::RustariaApi;
 use rustaria::chunk::tile::TilePrototype;
-use rustaria::registry::{AssetLocation, Id};
+use rustaria::registry::{AssetLocation, Id, LuaAssetLocation};
 
 use crate::renderer::{create_buffer, DEFAULT_PRIMITIVE, Drawer, get_shader_module, QuadPos};
 use crate::renderer::atlas::Atlas;
@@ -18,14 +18,14 @@ pub struct TileDrawer {
     // Buffers
     tile_buffer: Buffer,
     quad_index_buffer: Buffer,
-    atlas: Atlas<Id>
+    atlas: Atlas<Id>,
 }
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct TileTexturePos {
-    x: u32,
-    y: u32,
+pub struct TileVertex {
+    position: [f32; 2],
+    tex_coords: [f32; 2],
 }
 
 impl Drawer for TileDrawer {
@@ -42,9 +42,11 @@ impl Drawer for TileDrawer {
 
         let map: Vec<_> = api.tiles.get_all().iter().enumerate().map(|(id, prototype)| (id, prototype.sprite.clone())).collect();
         for (id, tile) in map {
-            match read_image(id, &tile, api) {
-                Ok(image) => images.push(image),
-                Err(err) => debug!("Tile Image Skipped {}", err)
+            if let Some(tile) = tile {
+                match read_image(id, &AssetLocation::from(tile), api) {
+                    Ok(image) => images.push(image),
+                    Err(err) => debug!("Tile Image Skipped {}", err)
+                }
             }
         }
 
@@ -53,40 +55,40 @@ impl Drawer for TileDrawer {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Tile Pipeline layout"),
-                bind_group_layouts: &[],
+                bind_group_layouts: &[&atlas.layout],
                 push_constant_ranges: &[],
             });
 
-        let fragment_module = get_shader_module(
+        let module = get_shader_module(
             "triangle-fs",
-            include_str!("../shader/triangle-fs.glsl"),
-            ShaderStage::Fragment,
+            include_str!("../shader/tile.wgsl"),
         );
-        let vertex_module = get_shader_module(
-            "triangle-vs",
-            include_str!("../shader/triangle-vs.glsl"),
-            ShaderStage::Vertex,
-        );
+
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Tile Pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: VertexState {
-                module: &device.create_shader_module(&vertex_module),
-                entry_point: "main",
-                buffers: &[VertexBufferLayout {
-                    array_stride: std::mem::size_of::<(f32, f32)>() as wgpu::BufferAddress,
-                    step_mode: VertexStepMode::Vertex,
-                    attributes: &[VertexAttribute {
-                        format: VertexFormat::Float32x2,
-                        offset: 0,
-                        shader_location: 0,
+                module: &device.create_shader_module(&module),
+                entry_point: "vs_main",
+                buffers: &[
+                    VertexBufferLayout {
+                        array_stride: std::mem::size_of::<TileVertex>() as wgpu::BufferAddress,
+                        step_mode: VertexStepMode::Vertex,
+                        attributes: &[VertexAttribute {
+                            format: VertexFormat::Float32x2,
+                            offset: 0,
+                            shader_location: 0,
+                        }, VertexAttribute {
+                            format: VertexFormat::Float32x2,
+                            offset: std::mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
+                            shader_location: 1,
+                        }],
                     }],
-                }],
             },
             fragment: Some(FragmentState {
-                module: &device.create_shader_module(&fragment_module),
-                entry_point: "main",
+                module: &device.create_shader_module(&module),
+                entry_point: "fs_main",
                 targets: &[wgpu::ColorTargetState {
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -107,10 +109,10 @@ impl Drawer for TileDrawer {
             device,
             "stuff",
             &[
-                QuadPos { x: -0.5, y: 0.5 },
-                QuadPos { x: -0.5, y: -0.5 },
-                QuadPos { x: 0.5, y: 0.5 },
-                QuadPos { x: 0.5, y: -0.5 },
+                TileVertex { position: [-0.5, 0.5], tex_coords: [0.0, 1.0] },
+                TileVertex { position: [-0.5, -0.5], tex_coords: [0.0, 0.0] },
+                TileVertex { position: [0.5, 0.5], tex_coords: [1.0, 1.0] },
+                TileVertex { position: [0.5, -0.5], tex_coords: [1.0, 0.0] },
             ],
             BufferUsages::VERTEX,
         );
@@ -126,7 +128,7 @@ impl Drawer for TileDrawer {
             pipeline,
             tile_buffer,
             quad_index_buffer,
-            atlas
+            atlas,
         }
     }
 
@@ -154,9 +156,10 @@ impl Drawer for TileDrawer {
         });
 
         render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, &self.atlas.group, &[]); // NEW!
         render_pass.set_vertex_buffer(0, self.tile_buffer.slice(..));
         render_pass.set_index_buffer(self.quad_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-        render_pass.draw_indexed(0..6, 0, 0..(24 * 24));
+        render_pass.draw_indexed(0..6, 0, 0..1);
 
         // drop render pass here because it mutably borrows `encoder`,
         // and we wanna use it later

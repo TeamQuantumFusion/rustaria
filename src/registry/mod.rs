@@ -1,11 +1,13 @@
 #![allow(unused)] // alpha, remove this when you're done - leocth
 
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use bimap::BiHashMap;
 use eyre::{Report, Result};
 use serde::Deserialize;
 use tracing::debug;
+
 use crate::api::plugin::AssetPath;
 use crate::chunk::tile::TilePrototype;
 use crate::chunk::wall::WallPrototype;
@@ -16,7 +18,6 @@ pub struct Registry<P> {
     entries: Vec<P>,
     current_id: u32,
 }
-
 
 
 impl<P> Registry<P> {
@@ -86,5 +87,14 @@ pub struct LanguageKey {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct AssetLocation(pub String,pub AssetPath);
+pub struct LuaAssetLocation(pub String, pub String);
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct AssetLocation(pub String, pub AssetPath);
+
+impl From<LuaAssetLocation> for AssetLocation {
+    fn from(lua: LuaAssetLocation) -> Self {
+        Self(lua.0, AssetPath::Asset(PathBuf::from(lua.1)))
+    }
+}
 

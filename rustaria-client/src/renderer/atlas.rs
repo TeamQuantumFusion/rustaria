@@ -4,16 +4,16 @@ use std::hash::Hash;
 
 use image::{EncodableLayout, RgbaImage};
 use rectangle_pack::{contains_smallest_box, GroupedRectsToPlace, pack_rects, RectanglePackError, RectanglePackOk, RectToInsert, TargetBin, volume_heuristic};
-use tracing::debug;
-use wgpu::{Device, Extent3d, Queue, Sampler, Texture, TextureView};
-use rustaria::api::RustariaApi;
-use rustaria::registry::AssetLocation;
+use tracing::{debug, info};
+use wgpu::{BindGroup, BindGroupLayout, Device, Extent3d, Queue, Sampler, Texture, TextureView};
 
 pub struct Atlas<I: Debug + Hash + Ord + Clone> {
     image_locations: HashMap<I, AtlasLocation>,
     texture: Texture,
     sampler: Sampler,
     texture_view: TextureView,
+    pub layout: BindGroupLayout,
+    pub group: BindGroup,
 }
 
 impl<I: Debug + Hash + Ord + Clone> Atlas<I> {
@@ -43,6 +43,7 @@ impl<I: Debug + Hash + Ord + Clone> Atlas<I> {
 
         let mut image_locations = HashMap::new();
         for (pos, (_, image_size)) in atlas_images.packed_locations() {
+            info!("yuor mom");
             let (identifier, image) = images.get(*pos).unwrap();
 
             image_locations.insert(identifier.clone(), AtlasLocation {
@@ -52,16 +53,13 @@ impl<I: Debug + Hash + Ord + Clone> Atlas<I> {
                 height: image_size.height() as f32 / height as f32,
             });
 
+
             queue.write_texture(
                 // Tells wgpu where to copy the pixel data
                 wgpu::ImageCopyTexture {
                     texture: &texture,
                     mip_level: 0,
-                    origin: wgpu::Origin3d {
-                        x: image_size.x(),
-                        y: image_size.y(),
-                        z: 0,
-                    },
+                    origin: wgpu::Origin3d::ZERO,
                     aspect: wgpu::TextureAspect::All,
                 },
                 // The actual pixel data
@@ -75,27 +73,75 @@ impl<I: Debug + Hash + Ord + Clone> Atlas<I> {
                 Extent3d {
                     width: image_size.width(),
                     height: image_size.height(),
-                    depth_or_array_layers: 0,
+                    depth_or_array_layers: 1,
                 },
             );
         }
+
+
 
         let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
+            mag_filter: wgpu::FilterMode::Nearest,
             min_filter: wgpu::FilterMode::Nearest,
             mipmap_filter: wgpu::FilterMode::Nearest,
             ..Default::default()
         });
+
+        let layout = device.create_bind_group_layout(
+            &wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(
+                            wgpu::SamplerBindingType::Filtering,
+                        ),
+                        count: None,
+                    },
+                ],
+                label: Some("texture_bind_group_layout"),
+            }
+        );
+
+        let group = device.create_bind_group(
+            &wgpu::BindGroupDescriptor {
+                layout: &layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&texture_view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(&sampler),
+                    }
+                ],
+                label: Some("diffuse_bind_group"),
+            }
+        );
+
 
         Atlas {
             image_locations,
             texture,
             sampler,
             texture_view,
+            layout,
+            group,
         }
     }
 
@@ -111,8 +157,8 @@ impl<I: Debug + Hash + Ord + Clone> Atlas<I> {
             );
         }
 
-        let mut atlas_w = 128u32;
-        let mut atlas_h = 128u32;
+        let mut atlas_w = 32u32;
+        let mut atlas_h = 32u32;
         loop {
             let mut target_bins = BTreeMap::new();
             target_bins.insert(1, TargetBin::new(atlas_w, atlas_h, 1));
@@ -133,7 +179,7 @@ impl<I: Debug + Hash + Ord + Clone> Atlas<I> {
                             } else {
                                 atlas_h <<= 1;
                             }
-                            debug!(target: "client.render.atlas", "Resized Atlas to {}x{}", atlas_w, atlas_h);
+                            info!(target: "client.render.atlas", "Resized Atlas to {}x{}", atlas_w, atlas_h);
                         }
                     }
                 }

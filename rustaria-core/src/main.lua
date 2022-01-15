@@ -12,7 +12,7 @@ tile.register {
 
     -- a full example of a tile setting
     ["alpha"] = tile.default {
-        asset = { mod_id, "your mom"},
+        sprite = { mod_id, "tile/dirt.png" },
         transitional = true,
         collision = { fixed = false },
         opaque = { fixed = false },
