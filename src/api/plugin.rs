@@ -8,9 +8,8 @@ use std::{
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
-use std::sync::Mutex;
 
-use eyre::{ContextCompat, Report};
+use eyre::{Result, eyre, bail};
 use futures::StreamExt;
 use mlua::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -19,7 +18,7 @@ use tokio_stream::wrappers::ReadDirStream;
 use tracing::{debug, info, warn};
 use zip::ZipArchive;
 
-pub async fn scan_and_load_plugins<'lua>(plugins_dir: &Path, lua: &'lua Lua) -> eyre::Result<Plugins<'lua>> {
+pub async fn scan_and_load_plugins<'lua>(plugins_dir: &Path, lua: &'lua Lua) -> Result<Plugins<'lua>> {
     info!("Scanning for plugins in directory {:?}", plugins_dir);
 
     if let Ok(read_dir) = fs::read_dir(&plugins_dir).await {
@@ -148,7 +147,7 @@ impl PluginArchive {
                             "src" => AssetPath::Src(path),
                             "asset" => AssetPath::Asset(path),
                             "manifest.json" => AssetPath::Manifest,
-                            _ => return Err(Report::msg("Unknown File type."))
+                            _ => bail!("Unknown File type.")
                         }
                         , index as u64);
                 }
@@ -173,16 +172,16 @@ impl PluginArchive {
         self.zip = None;
     }
 
-    pub fn get_asset(&mut self, path: AssetPath) -> eyre::Result<Vec<u8>> {
+    pub fn get_asset(&mut self, path: AssetPath) -> Result<Vec<u8>> {
         match &mut self.zip {
             Some(zip) => {
-                let index = self.index.get(&path).wrap_err(format!("Could not find file {:?}", path))?;
+                let index = self.index.get(&path).ok_or_else(|| eyre!("Could not find file {path:?}"))?;
                 let mut result = zip.by_index(*index as usize)?;
                 let mut data = Vec::with_capacity(result.size() as usize);
                 result.read_to_end(&mut data)?;
                 Ok(data)
             }
-            None => Err(Report::msg("Reading not active."))
+            None => bail!("Reading not active.")
         }
     }
 }

@@ -3,9 +3,11 @@ use std::borrow::Cow;
 use bytemuck::Pod;
 use naga::ShaderStage;
 use tracing::debug;
-use wgpu::{AdapterInfo, Buffer, BufferUsages, CommandBuffer, Device, Face, PrimitiveState, Queue, ShaderModuleDescriptor, ShaderSource, Surface, SurfaceConfiguration, TextureView, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
 use wgpu::util::DeviceExt;
-use wgpu::VertexStepMode::Vertex;
+use wgpu::{
+    AdapterInfo, Buffer, BufferUsages, CommandBuffer, Device, Face, PrimitiveState, Queue,
+    ShaderModuleDescriptor, ShaderSource, SurfaceConfiguration, TextureView,
+};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
@@ -13,8 +15,8 @@ use rustaria::api::RustariaApi;
 
 use crate::renderer::tile_drawer::TileDrawer;
 
-mod tile_drawer;
 mod atlas;
+mod tile_drawer;
 
 const DEFAULT_PRIMITIVE: PrimitiveState = PrimitiveState {
     topology: wgpu::PrimitiveTopology::TriangleList,
@@ -25,7 +27,6 @@ const DEFAULT_PRIMITIVE: PrimitiveState = PrimitiveState {
     unclipped_depth: false,
     conservative: false,
 };
-
 
 pub struct Renderer {
     pub surface: wgpu::Surface,
@@ -44,9 +45,18 @@ pub struct QuadPos {
 }
 
 pub trait Drawer {
-    fn new(queue: &Queue, device: &Device, config: &SurfaceConfiguration, api: &mut RustariaApi<'_>) -> Self;
+    fn new(
+        queue: &Queue,
+        device: &Device,
+        config: &SurfaceConfiguration,
+        api: &mut RustariaApi<'_>,
+    ) -> Self;
     fn resize(&mut self, new_size: PhysicalSize<u32>);
-    fn draw(&mut self, view: &TextureView, device: &Device) -> Result<CommandBuffer, wgpu::SurfaceError>;
+    fn draw(
+        &mut self,
+        view: &TextureView,
+        device: &Device,
+    ) -> Result<CommandBuffer, wgpu::SurfaceError>;
 }
 
 impl Renderer {
@@ -116,9 +126,12 @@ impl Renderer {
             0x1010 => "(ImgTec) ",
             0x13B5 => "(arm) ",
             0x5143 => "(Qualcomm) ",
-            _ => ""
+            _ => "",
         };
-        debug!("Vendor ID {} {}Device ID {}", info.vendor, vendor_guess, info.device)
+        debug!(
+            "Vendor ID {} {}Device ID {}",
+            info.vendor, vendor_guess, info.device
+        )
     }
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
@@ -135,12 +148,12 @@ impl Renderer {
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
-        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let view = output
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
 
-
-        self.queue.submit(vec![
-            self.tile_drawer.draw(&view, &self.device)?
-        ]);
+        self.queue
+            .submit(vec![self.tile_drawer.draw(&view, &self.device)?]);
 
         output.present();
         Ok(())

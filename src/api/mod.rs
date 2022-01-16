@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use mlua::{Error, Function};
 use mlua::prelude::*;
+use mlua::{Error, Function};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 use crate::api::plugin::{PluginArchive, Plugins};
@@ -24,8 +24,11 @@ pub struct RustariaApi<'lua> {
 }
 
 impl<'lua> RustariaApi<'lua> {
-    pub fn get_plugin_assets(&mut self, plugin: String) -> Option<&mut PluginArchive> {
-        self.plugins.0.get_mut(&plugin).map(|plugin| &mut plugin.archive)
+    pub fn get_plugin_assets_mut(&mut self, plugin: &str) -> Option<&mut PluginArchive> {
+        self.plugins
+            .0
+            .get_mut(plugin)
+            .map(|plugin| &mut plugin.archive)
     }
 }
 
@@ -71,7 +74,10 @@ proto! {
     tile_methods => TilePrototype | Tile
 }
 
-pub async fn launch_rustaria_api<'lua>(plugins_dir: PathBuf, runtime: &'lua LuaRuntime) -> eyre::Result<RustariaApi<'lua>> {
+pub async fn launch_rustaria_api<'lua>(
+    plugins_dir: PathBuf,
+    runtime: &'lua LuaRuntime,
+) -> eyre::Result<RustariaApi<'lua>> {
     let lua = &runtime.lua;
 
     let mut receiver = register_rustaria_api(lua)?;
@@ -87,7 +93,6 @@ pub async fn launch_rustaria_api<'lua>(plugins_dir: PathBuf, runtime: &'lua LuaR
         };
     }
 
-
     Ok(RustariaApi {
         lua,
         plugins,
@@ -100,12 +105,9 @@ pub struct LuaRuntime {
     lua: Lua,
 }
 
-
 impl LuaRuntime {
     pub fn new() -> Self {
-        Self {
-            lua: Lua::new()
-        }
+        Self { lua: Lua::new() }
     }
 }
 

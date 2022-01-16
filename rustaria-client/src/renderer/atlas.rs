@@ -3,11 +3,12 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 use image::{EncodableLayout, RgbaImage};
-use rectangle_pack::{contains_smallest_box, GroupedRectsToPlace, pack_rects, RectanglePackError, RectanglePackOk, RectToInsert, TargetBin, volume_heuristic};
+use rectangle_pack::{
+    contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert,
+    RectanglePackError, RectanglePackOk, TargetBin,
+};
 use tracing::debug;
 use wgpu::{Device, Extent3d, Queue, Sampler, Texture, TextureView};
-use rustaria::api::RustariaApi;
-use rustaria::registry::AssetLocation;
 
 pub struct Atlas<I: Debug + Hash + Ord + Clone> {
     image_locations: HashMap<I, AtlasLocation>,
@@ -20,37 +21,38 @@ impl<I: Debug + Hash + Ord + Clone> Atlas<I> {
     pub fn new(queue: &Queue, device: &Device, images: Vec<(I, RgbaImage)>) -> Atlas<I> {
         let (atlas_images, width, height) = Self::pack_images(&images);
 
-        let texture = device.create_texture(
-            &wgpu::TextureDescriptor {
-                // All textures are stored as 3D, we represent our 2D texture
-                // by setting depth to 1.
-                size: wgpu::Extent3d {
-                    width,
-                    height,
-                    depth_or_array_layers: 1,
-                },
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                // Most images are stored using sRGB so we need to reflect that here.
-                format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
-                // COPY_DST means that we want to copy data to this texture
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                label: Some("tile_texture"),
-            }
-        );
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            // All textures are stored as 3D, we represent our 2D texture
+            // by setting depth to 1.
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            // Most images are stored using sRGB so we need to reflect that here.
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
+            // COPY_DST means that we want to copy data to this texture
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            label: Some("tile_texture"),
+        });
 
         let mut image_locations = HashMap::new();
         for (pos, (_, image_size)) in atlas_images.packed_locations() {
             let (identifier, image) = images.get(*pos).unwrap();
 
-            image_locations.insert(identifier.clone(), AtlasLocation {
-                x: image_size.x() as f32 / width as f32,
-                y: image_size.y() as f32 / height as f32,
-                width: image_size.width() as f32 / width as f32,
-                height: image_size.height() as f32 / height as f32,
-            });
+            image_locations.insert(
+                identifier.clone(),
+                AtlasLocation {
+                    x: image_size.x() as f32 / width as f32,
+                    y: image_size.y() as f32 / height as f32,
+                    width: image_size.width() as f32 / width as f32,
+                    height: image_size.height() as f32 / height as f32,
+                },
+            );
 
             queue.write_texture(
                 // Tells wgpu where to copy the pixel data
@@ -125,20 +127,18 @@ impl<I: Debug + Hash + Ord + Clone> Atlas<I> {
                 Ok(placement) => {
                     return (placement, atlas_w, atlas_h);
                 }
-                Err(err) => {
-                    match err {
-                        RectanglePackError::NotEnoughBinSpace => {
-                            if atlas_h > atlas_w {
-                                atlas_w <<= 1;
-                            } else {
-                                atlas_h <<= 1;
-                            }
-                            debug!(target: "client.render.atlas", "Resized Atlas to {}x{}", atlas_w, atlas_h);
+                Err(err) => match err {
+                    RectanglePackError::NotEnoughBinSpace => {
+                        if atlas_h > atlas_w {
+                            atlas_w <<= 1;
+                        } else {
+                            atlas_h <<= 1;
                         }
+                        debug!(target: "client.render.atlas", "Resized Atlas to {}x{}", atlas_w, atlas_h);
                     }
-                }
+                },
             };
-        };
+        }
     }
 }
 

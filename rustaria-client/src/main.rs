@@ -11,17 +11,16 @@ use crate::renderer::Renderer;
 pub mod renderer;
 
 use eyre::{eyre, Result};
-use tracing::{error, info};
 use rustaria::api;
 use rustaria::api::LuaRuntime;
 use rustaria::chunk::Chunk;
 use rustaria::player::Player;
 use rustaria::registry::Tag;
 use rustaria::world::World;
+use tracing::{error, info};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-
     rustaria::init_console(true)?;
 
     info!("Rustaria Dedicated Server v{}", env!("CARGO_PKG_VERSION"));

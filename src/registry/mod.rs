@@ -2,13 +2,13 @@
 
 use std::collections::HashMap;
 
+use crate::api::plugin::AssetPath;
+use crate::chunk::tile::TilePrototype;
+use crate::chunk::wall::WallPrototype;
 use bimap::BiHashMap;
 use eyre::{Report, Result};
 use serde::Deserialize;
 use tracing::debug;
-use crate::api::plugin::AssetPath;
-use crate::chunk::tile::TilePrototype;
-use crate::chunk::wall::WallPrototype;
 
 pub struct Registry<P> {
     name: &'static str,
@@ -16,8 +16,6 @@ pub struct Registry<P> {
     entries: Vec<P>,
     current_id: u32,
 }
-
-
 
 impl<P> Registry<P> {
     pub fn new(name: &'static str) -> Self {
@@ -31,7 +29,7 @@ impl<P> Registry<P> {
 
     pub fn register(&mut self, tag: Tag, prototype: P) -> Id {
         let name = self.name;
-        debug!(target: "registry", "{}: Registered {:?}",name, tag);
+        debug!(target: "registry", "{}: Registered {:?}", name, tag);
         let id = Id(self.current_id);
         self.tag_to_id.insert(tag, id);
         self.entries.insert(self.current_id as usize, prototype);
@@ -39,8 +37,8 @@ impl<P> Registry<P> {
         id
     }
 
-    pub fn get_all(&self) -> &Vec<P> {
-        &self.entries
+    pub fn entries(&self) -> impl Iterator<Item = &P> {
+        self.entries.iter()
     }
 
     pub fn get_id(&self, tag: &Tag) -> Option<&Id> {
@@ -86,5 +84,7 @@ pub struct LanguageKey {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct AssetLocation(pub String,pub AssetPath);
-
+pub struct AssetLocation {
+    pub plugin_id: String,
+    pub path: AssetPath,
+}
