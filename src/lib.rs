@@ -33,8 +33,10 @@ pub fn init_console(verbosity: Verbosity) -> eyre::Result<()> {
     let filter_layer = EnvFilter::try_from_default_env().or_else(|_| {
         EnvFilter::try_new(match verbosity {
             Verbosity::Normal => "info,wgpu_hal=warn,wgpu_core=warn",
-            Verbosity::Verbose => "debug,wgpu_core::present=info,wgpu_core::device=info,wgpu_hal=info,naga=info",
-            Verbosity::VeryVerbose => "trace,wgpu_core=info",
+            Verbosity::Verbose => {
+                "debug,wgpu_hal=warn,wgpu_core=warn,naga=info"
+            }
+            Verbosity::VeryVerbose => "trace,wgpu_core::present=info,wgpu_core::device=info,wgpu_hal=info,naga=info",
             Verbosity::VeryVeryVerbose => "trace",
         })
     })?;

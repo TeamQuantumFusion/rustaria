@@ -43,7 +43,8 @@ macro_rules! proto {
                             let send = send.clone();
                             for (key, prototype) in prototypes {
                                 let tag = Tag::new(lua.globals().get("mod_id")?, key);
-                                send.send(PrototypeRequest::$REQUEST(tag, prototype)).map_err(|err| Error::RuntimeError(err.to_string()))?;
+                                send.send(PrototypeRequest::$REQUEST(tag, prototype))
+                                    .map_err(|err| Error::RuntimeError(err.to_string()))?;
                             }
                             Ok(())
                         })?),

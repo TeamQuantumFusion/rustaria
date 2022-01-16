@@ -55,7 +55,6 @@ async fn main() -> Result<()> {
     let mut window = WindowBuilder::new().build(&evloop)?;
 
     let mut renderer = Renderer::new(&window, &mut api).await;
-    info!("f");
 
     let mut profiler = Profiler {
         last_fps: Instant::now(),

@@ -8,13 +8,13 @@ pub struct Opt {
     /// Specifies the verbosity/detail of the logging output.
     ///
     /// This comes in four verbosity levels:
-    /// 
+    ///
     /// · `(unset)`: No debug information shown, least verbose
-    /// 
+    ///
     /// · `-v`: Some debug information shown, especially ones pertaining to the game itself.
-    /// 
+    ///
     /// · `-vv`: Almost all debug information shown, including trace-level debug details.
-    /// 
+    ///
     /// · `-vvv`: All debug information shown. This includes (unfortunately) a logging spam from `wgpu`
     ///    that logs on _every_ single frame.
     ///    Output under this verbosity setting is practically _unusable_, and should only be
@@ -49,7 +49,7 @@ pub enum Verbosity {
     /// Corresponds to two (2) verbosity flags (`-vv`) in the [command-line parameters](Opt).
     VeryVerbose,
     /// All debug information shown.
-    /// 
+    ///
     /// **CAUTION**: This includes (unfortunately) a logging spam from `wgpu`
     /// that logs on _every_ single frame.
     /// Output under this verbosity setting is practically _unusable_, and should only be

@@ -3,15 +3,11 @@
 pub struct Player {
     x: f32,
     y: f32,
-    name: String
+    name: String,
 }
 
 impl Player {
     pub fn new(x: f32, y: f32, name: String) -> Self {
-        Self {
-            x,
-            y,
-            name
-        }
+        Self { x, y, name }
     }
 }
