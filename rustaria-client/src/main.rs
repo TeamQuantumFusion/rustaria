@@ -1,32 +1,38 @@
-use std::path::PathBuf;
+use crate::renderer::Renderer;
+use eyre::{eyre, Result};
+use rustaria::api::{self, LuaRuntime};
+use rustaria::chunk::Chunk;
+use rustaria::player::Player;
+use rustaria::registry::Tag;
+use rustaria::world::World;
 use std::time::Instant;
+use structopt::StructOpt;
+use tracing::{debug, error, info};
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
     window::{Window, WindowBuilder},
 };
 
-use crate::renderer::Renderer;
-
 pub mod renderer;
 
-use eyre::{eyre, Result};
-use tracing::{error, info};
-use rustaria::api;
-use rustaria::api::LuaRuntime;
-use rustaria::chunk::Chunk;
-use rustaria::player::Player;
-use rustaria::registry::Tag;
-use rustaria::world::World;
+#[derive(Debug, StructOpt)]
+#[structopt(name = "rustaria-client", about = "The interactive client of Rustaria")]
+struct Opt {
+    #[structopt(flatten)]
+    inner: rustaria::opt::Opt,
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let opt = Opt::from_args();
+    debug!(?opt, "Got command-line args");
 
-    rustaria::init_console(false)?;
+    rustaria::init_console(opt.inner.verbosity)?;
 
-    info!("Rustaria Dedicated Server v{}", env!("CARGO_PKG_VERSION"));
+    info!("Rustaria Client v{}", env!("CARGO_PKG_VERSION"));
     let runtime = LuaRuntime::new();
-    let mut api = api::launch_rustaria_api(PathBuf::from("./plugins"), &runtime).await?;
+    let mut api = api::launch_rustaria_api(opt.inner.plugins_dir, &runtime).await?;
 
     // create runtime
     let air_tile = api
@@ -44,14 +50,11 @@ async fn main() -> Result<()> {
         vec![empty_chunk, empty_chunk, empty_chunk, empty_chunk],
     )?;
 
-    info!("f");
-
     world.player_join(Player::new(0.0, 0.0, "dev".to_string()));
     let evloop = EventLoop::new();
     let mut window = WindowBuilder::new().build(&evloop)?;
 
     let mut renderer = Renderer::new(&window, &mut api).await;
-    info!("f");
 
     let mut profiler = Profiler {
         last_fps: Instant::now(),
@@ -98,7 +101,7 @@ fn event_loop(
                 Ok(_) => {
                     profiler.fps += 1;
                     if profiler.last_fps.elapsed().as_millis() > 1000 {
-                        println!("FPS: {}", profiler.fps);
+                        debug!(?profiler.fps);
 
                         profiler.fps = 0;
                         profiler.last_fps = Instant::now();

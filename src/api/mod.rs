@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use mlua::{Error, Function};
 use mlua::prelude::*;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
@@ -14,9 +13,9 @@ mod log;
 #[macro_use]
 pub(crate) mod macros;
 pub mod plugin;
+mod meta;
 
 pub struct RustariaApi<'lua> {
-    lua: &'lua Lua,
     plugins: Plugins<'lua>,
 
     pub tiles: Registry<TilePrototype>,
@@ -24,23 +23,36 @@ pub struct RustariaApi<'lua> {
 }
 
 impl<'lua> RustariaApi<'lua> {
-    pub fn get_plugin_assets(&mut self, plugin: String) -> Option<&mut PluginArchive> {
-        self.plugins.0.get_mut(&plugin).map(|plugin| &mut plugin.archive)
+    pub fn get_plugin_assets_mut(&mut self, plugin: &str) -> Option<&mut PluginArchive> {
+        self.plugins
+            .0
+            .get_mut(plugin)
+            .map(|plugin| &mut plugin.archive)
     }
+}
+
+fn get_plugin_id(lua: &Lua) -> LuaResult<String> {
+    // FIXME(leocth): cache this
+    let package: LuaTable = lua.globals().get("package")?;
+    let preload: LuaTable = package.get("preload")?;
+    let meta: LuaFunction = preload.get("meta")?;
+    let meta: LuaTable = meta.call(())?;
+    meta.get("plugin_id")
 }
 
 macro_rules! proto {
     ($($NAME:ident => $PROTO:ty | $REQUEST:ident),*) => {
         $(
-            fn $NAME(lua: &Lua, send: UnboundedSender<PrototypeRequest>) -> LuaResult<Function> {
+            fn $NAME(lua: &Lua, send: UnboundedSender<PrototypeRequest>) -> LuaResult<LuaFunction> {
                 lua.create_function(move |lua, _: ()| {
                     let send = send.clone();
                     lua.create_table_from([
                         ("register", lua.create_function(move |lua, prototypes: HashMap<String, _>| {
                             let send = send.clone();
                             for (key, prototype) in prototypes {
-                                let tag = Tag::new(lua.globals().get("mod_id")?, key);
-                                send.send(PrototypeRequest::$REQUEST(tag, prototype)).map_err(|err| Error::RuntimeError(err.to_string()))?;
+                                let tag = Tag::new(get_plugin_id(lua)?, key);
+                                send.send(PrototypeRequest::$REQUEST(tag, prototype))
+                                    .map_err(|err| LuaError::RuntimeError(err.to_string()))?;
                             }
                             Ok(())
                         })?),
@@ -71,7 +83,10 @@ proto! {
     tile_methods => TilePrototype | Tile
 }
 
-pub async fn launch_rustaria_api<'lua>(plugins_dir: PathBuf, runtime: &'lua LuaRuntime) -> eyre::Result<RustariaApi<'lua>> {
+pub async fn launch_rustaria_api<'lua>(
+    plugins_dir: PathBuf,
+    runtime: &'lua LuaRuntime,
+) -> eyre::Result<RustariaApi<'lua>> {
     let lua = &runtime.lua;
 
     let mut receiver = register_rustaria_api(lua)?;
@@ -87,9 +102,7 @@ pub async fn launch_rustaria_api<'lua>(plugins_dir: PathBuf, runtime: &'lua LuaR
         };
     }
 
-
     Ok(RustariaApi {
-        lua,
         plugins,
         tiles: tile,
         walls: wall,
@@ -100,12 +113,9 @@ pub struct LuaRuntime {
     lua: Lua,
 }
 
-
 impl LuaRuntime {
     pub fn new() -> Self {
-        Self {
-            lua: Lua::new()
-        }
+        Self { lua: Lua::new() }
     }
 }
 
