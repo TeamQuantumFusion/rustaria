@@ -4,10 +4,7 @@ use bytemuck::Pod;
 use naga::ShaderStage;
 use tracing::debug;
 use wgpu::util::DeviceExt;
-use wgpu::{
-    AdapterInfo, Buffer, BufferUsages, CommandBuffer, Device, Face, PrimitiveState, Queue,
-    ShaderModuleDescriptor, ShaderSource, SurfaceConfiguration, TextureView,
-};
+use wgpu::{AdapterInfo, Backend, BindGroup, BindGroupLayout, Buffer, BufferUsages, CommandBuffer, Device, Face, PrimitiveState, Queue, ShaderModuleDescriptor, ShaderSource, SurfaceConfiguration, TextureView};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
@@ -35,6 +32,9 @@ pub struct Renderer {
     pub config: wgpu::SurfaceConfiguration,
     pub size: winit::dpi::PhysicalSize<u32>,
     tile_drawer: TileDrawer,
+    y_ratio_buffer: Buffer,
+    y_ratio_bind_group: BindGroup,
+    y_ratio_bind_group_layout: BindGroupLayout,
 }
 
 #[repr(C)]
@@ -42,21 +42,6 @@ pub struct Renderer {
 pub struct QuadPos {
     x: f32,
     y: f32,
-}
-
-pub trait Drawer {
-    fn new(
-        queue: &Queue,
-        device: &Device,
-        config: &SurfaceConfiguration,
-        api: &mut RustariaApi<'_>,
-    ) -> Self;
-    fn resize(&mut self, new_size: PhysicalSize<u32>);
-    fn draw(
-        &mut self,
-        view: &TextureView,
-        device: &Device,
-    ) -> Result<CommandBuffer, wgpu::SurfaceError>;
 }
 
 impl Renderer {
@@ -68,7 +53,7 @@ impl Renderer {
 
         // The instance is a handle to our GPU
         // Backends::all => Vulkan + Metal + DX12 + Browser WebGPU
-        let instance = wgpu::Instance::new(wgpu::Backends::all());
+        let instance = wgpu::Instance::new(wgpu::Backends::from(Backend::Dx12));
         let surface = unsafe { instance.create_surface(window) };
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -100,9 +85,46 @@ impl Renderer {
         };
         surface.configure(&device, &config);
 
+        let y_ratio_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("y_ratio_buffer"),
+                contents: bytemuck::cast_slice(&[size.width as f32 / size.height as f32]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            }
+        );
+
+        let y_ratio_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }
+            ],
+            label: Some("y_ratio_bind_group_layout"),
+        });
+
+        let y_ratio_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &y_ratio_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: y_ratio_buffer.as_entire_binding(),
+                }
+            ],
+            label: Some("y_ratio_bind_group"),
+        });
+
         let tile_drawer = TileDrawer::new(&queue, &device, &config, api);
 
         Self::print_adapter_info(adapter.get_info());
+
+
 
         Self {
             surface,
@@ -111,6 +133,9 @@ impl Renderer {
             config,
             size,
             tile_drawer,
+            y_ratio_buffer,
+            y_ratio_bind_group,
+            y_ratio_bind_group_layout
         }
     }
 
@@ -155,6 +180,7 @@ impl Renderer {
         self.queue
             .submit(vec![self.tile_drawer.draw(&view, &self.device)?]);
 
+
         output.present();
         Ok(())
     }
@@ -163,15 +189,10 @@ impl Renderer {
 pub fn get_shader_module<'a>(
     name: &'static str,
     code: &'static str,
-    stage: ShaderStage,
 ) -> ShaderModuleDescriptor<'a> {
     ShaderModuleDescriptor {
         label: Some(name),
-        source: ShaderSource::Glsl {
-            shader: Cow::from(code),
-            stage,
-            defines: Default::default(),
-        },
+        source: ShaderSource::Wgsl(Cow::from(code)),
     }
 }
 

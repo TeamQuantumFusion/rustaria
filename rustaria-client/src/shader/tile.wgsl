@@ -8,6 +8,9 @@ struct VertexOutput {
     [[location(0)]] tex_coords: vec2<f32>;
 };
 
+[[group(1), binding(0)]]
+var<uniform> y_ratio: f32;
+
 [[stage(vertex)]]
 fn vs_main(
     model: VertexInput

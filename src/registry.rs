@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use crate::api::plugin::AssetPath;
+use crate::api::plugin::ArchivePath;
 use crate::chunk::tile::TilePrototype;
 use crate::chunk::wall::WallPrototype;
 use bimap::BiHashMap;
@@ -64,7 +64,7 @@ impl Tag {
         Self(mod_id, string)
     }
 
-    pub fn parse(string: &str) -> Result<Self> {
+    pub fn parse(string: &str) -> eyre::Result<Self> {
         if let Some(colon) = string.find(':') {
             let (mod_id, obj_id) = string.split_at(colon);
             Ok(Self(mod_id.to_string(), obj_id[1..].to_string()))
@@ -84,7 +84,4 @@ pub struct LanguageKey {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct AssetLocation {
-    pub plugin_id: String,
-    pub path: AssetPath,
-}
+pub struct AssetLocation(pub String, pub String);

@@ -1,19 +1,21 @@
+use std::path::PathBuf;
 use eyre::eyre;
 use image::RgbaImage;
 use naga::ShaderStage;
-use tracing::debug;
+use tracing::{debug, error};
 use wgpu::{
     Buffer, BufferUsages, CommandBuffer, Device, FragmentState, Queue, RenderPipeline,
     SurfaceConfiguration, TextureView, VertexAttribute, VertexBufferLayout, VertexFormat,
     VertexState, VertexStepMode,
 };
 use winit::dpi::PhysicalSize;
+use rustaria::api::plugin::ArchivePath;
 
 use rustaria::api::RustariaApi;
 use rustaria::registry::{AssetLocation, Id};
 
 use crate::renderer::atlas::Atlas;
-use crate::renderer::{create_buffer, get_shader_module, Drawer, QuadPos, DEFAULT_PRIMITIVE};
+use crate::renderer::{create_buffer, get_shader_module, QuadPos, DEFAULT_PRIMITIVE};
 
 pub struct TileDrawer {
     // Pipeline
@@ -26,13 +28,13 @@ pub struct TileDrawer {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct TileTexturePos {
-    x: u32,
-    y: u32,
+pub struct TileVertex {
+    pos: [f32; 2],
+    tex_pos: [f32; 2],
 }
 
-impl Drawer for TileDrawer {
-    fn new(
+impl TileDrawer {
+    pub fn new(
         queue: &Queue,
         device: &Device,
         config: &SurfaceConfiguration,
@@ -43,12 +45,12 @@ impl Drawer for TileDrawer {
             tile: &AssetLocation,
             api: &mut RustariaApi<'_>,
         ) -> eyre::Result<(Id, RgbaImage)> {
-            let AssetLocation { plugin_id, path } = tile;
+            let AssetLocation(mod_id, path) = tile;
             let archive = api
-                .get_plugin_assets_mut(&plugin_id)
+                .get_plugin_assets_mut(&mod_id)
                 .ok_or_else(|| eyre!("Could not find plugin {plugin_id}"))?;
 
-            let data = archive.get_asset(path.clone())?;
+            let data = archive.get_asset(ArchivePath::Asset(PathBuf::from(path)))?;
             let image = image::load_from_memory(data.as_slice())?;
             Ok((Id(id as u32), image.into_rgba8()))
         }
@@ -59,6 +61,8 @@ impl Drawer for TileDrawer {
             .enumerate()
             .map(|(id, prototype)| (id, prototype.sprite.clone()))
             .collect();
+
+        error!("{:?}", map);
 
         let images = map
             .into_iter()
@@ -76,40 +80,39 @@ impl Drawer for TileDrawer {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Tile Pipeline layout"),
-                bind_group_layouts: &[],
+                bind_group_layouts: &[&atlas.bind_layout],
                 push_constant_ranges: &[],
             });
 
-        let fragment_module = get_shader_module(
-            "triangle-fs",
-            include_str!("../shader/triangle-fs.glsl"),
-            ShaderStage::Fragment,
-        );
-        let vertex_module = get_shader_module(
-            "triangle-vs",
-            include_str!("../shader/triangle-vs.glsl"),
-            ShaderStage::Vertex,
+        let shader_module = get_shader_module(
+            "tile_module",
+            include_str!("../shader/tile.wgsl"),
         );
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Tile Pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: VertexState {
-                module: &device.create_shader_module(&vertex_module),
-                entry_point: "main",
+                module: &device.create_shader_module(&shader_module),
+                entry_point: "vs_main",
                 buffers: &[VertexBufferLayout {
-                    array_stride: std::mem::size_of::<(f32, f32)>() as wgpu::BufferAddress,
+                    array_stride: std::mem::size_of::<TileVertex>() as wgpu::BufferAddress,
                     step_mode: VertexStepMode::Vertex,
                     attributes: &[VertexAttribute {
                         format: VertexFormat::Float32x2,
                         offset: 0,
                         shader_location: 0,
+
+                    }, VertexAttribute {
+                        format: VertexFormat::Float32x2,
+                        offset: std::mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
+                        shader_location: 1,
                     }],
                 }],
             },
             fragment: Some(FragmentState {
-                module: &device.create_shader_module(&fragment_module),
-                entry_point: "main",
+                module: &device.create_shader_module(&shader_module),
+                entry_point: "fs_main",
                 targets: &[wgpu::ColorTargetState {
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -128,12 +131,12 @@ impl Drawer for TileDrawer {
 
         let tile_buffer = create_buffer(
             device,
-            "stuff",
+            "tile_buffer",
             &[
-                QuadPos { x: -0.5, y: 0.5 },
-                QuadPos { x: -0.5, y: -0.5 },
-                QuadPos { x: 0.5, y: 0.5 },
-                QuadPos { x: 0.5, y: -0.5 },
+                TileVertex { pos: [-0.5, 0.5], tex_pos: [0.0, 1.0] },
+                TileVertex { pos: [-0.5, -0.5], tex_pos: [0.0, 0.0] },
+                TileVertex { pos: [0.5, 0.5], tex_pos: [1.0, 1.0] },
+                TileVertex { pos: [0.5, -0.5], tex_pos: [1.0, 0.0] },
             ],
             BufferUsages::VERTEX,
         );
@@ -153,9 +156,9 @@ impl Drawer for TileDrawer {
         }
     }
 
-    fn resize(&mut self, _: PhysicalSize<u32>) {}
+    pub fn resize(&mut self, _: PhysicalSize<u32>) {}
 
-    fn draw(
+    pub fn draw(
         &mut self,
         view: &TextureView,
         device: &Device,
@@ -183,9 +186,10 @@ impl Drawer for TileDrawer {
         });
 
         render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, &self.atlas.bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.tile_buffer.slice(..));
         render_pass.set_index_buffer(self.quad_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-        render_pass.draw_indexed(0..6, 0, 0..(24 * 24));
+        render_pass.draw_indexed(0..6, 0, 0..1);
 
         // drop render pass here because it mutably borrows `encoder`,
         // and we wanna use it later

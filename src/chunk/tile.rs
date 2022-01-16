@@ -2,10 +2,10 @@ use std::{collections::HashSet, hash::Hash};
 
 use mlua::prelude::*;
 use serde::Deserialize;
-use crate::api::plugin::AssetPath;
+use crate::api::plugin::ArchivePath;
 use crate::api::Prototype;
 
-use crate::registry::{AssetLocation, Id, LuaAssetLocation, Tag};
+use crate::registry::{AssetLocation, Id, Tag};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Tile {
@@ -19,7 +19,7 @@ pub struct TilePrototype {
     // name: LanguageKey,
     // sprite_path: AssetLocation,
     #[serde(default)]
-    pub sprite: Option<LuaAssetLocation>,
+    pub sprite: Option<AssetLocation>,
     #[serde(default)]
     pub transitional: bool,
     #[serde(default = "TilePrototype::default_collision")]

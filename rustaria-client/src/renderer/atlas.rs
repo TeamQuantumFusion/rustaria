@@ -4,17 +4,19 @@ use std::hash::Hash;
 
 use image::{EncodableLayout, RgbaImage};
 use rectangle_pack::{
-    contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert,
-    RectanglePackError, RectanglePackOk, TargetBin,
+    contains_smallest_box, GroupedRectsToPlace, pack_rects, RectanglePackError, RectanglePackOk,
+    RectToInsert, TargetBin, volume_heuristic,
 };
 use tracing::debug;
-use wgpu::{Device, Extent3d, Queue, Sampler, Texture, TextureView};
+use wgpu::{BindGroup, BindGroupLayout, Device, Extent3d, Queue, Sampler, Texture, TextureView};
 
 pub struct Atlas<I: Debug + Hash + Ord + Clone> {
     image_locations: HashMap<I, AtlasLocation>,
     texture: Texture,
     sampler: Sampler,
     texture_view: TextureView,
+    pub bind_group: BindGroup,
+    pub bind_layout: BindGroupLayout,
 }
 
 impl<I: Debug + Hash + Ord + Clone> Atlas<I> {
@@ -32,10 +34,7 @@ impl<I: Debug + Hash + Ord + Clone> Atlas<I> {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            // Most images are stored using sRGB so we need to reflect that here.
             format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
-            // COPY_DST means that we want to copy data to this texture
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             label: Some("tile_texture"),
         });
@@ -55,7 +54,6 @@ impl<I: Debug + Hash + Ord + Clone> Atlas<I> {
             );
 
             queue.write_texture(
-                // Tells wgpu where to copy the pixel data
                 wgpu::ImageCopyTexture {
                     texture: &texture,
                     mip_level: 0,
@@ -66,9 +64,7 @@ impl<I: Debug + Hash + Ord + Clone> Atlas<I> {
                     },
                     aspect: wgpu::TextureAspect::All,
                 },
-                // The actual pixel data
                 image.as_bytes(),
-                // The layout of the texture
                 wgpu::ImageDataLayout {
                     offset: 0,
                     bytes_per_row: std::num::NonZeroU32::new(4 * image_size.width()),
@@ -77,7 +73,7 @@ impl<I: Debug + Hash + Ord + Clone> Atlas<I> {
                 Extent3d {
                     width: image_size.width(),
                     height: image_size.height(),
-                    depth_or_array_layers: 0,
+                    depth_or_array_layers: 1,
                 },
             );
         }
@@ -87,17 +83,62 @@ impl<I: Debug + Hash + Ord + Clone> Atlas<I> {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
+            mag_filter: wgpu::FilterMode::Nearest,
             min_filter: wgpu::FilterMode::Nearest,
             mipmap_filter: wgpu::FilterMode::Nearest,
             ..Default::default()
         });
+
+        let bind_layout = device.create_bind_group_layout(
+            &wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+                label: Some("bind_group_layout"),
+            }
+        );
+
+        let bind_group = device.create_bind_group(
+            &wgpu::BindGroupDescriptor {
+                layout: &bind_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&texture_view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(&sampler),
+                    }
+                ],
+                label: Some("bind_group"),
+            }
+        );
+
+
 
         Atlas {
             image_locations,
             texture,
             sampler,
             texture_view,
+            bind_layout,
+            bind_group
         }
     }
 

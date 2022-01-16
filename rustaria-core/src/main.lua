@@ -13,7 +13,7 @@ tile.register {
     ["air"] = tile.default {},
     -- a full example of a tile setting
     ["alpha"] = tile.default {
-        asset = {meta.plugin_id, "your mom"},
+        sprite = { meta.plugin_id, "tile/dirt.png" },
         transitional = true,
         collision = {fixed = false},
         opaque = {fixed = false},

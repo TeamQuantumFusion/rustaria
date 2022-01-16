@@ -70,10 +70,10 @@ async fn process_file<'lua>(entry: DirEntry, lua: &'lua Lua) -> Option<Plugin<'l
 async fn load_plugin<'lua>(path: &Path, lua: &'lua Lua) -> eyre::Result<Plugin<'lua>> {
     let mut archive = PluginArchive::new(path)?;
 
-    let data = archive.get_asset(AssetPath::Manifest)?;
+    let data = archive.get_asset(ArchivePath::Manifest)?;
     let manifest: Manifest = serde_json::from_reader(data.as_slice())?;
 
-    let source = archive.get_asset(AssetPath::Src(PathBuf::from(&manifest.init_path)))?;
+    let source = archive.get_asset(ArchivePath::Src(PathBuf::from(&manifest.init_path)))?;
     let init = lua.load(&source).into_function()?;
     info!(
         "Loaded plugin {} v{} from [{}]",
@@ -131,12 +131,12 @@ fn file_name_or_unknown(path: &Path) -> &str {
 
 pub struct PluginArchive {
     path: PathBuf,
-    index: HashMap<AssetPath, u64>,
+    index: HashMap<ArchivePath, u64>,
     zip: Option<ZipArchive<File>>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Deserialize)]
-pub enum AssetPath {
+pub enum ArchivePath {
     Asset(PathBuf),
     Src(PathBuf),
     Manifest,
@@ -157,9 +157,9 @@ impl PluginArchive {
                     let path = components.collect();
                     file_lookup.insert(
                         match option.as_os_str().to_str().unwrap() {
-                            "src" => AssetPath::Src(path),
-                            "asset" => AssetPath::Asset(path),
-                            "manifest.json" => AssetPath::Manifest,
+                            "src" => ArchivePath::Src(path),
+                            "asset" => ArchivePath::Asset(path),
+                            "manifest.json" => ArchivePath::Manifest,
                             _ => bail!("Unknown File type."),
                         },
                         index as u64,
@@ -186,7 +186,7 @@ impl PluginArchive {
         self.zip = None;
     }
 
-    pub fn get_asset(&mut self, path: AssetPath) -> Result<Vec<u8>> {
+    pub fn get_asset(&mut self, path: ArchivePath) -> Result<Vec<u8>> {
         match &mut self.zip {
             Some(zip) => {
                 let index = self
