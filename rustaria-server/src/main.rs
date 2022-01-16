@@ -1,34 +1,31 @@
 use eyre::{eyre, Result};
-use std::{env, path::PathBuf};
+use std::env;
 use structopt::StructOpt;
-use tracing::info;
+use tracing::{debug, info};
 
 use rustaria::api::{self, LuaRuntime};
 use rustaria::chunk::Chunk;
 use rustaria::player::Player;
-use rustaria::registry::{Tag};
+use rustaria::registry::Tag;
 use rustaria::world::World;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "rustaria-server", about = "The serverside face of Rustaria")]
 struct Opt {
-    /// Activate debug mode (equivalent to setting RUST_LOG to "debug")
-    #[structopt(long)]
-    debug: bool,
-
-    /// Plugin directory. Defaults to `./plugins`.
-    #[structopt(long = "plugins_dir", parse(from_os_str), default_value = "plugins")]
-    plugins_dir: PathBuf,
+    #[structopt(flatten)]
+    inner: rustaria::opt::Opt,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let opt = Opt::from_args();
-    rustaria::init_console(opt.debug)?;
+    debug!(?opt, "Got command-line args");
+
+    rustaria::init_console(opt.inner.verbosity)?;
 
     info!("Rustaria Dedicated Server v{}", env!("CARGO_PKG_VERSION"));
     let lua = LuaRuntime::new();
-    let stack = api::launch_rustaria_api(opt.plugins_dir, &lua).await?;
+    let stack = api::launch_rustaria_api(opt.inner.plugins_dir, &lua).await?;
 
     // create runtime
     let air_tile = stack
