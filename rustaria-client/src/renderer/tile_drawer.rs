@@ -10,7 +10,6 @@ use wgpu::{
 use winit::dpi::PhysicalSize;
 
 use rustaria::api::RustariaApi;
-use rustaria::chunk::tile::TilePrototype;
 use rustaria::registry::{AssetLocation, Id};
 
 use crate::renderer::atlas::Atlas;

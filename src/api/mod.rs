@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use mlua::prelude::*;
-use mlua::{Error, Function};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 use crate::api::plugin::{PluginArchive, Plugins};
@@ -14,9 +13,9 @@ mod log;
 #[macro_use]
 pub(crate) mod macros;
 pub mod plugin;
+mod meta;
 
 pub struct RustariaApi<'lua> {
-    lua: &'lua Lua,
     plugins: Plugins<'lua>,
 
     pub tiles: Registry<TilePrototype>,
@@ -32,19 +31,28 @@ impl<'lua> RustariaApi<'lua> {
     }
 }
 
+fn get_plugin_id(lua: &Lua) -> LuaResult<String> {
+    // FIXME(leocth): cache this
+    let package: LuaTable = lua.globals().get("package")?;
+    let preload: LuaTable = package.get("preload")?;
+    let meta: LuaFunction = preload.get("meta")?;
+    let meta: LuaTable = meta.call(())?;
+    meta.get("plugin_id")
+}
+
 macro_rules! proto {
     ($($NAME:ident => $PROTO:ty | $REQUEST:ident),*) => {
         $(
-            fn $NAME(lua: &Lua, send: UnboundedSender<PrototypeRequest>) -> LuaResult<Function> {
+            fn $NAME(lua: &Lua, send: UnboundedSender<PrototypeRequest>) -> LuaResult<LuaFunction> {
                 lua.create_function(move |lua, _: ()| {
                     let send = send.clone();
                     lua.create_table_from([
                         ("register", lua.create_function(move |lua, prototypes: HashMap<String, _>| {
                             let send = send.clone();
                             for (key, prototype) in prototypes {
-                                let tag = Tag::new(lua.globals().get("mod_id")?, key);
+                                let tag = Tag::new(get_plugin_id(lua)?, key);
                                 send.send(PrototypeRequest::$REQUEST(tag, prototype))
-                                    .map_err(|err| Error::RuntimeError(err.to_string()))?;
+                                    .map_err(|err| LuaError::RuntimeError(err.to_string()))?;
                             }
                             Ok(())
                         })?),
@@ -95,7 +103,6 @@ pub async fn launch_rustaria_api<'lua>(
     }
 
     Ok(RustariaApi {
-        lua,
         plugins,
         tiles: tile,
         walls: wall,
