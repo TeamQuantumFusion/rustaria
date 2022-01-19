@@ -4,6 +4,7 @@ use crate::api::{Prototype, RustariaApi};
 use crate::chunk::tile::Tile;
 use crate::chunk::wall::Wall;
 use crate::registry::{Id, Tag};
+use crate::types::ChunkSubPos;
 
 pub mod fluid;
 pub mod foliage;
@@ -30,11 +31,6 @@ impl Chunk {
     }
 }
 
-pub struct ChunkSubPos {
-    x: u8,
-    y: u8,
-}
-
 #[derive(Copy, Clone)]
 pub struct ChunkGrid<V: Clone + Copy> {
     grid: [[V; CHUNK_SIZE]; CHUNK_SIZE],
@@ -49,17 +45,17 @@ impl<V: Clone + Copy> ChunkGrid<V> {
 
     fn get(&self, pos: ChunkSubPos) -> &V {
         debug_assert!(
-            pos.x < CHUNK_SIZE as u8 && pos.y < CHUNK_SIZE as u8,
+            pos.x() < CHUNK_SIZE as u8 && pos.y() < CHUNK_SIZE as u8,
             "ChunkSubPos is too big."
         );
-        &self.grid[pos.y as usize][pos.x as usize]
+        &self.grid[pos.y() as usize][pos.x() as usize]
     }
 
     fn set(&mut self, pos: ChunkSubPos, value: V) {
         debug_assert!(
-            pos.x < CHUNK_SIZE as u8 && pos.y < CHUNK_SIZE as u8,
+            pos.x() < CHUNK_SIZE as u8 && pos.y() < CHUNK_SIZE as u8,
             "ChunkSubPos is too big."
         );
-        self.grid[pos.y as usize][pos.x as usize] = value;
+        self.grid[pos.y() as usize][pos.x() as usize] = value;
     }
 }

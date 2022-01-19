@@ -5,6 +5,7 @@ use std::fmt::{Display, Formatter};
 
 use crate::chunk::Chunk;
 use crate::player::Player;
+use crate::types::ChunkPos;
 
 pub struct World {
     // size is chunks x chunks
@@ -13,11 +14,6 @@ pub struct World {
     // y[x,x,x,x], y[x,x,x,x], y[x,x,x,x], y[x,x,x,x]
     chunks: Vec<Chunk>,
     players: HashMap<PlayerId, Player>,
-}
-
-pub struct ChunkPos {
-    x: i32,
-    y: u32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -53,8 +49,8 @@ impl World {
     pub fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
         let world_w = self.chunk_size.0;
         let world_h = self.chunk_size.1;
-        let internal_x = pos.x.checked_add(world_w as i32 / 2)? as u32;
-        let internal_y = pos.y;
+        let internal_x = pos.x().checked_add(world_w as i32 / 2)? as u32;
+        let internal_y = pos.y();
 
         if internal_x > world_w || internal_y > world_h {
             return None;
