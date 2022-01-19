@@ -16,6 +16,7 @@ pub enum Direction {
     Right,
 }
 
+
 impl Direction {
     pub fn cw(self) -> Self {
         match self {
@@ -42,6 +43,11 @@ impl Direction {
             Direction::Left => Direction::Right,
             Direction::Right => Direction::Left,
         }
+    }
+
+    pub fn all() -> [Direction; 4] {
+        static VALUE: [Direction; 4] = [Direction::Top, Direction::Left, Direction::Bottom, Direction::Right];
+        VALUE
     }
 }
 

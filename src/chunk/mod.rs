@@ -4,7 +4,7 @@ use crate::api::{Prototype, RustariaApi};
 use crate::chunk::tile::Tile;
 use crate::chunk::wall::Wall;
 use crate::registry::{Id, Tag};
-use crate::types::{CHUNK_SIZE, ChunkSubPos};
+use crate::types::{ChunkSubPos, CHUNK_SIZE, Direction};
 
 pub mod fluid;
 pub mod foliage;
@@ -12,11 +12,10 @@ pub mod tile;
 pub mod tree;
 pub mod wall;
 
-
 #[derive(Copy, Clone)]
 pub struct Chunk {
-    pub tiles: ChunkGrid<Tile>,
-    pub walls: ChunkGrid<Wall>,
+    pub tiles: ChunkGrid<Tile, Neighbor>,
+    pub walls: ChunkGrid<Wall, Neighbor>,
 }
 
 impl Chunk {
@@ -31,14 +30,24 @@ impl Chunk {
 }
 
 #[derive(Copy, Clone)]
-pub struct ChunkGrid<V: Clone + Copy> {
+pub struct ChunkGrid<V, N>
+where
+    V: Clone + Copy,
+    N: NeighborType<V> + Clone + Copy,
+{
     grid: [[V; CHUNK_SIZE]; CHUNK_SIZE],
+    neighbor_matrix: [[N; CHUNK_SIZE]; CHUNK_SIZE],
 }
 
-impl<V: Clone + Copy> ChunkGrid<V> {
-    pub fn new(value: V) -> ChunkGrid<V> {
+impl<V, N> ChunkGrid<V, N>
+where
+    V: Clone + Copy,
+    N: NeighborType<V> + Clone + Copy,
+{
+    pub fn new(value: V) -> ChunkGrid<V, N> {
         ChunkGrid {
-            grid: [[value; CHUNK_SIZE]; CHUNK_SIZE]
+            grid: [[value; CHUNK_SIZE]; CHUNK_SIZE],
+            neighbor_matrix: [[N::new(&value); CHUNK_SIZE]; CHUNK_SIZE],
         }
     }
 
@@ -55,6 +64,32 @@ impl<V: Clone + Copy> ChunkGrid<V> {
             pos.x() < CHUNK_SIZE as u8 && pos.y() < CHUNK_SIZE as u8,
             "ChunkSubPos is too big."
         );
+
         self.grid[pos.y() as usize][pos.x() as usize] = value;
+    }
+}
+
+#[derive(Copy, Clone)]
+pub enum Neighbor {
+    Solid,
+    Air,
+}
+
+pub trait NeighborType<V>
+    where
+        V: Clone + Copy,
+{
+    fn new(value: &V) -> Self;
+}
+
+impl NeighborType<Tile> for Neighbor {
+    fn new(value: &Tile) -> Self {
+        Neighbor::Solid
+    }
+}
+
+impl NeighborType<Wall> for Neighbor {
+    fn new(value: &Wall) -> Self {
+        Neighbor::Solid
     }
 }
