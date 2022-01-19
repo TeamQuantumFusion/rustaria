@@ -4,7 +4,7 @@ use crate::api::{Prototype, RustariaApi};
 use crate::chunk::tile::Tile;
 use crate::chunk::wall::Wall;
 use crate::registry::{Id, Tag};
-use crate::types::ChunkSubPos;
+use crate::types::{CHUNK_SIZE, ChunkSubPos};
 
 pub mod fluid;
 pub mod foliage;
@@ -12,7 +12,6 @@ pub mod tile;
 pub mod tree;
 pub mod wall;
 
-pub const CHUNK_SIZE: usize = 24;
 
 #[derive(Copy, Clone)]
 pub struct Chunk {
