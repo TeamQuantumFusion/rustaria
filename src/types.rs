@@ -125,6 +125,28 @@ impl ChunkSubPos {
             Some(Self { x: x_raw, y: y_raw })
         }
     }
+
+    pub fn overflowing_offset<O: OffsetAble + Copy>(&self, offset: O) -> Self {
+        let mut x_raw = (self.x as i16).overflowing_add(offset.x() as i16).0;
+        let mut y_raw = (self.y as i16).overflowing_add(offset.y() as i16).0;
+        if x_raw >= CHUNK_SIZE as i16 {
+            x_raw = 0;
+        }
+
+        if x_raw < 0 {
+            x_raw = CHUNK_SIZE as i16 - 1;
+        }
+
+        if y_raw >= CHUNK_SIZE as i16 {
+            y_raw = 0;
+        }
+
+        if y_raw < 0 {
+            y_raw = CHUNK_SIZE as i16 - 1;
+        }
+
+        Self { x: x_raw as u8, y: y_raw as u8 }
+    }
 }
 
 impl TilePos {
@@ -160,7 +182,7 @@ impl TilePos {
             },
             None => Self {
                 chunk: self.chunk.offset(offset)?,
-                sub: self.sub,
+                sub: self.sub.overflowing_offset(offset),
             },
         })
     }
