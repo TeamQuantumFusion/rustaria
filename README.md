@@ -1,2 +1,2 @@
 # rustaria
-A Terraria rework in Rust
+A Terraria rework in Rust.
