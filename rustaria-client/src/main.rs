@@ -31,9 +31,9 @@ async fn main() -> Result<()> {
     rustaria::init_console(opt.inner.verbosity)?;
 
     info!("Rustaria Client v{}", env!("CARGO_PKG_VERSION"));
-    let runtime = LuaRuntime::new();
-    let mut api = api::launch_rustaria_api(opt.inner.plugins_dir, &runtime).await?;
+    let mut api = api::launch_rustaria_api(opt.inner.plugins_dir).await?;
 
+    
     // create runtime
     let air_tile = api
         .tiles

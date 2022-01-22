@@ -14,6 +14,10 @@ impl<'lua, P> Hook<'lua, P>
 where
     P: ToLuaMulti<'lua> + Copy + Clone,
 {
+    pub fn unused() -> Hook<'lua, P> {
+        Hook::Inactive(PhantomData::default())
+    }
+
     pub fn call(&self, parameters: P) {
         if let Hook::Active(functions) = &self {
             for func in functions {

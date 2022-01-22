@@ -2,13 +2,13 @@
 
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::Read;
 use std::{
     ffi::OsStr,
     path::{Path, PathBuf},
 };
+use std::io::Read;
 
-use eyre::{bail, eyre, Result};
+use eyre::{bail, ContextCompat, eyre, Result};
 use futures::StreamExt;
 use mlua::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -70,11 +70,11 @@ async fn process_file<'lua>(entry: DirEntry, lua: &'lua Lua) -> Option<Plugin<'l
 async fn load_plugin<'lua>(path: &Path, lua: &'lua Lua) -> eyre::Result<Plugin<'lua>> {
     let mut archive = PluginArchive::new(path)?;
 
-    let data = archive.get_asset(ArchivePath::Manifest)?;
+    let data = archive.get_asset(&ArchivePath::Manifest)?;
     let manifest: Manifest = serde_json::from_reader(data.as_slice())?;
 
-    let source = archive.get_asset(ArchivePath::Src(PathBuf::from(&manifest.init_path)))?;
-    let init = lua.load(&source).into_function()?;
+    let source = archive.get_asset(&ArchivePath::Src(PathBuf::from(&manifest.init_path)))?;
+    let init = lua.load(source).into_function()?;
     info!(
         "Loaded plugin {} v{} from [{}]",
         manifest.name,
@@ -131,8 +131,9 @@ fn file_name_or_unknown(path: &Path) -> &str {
 
 pub struct PluginArchive {
     path: PathBuf,
-    index: Option<HashMap<ArchivePath, u64>>,
+    data: Option<HashMap<ArchivePath, Vec<u8>>>,
 }
+
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Deserialize)]
 pub enum ArchivePath {
@@ -145,55 +146,54 @@ impl PluginArchive {
     pub fn new(path: &Path) -> eyre::Result<Self> {
         Ok(Self {
             path: PathBuf::from(path),
-            index: None,
+            data: None,
         })
     }
 
     pub fn enable_reading(&mut self) -> eyre::Result<()> {
         let mut zip = ZipArchive::new(File::open(&self.path)?)?;
-        let mut file_lookup = HashMap::new();
+        let mut data = HashMap::new();
         for index in 0..zip.len() {
-            let file = zip.by_index(index)?;
+            let mut file = zip.by_index(index)?;
             if file.is_file() {
                 if let Some(name) = file.enclosed_name() {
                     let buf = name.to_path_buf();
                     let mut components = buf.components();
                     let option = components.next().unwrap();
-
                     let path = components.collect();
-                    file_lookup.insert(
+
+
+                    let mut file_data = Vec::with_capacity(file.size() as usize);
+                    file.read_to_end(&mut file_data);
+
+                    data.insert(
                         match option.as_os_str().to_str().unwrap() {
                             "src" => ArchivePath::Src(path),
                             "asset" => ArchivePath::Asset(path),
                             "manifest.json" => ArchivePath::Manifest,
                             _ => bail!("Unknown File type."),
                         },
-                        index as u64,
+                        file_data,
                     );
                 }
             }
         }
 
+        self.data = Some(data);
         Ok(())
     }
 
     pub fn disable_reading(&mut self) {
-        self.zip = None;
+        self.data = None;
     }
 
-    pub fn get_asset(&mut self, path: ArchivePath) -> Result<Vec<u8>> {
-        match &mut self.zip {
-            Some(zip) => {
-                let index = self
-                    .index
-                    .get(&path)
-                    .ok_or_else(|| eyre!("Could not find file {path:?}"))?;
-                let mut result = zip.by_index(*index as usize)?;
-                let mut data = Vec::with_capacity(result.size() as usize);
-                result.read_to_end(&mut data)?;
-                Ok(data)
+    pub fn get_asset(&mut self, path: &ArchivePath) -> Result<&Vec<u8>> {
+        let option = &self.data;
+        match option {
+            None => Err(eyre::Error::msg("Reading not active")),
+            Some(files) => {
+                Ok(files.get(path).wrap_err("Could not find file")?)
             }
-            None => bail!("Reading not active."),
         }
     }
 }

@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::{Arc, RwLock, RwLockReadGuard};
 
+use eyre::ContextCompat;
 use mlua::prelude::*;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
+use crate::api::hook::Hook;
 use crate::api::plugin::{PluginArchive, Plugins};
 use crate::chunk::tile::TilePrototype;
 use crate::chunk::wall::WallPrototype;
@@ -16,11 +19,29 @@ pub mod plugin;
 mod meta;
 mod hook;
 
+static mut LUA: Option<RwLock<Arc<Lua>>> = None;
+static mut API: Option<RwLock<Arc<RustariaApi>>> = None;
+
+pub fn api<'a>() -> Option<&'a RustariaApi<'a>> {
+    unsafe {
+        Some(&API?.read().unwrap())
+    }
+}
+
+pub fn lua<'a>() -> Option<&'a Lua> {
+    unsafe {
+        Some(&LUA?.read().unwrap())
+    }
+}
+
+
 pub struct RustariaApi<'lua> {
     plugins: Plugins<'lua>,
 
     pub tiles: Registry<TilePrototype>,
     pub walls: Registry<WallPrototype>,
+
+    pub test_hook: Hook<'lua, (i32, i32)>,
 }
 
 impl<'lua> RustariaApi<'lua> {
@@ -86,13 +107,16 @@ proto! {
 
 pub async fn launch_rustaria_api<'lua>(
     plugins_dir: PathBuf,
-    runtime: &'lua LuaRuntime,
-) -> eyre::Result<RustariaApi<'lua>> {
-    let lua = &runtime.lua;
+) -> eyre::Result<()> {
+    unsafe {
+        LUA = Some(RwLock::new(Arc::new(Lua::new())));
+    }
 
-    let mut receiver = register_rustaria_api(lua)?;
-    let plugins = plugin::scan_and_load_plugins(&plugins_dir, lua).await?;
-    plugins.init(lua)?;
+    let lua = lua().wrap_err("Lua not initialized. what")?;
+
+    let mut receiver = register_rustaria_api(&lua)?;
+    let plugins = plugin::scan_and_load_plugins(&plugins_dir, &lua).await?;
+    plugins.init(&lua)?;
 
     let mut tile = Registry::new("tile");
     let mut wall = Registry::new("wall");
@@ -103,11 +127,15 @@ pub async fn launch_rustaria_api<'lua>(
         };
     }
 
-    Ok(RustariaApi {
+
+    *API.write().unwrap() = Some(RustariaApi {
         plugins,
         tiles: tile,
         walls: wall,
-    })
+        test_hook: Hook::unused(),
+    });
+
+    Ok(())
 }
 
 pub struct LuaRuntime {
