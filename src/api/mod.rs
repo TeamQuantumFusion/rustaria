@@ -14,6 +14,7 @@ mod log;
 pub(crate) mod macros;
 pub mod plugin;
 mod meta;
+mod hook;
 
 pub struct RustariaApi<'lua> {
     plugins: Plugins<'lua>,

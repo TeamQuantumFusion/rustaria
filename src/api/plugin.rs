@@ -131,8 +131,7 @@ fn file_name_or_unknown(path: &Path) -> &str {
 
 pub struct PluginArchive {
     path: PathBuf,
-    index: HashMap<ArchivePath, u64>,
-    zip: Option<ZipArchive<File>>,
+    index: Option<HashMap<ArchivePath, u64>>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Deserialize)]
@@ -144,7 +143,14 @@ pub enum ArchivePath {
 
 impl PluginArchive {
     pub fn new(path: &Path) -> eyre::Result<Self> {
-        let mut zip = ZipArchive::new(File::open(path)?)?;
+        Ok(Self {
+            path: PathBuf::from(path),
+            index: None,
+        })
+    }
+
+    pub fn enable_reading(&mut self) -> eyre::Result<()> {
+        let mut zip = ZipArchive::new(File::open(&self.path)?)?;
         let mut file_lookup = HashMap::new();
         for index in 0..zip.len() {
             let file = zip.by_index(index)?;
@@ -168,17 +174,6 @@ impl PluginArchive {
             }
         }
 
-        Ok(Self {
-            path: PathBuf::from(path),
-            index: file_lookup,
-            zip: Some(zip),
-        })
-    }
-
-    pub fn enable_reading(&mut self) -> eyre::Result<()> {
-        if self.zip.is_none() {
-            self.zip = Some(ZipArchive::new(File::open(&self.path)?)?)
-        }
         Ok(())
     }
 
