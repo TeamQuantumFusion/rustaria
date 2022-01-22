@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::{Arc, RwLock, RwLockReadGuard};
 
-use eyre::ContextCompat;
+
 use mlua::prelude::*;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
@@ -19,23 +18,8 @@ mod meta;
 pub mod plugin;
 mod hook;
 
-static mut LUA: Option<RwLock<Arc<Lua>>> = None;
-static mut API: Option<RwLock<Arc<RustariaApi>>> = None;
 
-pub fn api<'a>() -> Option<&'a RustariaApi<'a>> {
-    unsafe {
-        Some(&API?.read().unwrap())
-    }
-}
-
-pub fn lua<'a>() -> Option<&'a Lua> {
-    unsafe {
-        Some(&LUA?.read().unwrap())
-    }
-}
-
-
-pub struct RustariaApi<'lua> {
+pub struct Rustaria<'lua> {
     plugins: Plugins<'lua>,
 
     pub tiles: Registry<TilePrototype>,
@@ -44,12 +28,12 @@ pub struct RustariaApi<'lua> {
     pub test_hook: Hook<'lua, (i32, i32)>,
 }
 
-impl<'lua> RustariaApi<'lua> {
-    pub fn get_plugin_assets_mut(&mut self, plugin: &str) -> Option<&mut PluginArchive> {
+impl<'lua> Rustaria<'lua> {
+    pub fn get_plugin_assets_mut(&self, plugin: &str) -> Option<&PluginArchive> {
         self.plugins
             .0
-            .get_mut(plugin)
-            .map(|plugin| &mut plugin.archive)
+            .get(plugin)
+            .map(|plugin| &plugin.archive)
     }
 }
 
@@ -105,18 +89,15 @@ proto! {
     tile_methods => TilePrototype | Tile
 }
 
-pub async fn launch_rustaria_api<'lua>(
+pub async fn launch_rustaria_api(
     plugins_dir: PathBuf,
-) -> eyre::Result<()> {
-    unsafe {
-        LUA = Some(RwLock::new(Arc::new(Lua::new())));
-    }
+    lua: &LuaRuntime,
+) -> eyre::Result<Rustaria<'_>> {
+    let lua = &lua.lua;
 
-    let lua = lua().wrap_err("Lua not initialized. what")?;
-
-    let mut receiver = register_rustaria_api(&lua)?;
-    let plugins = plugin::scan_and_load_plugins(&plugins_dir, &lua).await?;
-    plugins.init(&lua)?;
+    let mut receiver = register_rustaria_api(lua)?;
+    let plugins = plugin::scan_and_load_plugins(&plugins_dir, lua).await?;
+    plugins.init(lua)?;
 
     let mut tile = Registry::new("tile");
     let mut wall = Registry::new("wall");
@@ -127,15 +108,12 @@ pub async fn launch_rustaria_api<'lua>(
         };
     }
 
-
-    *API.write().unwrap() = Some(RustariaApi {
+    Ok(Rustaria {
         plugins,
         tiles: tile,
         walls: wall,
         test_hook: Hook::unused(),
-    });
-
-    Ok(())
+    })
 }
 
 pub struct LuaRuntime {

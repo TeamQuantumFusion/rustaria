@@ -11,7 +11,7 @@ use wgpu::{
 use winit::dpi::PhysicalSize;
 use rustaria::api::plugin::ArchivePath;
 
-use rustaria::api::RustariaApi;
+use rustaria::api::Rustaria;
 use rustaria::registry::{AssetLocation, Id};
 
 use crate::renderer::atlas::Atlas;
@@ -38,19 +38,19 @@ impl TileDrawer {
         queue: &Queue,
         device: &Device,
         config: &SurfaceConfiguration,
-        api: &mut RustariaApi<'_>,
+        api: &Rustaria<'_>,
     ) -> Self {
         fn read_image(
             id: usize,
             tile: &AssetLocation,
-            api: &mut RustariaApi<'_>,
+            api: &Rustaria<'_>,
         ) -> eyre::Result<(Id, RgbaImage)> {
             let AssetLocation(mod_id, path) = tile;
             let archive = api
-                .get_plugin_assets_mut(&mod_id)
+                .get_plugin_assets_mut(mod_id)
                 .ok_or_else(|| eyre!("Could not find plugin {plugin_id}"))?;
 
-            let data = archive.get_asset(ArchivePath::Asset(PathBuf::from(path)))?;
+            let data = archive.get_asset(&ArchivePath::Asset(PathBuf::from(path)))?;
             let image = image::load_from_memory(data.as_slice())?;
             Ok((Id(id as u32), image.into_rgba8()))
         }

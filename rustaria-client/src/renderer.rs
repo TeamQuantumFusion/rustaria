@@ -8,7 +8,7 @@ use wgpu::{AdapterInfo, Backend, BindGroup, BindGroupLayout, Buffer, BufferUsage
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
-use rustaria::api::RustariaApi;
+use rustaria::api::Rustaria;
 
 use crate::renderer::tile_drawer::TileDrawer;
 
@@ -45,7 +45,7 @@ pub struct QuadPos {
 }
 
 impl Renderer {
-    pub async fn new(window: &Window, api: &mut RustariaApi<'_>) -> Self {
+    pub async fn new(window: &Window, api: &Rustaria<'_>) -> Self {
         let mut shader_dir = std::env::current_dir().unwrap();
         shader_dir.push("shaders");
 

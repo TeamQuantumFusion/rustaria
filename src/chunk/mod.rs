@@ -1,6 +1,6 @@
 #![allow(unused)] // alpha, remove this when you're done - leocth
 
-use crate::api::{Prototype, RustariaApi};
+use crate::api::{Prototype, Rustaria};
 use crate::chunk::tile::Tile;
 use crate::chunk::wall::Wall;
 use crate::registry::{Id, Tag};
@@ -19,7 +19,7 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn new(api: &RustariaApi, default_tile: &Id, default_wall: &Id) -> Option<Chunk> {
+    pub fn new(api: &Rustaria, default_tile: &Id, default_wall: &Id) -> Option<Chunk> {
         let tile = api.tiles.get_entry(default_tile)?;
         let wall = api.walls.get_entry(default_wall)?;
         Some(Chunk {

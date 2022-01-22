@@ -187,7 +187,7 @@ impl PluginArchive {
         self.data = None;
     }
 
-    pub fn get_asset(&mut self, path: &ArchivePath) -> Result<&Vec<u8>> {
+    pub fn get_asset(&self, path: &ArchivePath) -> Result<&Vec<u8>> {
         let option = &self.data;
         match option {
             None => Err(eyre::Error::msg("Reading not active")),

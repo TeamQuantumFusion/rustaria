@@ -31,9 +31,10 @@ async fn main() -> Result<()> {
     rustaria::init_console(opt.inner.verbosity)?;
 
     info!("Rustaria Client v{}", env!("CARGO_PKG_VERSION"));
-    let mut api = api::launch_rustaria_api(opt.inner.plugins_dir).await?;
+    let runtime = LuaRuntime::new();
+    let mut api = api::launch_rustaria_api(opt.inner.plugins_dir, &runtime).await?;
 
-    
+
     // create runtime
     let air_tile = api
         .tiles
@@ -54,7 +55,7 @@ async fn main() -> Result<()> {
     let evloop = EventLoop::new();
     let mut window = WindowBuilder::new().build(&evloop)?;
 
-    let mut renderer = Renderer::new(&window, &mut api).await;
+    let mut renderer = Renderer::new(&window, &api).await;
 
     let mut profiler = Profiler {
         last_fps: Instant::now(),
