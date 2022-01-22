@@ -2,7 +2,7 @@ use mlua::prelude::*;
 use mooncake::mooncake;
 use tracing::{debug, error, info, trace, warn};
 
-use crate::{package, api::get_plugin_id};
+use crate::{api::get_plugin_id, package};
 
 package! {
     trace, debug, info, warn, error

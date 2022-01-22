@@ -15,8 +15,8 @@ use crate::registry::{Id, Registry, Tag};
 mod log;
 #[macro_use]
 pub(crate) mod macros;
-pub mod plugin;
 mod meta;
+pub mod plugin;
 mod hook;
 
 static mut LUA: Option<RwLock<Arc<Lua>>> = None;
