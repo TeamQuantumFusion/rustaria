@@ -57,6 +57,7 @@ impl TileDrawer {
         let map: Vec<_> = api
             .tiles
             .entries()
+            .iter()
             .enumerate()
             .map(|(id, prototype)| (id, prototype.sprite.clone()))
             .collect();

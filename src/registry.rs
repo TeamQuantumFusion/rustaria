@@ -1,12 +1,6 @@
-#![allow(unused)] // alpha, remove this when you're done - leocth
+use std::{str::FromStr, fmt::Display};
 
-use std::collections::HashMap;
-
-use crate::api::plugin::ArchivePath;
-use crate::chunk::tile::TilePrototype;
-use crate::chunk::wall::WallPrototype;
 use bimap::BiHashMap;
-use eyre::{Report, Result};
 use serde::Deserialize;
 use tracing::debug;
 
@@ -14,7 +8,6 @@ pub struct Registry<P> {
     name: &'static str,
     tag_to_id: BiHashMap<Tag, Id>,
     entries: Vec<P>,
-    current_id: u32,
 }
 
 impl<P> Registry<P> {
@@ -23,22 +16,19 @@ impl<P> Registry<P> {
             name,
             tag_to_id: Default::default(),
             entries: Default::default(),
-            current_id: 0,
         }
     }
 
     pub fn register(&mut self, tag: Tag, prototype: P) -> Id {
-        let name = self.name;
-        debug!(target: "registry", "{}: Registered {:?}", name, tag);
-        let id = Id(self.current_id);
+        debug!(target: "registry", "{}: Registered {:?}", self.name, tag);
+        let id = Id(self.entries.len() as u32);
         self.tag_to_id.insert(tag, id);
-        self.entries.insert(self.current_id as usize, prototype);
-        self.current_id += 1;
+        self.entries.push(prototype);
         id
     }
 
-    pub fn entries(&self) -> impl Iterator<Item = &P> {
-        self.entries.iter()
+    pub fn entries(&self) -> &[P] {
+        &self.entries
     }
 
     pub fn get_id(&self, tag: &Tag) -> Option<&Id> {
@@ -57,22 +47,33 @@ impl<P> Registry<P> {
 // This is lua input (or rust) that gets converted to id,
 // by the registry map.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Deserialize)]
-pub struct Tag(String, String);
+pub struct Tag {
+    pub plugin_id: String,
+    pub name: String,
+}
 
-impl Tag {
-    pub fn new(mod_id: String, string: String) -> Self {
-        Self(mod_id, string)
-    }
+impl FromStr for Tag {
+    type Err = NotColonSeparated;
 
-    pub fn parse(string: &str) -> eyre::Result<Self> {
-        if let Some(colon) = string.find(':') {
-            let (mod_id, obj_id) = string.split_at(colon);
-            Ok(Self(mod_id.to_string(), obj_id[1..].to_string()))
-        } else {
-            Err(Report::msg("Could not find delimiter :"))
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.split_once(':') {
+            Some((plugin_id, name)) => Ok(Self {
+                plugin_id: plugin_id.into(),
+                name: name.into(),
+            }),
+            None => Err(NotColonSeparated)
         }
     }
 }
+
+#[derive(Clone, Copy, Debug)]
+pub struct NotColonSeparated;
+impl Display for NotColonSeparated {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Tag is not encoded as a colon-separated string")
+    }
+}
+impl std::error::Error for NotColonSeparated {}
 
 // kernel identification
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]

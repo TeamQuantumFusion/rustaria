@@ -28,14 +28,9 @@ pub async fn scan_and_load_plugins<'lua>(
     if let Ok(read_dir) = fs::read_dir(&plugins_dir).await {
         let plugins = ReadDirStream::new(read_dir).filter_map(|entry| async {
             match entry {
-                Ok(entry) => {
-                    process_file(entry, lua).await
-                }
+                Ok(entry) => process_file(entry, lua).await,
                 Err(e) => {
-                    warn!(
-                            "Unable to access file `{}` for reading! Permissions are perhaps insufficient!",
-                            e
-                        );
+                    warn!("Unable to access file `{}` for reading! Permissions are perhaps insufficient!", e);
                     None
                 }
             }

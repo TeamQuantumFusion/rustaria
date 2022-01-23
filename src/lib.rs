@@ -19,7 +19,7 @@ pub mod registry;
 mod types;
 pub mod world;
 
-pub fn init_console(verbosity: Verbosity) -> eyre::Result<()> {
+pub fn init(verbosity: Verbosity) -> eyre::Result<()> {
     env::set_var("RUST_BACKTRACE", "1");
     color_eyre::install()?;
 

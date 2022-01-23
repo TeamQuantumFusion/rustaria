@@ -6,7 +6,6 @@ use tracing::{debug, info};
 use rustaria::api::{self, LuaRuntime};
 use rustaria::chunk::Chunk;
 use rustaria::player::Player;
-use rustaria::registry::Tag;
 use rustaria::world::World;
 
 #[derive(Debug, StructOpt)]
@@ -21,7 +20,7 @@ async fn main() -> Result<()> {
     let opt = Opt::from_args();
     debug!(?opt, "Got command-line args");
 
-    rustaria::init_console(opt.inner.verbosity)?;
+    rustaria::init(opt.inner.verbosity)?;
 
     info!("Rustaria Dedicated Server v{}", env!("CARGO_PKG_VERSION"));
     let lua = LuaRuntime::new();
@@ -30,11 +29,11 @@ async fn main() -> Result<()> {
     // create runtime
     let air_tile = stack
         .tiles
-        .get_id(&Tag::parse("rustaria-core:air")?)
+        .get_id(&"rustaria-core:air".parse()?)
         .ok_or_else(|| eyre!("Could not find air tile"))?;
     let air_wall = stack
         .walls
-        .get_id(&Tag::parse("rustaria-core:air")?)
+        .get_id(&"rustaria-core:air".parse()?)
         .ok_or_else(|| eyre!("Could not find air wall"))?;
     let empty_chunk = Chunk::new(&stack, air_tile, air_wall)
         .ok_or_else(|| eyre!("Could not create empty chunk"))?;

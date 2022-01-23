@@ -3,7 +3,6 @@ use eyre::{eyre, Result};
 use rustaria::api::{self, LuaRuntime};
 use rustaria::chunk::Chunk;
 use rustaria::player::Player;
-use rustaria::registry::Tag;
 use rustaria::world::World;
 use std::time::Instant;
 use structopt::StructOpt;
@@ -28,7 +27,7 @@ async fn main() -> Result<()> {
     let opt = Opt::from_args();
     debug!(?opt, "Got command-line args");
 
-    rustaria::init_console(opt.inner.verbosity)?;
+    rustaria::init(opt.inner.verbosity)?;
 
     info!("Rustaria Client v{}", env!("CARGO_PKG_VERSION"));
     let runtime = LuaRuntime::new();
@@ -37,11 +36,11 @@ async fn main() -> Result<()> {
     // create runtime
     let air_tile = api
         .tiles
-        .get_id(&Tag::parse("rustaria-core:air")?)
+        .get_id(&"rustaria-core:air".parse()?)
         .ok_or_else(|| eyre!("Could not find air tile"))?;
     let air_wall = api
         .walls
-        .get_id(&Tag::parse("rustaria-core:air")?)
+        .get_id(&"rustaria-core:air".parse()?)
         .ok_or_else(|| eyre!("Could not find air wall"))?;
     let empty_chunk = Chunk::new(&api, air_tile, air_wall)
         .ok_or_else(|| eyre!("Could not create empty chunk"))?;
