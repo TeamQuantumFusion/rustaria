@@ -1,5 +1,6 @@
 use crate::renderer::Renderer;
 use eyre::{eyre, Result};
+use mlua::Lua;
 use rustaria::api::{self, Rustaria};
 use rustaria::chunk::Chunk;
 use rustaria::player::Player;
