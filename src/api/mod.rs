@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use eyre::Result;
 use mlua::prelude::*;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
@@ -10,12 +11,15 @@ use crate::chunk::tile::TilePrototype;
 use crate::chunk::wall::WallPrototype;
 use crate::registry::{Id, Registry, Tag};
 
+use self::context::PluginContext;
+
 mod log;
 #[macro_use]
 pub(crate) mod macros;
 mod hook;
 mod meta;
 pub mod plugin;
+mod context;
 
 pub struct Rustaria<'lua> {
     plugins: Plugins<'lua>,
@@ -27,18 +31,39 @@ pub struct Rustaria<'lua> {
 }
 
 impl<'lua> Rustaria<'lua> {
-    pub fn get_plugin_assets_mut(&self, plugin: &str) -> Option<&PluginArchive> {
+    pub async fn new(
+        plugins_dir: PathBuf,
+        lua: &'lua Lua,
+    ) -> Result<Rustaria<'lua>> {
+        let mut receiver = register_rustaria_api(lua)?;
+        let plugins = plugin::scan_and_load_plugins(&plugins_dir, lua).await?;
+        plugins.init(lua)?;
+
+        let mut tile = Registry::new("tile");
+        let mut wall = Registry::new("wall");
+        while let Ok(prototype) = receiver.try_recv() {
+            match prototype {
+                PrototypeRequest::Tile(id, pt) => tile.register(id, pt),
+                PrototypeRequest::Wall(id, pt) => wall.register(id, pt),
+            };
+        }
+
+        Ok(Self {
+            plugins,
+            tiles: tile,
+            walls: wall,
+            test_hook: Hook::new(),
+        })
+    }
+
+    pub fn get_plugin_assets(&self, plugin: &str) -> Option<&PluginArchive> {
         self.plugins.0.get(plugin).map(|plugin| &plugin.archive)
     }
 }
 
 fn get_plugin_id(lua: &Lua) -> LuaResult<String> {
-    // FIXME(leocth): cache this
-    let package: LuaTable = lua.globals().get("package")?;
-    let preload: LuaTable = package.get("preload")?;
-    let meta: LuaFunction = preload.get("meta")?;
-    let meta: LuaTable = meta.call(())?;
-    meta.get("plugin_id")
+    let ctx = PluginContext::get(lua)?;
+    Ok(ctx.plugin_id)
 }
 
 macro_rules! proto {
@@ -85,43 +110,6 @@ pub fn register_rustaria_api(lua: &Lua) -> LuaResult<UnboundedReceiver<Prototype
 proto! {
     wall_methods => WallPrototype | Wall,
     tile_methods => TilePrototype | Tile
-}
-
-pub async fn launch_rustaria_api(
-    plugins_dir: PathBuf,
-    lua: &LuaRuntime,
-) -> eyre::Result<Rustaria<'_>> {
-    let lua = &lua.lua;
-
-    let mut receiver = register_rustaria_api(lua)?;
-    let plugins = plugin::scan_and_load_plugins(&plugins_dir, lua).await?;
-    plugins.init(lua)?;
-
-    let mut tile = Registry::new("tile");
-    let mut wall = Registry::new("wall");
-    while let Ok(prototype) = receiver.try_recv() {
-        match prototype {
-            PrototypeRequest::Tile(id, pt) => tile.register(id, pt),
-            PrototypeRequest::Wall(id, pt) => wall.register(id, pt),
-        };
-    }
-
-    Ok(Rustaria {
-        plugins,
-        tiles: tile,
-        walls: wall,
-        test_hook: Hook::new(),
-    })
-}
-
-pub struct LuaRuntime {
-    lua: Lua,
-}
-
-impl LuaRuntime {
-    pub fn new() -> Self {
-        Self { lua: Lua::new() }
-    }
 }
 
 pub enum PrototypeRequest {

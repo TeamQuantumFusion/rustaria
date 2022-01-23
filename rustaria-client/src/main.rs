@@ -1,6 +1,6 @@
 use crate::renderer::Renderer;
 use eyre::{eyre, Result};
-use rustaria::api::{self, LuaRuntime};
+use rustaria::api;
 use rustaria::chunk::Chunk;
 use rustaria::player::Player;
 use rustaria::world::World;
@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
     rustaria::init(opt.inner.verbosity)?;
 
     info!("Rustaria Client v{}", env!("CARGO_PKG_VERSION"));
-    let runtime = LuaRuntime::new();
+    let runtime = Lua::new();
     let api = api::launch_rustaria_api(opt.inner.plugins_dir, &runtime).await?;
 
     // create runtime

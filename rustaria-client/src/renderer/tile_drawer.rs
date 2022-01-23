@@ -46,7 +46,7 @@ impl TileDrawer {
         ) -> eyre::Result<(Id, RgbaImage)> {
             let AssetLocation(mod_id, path) = tile;
             let archive = api
-                .get_plugin_assets_mut(mod_id)
+                .get_plugin_assets(mod_id)
                 .ok_or_else(|| eyre!("Could not find plugin {plugin_id}"))?;
 
             let data = archive.get_asset(&ArchivePath::Asset(PathBuf::from(path)))?;

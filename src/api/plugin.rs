@@ -17,6 +17,7 @@ use tokio_stream::wrappers::ReadDirStream;
 use tracing::{debug, info, warn};
 use zip::ZipArchive;
 
+use crate::api::context::PluginContext;
 use crate::api::meta::Meta;
 
 pub async fn scan_and_load_plugins<'lua>(
@@ -62,8 +63,9 @@ async fn process_file<'lua>(entry: DirEntry, lua: &'lua Lua) -> Option<Plugin<'l
     None
 }
 
-async fn load_plugin<'lua>(path: &Path, lua: &'lua Lua) -> eyre::Result<Plugin<'lua>> {
-    let archive = PluginArchive::new(path)?;
+async fn load_plugin<'lua>(path: &Path, lua: &'lua Lua) -> Result<Plugin<'lua>> {
+    let mut archive = PluginArchive::new(path)?;
+    archive.enable_reading()?;
 
     let data = archive.get_asset(&ArchivePath::Manifest)?;
     let manifest: Manifest = serde_json::from_reader(data.as_slice())?;
@@ -86,17 +88,15 @@ async fn load_plugin<'lua>(path: &Path, lua: &'lua Lua) -> eyre::Result<Plugin<'
 pub struct Plugins<'lua>(pub(crate) HashMap<String, Plugin<'lua>>);
 
 impl<'lua> Plugins<'lua> {
-    pub fn init(&self, lua: &'lua Lua) -> eyre::Result<()> {
+    pub fn init(&self, lua: &'lua Lua) -> Result<()> {
         info!("Initializing plugins");
-        let package: LuaTable = lua.globals().get("package")?;
-        let preload: LuaTable = package.get("preload")?;
 
         for Plugin { manifest, init, .. } in self.0.values() {
             debug!("Initializing plugin {}", manifest.name);
-            let meta = Meta {
-                mod_id: manifest.name.clone(),
+            let ctx = PluginContext {
+                plugin_id: manifest.name.clone(),
             };
-            preload.set("meta", meta.into_module(lua)?)?;
+            ctx.set(lua)?;
             init.call(())?;
             debug!("Finished initializing plugin {}", manifest.name);
         }
@@ -137,14 +137,14 @@ pub enum ArchivePath {
 }
 
 impl PluginArchive {
-    pub fn new(path: &Path) -> eyre::Result<Self> {
+    pub fn new(path: &Path) -> Result<Self> {
         Ok(Self {
             path: PathBuf::from(path),
             data: None,
         })
     }
 
-    pub fn enable_reading(&mut self) -> eyre::Result<()> {
+    pub fn enable_reading(&mut self) -> Result<()> {
         let mut zip = ZipArchive::new(File::open(&self.path)?)?;
         let mut data = HashMap::new();
         for index in 0..zip.len() {

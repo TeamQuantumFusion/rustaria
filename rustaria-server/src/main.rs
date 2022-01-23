@@ -1,9 +1,10 @@
 use eyre::{eyre, Result};
+use mlua::Lua;
 use std::env;
 use structopt::StructOpt;
 use tracing::{debug, info};
 
-use rustaria::api::{self, LuaRuntime};
+use rustaria::api::{self, Rustaria};
 use rustaria::chunk::Chunk;
 use rustaria::player::Player;
 use rustaria::world::World;
@@ -23,8 +24,8 @@ async fn main() -> Result<()> {
     rustaria::init(opt.inner.verbosity)?;
 
     info!("Rustaria Dedicated Server v{}", env!("CARGO_PKG_VERSION"));
-    let lua = LuaRuntime::new();
-    let stack = api::launch_rustaria_api(opt.inner.plugins_dir, &lua).await?;
+    let lua = Lua::new();
+    let stack = Rustaria::new(opt.inner.plugins_dir, &lua).await?;
 
     // create runtime
     let air_tile = stack
