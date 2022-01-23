@@ -1,10 +1,12 @@
 use std::borrow::Cow;
 
 use bytemuck::Pod;
-use naga::ShaderStage;
 use tracing::debug;
 use wgpu::util::DeviceExt;
-use wgpu::{AdapterInfo, Backend, BindGroup, BindGroupLayout, Buffer, BufferUsages, CommandBuffer, Device, Face, PrimitiveState, Queue, ShaderModuleDescriptor, ShaderSource, SurfaceConfiguration, TextureView};
+use wgpu::{
+    AdapterInfo, Backend, BindGroup, BindGroupLayout, Buffer, BufferUsages, Device, Face,
+    PrimitiveState, ShaderModuleDescriptor, ShaderSource,
+};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
@@ -85,17 +87,15 @@ impl Renderer {
         };
         surface.configure(&device, &config);
 
-        let y_ratio_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("y_ratio_buffer"),
-                contents: bytemuck::cast_slice(&[size.width as f32 / size.height as f32]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            }
-        );
+        let y_ratio_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("y_ratio_buffer"),
+            contents: bytemuck::cast_slice(&[size.width as f32 / size.height as f32]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
 
-        let y_ratio_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
+        let y_ratio_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::VERTEX,
                     ty: wgpu::BindingType::Buffer {
@@ -104,27 +104,22 @@ impl Renderer {
                         min_binding_size: None,
                     },
                     count: None,
-                }
-            ],
-            label: Some("y_ratio_bind_group_layout"),
-        });
+                }],
+                label: Some("y_ratio_bind_group_layout"),
+            });
 
         let y_ratio_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &y_ratio_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: y_ratio_buffer.as_entire_binding(),
-                }
-            ],
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: y_ratio_buffer.as_entire_binding(),
+            }],
             label: Some("y_ratio_bind_group"),
         });
 
         let tile_drawer = TileDrawer::new(&queue, &device, &config, api);
 
         Self::print_adapter_info(adapter.get_info());
-
-
 
         Self {
             surface,
@@ -135,7 +130,7 @@ impl Renderer {
             tile_drawer,
             y_ratio_buffer,
             y_ratio_bind_group,
-            y_ratio_bind_group_layout
+            y_ratio_bind_group_layout,
         }
     }
 
@@ -180,16 +175,12 @@ impl Renderer {
         self.queue
             .submit(vec![self.tile_drawer.draw(&view, &self.device)?]);
 
-
         output.present();
         Ok(())
     }
 }
 
-pub fn get_shader_module<'a>(
-    name: &'static str,
-    code: &'static str,
-) -> ShaderModuleDescriptor<'a> {
+pub fn get_shader_module<'a>(name: &'static str, code: &'static str) -> ShaderModuleDescriptor<'a> {
     ShaderModuleDescriptor {
         label: Some(name),
         source: ShaderSource::Wgsl(Cow::from(code)),

@@ -49,8 +49,8 @@ impl World {
     pub fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
         let world_w = self.chunk_size.0;
         let world_h = self.chunk_size.1;
-        let internal_x = pos.x().checked_add(world_w as i32 / 2)? as u32;
-        let internal_y = pos.y();
+        let internal_x = pos.x.checked_add(world_w as i32 / 2)? as u32;
+        let internal_y = pos.y;
 
         if internal_x > world_w || internal_y > world_h {
             return None;

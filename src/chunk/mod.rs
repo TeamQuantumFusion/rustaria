@@ -4,7 +4,7 @@ use crate::api::{Prototype, Rustaria};
 use crate::chunk::tile::Tile;
 use crate::chunk::wall::Wall;
 use crate::registry::{Id, Tag};
-use crate::types::{ChunkSubPos, CHUNK_SIZE, Direction};
+use crate::types::{ChunkSubPos, Direction, CHUNK_SIZE};
 
 pub mod fluid;
 pub mod foliage;
@@ -53,19 +53,19 @@ where
 
     fn get(&self, pos: ChunkSubPos) -> &V {
         debug_assert!(
-            pos.x() < CHUNK_SIZE as u8 && pos.y() < CHUNK_SIZE as u8,
+            pos.x < CHUNK_SIZE as u8 && pos.y < CHUNK_SIZE as u8,
             "ChunkSubPos is too big."
         );
-        &self.grid[pos.y() as usize][pos.x() as usize]
+        &self.grid[pos.y as usize][pos.x as usize]
     }
 
-    fn set(&mut self, pos: ChunkSubPos, value: V) {
+    fn get_mut(&mut self, pos: ChunkSubPos) -> &mut V {
         debug_assert!(
-            pos.x() < CHUNK_SIZE as u8 && pos.y() < CHUNK_SIZE as u8,
+            pos.x < CHUNK_SIZE as u8 && pos.y < CHUNK_SIZE as u8,
             "ChunkSubPos is too big."
         );
 
-        self.grid[pos.y() as usize][pos.x() as usize] = value;
+        &mut self.grid[pos.y as usize][pos.x as usize]
     }
 }
 
@@ -76,8 +76,8 @@ pub enum Neighbor {
 }
 
 pub trait NeighborType<V>
-    where
-        V: Clone + Copy,
+where
+    V: Clone + Copy,
 {
     fn new(value: &V) -> Self;
 }

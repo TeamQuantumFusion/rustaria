@@ -1,9 +1,9 @@
-use mlua::prelude::LuaUserData;
 use crate::chunk::tile::{BreakResistance, LockableValue};
 use crate::registry::Id;
+use mlua::prelude::LuaUserData;
 
-use serde::Deserialize;
 use crate::api::Prototype;
+use serde::Deserialize;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Wall {
@@ -25,11 +25,10 @@ impl Prototype<Wall> for WallPrototype {
         Wall {
             id,
             opaque: self.opaque,
-            break_resistance: self.break_resistance
+            break_resistance: self.break_resistance,
         }
     }
 }
-
 
 impl LuaUserData for WallPrototype {}
 

@@ -1,10 +1,11 @@
-// util class for common stuff
+//! Utilities for common stuff.
+
 pub const CHUNK_SIZE: usize = 24;
 
 // lets later implement corner directions.
-pub trait OffsetAble {
-    fn y(self) -> i8;
-    fn x(self) -> i8;
+pub trait Offset {
+    fn offset_x(self) -> i8;
+    fn offset_y(self) -> i8;
 }
 
 // ======================================== DIRECTION ========================================
@@ -15,7 +16,6 @@ pub enum Direction {
     Bottom,
     Right,
 }
-
 
 impl Direction {
     pub fn cw(self) -> Self {
@@ -46,13 +46,17 @@ impl Direction {
     }
 
     pub fn all() -> [Direction; 4] {
-        static VALUE: [Direction; 4] = [Direction::Top, Direction::Left, Direction::Bottom, Direction::Right];
-        VALUE
+        [
+            Direction::Top,
+            Direction::Left,
+            Direction::Bottom,
+            Direction::Right,
+        ]
     }
 }
 
-impl OffsetAble for Direction {
-    fn y(self) -> i8 {
+impl Offset for Direction {
+    fn offset_y(self) -> i8 {
         match self {
             Direction::Top => 1,
             Direction::Bottom => -1,
@@ -60,7 +64,7 @@ impl OffsetAble for Direction {
         }
     }
 
-    fn x(self) -> i8 {
+    fn offset_x(self) -> i8 {
         match self {
             Direction::Left => 1,
             Direction::Right => -1,
@@ -72,59 +76,30 @@ impl OffsetAble for Direction {
 // ======================================== POSITION ========================================
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct ChunkPos {
-    x: i32,
-    y: u32,
-}
-
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
-pub struct ChunkSubPos {
-    x: u8,
-    y: u8,
-}
-
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
-pub struct TilePos {
-    chunk: ChunkPos,
-    sub: ChunkSubPos,
+    pub x: i32,
+    pub y: u32,
 }
 
 impl ChunkPos {
-    pub fn new(x: i32, y: u32) -> Self {
-        Self { x, y }
-    }
-
-    pub fn x(&self) -> i32 {
-        self.x
-    }
-
-    pub fn y(&self) -> u32 {
-        self.y
-    }
-
-    pub fn offset<O: OffsetAble + Copy>(&self, offset: O) -> Option<Self> {
+    pub fn offset<O: Offset + Copy>(&self, offset: O) -> Option<Self> {
+        // FIXME(leocth): this is cursed
         Some(Self {
-            x: i32::try_from((self.x as i64).checked_add(offset.x() as i64)?).ok()?,
-            y: u32::try_from((self.y as i64).checked_add(offset.y() as i64)?).ok()?,
+            x: i32::try_from((self.x as i64).checked_add(offset.offset_x() as i64)?).ok()?,
+            y: u32::try_from((self.y as i64).checked_add(offset.offset_y() as i64)?).ok()?,
         })
     }
 }
 
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+pub struct ChunkSubPos {
+    pub x: u8,
+    pub y: u8,
+}
+
 impl ChunkSubPos {
-    pub fn new(x: u8, y: u8) -> Self {
-        Self { x, y }
-    }
-
-    pub fn x(&self) -> u8 {
-        self.x
-    }
-
-    pub fn y(&self) -> u8 {
-        self.y
-    }
-
-    pub fn offset<O: OffsetAble + Copy>(&self, offset: O) -> Option<Self> {
-        let x_raw = u8::try_from((self.x as i16).checked_add(offset.x() as i16)?).ok()?;
-        let y_raw = u8::try_from((self.y as i16).checked_add(offset.y() as i16)?).ok()?;
+    pub fn offset<O: Offset + Copy>(&self, offset: O) -> Option<Self> {
+        let x_raw = u8::try_from((self.x as i16).checked_add(offset.offset_x() as i16)?).ok()?;
+        let y_raw = u8::try_from((self.y as i16).checked_add(offset.offset_y() as i16)?).ok()?;
         if x_raw >= CHUNK_SIZE as u8 || y_raw >= CHUNK_SIZE as u8 {
             None
         } else {
@@ -132,9 +107,9 @@ impl ChunkSubPos {
         }
     }
 
-    pub fn overflowing_offset<O: OffsetAble + Copy>(&self, offset: O) -> Self {
-        let mut x_raw = (self.x as i16).overflowing_add(offset.x() as i16).0;
-        let mut y_raw = (self.y as i16).overflowing_add(offset.y() as i16).0;
+    pub fn overflowing_offset<O: Offset + Copy>(&self, offset: O) -> Self {
+        let mut x_raw = (self.x as i16).overflowing_add(offset.offset_x() as i16).0;
+        let mut y_raw = (self.y as i16).overflowing_add(offset.offset_y() as i16).0;
         if x_raw >= CHUNK_SIZE as i16 {
             x_raw = 0;
         }
@@ -151,8 +126,17 @@ impl ChunkSubPos {
             y_raw = CHUNK_SIZE as i16 - 1;
         }
 
-        Self { x: x_raw as u8, y: y_raw as u8 }
+        Self {
+            x: x_raw as u8,
+            y: y_raw as u8,
+        }
     }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+pub struct TilePos {
+    chunk: ChunkPos,
+    sub: ChunkSubPos,
 }
 
 impl TilePos {
@@ -180,7 +164,7 @@ impl TilePos {
         self.sub
     }
 
-    pub fn offset<O: OffsetAble + Copy>(&self, offset: O) -> Option<Self> {
+    pub fn offset<O: Offset + Copy>(&self, offset: O) -> Option<Self> {
         Some(match self.sub.offset(offset) {
             Some(sub) => Self {
                 chunk: self.chunk,

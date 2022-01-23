@@ -16,8 +16,8 @@ pub mod opt;
 pub mod physics;
 pub mod player;
 pub mod registry;
-pub mod world;
 mod types;
+pub mod world;
 
 pub fn init_console(verbosity: Verbosity) -> eyre::Result<()> {
     env::set_var("RUST_BACKTRACE", "1");
@@ -34,10 +34,10 @@ pub fn init_console(verbosity: Verbosity) -> eyre::Result<()> {
     let filter_layer = EnvFilter::try_from_default_env().or_else(|_| {
         EnvFilter::try_new(match verbosity {
             Verbosity::Normal => "info,wgpu_hal=warn,wgpu_core=warn",
-            Verbosity::Verbose => {
-                "debug,wgpu_hal=warn,wgpu_core=warn,naga=info"
+            Verbosity::Verbose => "debug,wgpu_hal=warn,wgpu_core=warn,naga=info",
+            Verbosity::VeryVerbose => {
+                "trace,wgpu_core::present=info,wgpu_core::device=info,wgpu_hal=info,naga=info"
             }
-            Verbosity::VeryVerbose => "trace,wgpu_core::present=info,wgpu_core::device=info,wgpu_hal=info,naga=info",
             Verbosity::VeryVeryVerbose => "trace",
         })
     })?;

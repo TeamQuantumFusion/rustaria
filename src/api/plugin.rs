@@ -2,13 +2,13 @@
 
 use std::collections::HashMap;
 use std::fs::File;
+use std::io::Read;
 use std::{
     ffi::OsStr,
     path::{Path, PathBuf},
 };
-use std::io::Read;
 
-use eyre::{bail, ContextCompat, eyre, Result};
+use eyre::{bail, ContextCompat, Result};
 use futures::StreamExt;
 use mlua::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -68,7 +68,7 @@ async fn process_file<'lua>(entry: DirEntry, lua: &'lua Lua) -> Option<Plugin<'l
 }
 
 async fn load_plugin<'lua>(path: &Path, lua: &'lua Lua) -> eyre::Result<Plugin<'lua>> {
-    let mut archive = PluginArchive::new(path)?;
+    let archive = PluginArchive::new(path)?;
 
     let data = archive.get_asset(&ArchivePath::Manifest)?;
     let manifest: Manifest = serde_json::from_reader(data.as_slice())?;
@@ -134,7 +134,6 @@ pub struct PluginArchive {
     data: Option<HashMap<ArchivePath, Vec<u8>>>,
 }
 
-
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Deserialize)]
 pub enum ArchivePath {
     Asset(PathBuf),
@@ -162,9 +161,8 @@ impl PluginArchive {
                     let option = components.next().unwrap();
                     let path = components.collect();
 
-
                     let mut file_data = Vec::with_capacity(file.size() as usize);
-                    file.read_to_end(&mut file_data);
+                    file.read_to_end(&mut file_data)?;
 
                     data.insert(
                         match option.as_os_str().to_str().unwrap() {
@@ -191,9 +189,7 @@ impl PluginArchive {
         let option = &self.data;
         match option {
             None => Err(eyre::Error::msg("Reading not active")),
-            Some(files) => {
-                Ok(files.get(path).wrap_err("Could not find file")?)
-            }
+            Some(files) => Ok(files.get(path).wrap_err("Could not find file")?),
         }
     }
 }

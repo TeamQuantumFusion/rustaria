@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-
 use mlua::prelude::*;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
@@ -14,10 +13,9 @@ use crate::registry::{Id, Registry, Tag};
 mod log;
 #[macro_use]
 pub(crate) mod macros;
+mod hook;
 mod meta;
 pub mod plugin;
-mod hook;
-
 
 pub struct Rustaria<'lua> {
     plugins: Plugins<'lua>,
@@ -30,10 +28,7 @@ pub struct Rustaria<'lua> {
 
 impl<'lua> Rustaria<'lua> {
     pub fn get_plugin_assets_mut(&self, plugin: &str) -> Option<&PluginArchive> {
-        self.plugins
-            .0
-            .get(plugin)
-            .map(|plugin| &plugin.archive)
+        self.plugins.0.get(plugin).map(|plugin| &plugin.archive)
     }
 }
 
@@ -112,7 +107,7 @@ pub async fn launch_rustaria_api(
         plugins,
         tiles: tile,
         walls: wall,
-        test_hook: Hook::unused(),
+        test_hook: Hook::new(),
     })
 }
 

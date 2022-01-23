@@ -1,7 +1,7 @@
-use std::path::PathBuf;
 use eyre::eyre;
 use image::RgbaImage;
-use naga::ShaderStage;
+use rustaria::api::plugin::ArchivePath;
+use std::path::PathBuf;
 use tracing::{debug, error};
 use wgpu::{
     Buffer, BufferUsages, CommandBuffer, Device, FragmentState, Queue, RenderPipeline,
@@ -9,13 +9,12 @@ use wgpu::{
     VertexState, VertexStepMode,
 };
 use winit::dpi::PhysicalSize;
-use rustaria::api::plugin::ArchivePath;
 
 use rustaria::api::Rustaria;
 use rustaria::registry::{AssetLocation, Id};
 
 use crate::renderer::atlas::Atlas;
-use crate::renderer::{create_buffer, get_shader_module, QuadPos, DEFAULT_PRIMITIVE};
+use crate::renderer::{create_buffer, get_shader_module, DEFAULT_PRIMITIVE};
 
 pub struct TileDrawer {
     // Pipeline
@@ -84,10 +83,7 @@ impl TileDrawer {
                 push_constant_ranges: &[],
             });
 
-        let shader_module = get_shader_module(
-            "tile_module",
-            include_str!("../shader/tile.wgsl"),
-        );
+        let shader_module = get_shader_module("tile_module", include_str!("../shader/tile.wgsl"));
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Tile Pipeline"),
@@ -98,16 +94,18 @@ impl TileDrawer {
                 buffers: &[VertexBufferLayout {
                     array_stride: std::mem::size_of::<TileVertex>() as wgpu::BufferAddress,
                     step_mode: VertexStepMode::Vertex,
-                    attributes: &[VertexAttribute {
-                        format: VertexFormat::Float32x2,
-                        offset: 0,
-                        shader_location: 0,
-
-                    }, VertexAttribute {
-                        format: VertexFormat::Float32x2,
-                        offset: std::mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
-                        shader_location: 1,
-                    }],
+                    attributes: &[
+                        VertexAttribute {
+                            format: VertexFormat::Float32x2,
+                            offset: 0,
+                            shader_location: 0,
+                        },
+                        VertexAttribute {
+                            format: VertexFormat::Float32x2,
+                            offset: std::mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
+                            shader_location: 1,
+                        },
+                    ],
                 }],
             },
             fragment: Some(FragmentState {
@@ -133,10 +131,22 @@ impl TileDrawer {
             device,
             "tile_buffer",
             &[
-                TileVertex { pos: [-0.5, 0.5], tex_pos: [0.0, 1.0] },
-                TileVertex { pos: [-0.5, -0.5], tex_pos: [0.0, 0.0] },
-                TileVertex { pos: [0.5, 0.5], tex_pos: [1.0, 1.0] },
-                TileVertex { pos: [0.5, -0.5], tex_pos: [1.0, 0.0] },
+                TileVertex {
+                    pos: [-0.5, 0.5],
+                    tex_pos: [0.0, 1.0],
+                },
+                TileVertex {
+                    pos: [-0.5, -0.5],
+                    tex_pos: [0.0, 0.0],
+                },
+                TileVertex {
+                    pos: [0.5, 0.5],
+                    tex_pos: [1.0, 1.0],
+                },
+                TileVertex {
+                    pos: [0.5, -0.5],
+                    tex_pos: [1.0, 0.0],
+                },
             ],
             BufferUsages::VERTEX,
         );
