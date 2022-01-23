@@ -2,7 +2,6 @@ use std::path::PathBuf;
 
 use structopt::StructOpt;
 
-/// The common command-line parameters between server and client.
 #[derive(Debug, StructOpt)]
 pub struct Opt {
     /// Specifies the verbosity/detail of the logging output.
@@ -15,15 +14,15 @@ pub struct Opt {
     ///
     /// · `-vv`: Almost all debug information shown, including trace-level debug details.
     ///
-    /// · `-vvv`: All debug information shown. This includes (unfortunately) a logging spam from `wgpu`
+    /// · `-vvv`: All debug information shown. This includes (unfortunately) a logging spam
     ///    that logs on _every_ single frame.
     ///    Output under this verbosity setting is practically _unusable_, and should only be
     ///    relied upon in desperate scenarios.
     #[structopt(short = "v", parse(from_occurrences = Verbosity::from_occurrences))]
     pub verbosity: Verbosity,
 
-    /// Plugin directory. Defaults to `./plugins`.
-    #[structopt(long = "plugins_dir", parse(from_os_str), default_value = "plugins")]
+    /// The directory Rustaria would try to find its plugins in.
+    #[structopt(long = "plugins_dir", parse(from_os_str), default_value = "./plugins")]
     pub plugins_dir: PathBuf,
 }
 
@@ -50,8 +49,7 @@ pub enum Verbosity {
     VeryVerbose,
     /// All debug information shown.
     ///
-    /// **CAUTION**: This includes (unfortunately) a logging spam from `wgpu`
-    /// that logs on _every_ single frame.
+    /// **CAUTION**: This includes (unfortunately) a logging spam that logs on _every_ single frame.
     /// Output under this verbosity setting is practically _unusable_, and should only be
     /// relied upon in desperate scenarios.
     ///
