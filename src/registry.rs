@@ -1,7 +1,7 @@
-use std::{str::FromStr, fmt::Display};
+use std::{fmt::Display, str::FromStr};
 
 use bimap::BiHashMap;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use tracing::debug;
 
 pub struct Registry<P> {
@@ -46,7 +46,7 @@ impl<P> Registry<P> {
 
 // This is lua input (or rust) that gets converted to id,
 // by the registry map.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Tag {
     pub plugin_id: String,
     pub name: String,
@@ -61,7 +61,7 @@ impl FromStr for Tag {
                 plugin_id: plugin_id.into(),
                 name: name.into(),
             }),
-            None => Err(NotColonSeparated)
+            None => Err(NotColonSeparated),
         }
     }
 }
@@ -75,6 +75,31 @@ impl Display for NotColonSeparated {
 }
 impl std::error::Error for NotColonSeparated {}
 
+impl<'de> Deserialize<'de> for Tag {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        use serde::de;
+
+        struct TagVisitor;
+        impl<'de> de::Visitor<'de> for TagVisitor {
+            type Value = Tag;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(f, "a colon-separated string representing a registry tag")
+            }
+            fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Tag::from_str(v).map_err(de::Error::custom)
+            }
+        }
+        deserializer.deserialize_str(TagVisitor)
+    }
+}
+
 // kernel identification
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
 pub struct Id(pub u32);
@@ -83,6 +108,3 @@ pub struct Id(pub u32);
 pub struct LanguageKey {
     // TODO
 }
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct AssetLocation(pub String, pub String);

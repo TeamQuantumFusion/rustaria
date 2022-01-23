@@ -37,6 +37,7 @@ impl<'lua> Rustaria<'lua> {
     ) -> Result<Rustaria<'lua>> {
         let mut receiver = register_rustaria_api(lua)?;
         let plugins = plugin::scan_and_load_plugins(&plugins_dir, lua).await?;
+
         plugins.init(lua)?;
 
         let mut tile = Registry::new("tile");
@@ -97,14 +98,15 @@ macro_rules! proto {
 
 /// Registers Rustaria's Lua modding APIs.
 pub fn register_rustaria_api(lua: &Lua) -> LuaResult<UnboundedReceiver<PrototypeRequest>> {
-    let (send, rec) = unbounded_channel();
+    let (tx, rx) = unbounded_channel();
     let package: LuaTable = lua.globals().get("package")?;
     let preload: LuaTable = package.get("preload")?;
 
-    preload.set("log", lua.create_function(log::package)?)?;
-    preload.set("wall", wall_methods(lua, send.clone())?)?;
-    preload.set("tile", tile_methods(lua, send.clone())?)?;
-    Ok(rec)
+    preload.set("log", log::package(lua)?)?;
+    preload.set("meta", meta::package(lua)?)?;
+    preload.set("wall", wall_methods(lua, tx.clone())?)?;
+    preload.set("tile", tile_methods(lua, tx.clone())?)?;
+    Ok(rx)
 }
 
 proto! {

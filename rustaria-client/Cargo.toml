@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 rustaria = { version = "*", path = "../" }
 
+mlua = { version = "0.7.1", features = ["luajit", "vendored", "serialize"] }
 tokio = { version = "1.15.0", features = ["rt-multi-thread", "macros", "fs"] }
 wgpu = { version = "0.12.0" }
 winit = "0.26.0"

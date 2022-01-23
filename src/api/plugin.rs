@@ -18,7 +18,6 @@ use tracing::{debug, info, warn};
 use zip::ZipArchive;
 
 use crate::api::context::PluginContext;
-use crate::api::meta::Meta;
 
 pub async fn scan_and_load_plugins<'lua>(
     plugins_dir: &Path,

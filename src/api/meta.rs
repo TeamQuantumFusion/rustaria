@@ -1,12 +1,14 @@
 use mlua::prelude::*;
+use mooncake::mooncake;
 
-pub struct Meta {
-    pub mod_id: String,
+use super::context::PluginContext;
+
+package! {
+    plugin_id
 }
-impl Meta {
-    pub fn into_module(self, lua: &Lua) -> LuaResult<LuaFunction> {
-        lua.create_function(move |lua, _: ()| {
-            lua.create_table_from([("plugin_id", self.mod_id.clone())])
-        })
-    }
+
+#[mooncake(lua)]
+fn plugin_id() -> LuaResult<String> {
+    let ctx = PluginContext::get(lua)?;
+    Ok(ctx.plugin_id)
 }

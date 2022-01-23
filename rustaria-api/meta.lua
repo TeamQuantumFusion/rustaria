@@ -1,6 +1,8 @@
 ---Convenient field containing the plugin's ID.
----@type string
-local plugin_id = '⚠ stub; will be replaced at runtime ⚠';
+---@return string
+local function plugin_id()
+    -- builtin stub
+end
 
 return {
     plugin_id = plugin_id
