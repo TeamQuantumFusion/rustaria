@@ -18,6 +18,7 @@ pub mod player;
 pub mod registry;
 mod types;
 pub mod world;
+mod event;
 
 pub fn init(verbosity: Verbosity) -> eyre::Result<()> {
     env::set_var("RUST_BACKTRACE", "1");

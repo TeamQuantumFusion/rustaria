@@ -14,8 +14,8 @@ pub mod wall;
 
 #[derive(Copy, Clone)]
 pub struct Chunk {
-    pub tiles: ChunkGrid<Tile, Neighbor>,
-    pub walls: ChunkGrid<Wall, Neighbor>,
+    pub tiles: ChunkGrid<Tile>,
+    pub walls: ChunkGrid<Wall>,
 }
 
 impl Chunk {
@@ -30,28 +30,24 @@ impl Chunk {
 }
 
 #[derive(Copy, Clone)]
-pub struct ChunkGrid<V, N>
+pub struct ChunkGrid<V>
 where
     V: Clone + Copy,
-    N: NeighborType<V> + Clone + Copy,
 {
-    grid: [[V; CHUNK_SIZE]; CHUNK_SIZE],
-    neighbor_matrix: [[N; CHUNK_SIZE]; CHUNK_SIZE],
+    pub grid: [[V; CHUNK_SIZE]; CHUNK_SIZE],
 }
 
-impl<V, N> ChunkGrid<V, N>
+impl<V> ChunkGrid<V>
 where
     V: Clone + Copy,
-    N: NeighborType<V> + Clone + Copy,
 {
-    pub fn new(value: V) -> ChunkGrid<V, N> {
+    pub fn new(value: V) -> ChunkGrid<V> {
         ChunkGrid {
             grid: [[value; CHUNK_SIZE]; CHUNK_SIZE],
-            neighbor_matrix: [[N::new(&value); CHUNK_SIZE]; CHUNK_SIZE],
         }
     }
 
-    fn get(&self, pos: ChunkSubPos) -> &V {
+    pub fn get(&self, pos: ChunkSubPos) -> &V {
         debug_assert!(
             pos.x < CHUNK_SIZE as u8 && pos.y < CHUNK_SIZE as u8,
             "ChunkSubPos is too big."
@@ -59,7 +55,15 @@ where
         &self.grid[pos.y as usize][pos.x as usize]
     }
 
-    fn get_mut(&mut self, pos: ChunkSubPos) -> &mut V {
+    pub fn set(&mut self, pos: ChunkSubPos, value: V) {
+        debug_assert!(
+            pos.x < CHUNK_SIZE as u8 && pos.y < CHUNK_SIZE as u8,
+            "ChunkSubPos is too big."
+        );
+        self.grid[pos.y as usize][pos.x as usize] = value;
+    }
+
+    pub fn get_mut(&mut self, pos: ChunkSubPos) -> &mut V {
         debug_assert!(
             pos.x < CHUNK_SIZE as u8 && pos.y < CHUNK_SIZE as u8,
             "ChunkSubPos is too big."
