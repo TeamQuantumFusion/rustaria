@@ -8,17 +8,12 @@ use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
 pub mod api;
-pub mod biome;
 pub mod chunk;
-pub mod entity;
-pub mod gen;
 pub mod opt;
-pub mod physics;
 pub mod player;
 pub mod registry;
 mod types;
 pub mod world;
-mod event;
 
 pub fn init(verbosity: Verbosity) -> eyre::Result<()> {
     env::set_var("RUST_BACKTRACE", "1");
