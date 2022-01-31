@@ -1,13 +1,13 @@
 #![allow(unused)] // alpha, remove this when you're done - leocth
 
+use crate::api::{Prototype, Rustaria};
+use crate::comps::Comps;
+use eyre::ContextCompat;
 use std::collections::{HashMap, VecDeque};
 use std::fmt::{Display, Formatter};
-use eyre::ContextCompat;
-use crate::api::{Prototype, Rustaria};
 
-use crate::chunk::Chunk;
 use crate::chunk::tile::Tile;
-use crate::player::Player;
+use crate::chunk::Chunk;
 use crate::registry::Id;
 use crate::types::{ChunkPos, TilePos};
 
@@ -17,12 +17,8 @@ pub struct World {
     // 4x4 chunk grid look like this in the vec
     // y[x,x,x,x], y[x,x,x,x], y[x,x,x,x], y[x,x,x,x]
     chunks: Vec<Chunk>,
-    players: HashMap<PlayerId, Player>,
-    event_queue: VecDeque<Command>
+    comps: Comps,
 }
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct PlayerId(u16);
 
 impl World {
     pub fn new(chunk_size: (u32, u32), chunks: Vec<Chunk>) -> Result<World, WorldCreationError> {
@@ -33,25 +29,10 @@ impl World {
         Ok(Self {
             chunk_size,
             chunks,
-            players: HashMap::new(),
-            event_queue: VecDeque::new()
+            comps: Comps::new(),
         })
     }
-
-    pub fn player_join(&mut self, player: Player) -> PlayerId {
-        let id = PlayerId(self.players.len() as u16);
-        self.players.insert(id, player);
-        id
-    }
-
-    pub fn player_leave(&mut self, player_id: PlayerId) {
-        self.players.remove(&player_id);
-    }
-
-    pub fn get_player(&self, player_id: PlayerId) -> Option<&Player> {
-        self.players.get(&player_id)
-    }
-
+    
     pub fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
         let (world_w, world_h) = self.chunk_size;
         let internal_x = pos.x.checked_add(world_w as i32 / 2)? as u32;
@@ -74,19 +55,11 @@ impl World {
             return None;
         }
 
-        self.chunks.get_mut((internal_y as usize * world_h as usize) + internal_x as usize)
+        self.chunks
+            .get_mut((internal_y as usize * world_h as usize) + internal_x as usize)
     }
 
-
-    pub fn tick(&mut self, rustaria: &Rustaria) {
-        while let Some(event) = self.event_queue.pop_back() {
-            event.execute(&mut self, rustaria);
-        }
-    }
-
-    pub fn send_event(&mut self, command: Command) {
-        self.event_queue.push_front(command);
-    }
+    pub fn tick(&mut self, rustaria: &Rustaria) {}
 }
 
 #[derive(Copy, Clone)]
@@ -95,7 +68,7 @@ pub enum Command {
 }
 
 impl Command {
-    pub fn execute(&self, world: &mut World, rustaria: &Rustaria) -> eyre::Result<()>{
+    pub fn execute(&self, world: &mut World, rustaria: &Rustaria) -> eyre::Result<()> {
         match self {
             Command::SetTile(id, pos) => {
                 if let Some(chunk) = world.get_chunk_mut(pos.chunk_pos()) {

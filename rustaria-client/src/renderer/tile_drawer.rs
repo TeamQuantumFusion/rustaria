@@ -39,14 +39,10 @@ impl TileDrawer {
         config: &SurfaceConfiguration,
         api: &Rustaria<'_>,
     ) -> Self {
-        fn read_image(
-            id: usize,
-            tag: &Tag,
-            api: &Rustaria<'_>,
-        ) -> eyre::Result<(Id, RgbaImage)> {
+        fn read_image(id: usize, tag: &Tag, api: &Rustaria<'_>) -> eyre::Result<(Id, RgbaImage)> {
             let archive = api
                 .get_plugin_assets(&tag.plugin_id)
-                .ok_or_else(|| eyre!("Could not find plugin {plugin_id}"))?;
+                .ok_or_else(|| eyre!("Could not find plugin {}", tag.plugin_id))?;
 
             let data = archive.get_asset(&ArchivePath::Asset(PathBuf::from(&tag.name)))?;
             let image = image::load_from_memory(data.as_slice())?;

@@ -3,7 +3,6 @@ use eyre::{eyre, Result};
 use mlua::Lua;
 use rustaria::api::{self, Rustaria};
 use rustaria::chunk::Chunk;
-use rustaria::player::Player;
 use rustaria::world::World;
 use std::time::Instant;
 use structopt::StructOpt;
@@ -50,7 +49,7 @@ async fn main() -> Result<()> {
         vec![empty_chunk, empty_chunk, empty_chunk, empty_chunk],
     )?;
 
-    world.player_join(Player::new(0.0, 0.0, "dev".to_string()));
+    // world.player_join(Player::new(0.0, 0.0, "dev".to_string()));
     let evloop = EventLoop::new();
     let mut window = WindowBuilder::new().build(&evloop)?;
 

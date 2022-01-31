@@ -9,8 +9,8 @@ use tracing_subscriber::EnvFilter;
 
 pub mod api;
 pub mod chunk;
+pub mod comps;
 pub mod opt;
-pub mod player;
 pub mod registry;
 mod types;
 pub mod world;
