@@ -10,6 +10,7 @@ use tracing_subscriber::EnvFilter;
 pub mod api;
 pub mod chunk;
 pub mod comps;
+pub mod entity;
 pub mod opt;
 pub mod registry;
 mod types;

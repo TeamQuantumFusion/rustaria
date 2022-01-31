@@ -9,6 +9,7 @@ use crate::api::hook::Hook;
 use crate::api::plugin::{PluginArchive, Plugins};
 use crate::chunk::tile::TilePrototype;
 use crate::chunk::wall::WallPrototype;
+use crate::entity::EntityPrototype;
 use crate::registry::{Id, Registry, Tag};
 
 use self::context::PluginContext;
@@ -16,43 +17,43 @@ use self::context::PluginContext;
 mod log;
 #[macro_use]
 pub(crate) mod macros;
+mod context;
 mod hook;
 mod meta;
 pub mod plugin;
-mod context;
 
 pub struct Rustaria<'lua> {
     plugins: Plugins<'lua>,
 
     pub tiles: Registry<TilePrototype>,
     pub walls: Registry<WallPrototype>,
+    pub entities: Registry<EntityPrototype>,
 
     pub test_hook: Hook<'lua, (i32, i32)>,
 }
 
 impl<'lua> Rustaria<'lua> {
-    pub async fn new(
-        plugins_dir: PathBuf,
-        lua: &'lua Lua,
-    ) -> Result<Rustaria<'lua>> {
+    pub async fn new(plugins_dir: PathBuf, lua: &'lua Lua) -> Result<Rustaria<'lua>> {
         let mut receiver = register_rustaria_api(lua)?;
         let plugins = plugin::scan_and_load_plugins(&plugins_dir, lua).await?;
 
         plugins.init(lua)?;
 
-        let mut tile = Registry::new("tile");
-        let mut wall = Registry::new("wall");
+        let mut tiles = Registry::new("tile");
+        let mut walls = Registry::new("wall");
+        let mut entities = Registry::new("entity");
         while let Ok(prototype) = receiver.try_recv() {
             match prototype {
-                PrototypeRequest::Tile(id, pt) => tile.register(id, pt),
-                PrototypeRequest::Wall(id, pt) => wall.register(id, pt),
+                PrototypeRequest::Tile(id, pt) => tiles.register(id, pt),
+                PrototypeRequest::Wall(id, pt) => walls.register(id, pt),
             };
         }
 
         Ok(Self {
             plugins,
-            tiles: tile,
-            walls: wall,
+            tiles,
+            walls,
+            entities,
             test_hook: Hook::new(),
         })
     }

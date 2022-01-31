@@ -17,7 +17,7 @@ pub struct World {
     // 4x4 chunk grid look like this in the vec
     // y[x,x,x,x], y[x,x,x,x], y[x,x,x,x], y[x,x,x,x]
     chunks: Vec<Chunk>,
-    comps: Comps,
+    pub comps: Comps,
 }
 
 impl World {
@@ -32,7 +32,7 @@ impl World {
             comps: Comps::new(),
         })
     }
-    
+
     pub fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
         let (world_w, world_h) = self.chunk_size;
         let internal_x = pos.x.checked_add(world_w as i32 / 2)? as u32;
