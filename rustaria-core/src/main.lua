@@ -3,6 +3,7 @@ local wall = require "wall"
 local log = require "log"
 local meta = require "meta"
 local entity = require "entity"
+local _ = meta._
 
 log.warn "IDK what alpha's on, one entrypoint is good enough"
 log.debug "use dash, not froge"
@@ -14,7 +15,7 @@ tile.register {
     ["air"] = tile.default {},
     -- a full example of a tile setting
     ["alpha"] = tile.default {
-        sprite = "rustaria-core:tile/dirt.png",
+        sprite = _("tile/dirt.png"),
         transitional = true,
         collision = {fixed = false},
         opaque = {fixed = false},
@@ -23,7 +24,7 @@ tile.register {
         tile_type = {
             type = "spreadable",
             spread_chance = 0.618,
-            filter = {whitelist = {"rustaria-core:leo"}}
+            filter = {whitelist = { _("leo") }}
         }
     }
 }
