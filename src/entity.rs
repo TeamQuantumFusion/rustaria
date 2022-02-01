@@ -6,35 +6,21 @@ use mlua::prelude::*;
 use serde::Deserialize;
 use uuid::Uuid;
 
-entity_proto_impl! {
-    health: HealthPrototype,
+#[derive(Debug, Clone, Deserialize)]
+pub struct EntityPrototype {
+    health: Option<HealthPrototype>,
 
     #[serde(default)]
     physics: PhysicsPrototype,
 }
 
-macro_rules! entity_proto_impl {
-    ($(
-        $(#[$($attr:meta)+])?
-        $field:ident: $ty:ty
-    ),+ $(,)?) => {
-        #[derive(Debug, Clone, Deserialize)]
-        pub struct EntityPrototype {
-            $(
-                $(#[$($attr)+])?
-                $field: $ty,
-            )+
+impl EntityPrototype {
+    pub fn spawn(&self, world: &mut World) {
+        let id = Uuid::new_v4();
+        if let Some(pt) = &self.health {
+            world.comps.health.insert(id, pt.to_component());
         }
-
-        impl EntityPrototype {
-            pub fn spawn(&self, world: &mut World) {
-                let id = Uuid::new_v4();
-                $(
-                    world.comps.$field.insert(id, self.$field.to_component());
-                )+
-            }
-        }
-        impl LuaUserData for EntityPrototype {}
-    };
+        world.comps.physics.insert(id, self.physics.to_component());
+    }
 }
-use entity_proto_impl;
+impl LuaUserData for EntityPrototype {}
