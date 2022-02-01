@@ -11,7 +11,7 @@ use wgpu::{
 use winit::dpi::PhysicalSize;
 
 use rustaria::api::Rustaria;
-use rustaria::registry::{Id, Tag};
+use rustaria::registry::{RawId, Tag};
 
 use crate::renderer::atlas::Atlas;
 use crate::renderer::{create_buffer, get_shader_module, DEFAULT_PRIMITIVE};
@@ -22,7 +22,7 @@ pub struct TileDrawer {
     // Buffers
     tile_buffer: Buffer,
     quad_index_buffer: Buffer,
-    atlas: Atlas<Id>,
+    atlas: Atlas<RawId>,
 }
 
 #[repr(C)]
@@ -39,14 +39,18 @@ impl TileDrawer {
         config: &SurfaceConfiguration,
         api: &Rustaria<'_>,
     ) -> Self {
-        fn read_image(id: usize, tag: &Tag, api: &Rustaria<'_>) -> eyre::Result<(Id, RgbaImage)> {
+        fn read_image(
+            id: usize,
+            tag: &Tag,
+            api: &Rustaria<'_>,
+        ) -> eyre::Result<(RawId, RgbaImage)> {
             let archive = api
                 .get_plugin_assets(&tag.plugin_id)
                 .ok_or_else(|| eyre!("Could not find plugin {}", tag.plugin_id))?;
 
             let data = archive.get_asset(&ArchivePath::Asset(PathBuf::from(&tag.name)))?;
             let image = image::load_from_memory(data.as_slice())?;
-            Ok((id as Id, image.into_rgba8()))
+            Ok((id as RawId, image.into_rgba8()))
         }
 
         let map: Vec<_> = api

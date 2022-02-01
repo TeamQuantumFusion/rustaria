@@ -1,4 +1,4 @@
-//! Utilities for common stuff.
+//! A collection of types used in Rustaria.
 
 pub const CHUNK_SIZE: usize = 24;
 

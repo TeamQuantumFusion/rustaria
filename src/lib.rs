@@ -13,9 +13,11 @@ pub mod comps;
 pub mod entity;
 pub mod opt;
 pub mod registry;
-mod types;
+pub mod types;
 pub mod world;
 
+/// Common initialization code for both Rustaria client and dedicated server.
+/// This currently sets up [`color_eyre`] and [`tracing`].
 pub fn init(verbosity: Verbosity) -> eyre::Result<()> {
     env::set_var("RUST_BACKTRACE", "1");
     color_eyre::install()?;

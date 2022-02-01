@@ -1,15 +1,11 @@
-#![allow(unused)] // alpha, remove this when you're done - leocth
+//! The module containing the world of Rustaria.
 
-use crate::api::{Prototype, Rustaria};
+use crate::api::Rustaria;
 use crate::comps::Comps;
-use eyre::ContextCompat;
-use std::collections::{HashMap, VecDeque};
 use std::fmt::{Display, Formatter};
 
-use crate::chunk::tile::Tile;
 use crate::chunk::Chunk;
-use crate::registry::Id;
-use crate::types::{ChunkPos, TilePos};
+use crate::types::ChunkPos;
 
 pub struct World {
     // size is chunks x chunks
@@ -60,28 +56,6 @@ impl World {
     }
 
     pub fn tick(&mut self, rustaria: &Rustaria) {}
-}
-
-#[derive(Copy, Clone)]
-pub enum Command {
-    SetTile(Id, TilePos),
-}
-
-impl Command {
-    pub fn execute(&self, world: &mut World, rustaria: &Rustaria) -> eyre::Result<()> {
-        match self {
-            Command::SetTile(id, pos) => {
-                if let Some(chunk) = world.get_chunk_mut(pos.chunk_pos()) {
-                    let prototype = rustaria
-                        .tiles
-                        .get_from_id(*id)
-                        .wrap_err("Could not find id.");
-                    chunk.tiles.set(pos.sub_pos(), prototype?.create(*id));
-                }
-            }
-        }
-        Ok(())
-    }
 }
 
 // NOTE(leocth): `thiserror` might be appropriate here

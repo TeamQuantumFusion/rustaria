@@ -3,7 +3,7 @@
 use crate::api::{Prototype, Rustaria};
 use crate::chunk::tile::Tile;
 use crate::chunk::wall::Wall;
-use crate::registry::{Id, Tag};
+use crate::registry::{RawId, Tag};
 use crate::types::{ChunkSubPos, Direction, CHUNK_SIZE};
 
 use self::tile::TilePrototype;
@@ -22,7 +22,7 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn new(api: &Rustaria, default_tile: Id, default_wall: Id) -> Option<Chunk> {
+    pub fn new(api: &Rustaria, default_tile: RawId, default_wall: RawId) -> Option<Chunk> {
         let tile = api.tiles.get_from_id(default_tile)?;
         let wall = api.walls.get_from_id(default_wall)?;
         Some(Chunk {

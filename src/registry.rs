@@ -1,16 +1,79 @@
+//! Registries containing and managing user-added data to Rustaria.
+//!
+//! Each element has an associated [*tag*](Tag) and [*raw ID*](RawId), which could be used
+//! in retrieving the element.
+//!
+//! Tags are textual, human-readable strings that are separated into two
+//! parts by a colon (`:`), like `rustaria-core:air` or `your-plugin:custom_thing`.
+//! They identify and locate elements in a registry, persistently.
+//!
+//! Raw IDs, on the other hand, are integers that, like tags, identify and locate elements,
+//! but non-persistent and registry-specific. As a part of that tradeoff, they are far
+//! cheaper to copy and send around.
+//! See [this section](#when-should-i-use-raw-ids-over-tagsvice-versa) for more information.
+//!
+//! # Example
+//! ```
+//! # use rustaria::registry::Registry;
+//! # fn main() -> eyre::Result<()> {
+//! // Everyone likes dumplings. Right?
+//! struct Dumpling {
+//!     is_pot_sticker: bool,
+//! }
+//!
+//! let derpling = Dumpling {
+//!     is_pot_sticker: false,
+//! };
+//! let cool_dumpling = Dumpling {
+//!     is_pot_sticker: true,
+//! };
+//!
+//! // Registering
+//! let mut registry = Registry::new("dumplings");
+//! registry.register("example:derpling".parse()?, derpling);
+//! let cool_dumpling_id = registry.register("example:cool_dumpling".parse()?, cool_dumpling);
+//!
+//! // Retrieving
+//! // You can get something via its tag: (recommended)
+//! let derpling = registry.get_from_tag(&"example:derpling".parse()?);
+//! assert_eq!(derpling.unwrap().is_pot_sticker, false);
+//!
+//! // Or by its raw ID: (CAUTION - read on)
+//! let cool_dumpling = registry.get_from_id(cool_dumpling_id);
+//! assert_eq!(cool_dumpling.unwrap().is_pot_sticker, true);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # When should I use raw IDs over tags/vice versa?
+//! In general, raw IDs are **not** safe as long-term pointers to an element.
+//! This is because raw IDs are not persistent – exact arrangement and layouts that
+//! they are tied to are subject to change, potentially allowing for more convenient
+//! or efficient data storage and optimizations.
+//!
+//! Additionally, raw IDs should not be used across registries, as they are bound
+//! to the exact registry in which they are created. Using them elsewhere will
+//! most likely _not_ yield desired results.
+//!
+//! Tags, on the other hand, _are_ persistent, and they are recommended for use
+//! in save files, data files, etc, as the tag will always be the same if the
+//! registry stayed persistent, regardless of its inner layout details.
 use std::{fmt::Display, str::FromStr};
 
 use bimap::BiHashMap;
 use serde::{Deserialize, Deserializer};
+use thiserror::Error;
 use tracing::debug;
 
+/// A registry containing and managing user-added data to Rustaria.
+/// See the [module documentation](index.html) for more details.
 pub struct Registry<P> {
     name: &'static str,
-    tag_to_id: BiHashMap<Tag, Id>,
+    tag_to_id: BiHashMap<Tag, RawId>,
     entries: Vec<P>,
 }
 
-impl<P> Registry<P> {
+impl<T> Registry<T> {
     pub fn new(name: &'static str) -> Self {
         Self {
             name,
@@ -18,33 +81,33 @@ impl<P> Registry<P> {
             entries: Default::default(),
         }
     }
-
-    pub fn register(&mut self, tag: Tag, prototype: P) -> Id {
+    pub fn register(&mut self, tag: Tag, element: T) -> RawId {
         debug!("Registered {} '{}'", self.name, tag);
-        let id = self.entries.len() as Id;
+        let id = self.entries.len() as RawId;
         self.tag_to_id.insert(tag, id);
-        self.entries.push(prototype);
+        self.entries.push(element);
         id
     }
-
-    pub fn entries(&self) -> &[P] {
+    pub fn entries(&self) -> &[T] {
         &self.entries
     }
-
-    pub fn get_tag_from_id(&self, id: Id) -> Option<&Tag> {
+    pub fn get_tag_from_id(&self, id: RawId) -> Option<&Tag> {
         self.tag_to_id.get_by_right(&id)
     }
-
-    pub fn get_id_from_tag(&self, tag: &Tag) -> Option<Id> {
+    pub fn get_id_from_tag(&self, tag: &Tag) -> Option<RawId> {
         self.tag_to_id.get_by_left(tag).copied()
     }
-
-    pub fn get_from_id(&self, id: Id) -> Option<&P> {
+    pub fn get_from_id(&self, id: RawId) -> Option<&T> {
         self.entries.get(id as usize)
     }
-
-    pub fn get_from_tag(&self, tag: &Tag) -> Option<&P> {
+    pub fn get_from_id_mut(&mut self, id: RawId) -> Option<&mut T> {
+        self.entries.get_mut(id as usize)
+    }
+    pub fn get_from_tag(&self, tag: &Tag) -> Option<&T> {
         self.get_from_id(self.get_id_from_tag(tag)?)
+    }
+    pub fn get_from_tag_mut(&mut self, tag: &Tag) -> Option<&mut T> {
+        self.get_from_id_mut(self.get_id_from_tag(tag)?)
     }
 }
 
@@ -57,7 +120,7 @@ pub struct Tag {
 }
 
 impl FromStr for Tag {
-    type Err = NotColonSeparated;
+    type Err = ParseTagError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.split_once(':') {
@@ -65,7 +128,7 @@ impl FromStr for Tag {
                 plugin_id: plugin_id.into(),
                 name: name.into(),
             }),
-            None => Err(NotColonSeparated),
+            None => Err(ParseTagError::NotColonSeparated),
         }
     }
 }
@@ -76,14 +139,11 @@ impl Display for Tag {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct NotColonSeparated;
-impl Display for NotColonSeparated {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Tag is not encoded as a colon-separated string")
-    }
+#[derive(Clone, Copy, Debug, Error)]
+pub enum ParseTagError {
+    #[error("Tag is not encoded as a colon-separated string")]
+    NotColonSeparated,
 }
-impl std::error::Error for NotColonSeparated {}
 
 impl<'de> Deserialize<'de> for Tag {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -111,7 +171,7 @@ impl<'de> Deserialize<'de> for Tag {
 }
 
 // kernel identification
-pub type Id = u32;
+pub type RawId = u32;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct LanguageKey {

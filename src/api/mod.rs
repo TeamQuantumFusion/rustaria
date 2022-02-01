@@ -124,6 +124,6 @@ pub enum PrototypeRequest {
     Entity(Tag, EntityPrototype),
 }
 
-pub trait Prototype<T, Id = crate::registry::Id> {
+pub trait Prototype<T, Id = crate::registry::RawId> {
     fn create(&self, id: Id) -> T;
 }

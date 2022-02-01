@@ -5,11 +5,11 @@ use crate::api::Prototype;
 use mlua::prelude::*;
 use serde::Deserialize;
 
-use crate::registry::{Id, Tag};
+use crate::registry::{RawId, Tag};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Tile {
-    id: Id,
+    id: RawId,
     collision: LockableValue<bool>,
     opaque: LockableValue<bool>,
 }
@@ -34,7 +34,7 @@ pub struct TilePrototype {
 }
 
 impl Prototype<Tile> for TilePrototype {
-    fn create(&self, id: Id) -> Tile {
+    fn create(&self, id: RawId) -> Tile {
         Tile {
             id,
             collision: self.collision,

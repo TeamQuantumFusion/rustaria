@@ -1,3 +1,5 @@
+//! Command-line parameters used in Rustaria, for both clients and dedicated servers.
+
 use std::path::PathBuf;
 
 use structopt::StructOpt;
@@ -28,11 +30,11 @@ pub struct Opt {
 
 /// The verbosity setting for the logging output, set in the form of [command-line parameters](Opt).
 ///
-/// It is primarily used in the [`init_console`] method to initialize an [`EnvFilter`].
+/// It is primarily used in the [`init`] method to initialize an [`EnvFilter`].
 /// The exact parameters that corresponds with each level can also be seen there.
 ///
-/// [`init_console`]: rustaria::init_console
-/// [`EnvFilter`]: tracing_subscriber::filter::env::EnvFilter
+/// [`init`]: crate::init
+/// [`EnvFilter`]: tracing_subscriber::filter::EnvFilter
 #[derive(Debug)]
 pub enum Verbosity {
     /// Only info-level information shown, least verbose.
