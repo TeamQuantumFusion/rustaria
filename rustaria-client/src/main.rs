@@ -1,7 +1,7 @@
 use crate::renderer::Renderer;
 use eyre::{eyre, Result};
 use mlua::Lua;
-use rustaria::api::{self, Rustaria};
+use rustaria::api::Rustaria;
 use rustaria::chunk::Chunk;
 use rustaria::world::World;
 use std::time::Instant;
@@ -36,11 +36,11 @@ async fn main() -> Result<()> {
     // create runtime
     let air_tile = api
         .tiles
-        .get_id(&"rustaria-core:air".parse()?)
+        .get_id_from_tag(&"rustaria-core:air".parse()?)
         .ok_or_else(|| eyre!("Could not find air tile"))?;
     let air_wall = api
         .walls
-        .get_id(&"rustaria-core:air".parse()?)
+        .get_id_from_tag(&"rustaria-core:air".parse()?)
         .ok_or_else(|| eyre!("Could not find air wall"))?;
     let empty_chunk = Chunk::new(&api, air_tile, air_wall)
         .ok_or_else(|| eyre!("Could not create empty chunk"))?;
@@ -48,6 +48,12 @@ async fn main() -> Result<()> {
         (2, 2),
         vec![empty_chunk, empty_chunk, empty_chunk, empty_chunk],
     )?;
+
+    let player = api
+        .entities
+        .get_from_tag(&"rustaria-core:player".parse()?)
+        .expect("Could not find player entity");
+    player.spawn(&mut world);
 
     // world.player_join(Player::new(0.0, 0.0, "dev".to_string()));
     let evloop = EventLoop::new();

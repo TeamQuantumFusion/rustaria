@@ -6,6 +6,9 @@ use crate::chunk::wall::Wall;
 use crate::registry::{Id, Tag};
 use crate::types::{ChunkSubPos, Direction, CHUNK_SIZE};
 
+use self::tile::TilePrototype;
+use self::wall::WallPrototype;
+
 pub mod fluid;
 pub mod foliage;
 pub mod tile;
@@ -19,12 +22,12 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn new(api: &Rustaria, default_tile: &Id, default_wall: &Id) -> Option<Chunk> {
-        let tile = api.tiles.get_entry(default_tile)?;
-        let wall = api.walls.get_entry(default_wall)?;
+    pub fn new(api: &Rustaria, default_tile: Id, default_wall: Id) -> Option<Chunk> {
+        let tile = api.tiles.get_from_id(default_tile)?;
+        let wall = api.walls.get_from_id(default_wall)?;
         Some(Chunk {
-            tiles: ChunkGrid::new(tile.create(*default_tile)),
-            walls: ChunkGrid::new(wall.create(*default_wall)),
+            tiles: ChunkGrid::new(tile.create(default_tile)),
+            walls: ChunkGrid::new(wall.create(default_wall)),
         })
     }
 }

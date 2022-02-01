@@ -46,7 +46,7 @@ impl TileDrawer {
 
             let data = archive.get_asset(&ArchivePath::Asset(PathBuf::from(&tag.name)))?;
             let image = image::load_from_memory(data.as_slice())?;
-            Ok((Id(id as u32), image.into_rgba8()))
+            Ok((id as Id, image.into_rgba8()))
         }
 
         let map: Vec<_> = api

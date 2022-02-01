@@ -25,7 +25,7 @@ pub async fn scan_and_load_plugins<'lua>(
 ) -> Result<Plugins<'lua>> {
     info!("Scanning for plugins in directory {:?}", plugins_dir);
 
-    if let Ok(read_dir) = fs::read_dir(&plugins_dir).await {
+    let plugins = if let Ok(read_dir) = fs::read_dir(&plugins_dir).await {
         let plugins = ReadDirStream::new(read_dir).filter_map(|entry| async {
             match entry {
                 Ok(entry) => process_file(entry, lua).await,
@@ -35,12 +35,14 @@ pub async fn scan_and_load_plugins<'lua>(
                 }
             }
         }).map(|plugin| (plugin.manifest.name.clone(), plugin));
-        Ok(Plugins(plugins.collect().await))
+        Plugins(plugins.collect().await)
     } else {
         warn!("Plugin directory not found! Creating one...");
         fs::create_dir_all("plugins").await?;
-        Ok(Plugins(HashMap::new()))
-    }
+        Plugins::default()
+    };
+    info!("Found and loaded {} plugin(s)", plugins.0.len());
+    Ok(plugins)
 }
 
 async fn process_file<'lua>(entry: DirEntry, lua: &'lua Lua) -> Option<Plugin<'lua>> {
@@ -84,6 +86,7 @@ async fn load_plugin<'lua>(path: &Path, lua: &'lua Lua) -> Result<Plugin<'lua>> 
     })
 }
 
+#[derive(Default)]
 pub struct Plugins<'lua>(pub(crate) HashMap<String, Plugin<'lua>>);
 
 impl<'lua> Plugins<'lua> {

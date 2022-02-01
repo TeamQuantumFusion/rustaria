@@ -10,7 +10,7 @@ use crate::api::plugin::{PluginArchive, Plugins};
 use crate::chunk::tile::TilePrototype;
 use crate::chunk::wall::WallPrototype;
 use crate::entity::EntityPrototype;
-use crate::registry::{Id, Registry, Tag};
+use crate::registry::{Registry, Tag};
 
 use self::context::PluginContext;
 
@@ -46,6 +46,7 @@ impl<'lua> Rustaria<'lua> {
             match prototype {
                 PrototypeRequest::Tile(id, pt) => tiles.register(id, pt),
                 PrototypeRequest::Wall(id, pt) => walls.register(id, pt),
+                PrototypeRequest::Entity(id, pt) => entities.register(id, pt),
             };
         }
 
@@ -69,9 +70,9 @@ fn get_plugin_id(lua: &Lua) -> LuaResult<String> {
 }
 
 macro_rules! proto {
-    ($($NAME:ident => $PROTO:ty | $REQUEST:ident),*) => {
+    ($($name:ident => $proto:ty | $request:ident),* $(,)?) => {
         $(
-            fn $NAME(lua: &Lua, send: UnboundedSender<PrototypeRequest>) -> LuaResult<LuaFunction> {
+            fn $name(lua: &Lua, send: UnboundedSender<PrototypeRequest>) -> LuaResult<LuaFunction> {
                 lua.create_function(move |lua, _: ()| {
                     let send = send.clone();
                     lua.create_table_from([
@@ -82,13 +83,13 @@ macro_rules! proto {
                                     plugin_id: get_plugin_id(lua)?,
                                     name
                                 };
-                                send.send(PrototypeRequest::$REQUEST(tag, prototype))
+                                send.send(PrototypeRequest::$request(tag, prototype))
                                     .map_err(|err| LuaError::RuntimeError(err.to_string()))?;
                             }
                             Ok(())
                         })?),
                         ("default", lua.create_function(|lua, t| {
-                            Ok(lua.from_value::<$PROTO>(LuaValue::Table(t)))
+                            Ok(lua.from_value::<$proto>(LuaValue::Table(t)))
                         })?)
                     ])
                 })
@@ -107,19 +108,22 @@ pub fn register_rustaria_api(lua: &Lua) -> LuaResult<UnboundedReceiver<Prototype
     preload.set("meta", meta::package(lua)?)?;
     preload.set("wall", wall_methods(lua, tx.clone())?)?;
     preload.set("tile", tile_methods(lua, tx.clone())?)?;
+    preload.set("entity", entity_methods(lua, tx.clone())?)?;
     Ok(rx)
 }
 
 proto! {
     wall_methods => WallPrototype | Wall,
-    tile_methods => TilePrototype | Tile
+    tile_methods => TilePrototype | Tile,
+    entity_methods => EntityPrototype | Entity,
 }
 
 pub enum PrototypeRequest {
     Tile(Tag, TilePrototype),
     Wall(Tag, WallPrototype),
+    Entity(Tag, EntityPrototype),
 }
 
-pub trait Prototype<T> {
+pub trait Prototype<T, Id = crate::registry::Id> {
     fn create(&self, id: Id) -> T;
 }

@@ -7,6 +7,7 @@ use uuid::Uuid;
 
 use self::{health::Health, physics::Physics};
 
+#[derive(Debug, Clone)]
 pub struct Comps {
     pub health: HashMap<CompId, Health>,
     pub physics: HashMap<CompId, Physics>,
@@ -27,4 +28,10 @@ impl Comps {
     }
 }
 
-type CompId = Uuid;
+pub type CompId = Uuid;
+
+pub trait ToComponent {
+    type Comp;
+
+    fn to_component(&self) -> Self::Comp;
+}

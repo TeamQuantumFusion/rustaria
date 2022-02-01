@@ -72,7 +72,10 @@ impl Command {
         match self {
             Command::SetTile(id, pos) => {
                 if let Some(chunk) = world.get_chunk_mut(pos.chunk_pos()) {
-                    let prototype = rustaria.tiles.get_entry(id).wrap_err("Could not find id.");
+                    let prototype = rustaria
+                        .tiles
+                        .get_from_id(*id)
+                        .wrap_err("Could not find id.");
                     chunk.tiles.set(pos.sub_pos(), prototype?.create(*id));
                 }
             }

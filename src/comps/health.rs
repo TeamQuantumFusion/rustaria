@@ -1,4 +1,7 @@
+use serde::Deserialize;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
+
+use super::ToComponent;
 
 // TODO(leocth): could be generalized to other kinds of 'containers', ig
 // like fluids and such
@@ -72,5 +75,22 @@ impl SubAssign<f32> for Health {
 impl SubAssign<Health> for Health {
     fn sub_assign(&mut self, rhs: Health) {
         self.set(self.get() - rhs.get());
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct HealthPrototype {
+    current: Option<f32>,
+    maximum: f32,
+}
+impl ToComponent for HealthPrototype {
+    type Comp = Health;
+
+    fn to_component(&self) -> Self::Comp {
+        let current = self.current.unwrap_or(self.maximum);
+        Self::Comp {
+            current,
+            maximum: self.maximum,
+        }
     }
 }

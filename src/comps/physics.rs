@@ -1,4 +1,5 @@
-use super::health::Health;
+use super::{health::Health, ToComponent};
+use serde::Deserialize;
 
 #[derive(Debug, Clone)]
 pub struct Physics {
@@ -15,6 +16,20 @@ impl Physics {
                     *health -= delta_y;
                 }
             }
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct PhysicsPrototype {}
+impl ToComponent for PhysicsPrototype {
+    type Comp = Physics;
+
+    fn to_component(&self) -> Self::Comp {
+        Self::Comp {
+            pos: (0.0, 0.0),
+            last_stable_ground: (0.0, 0.0),
+            in_air: false,
         }
     }
 }

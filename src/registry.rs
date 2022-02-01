@@ -20,8 +20,8 @@ impl<P> Registry<P> {
     }
 
     pub fn register(&mut self, tag: Tag, prototype: P) -> Id {
-        debug!(target: "registry", "{}: Registered {:?}", self.name, tag);
-        let id = Id(self.entries.len() as u32);
+        debug!("Registered {} '{}'", self.name, tag);
+        let id = self.entries.len() as Id;
         self.tag_to_id.insert(tag, id);
         self.entries.push(prototype);
         id
@@ -31,16 +31,20 @@ impl<P> Registry<P> {
         &self.entries
     }
 
-    pub fn get_id(&self, tag: &Tag) -> Option<&Id> {
-        self.tag_to_id.get_by_left(tag)
+    pub fn get_tag_from_id(&self, id: Id) -> Option<&Tag> {
+        self.tag_to_id.get_by_right(&id)
     }
 
-    pub fn get_tag(&self, id: &Id) -> Option<&Tag> {
-        self.tag_to_id.get_by_right(id)
+    pub fn get_id_from_tag(&self, tag: &Tag) -> Option<Id> {
+        self.tag_to_id.get_by_left(tag).copied()
     }
 
-    pub fn get_entry(&self, id: &Id) -> Option<&P> {
-        self.entries.get(id.0 as usize)
+    pub fn get_from_id(&self, id: Id) -> Option<&P> {
+        self.entries.get(id as usize)
+    }
+
+    pub fn get_from_tag(&self, tag: &Tag) -> Option<&P> {
+        self.get_from_id(self.get_id_from_tag(tag)?)
     }
 }
 
@@ -63,6 +67,12 @@ impl FromStr for Tag {
             }),
             None => Err(NotColonSeparated),
         }
+    }
+}
+impl Display for Tag {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let Tag { plugin_id, name } = self;
+        write!(f, "{plugin_id}:{name}")
     }
 }
 
@@ -101,8 +111,7 @@ impl<'de> Deserialize<'de> for Tag {
 }
 
 // kernel identification
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
-pub struct Id(pub u32);
+pub type Id = u32;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct LanguageKey {

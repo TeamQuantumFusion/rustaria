@@ -2,6 +2,7 @@ local tile = require "tile"
 local wall = require "wall"
 local log = require "log"
 local meta = require "meta"
+local entity = require "entity"
 
 log.warn "IDK what alpha's on, one entrypoint is good enough"
 log.debug "use dash, not froge"
@@ -30,6 +31,19 @@ tile.register {
 wall.register {
     ["air"] = wall.default {},
     ["another"] = wall.default {}
+}
+
+entity.register {
+    ["player"] = entity.default {
+        health = {
+            maximum = 100
+        }
+    },
+    ["bunne"] = entity.default {
+        health = {
+            maximum = 5
+        }
+    }
 }
 
 log.error "that's it, lmao"
