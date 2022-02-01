@@ -20,8 +20,10 @@ impl Physics {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Default)]
+#[serde(default)]
 pub struct PhysicsPrototype {}
+
 impl ToComponent for PhysicsPrototype {
     type Comp = Physics;
 
