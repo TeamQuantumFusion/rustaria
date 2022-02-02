@@ -36,11 +36,11 @@ async fn main() -> Result<()> {
     // create runtime
     let air_tile = api
         .tiles
-        .get_id_from_tag(&"rustaria-core:air".parse()?)
+        .get_id_from_tag(&"rustaria:air".parse()?)
         .expect("Could not find air tile");
     let air_wall = api
         .walls
-        .get_id_from_tag(&"rustaria-core:air".parse()?)
+        .get_id_from_tag(&"rustaria:air".parse()?)
         .expect("Could not find air wall");
     let empty_chunk = Chunk::new(&api, air_tile, air_wall).expect("Could not create empty chunk");
     let mut world = World::new(
@@ -50,7 +50,7 @@ async fn main() -> Result<()> {
 
     let player = api
         .entities
-        .get_from_tag(&"rustaria-core:player".parse()?)
+        .get_from_tag(&"rustaria:player".parse()?)
         .expect("Could not find player entity");
     player.spawn(&mut world);
 

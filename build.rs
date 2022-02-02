@@ -15,13 +15,13 @@ use walkdir::WalkDir;
 use zip::{write::FileOptions, CompressionMethod, ZipWriter};
 
 fn main() {
-    println!("cargo:rerun-if-changed=rustaria-core/");
+    println!("cargo:rerun-if-changed=rustaria-plugin/");
     fs::create_dir_all("run/plugins")
         .expect("Could not create plugins directory; check if your permissions are sufficient");
     let zip = File::create("run/plugins/rustaria-core.zip").expect("Could not create plugin file");
     let mut zip = ZipWriter::new(BufWriter::new(zip));
 
-    let core_path = PathBuf::from("rustaria-core");
+    let core_path = PathBuf::from("rustaria-plugin");
 
     for entry in WalkDir::new(&core_path)
         .into_iter()
