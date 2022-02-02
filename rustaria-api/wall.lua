@@ -1,6 +1,6 @@
 ---Registers a wall to Rustaria.
 ---
----@param entries table<string, wall>
+---@param entries table<tag, wall>
 ---@return nil
 local function register(entries)
     -- builtin stub

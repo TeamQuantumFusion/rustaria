@@ -76,13 +76,9 @@ macro_rules! proto {
                 lua.create_function(move |lua, _: ()| {
                     let send = send.clone();
                     lua.create_table_from([
-                        ("register", lua.create_function(move |lua, prototypes: HashMap<String, _>| {
+                        ("register", lua.create_function(move |_, prototypes: HashMap<Tag, _>| {
                             let send = send.clone();
-                            for (name, prototype) in prototypes {
-                                let tag = Tag {
-                                    plugin_id: get_plugin_id(lua)?,
-                                    name
-                                };
+                            for (tag, prototype) in prototypes {
                                 send.send(PrototypeRequest::$request(tag, prototype))
                                     .map_err(|err| LuaError::RuntimeError(err.to_string()))?;
                             }

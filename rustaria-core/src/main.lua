@@ -7,15 +7,15 @@ local _ = meta._
 
 log.warn "IDK what alpha's on, one entrypoint is good enough"
 log.debug "use dash, not froge"
-log.debug(meta.plugin_id())
+log.debug(tostring(_("hey", "this_works")))
 
 tile.register {
     -- all default settings
-    ["dirt"] = tile.default {},
-    ["air"] = tile.default {},
+    [_"dirt"] = tile.default {},
+    [_"air"] = tile.default {},
     -- a full example of a tile setting
-    ["alpha"] = tile.default {
-        sprite = _("tile/dirt.png"),
+    [_"alpha"] = tile.default {
+        sprite = _"tile/dirt.png",
         transitional = true,
         collision = {fixed = false},
         opaque = {fixed = false},
@@ -24,23 +24,23 @@ tile.register {
         tile_type = {
             type = "spreadable",
             spread_chance = 0.618,
-            filter = {whitelist = { _("leo") }}
+            filter = {whitelist = { _"leo", _"froge" }}
         }
     }
 }
 
 wall.register {
-    ["air"] = wall.default {},
-    ["another"] = wall.default {}
+    [_"air"] = wall.default {},
+    [_"another"] = wall.default {}
 }
 
 entity.register {
-    ["player"] = entity.default {
+    [_"player"] = entity.default {
         health = {
             maximum = 100
         }
     },
-    ["bunne"] = entity.default {
+    [_"bunne"] = entity.default {
         health = {
             maximum = 5
         }

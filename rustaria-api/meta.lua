@@ -4,21 +4,38 @@ local function plugin_id()
     -- builtin stub
 end
 
----Helper function that creates a tag that's used in registries.
----Tags follow the syntax `{plugin ID}:{name}`, where the plugin ID component is substituted in
----with the actual, current plugin ID at runtime.
+---Creates a tag for use in registries.
 ---
----@param name string the name, or the second component of the tag
----@return string
-local function make_id(name)
-    -- builtin stub; actual implementation may vary
-
-    return plugin_id() .. ":" .. name
+---Should only one string be supplied, it is treated as the name component, and
+---the plugin ID component is instead retrieved from the `meta.plugin_id` function;
+---should two strings be supplied, they are treated as the plugin ID and name components
+---respectively.
+---This function will panic should more than two strings be supplied.
+---
+---Examples:
+---```
+---local meta = require 'meta'
+---local derpling = meta.tag('dumplings', 'derpling')
+---print(tostring(derpling)) -- prints 'dumplings:derpling'
+---
+---local _ = meta._ -- for the sake of convenience
+---local potsticker = _('dumplings', 'potsticker')
+---print(tostring(potsticker)) -- prints 'dumplings:potsticker'
+---
+----- an even shorter way (using current plugin ID)
+---local shorty = _ 'shorty'
+---local even_shorter = _'even_shorter' -- space omitted
+---print(tostring(shorty)) -- prints 'my-plugin:shorty'
+---print(tostring(even_shorter)) -- prints 'my-plugin:even_shorter'
+---```
+---@vararg string one or two components of the resulting tag
+---@return tag
+local function tag(...)
+    -- builtin stub
 end
 
--- Quick alias
-local _ = make_id;
-
 return {
-    plugin_id = plugin_id
+    plugin_id = plugin_id,
+    make_id = tag,
+    _ = tag, -- alias
 }

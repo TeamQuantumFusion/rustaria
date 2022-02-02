@@ -61,6 +61,7 @@
 use std::{fmt::Display, str::FromStr};
 
 use bimap::BiHashMap;
+use mlua::prelude::*;
 use serde::{Deserialize, Deserializer};
 use thiserror::Error;
 use tracing::debug;
@@ -118,7 +119,6 @@ pub struct Tag {
     pub plugin_id: String,
     pub name: String,
 }
-
 impl FromStr for Tag {
     type Err = ParseTagError;
 
@@ -136,6 +136,18 @@ impl Display for Tag {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let Tag { plugin_id, name } = self;
         write!(f, "{plugin_id}:{name}")
+    }
+}
+impl LuaUserData for Tag {
+    fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(f: &mut F) {
+        f.add_field_method_get("plugin_id", |_, t| Ok(t.plugin_id.clone()));
+        f.add_field_method_get("name", |_, t| Ok(t.name.clone()));
+    }
+
+    fn add_methods<'lua, M: LuaUserDataMethods<'lua, Self>>(m: &mut M) {
+        m.add_meta_method(LuaMetaMethod::ToString, |_, this, _: ()| {
+            Ok(format!("{this}"))
+        });
     }
 }
 

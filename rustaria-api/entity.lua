@@ -1,6 +1,6 @@
 ---Registers a entity to Rustaria.
 ---
----@param entries table<string, entity>
+---@param entries table<tag, entity>
 ---@return nil
 local function register(entries)
     -- builtin stub
@@ -16,12 +16,12 @@ end
 
 ---@class entity_settings
 ---@field health health_settings
----@field physics physics_settings
+---@field physics ?physics_settings
 local entity_settings = {}
 
 ---@class health_settings
----@field maximum number
----@field current ?number
+---@field maximum number the maximum amount of health the entity could have.
+---@field current ?number the amount of health the entity should spawn with, defaults to maximum
 local health_settings = {}
 
 ---@class physics_settings

@@ -1,6 +1,6 @@
 ---Registers a tile to Rustaria.
 ---
----@param entries table<string, tile>
+---@param entries table<tag, tile>
 ---@return nil
 local function register(entries)
     -- builtin stub
