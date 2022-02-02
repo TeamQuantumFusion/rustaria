@@ -5,7 +5,7 @@ use mlua::prelude::LuaUserData;
 use crate::api::Prototype;
 use serde::Deserialize;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Wall {
     id: RawId,
     opaque: LockableValue<bool>,
@@ -39,5 +39,21 @@ impl WallPrototype {
 
     pub fn default_break_resistance() -> BreakResistance {
         BreakResistance::Hammer(20)
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use crate::chunk::tile::LockableValue::Fixed;
+    use crate::chunk::tile::{BreakResistance, Tile};
+    use crate::chunk::wall::Wall;
+    use crate::registry::RawId;
+
+    pub fn new(id: RawId) -> Wall {
+        Wall {
+            id,
+            break_resistance: BreakResistance::Any,
+            opaque: Fixed(true),
+        }
     }
 }

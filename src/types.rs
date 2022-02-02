@@ -76,7 +76,7 @@ impl Offset for Direction {
 // ======================================== POSITION ========================================
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub struct ChunkPos {
-    pub x: i32,
+    pub x: u32,
     pub y: u32,
 }
 
@@ -84,9 +84,17 @@ impl ChunkPos {
     pub fn offset<O: Offset + Copy>(&self, offset: O) -> Option<Self> {
         // FIXME(leocth): this is cursed
         Some(Self {
-            x: i32::try_from((self.x as i64).checked_add(offset.offset_x() as i64)?).ok()?,
+            x: u32::try_from((self.x as i64).checked_add(offset.offset_x() as i64)?).ok()?,
             y: u32::try_from((self.y as i64).checked_add(offset.offset_y() as i64)?).ok()?,
         })
+    }
+
+    pub(crate) fn get_raw_pos(&self, (world_w, world_h): (u32, u32)) -> Option<usize> {
+        if self.y >= world_w || self.x >= world_h {
+            return None;
+        }
+
+        Some(self.x as usize + (self.y as usize * world_w as usize))
     }
 }
 
@@ -140,18 +148,15 @@ pub struct TilePos {
 }
 
 impl TilePos {
-    pub fn new(x: i64, y: u64) -> Option<Self> {
-        let (chunk_x, chunk_y) = (x / CHUNK_SIZE as i64, y / CHUNK_SIZE as u64);
-        let (sub_x, sub_y) = (x % CHUNK_SIZE as i64, y % CHUNK_SIZE as u64);
-
+    pub fn new(x: u64, y: u64) -> Option<Self> {
         Some(Self {
             chunk: ChunkPos {
-                x: i32::try_from(chunk_x).ok()?,
-                y: u32::try_from(chunk_y).ok()?,
+                x: u32::try_from(x / CHUNK_SIZE as u64).ok()?,
+                y: u32::try_from(y / CHUNK_SIZE as u64).ok()?,
             },
             sub: ChunkSubPos {
-                x: sub_x as u8,
-                y: sub_y as u8,
+                x: (x % CHUNK_SIZE as u64) as u8,
+                y: (y % CHUNK_SIZE as u64) as u8,
             },
         })
     }

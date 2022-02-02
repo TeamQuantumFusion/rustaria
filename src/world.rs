@@ -1,10 +1,10 @@
 //! The module containing the world of Rustaria.
 
-use crate::api::Rustaria;
-use crate::comps::Comps;
 use std::fmt::{Display, Formatter};
 
+use crate::api::Rustaria;
 use crate::chunk::Chunk;
+use crate::comps::Comps;
 use crate::types::ChunkPos;
 
 pub struct World {
@@ -30,29 +30,11 @@ impl World {
     }
 
     pub fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
-        let (world_w, world_h) = self.chunk_size;
-        let internal_x = pos.x.checked_add(world_w as i32 / 2)? as u32;
-        let internal_y = pos.y;
-
-        if internal_x > world_w || internal_y > world_h {
-            return None;
-        }
-
-        self.chunks
-            .get((internal_y as usize * world_h as usize) + internal_x as usize)
+        self.chunks.get(pos.get_raw_pos(self.chunk_size)?)
     }
 
     fn get_chunk_mut(&mut self, pos: ChunkPos) -> Option<&mut Chunk> {
-        let (world_w, world_h) = self.chunk_size;
-        let internal_x = pos.x.checked_add(world_w as i32 / 2)? as u32;
-        let internal_y = pos.y;
-
-        if internal_x > world_w || internal_y > world_h {
-            return None;
-        }
-
-        self.chunks
-            .get_mut((internal_y as usize * world_h as usize) + internal_x as usize)
+        self.chunks.get_mut(pos.get_raw_pos(self.chunk_size)?)
     }
 
     pub fn tick(&mut self, rustaria: &Rustaria) {}
@@ -76,3 +58,35 @@ impl Display for WorldCreationError {
 }
 
 impl std::error::Error for WorldCreationError {}
+
+#[cfg(test)]
+mod tests {
+    use crate::chunk;
+    use crate::types::ChunkPos;
+    use crate::world::World;
+
+    const WORLD_SIZE: usize = 10;
+
+    #[test]
+    fn roundtrip_chunk_set() {
+        let world_size = (WORLD_SIZE as u32, WORLD_SIZE as u32);
+
+        // Set
+        let mut chunks = Vec::new();
+        for y in 0..WORLD_SIZE {
+            for x in 0..WORLD_SIZE {
+                chunks.push(chunk::tests::new(x as u32, y as u32));
+            }
+        }
+
+        let world = World::new(world_size, chunks.clone()).unwrap();
+
+        // Get
+        for y in 0..WORLD_SIZE {
+            for x in 0..WORLD_SIZE {
+                let pos = ChunkPos { x: x as u32, y: y as u32 };
+                assert_eq!(world.get_chunk(pos).unwrap(), &chunk::tests::new(x as u32, y as u32));
+            }
+        }
+    }
+}

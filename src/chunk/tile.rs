@@ -1,13 +1,13 @@
 use std::{collections::HashSet, hash::Hash};
 
-use crate::api::plugin::ArchivePath;
-use crate::api::Prototype;
 use mlua::prelude::*;
 use serde::Deserialize;
 
+use crate::api::plugin::ArchivePath;
+use crate::api::Prototype;
 use crate::registry::{RawId, Tag};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Tile {
     id: RawId,
     collision: LockableValue<bool>,
@@ -60,7 +60,7 @@ impl TilePrototype {
 
 impl LuaUserData for TilePrototype {}
 
-#[derive(Copy, Clone, Debug, Deserialize)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LockableValue<T> {
     Fixed(T),
@@ -73,7 +73,7 @@ pub enum BlastResistance {
     Indestructible,
 }
 
-#[derive(Copy, Clone, Debug, Deserialize)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BreakResistance {
     Any,
@@ -109,15 +109,15 @@ pub enum Filter<T: Hash + Eq> {
 }
 
 mod blast_resistance_serde {
-    use serde::de::{Error, Visitor};
     use serde::{Deserialize, Deserializer};
+    use serde::de::{Error, Visitor};
 
     use super::BlastResistance;
 
     impl<'de> Deserialize<'de> for BlastResistance {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+            where
+                D: Deserializer<'de>,
         {
             struct BRVisitor;
             impl<'de> Visitor<'de> for BRVisitor {
@@ -127,15 +127,15 @@ mod blast_resistance_serde {
                     write!(formatter, r#"either a string "indestructible" or a number"#)
                 }
                 fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
-                where
-                    E: Error,
+                    where
+                        E: Error,
                 {
                     let v = u32::try_from(v).map_err(Error::custom)?;
                     Ok(BlastResistance::Some(v))
                 }
                 fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-                where
-                    E: Error,
+                    where
+                        E: Error,
                 {
                     if v.eq_ignore_ascii_case("indestructible") {
                         Ok(BlastResistance::Indestructible)
@@ -148,6 +148,21 @@ mod blast_resistance_serde {
                 }
             }
             deserializer.deserialize_any(BRVisitor)
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use crate::chunk::tile::LockableValue::Fixed;
+    use crate::chunk::tile::Tile;
+    use crate::registry::RawId;
+
+    pub fn new(id: RawId) -> Tile {
+        Tile {
+            id,
+            collision: Fixed(true),
+            opaque: Fixed(true),
         }
     }
 }
