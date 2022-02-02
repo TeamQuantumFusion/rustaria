@@ -1,3 +1,10 @@
+//! Automated buildscript for building and bundling `rustaria-core`.
+//!
+//! This, in a nutshell, simply bundles the `rustaria-core` folder into a .zip file,
+//! and puts said .zip file into the `run/plugins/` folder where developers
+//! could test the engine with the core plugin installed.
+//!
+//! Still, this is very, very cursed. Proceed with caution.
 use std::{
     fs::{self, File},
     io::{self, BufWriter},
@@ -20,6 +27,7 @@ fn main() {
         .into_iter()
         .filter_map(|e| e.ok())
         .skip(1)
+    // skip root directory
     {
         let file_path = entry.path();
         println!("Adding file [{}]", file_path.display());

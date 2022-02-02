@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
+use std::ops::Deref;
 use std::{
     ffi::OsStr,
     path::{Path, PathBuf},
@@ -41,7 +42,7 @@ pub async fn scan_and_load_plugins<'lua>(
         fs::create_dir_all("plugins").await?;
         Plugins::default()
     };
-    info!("Found and loaded {} plugin(s)", plugins.0.len());
+    info!("Found and loaded {} plugin(s)", plugins.len());
     Ok(plugins)
 }
 
@@ -93,7 +94,7 @@ impl<'lua> Plugins<'lua> {
     pub fn init(&self, lua: &'lua Lua) -> Result<()> {
         info!("Initializing plugins");
 
-        for Plugin { manifest, init, .. } in self.0.values() {
+        for Plugin { manifest, init, .. } in self.values() {
             debug!("Initializing plugin {}", manifest.name);
             let ctx = PluginContext {
                 plugin_id: manifest.name.clone(),
@@ -103,6 +104,13 @@ impl<'lua> Plugins<'lua> {
             debug!("Finished initializing plugin {}", manifest.name);
         }
         Ok(())
+    }
+}
+impl<'lua> Deref for Plugins<'lua> {
+    type Target = HashMap<String, Plugin<'lua>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

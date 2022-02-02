@@ -1,3 +1,7 @@
 /target
 /run
 Cargo.lock
+
+# OS weirdness
+.DS_Store
+desktop.ini
