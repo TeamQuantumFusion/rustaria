@@ -37,13 +37,12 @@ async fn main() -> Result<()> {
     let air_tile = api
         .tiles
         .get_id_from_tag(&"rustaria-core:air".parse()?)
-        .ok_or_else(|| eyre!("Could not find air tile"))?;
+        .expect("Could not find air tile");
     let air_wall = api
         .walls
         .get_id_from_tag(&"rustaria-core:air".parse()?)
-        .ok_or_else(|| eyre!("Could not find air wall"))?;
-    let empty_chunk = Chunk::new(&api, air_tile, air_wall)
-        .ok_or_else(|| eyre!("Could not create empty chunk"))?;
+        .expect("Could not find air wall");
+    let empty_chunk = Chunk::new(&api, air_tile, air_wall).expect("Could not create empty chunk");
     let mut world = World::new(
         (2, 2),
         vec![empty_chunk, empty_chunk, empty_chunk, empty_chunk],

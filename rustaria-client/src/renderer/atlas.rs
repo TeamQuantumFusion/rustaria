@@ -10,7 +10,7 @@ use rectangle_pack::{
 use tracing::debug;
 use wgpu::{BindGroup, BindGroupLayout, Device, Extent3d, Queue, Sampler, Texture, TextureView};
 
-pub struct Atlas<I: Debug + Hash + Ord + Clone> {
+pub struct Atlas<I> {
     image_locations: HashMap<I, AtlasLocation>,
     texture: Texture,
     sampler: Sampler,

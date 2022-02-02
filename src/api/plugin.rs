@@ -35,7 +35,7 @@ pub async fn scan_and_load_plugins<'lua>(
                     None
                 }
             }
-        }).map(|plugin| (plugin.manifest.name.clone(), plugin));
+        }).map(|plugin| (plugin.manifest.plugin_id.clone(), plugin));
         Plugins(plugins.collect().await)
     } else {
         warn!("Plugin directory not found! Creating one...");
@@ -76,7 +76,7 @@ async fn load_plugin<'lua>(path: &Path, lua: &'lua Lua) -> Result<Plugin<'lua>> 
     let init = lua.load(source).into_function()?;
     info!(
         "Loaded plugin {} v{} from [{}]",
-        manifest.name,
+        manifest.plugin_id,
         manifest.version,
         file_name_or_unknown(path)
     );
@@ -95,13 +95,13 @@ impl<'lua> Plugins<'lua> {
         info!("Initializing plugins");
 
         for Plugin { manifest, init, .. } in self.values() {
-            debug!("Initializing plugin {}", manifest.name);
+            debug!("Initializing plugin {}", manifest.plugin_id);
             let ctx = PluginContext {
-                plugin_id: manifest.name.clone(),
+                plugin_id: manifest.plugin_id.clone(),
             };
             ctx.set(lua)?;
             init.call(())?;
-            debug!("Finished initializing plugin {}", manifest.name);
+            debug!("Finished initializing plugin {}", manifest.plugin_id);
         }
         Ok(())
     }
@@ -123,7 +123,7 @@ pub struct Plugin<'lua> {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Manifest {
-    name: String,
+    plugin_id: String,
     version: String,
     init_path: String,
 }

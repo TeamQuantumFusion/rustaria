@@ -1,5 +1,5 @@
 {
-    "name": "rustaria-core",
+    "pluginId": "rustaria",
     "version": "0.1.0",
     "initPath": "main.lua"
 }
