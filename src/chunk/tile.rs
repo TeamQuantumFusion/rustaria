@@ -7,7 +7,7 @@ use crate::api::plugin::ArchivePath;
 use crate::api::Prototype;
 use crate::registry::{RawId, Tag};
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, serde::Serialize, Deserialize)]
 pub struct Tile {
     id: RawId,
     collision: LockableValue<bool>,
@@ -60,7 +60,7 @@ impl TilePrototype {
 
 impl LuaUserData for TilePrototype {}
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LockableValue<T> {
     Fixed(T),
@@ -73,7 +73,7 @@ pub enum BlastResistance {
     Indestructible,
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BreakResistance {
     Any,

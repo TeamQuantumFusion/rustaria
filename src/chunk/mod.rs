@@ -1,5 +1,7 @@
 #![allow(unused)] // alpha, remove this when you're done - leocth
 
+use serde::{Deserialize, Serialize};
+use serde::de::DeserializeOwned;
 use crate::api::{Prototype, Rustaria};
 use crate::chunk::tile::Tile;
 use crate::chunk::wall::Wall;
@@ -15,7 +17,7 @@ pub mod tile;
 pub mod tree;
 pub mod wall;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Chunk {
     pub tiles: ChunkGrid<Tile>,
     pub walls: ChunkGrid<Wall>,
@@ -32,7 +34,7 @@ impl Chunk {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ChunkGrid<V>
 where
     V: Clone + Copy,

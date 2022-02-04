@@ -5,7 +5,7 @@ use mlua::prelude::LuaUserData;
 use crate::api::Prototype;
 use serde::Deserialize;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, serde::Serialize, Deserialize)]
 pub struct Wall {
     id: RawId,
     opaque: LockableValue<bool>,

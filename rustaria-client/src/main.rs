@@ -1,10 +1,12 @@
+use std::net::SocketAddr;
+use std::str::FromStr;
 use crate::renderer::Renderer;
 use eyre::{eyre, Result};
 use mlua::Lua;
 use rustaria::api::Rustaria;
 use rustaria::chunk::Chunk;
 use rustaria::world::World;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use structopt::StructOpt;
 use tracing::{debug, error, info};
 use winit::{
@@ -12,8 +14,11 @@ use winit::{
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
     window::{Window, WindowBuilder},
 };
+use rustaria::network::packet::ClientPacket;
+use crate::network::{Client, LocalServerCom, RemoteServerCom};
 
 pub mod renderer;
+mod network;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "rustaria-client", about = "The interactive client of Rustaria")]
@@ -24,50 +29,65 @@ struct Opt {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let opt = Opt::from_args();
-    debug!(?opt, "Got command-line args");
+    let server_addr = SocketAddr::from_str("127.0.0.1:42069").unwrap();
 
-    rustaria::init(opt.inner.verbosity)?;
-
-    info!("Rustaria Client v{}", env!("CARGO_PKG_VERSION"));
-    let runtime = Lua::new();
-    let api = Rustaria::new(opt.inner.plugins_dir, &runtime).await?;
-
-    // create runtime
-    let air_tile = api
-        .tiles
-        .get_id_from_tag(&"rustaria:air".parse()?)
-        .expect("Could not find air tile");
-    let air_wall = api
-        .walls
-        .get_id_from_tag(&"rustaria:air".parse()?)
-        .expect("Could not find air wall");
-    let empty_chunk = Chunk::new(&api, air_tile, air_wall).expect("Could not create empty chunk");
-    let mut world = World::new(
-        (2, 2),
-        vec![empty_chunk, empty_chunk, empty_chunk, empty_chunk],
-    )?;
-
-    let player = api
-        .entities
-        .get_from_tag(&"rustaria:player".parse()?)
-        .expect("Could not find player entity");
-    player.spawn(&mut world);
-
-    // world.player_join(Player::new(0.0, 0.0, "dev".to_string()));
-    let evloop = EventLoop::new();
-    let mut window = WindowBuilder::new().build(&evloop)?;
-
-    let mut renderer = Renderer::new(&window, &api).await;
-
-    let mut profiler = Profiler {
-        last_fps: Instant::now(),
-        fps: 0,
+    let addr = SocketAddr::from_str("127.0.0.1:12345").unwrap();
+    let mut client = Client {
+        network: RemoteServerCom::new(server_addr, addr)
     };
 
-    evloop.run(move |event, target, cf| {
-        event_loop(&mut window, &mut renderer, event, target, cf, &mut profiler)
-    });
+    client.send(&ClientPacket::ILoveYou);
+
+    loop {
+        std::thread::sleep(Duration::from_millis(10));
+        client.tick();
+    }
+
+
+   //  let opt = Opt::from_args();
+    //     debug!(?opt, "Got command-line args");
+    //
+    //     rustaria::init(opt.inner.verbosity)?;
+    //
+    //     info!("Rustaria Client v{}", env!("CARGO_PKG_VERSION"));
+    //     let runtime = Lua::new();
+    //     let api = Rustaria::new(opt.inner.plugins_dir, &runtime).await?;
+    //
+    //     // create runtime
+    //     let air_tile = api
+    //         .tiles
+    //         .get_id_from_tag(&"rustaria:air".parse()?)
+    //         .expect("Could not find air tile");
+    //     let air_wall = api
+    //         .walls
+    //         .get_id_from_tag(&"rustaria:air".parse()?)
+    //         .expect("Could not find air wall");
+    //     let empty_chunk = Chunk::new(&api, air_tile, air_wall).expect("Could not create empty chunk");
+    //     let mut world = World::new(
+    //         (2, 2),
+    //         vec![empty_chunk, empty_chunk, empty_chunk, empty_chunk],
+    //     )?;
+    //
+    //     let player = api
+    //         .entities
+    //         .get_from_tag(&"rustaria:player".parse()?)
+    //         .expect("Could not find player entity");
+    //     player.spawn(&mut world);
+    //
+    //     // world.player_join(Player::new(0.0, 0.0, "dev".to_string()));
+    //     let evloop = EventLoop::new();
+    //     let mut window = WindowBuilder::new().build(&evloop)?;
+    //
+    //     let mut renderer = Renderer::new(&window, &api).await;
+    //
+    //     let mut profiler = Profiler {
+    //         last_fps: Instant::now(),
+    //         fps: 0,
+    //     };
+    //
+    //     evloop.run(move |event, target, cf| {
+    //         event_loop(&mut window, &mut renderer, event, target, cf, &mut profiler)
+    //     });
 }
 
 fn event_loop(

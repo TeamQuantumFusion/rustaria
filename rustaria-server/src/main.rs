@@ -1,6 +1,9 @@
 use eyre::Result;
 use mlua::Lua;
 use std::env;
+use std::net::SocketAddr;
+use std::str::FromStr;
+use std::time::Duration;
 use structopt::StructOpt;
 use tracing::{debug, info};
 
@@ -17,37 +20,45 @@ struct Opt {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let opt = Opt::from_args();
-    debug!(?opt, "Got command-line args");
+    let server_addr = SocketAddr::from_str("127.0.0.1:42069").unwrap();
+    let mut server = rustaria::network::server::new_dedicated_server(server_addr);
 
-    rustaria::init(opt.inner.verbosity)?;
+    loop {
+        std::thread::sleep(Duration::from_millis(10));
+        server.tick();
+    }
 
-    info!("Rustaria Dedicated Server v{}", env!("CARGO_PKG_VERSION"));
-    let lua = Lua::new();
-    let api = Rustaria::new(opt.inner.plugins_dir, &lua).await?;
-
-    // create runtime
-    let air_tile = api
-        .tiles
-        .get_id_from_tag(&"rustaria:air".parse()?)
-        .expect("Could not find air tile");
-    let air_wall = api
-        .walls
-        .get_id_from_tag(&"rustaria:air".parse()?)
-        .expect("Could not find air wall");
-    let empty_chunk = Chunk::new(&api, air_tile, air_wall).expect("Could not create empty chunk");
-    let mut world = World::new(
-        (2, 2),
-        vec![empty_chunk, empty_chunk, empty_chunk, empty_chunk],
-    )?;
-
-    let player = api
-        .entities
-        .get_from_tag(&"rustaria:player".parse()?)
-        .expect("Could not find player entity");
-    player.spawn(&mut world);
-
-    debug!("{:?}", world.comps);
+//     let opt = Opt::from_args();
+//     debug!(?opt, "Got command-line args");
+//
+//     rustaria::init(opt.inner.verbosity)?;
+//
+//     info!("Rustaria Dedicated Server v{}", env!("CARGO_PKG_VERSION"));
+//     let lua = Lua::new();
+//     let api = Rustaria::new(opt.inner.plugins_dir, &lua).await?;
+//
+//     // create runtime
+//     let air_tile = api
+//         .tiles
+//         .get_id_from_tag(&"rustaria:air".parse()?)
+//         .expect("Could not find air tile");
+//     let air_wall = api
+//         .walls
+//         .get_id_from_tag(&"rustaria:air".parse()?)
+//         .expect("Could not find air wall");
+//     let empty_chunk = Chunk::new(&api, air_tile, air_wall).expect("Could not create empty chunk");
+//     let mut world = World::new(
+//         (2, 2),
+//         vec![empty_chunk, empty_chunk, empty_chunk, empty_chunk],
+//     )?;
+//
+//     let player = api
+//         .entities
+//         .get_from_tag(&"rustaria:player".parse()?)
+//         .expect("Could not find player entity");
+//     player.spawn(&mut world);
+//
+//     debug!("{:?}", world.comps);
 
     Ok(())
 }

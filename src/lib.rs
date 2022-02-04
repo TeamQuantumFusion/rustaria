@@ -1,3 +1,5 @@
+extern crate core;
+
 use opt::Verbosity;
 use std::env;
 use time::macros::format_description;
@@ -15,6 +17,7 @@ pub mod opt;
 pub mod registry;
 pub mod types;
 pub mod world;
+pub mod network;
 
 /// Common initialization code for both Rustaria client and dedicated server.
 /// This currently sets up [`color_eyre`] and [`tracing`].
