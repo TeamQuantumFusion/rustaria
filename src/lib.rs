@@ -10,6 +10,8 @@ use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 use crate::network::server::ServerNetwork;
 
+pub const KERNEL_VERSION: (u8, u8, u8) = (0, 0, 1);
+
 pub mod api;
 pub mod chunk;
 pub mod comps;
@@ -19,6 +21,7 @@ pub mod registry;
 pub mod types;
 pub mod world;
 pub mod network;
+mod blake3;
 
 /// Common initialization code for both Rustaria client and dedicated server.
 /// This currently sets up [`color_eyre`] and [`tracing`].

@@ -1,21 +1,24 @@
-use std::collections::{HashMap, HashSet};
-use std::fmt::{Display, Formatter, Write};
+use std::collections::{HashMap};
+use std::fmt::Formatter;
+use std::fmt::Display;
 use std::net::SocketAddr;
 use std::time::Instant;
 
 use crossbeam::channel::{Receiver, Sender};
-use eyre::ContextCompat;
+use eyre::{ContextCompat, eyre};
 use laminar::{Packet, Socket, SocketEvent};
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
-use crate::network::create_socket;
-use crate::network::packet::{ClientPacket, ServerPacket};
+use crate::api::{Rustaria, RustariaHash};
+use crate::KERNEL_VERSION;
+use crate::network::{create_socket, send_obj};
+use crate::network::packet::{ClientPacket, ModListPacket, ServerPacket};
 
 pub trait ClientCom {
     fn tick(&mut self);
     fn distribute(&mut self, source: &Token, packet: &ServerPacket) -> eyre::Result<()>;
     fn send(&mut self, target: &Token, packet: &ServerPacket) -> eyre::Result<()>;
-    fn receive(&mut self) -> Vec<(Token, ClientPacket)>;
+    fn receive(&mut self, rustaria: &Rustaria) -> Vec<(Token, ClientPacket)>;
 }
 
 pub struct ServerNetwork {
@@ -32,10 +35,13 @@ impl ServerNetwork {
                     local_players: Default::default(),
                 })
             }),
-            remote_com: remote.map(|addr| Box::new(RemoteClientCom {
-                socket: create_socket(addr),
-                remote_players: Default::default(),
-            })),
+            remote_com: remote.map(|addr| {
+                Box::new(RemoteClientCom {
+                    socket: create_socket(addr),
+                    remote_players: Default::default(),
+                }
+                )
+            }),
         }
     }
 
@@ -48,8 +54,15 @@ impl ServerNetwork {
         }
     }
 
-    pub fn join_local(&mut self, send: Sender<ServerPacket>, receiver: Receiver<ClientPacket>) -> eyre::Result<u8> {
-        let x = self.local_com.as_mut().wrap_err(ServerError::DedicatedServerDoesNotSupportLocalPlayer)?;
+    pub fn join_local(
+        &mut self,
+        send: Sender<ServerPacket>,
+        receiver: Receiver<ClientPacket>,
+    ) -> eyre::Result<u8> {
+        let x = self
+            .local_com
+            .as_mut()
+            .wrap_err(ServerError::DedicatedServerDoesNotSupportLocalPlayer)?;
         let id = x.local_id;
         x.local_id += 1;
         x.local_players.insert(id, (send, receiver));
@@ -76,16 +89,16 @@ impl ServerNetwork {
         Ok(())
     }
 
-    pub fn receive(&mut self) -> Vec<(Token, ClientPacket)> {
+    pub fn receive(&mut self, rustaria: &Rustaria) -> Vec<(Token, ClientPacket)> {
         let mut out = Vec::new();
         if let Some(com) = &mut self.local_com {
-            for x in com.receive() {
+            for x in com.receive(rustaria) {
                 out.push(x);
             }
         }
 
         if let Some(com) = &mut self.remote_com {
-            for x in com.receive() {
+            for x in com.receive(rustaria) {
                 out.push(x);
             }
         }
@@ -136,7 +149,7 @@ impl ClientCom for LocalClientCom {
         Ok(())
     }
 
-    fn receive(&mut self) -> Vec<(Token, ClientPacket)> {
+    fn receive(&mut self, rustaria: &Rustaria) -> Vec<(Token, ClientPacket)> {
         let mut out = Vec::new();
         for (id, (_, receiver)) in &self.local_players {
             while let Ok(packet) = receiver.try_recv() {
@@ -153,7 +166,7 @@ impl ClientCom for LocalClientCom {
 // Dedicated Server
 pub struct RemoteClientCom {
     socket: Socket,
-    remote_players: HashSet<SocketAddr>,
+    remote_players: HashMap<SocketAddr, ClientConnection>,
 }
 
 impl ClientCom for RemoteClientCom {
@@ -163,14 +176,16 @@ impl ClientCom for RemoteClientCom {
 
     fn distribute(&mut self, source: &Token, packet: &ServerPacket) -> eyre::Result<()> {
         debug!("Distributing {:?} from {:?}", packet, source);
-        for addr in &self.remote_players {
-            if Token::Remote(*addr) != *source {
-                self.socket
-                    .send(Packet::reliable_unordered(
-                        *addr,
-                        bincode::serialize(packet)?,
-                    ))
-                    .unwrap();
+        for (addr, connection) in &self.remote_players {
+            if let ClientConnection::Playing = connection {
+                if Token::Remote(*addr) != *source {
+                    self.socket
+                        .send(Packet::reliable_unordered(
+                            *addr,
+                            bincode::serialize(packet)?,
+                        ))
+                        .unwrap();
+                }
             }
         }
 
@@ -191,26 +206,56 @@ impl ClientCom for RemoteClientCom {
         Ok(())
     }
 
-    fn receive(&mut self) -> Vec<(Token, ClientPacket)> {
+    fn receive(&mut self, rustaria: &Rustaria) -> Vec<(Token, ClientPacket)> {
         let mut out = Vec::new();
         while let Some(packet) = self.socket.recv() {
             match packet {
                 SocketEvent::Packet(packet) => {
                     // Handshake
                     let addr = packet.addr();
-                    if !self.remote_players.contains(&addr) {
-                        self.socket
-                            .send(Packet::reliable_unordered(addr, vec![69]))
-                            .unwrap();
-                    } else if let Ok(client_packet) = bincode::deserialize(packet.payload()) {
+                    let connection = self.remote_players.get_mut(&addr);
+                    if let Some(ClientConnection::Playing) = connection {
                         let token = Token::Remote(addr);
-                        debug!("Received {:?} from {:?}", client_packet, token);
-                        out.push((token, client_packet));
+                        let c_packet: bincode::Result<ClientPacket> =
+                            bincode::deserialize(packet.payload());
+                        if let Ok(client_packet) = c_packet {
+                            debug!("Received {:?} from {:?}", client_packet, token);
+                            out.push((token, client_packet));
+                        } else {
+                            warn!("Unknown Packet from {:?}", token);
+                        }
+                    } else if let Some(ClientConnection::Handshaking(hand)) = connection {
+                        match hand {
+                            HandshakingStep::KernelProceedAwait => {
+                                if packet.payload() == [1] {
+                                    debug!("HS {}: Sending Rustaria Hash", addr);
+                                    send_obj(&mut self.socket, addr, &rustaria.hash);
+                                    *hand = HandshakingStep::RegistryMatchAwait;
+                                } else {
+                                    self.remote_players.remove(&addr);
+                                }
+                            }
+                            HandshakingStep::RegistryMatchAwait => {
+                                if packet.payload() == [1] {
+                                    debug!("HS {}: Sending Modlist", addr);
+                                    send_obj(&mut self.socket, addr, &ModListPacket::new(rustaria));
+                                    self.remote_players.remove(&addr);
+                                } else if packet.payload() == [0] {
+                                    debug!("HS {}: Player Connected", addr);
+                                    self.remote_players.insert(addr, ClientConnection::Playing);
+                                } else {
+                                    self.remote_players.remove(&addr);
+                                }
+                            }
+                        }
+                    } else if packet.payload() == &[69] {
+                        send_obj(&mut self.socket, addr, &KERNEL_VERSION);
+                        self.remote_players
+                            .insert(addr, ClientConnection::Handshaking(HandshakingStep::KernelProceedAwait));
                     }
                 }
                 SocketEvent::Connect(address) => {
-                    info!("Client Connected {}", address);
-                    self.remote_players.insert(address);
+                    // kinda irrelevant.
                 }
                 SocketEvent::Timeout(address) => {
                     info!("Client Timed out {}", address);
@@ -226,6 +271,47 @@ impl ClientCom for RemoteClientCom {
     }
 }
 
+impl RemoteClientCom {
+    fn handshake(
+        packet: &Packet,
+        addr: SocketAddr,
+        rec: Receiver<Packet>,
+        packet_sender: Sender<Packet>,
+        hash: RustariaHash,
+    ) -> eyre::Result<()> {
+        if packet.payload() == vec![69] {
+            packet_sender.send(Packet::reliable_unordered(
+                addr,
+                bincode::serialize(&crate::KERNEL_VERSION)?,
+            ));
+        } else {
+            return Err(eyre!("Wrong handshake byte."));
+        }
+
+        if rec.recv()?.payload() == vec![1] {
+            packet_sender.send(Packet::reliable_unordered(addr, (&hash.data).to_vec()));
+        } else {
+            return Err(eyre!("Wrong handshake format."));
+        }
+
+        if rec.recv()?.payload() == vec![1] {
+            // Send modlist and kill it
+        }
+
+        Ok(())
+    }
+}
+
+pub enum ClientConnection {
+    Handshaking(HandshakingStep),
+    Playing,
+}
+
+pub enum HandshakingStep {
+    KernelProceedAwait,
+    RegistryMatchAwait,
+}
+
 pub enum ServerError {
     InvalidIp,
     DedicatedServerDoesNotSupportLocalPlayer,
@@ -235,7 +321,9 @@ impl ServerError {
     pub fn as_str(&self) -> &str {
         match self {
             ServerError::InvalidIp => "Invalid ip address.",
-            ServerError::DedicatedServerDoesNotSupportLocalPlayer => "Tried to join a local player on a dedicated server."
+            ServerError::DedicatedServerDoesNotSupportLocalPlayer => {
+                "Tried to join a local player on a dedicated server."
+            }
         }
     }
 }

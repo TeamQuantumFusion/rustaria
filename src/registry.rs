@@ -59,18 +59,22 @@
 //! in save files, data files, etc, as the tag will always be the same if the
 //! registry stayed persistent, regardless of its inner layout details.
 use std::{fmt::Display, str::FromStr};
+use std::collections::HashMap;
+use std::fmt::{Debug, Pointer};
 
-use bimap::BiHashMap;
 use mlua::prelude::*;
 use serde::{Deserialize, Deserializer};
 use thiserror::Error;
 use tracing::debug;
 
+use crate::blake3::{Hasher, OUT_LEN};
+
 /// A registry containing and managing user-added data to Rustaria.
 /// See the [module documentation](index.html) for more details.
 pub struct Registry<P> {
     name: &'static str,
-    tag_to_id: BiHashMap<Tag, RawId>,
+    tag_to_id: HashMap<Tag, RawId>,
+    id_to_tag: Vec<Tag>,
     entries: Vec<P>,
 }
 
@@ -78,25 +82,20 @@ impl<T> Registry<T> {
     pub fn new(name: &'static str) -> Self {
         Self {
             name,
-            tag_to_id: Default::default(),
-            entries: Default::default(),
+            tag_to_id: HashMap::new(),
+            id_to_tag: Vec::new(),
+            entries: Vec::new(),
         }
     }
-    pub fn register(&mut self, tag: Tag, element: T) -> RawId {
-        debug!("Registered {} '{}'", self.name, tag);
-        let id = self.entries.len() as RawId;
-        self.tag_to_id.insert(tag, id);
-        self.entries.push(element);
-        id
-    }
+
     pub fn entries(&self) -> &[T] {
         &self.entries
     }
     pub fn get_tag_from_id(&self, id: RawId) -> Option<&Tag> {
-        self.tag_to_id.get_by_right(&id)
+        self.id_to_tag.get(id as usize)
     }
     pub fn get_id_from_tag(&self, tag: &Tag) -> Option<RawId> {
-        self.tag_to_id.get_by_left(tag).copied()
+        self.tag_to_id.get(tag).copied()
     }
     pub fn get_from_id(&self, id: RawId) -> Option<&T> {
         self.entries.get(id as usize)
@@ -119,6 +118,7 @@ pub struct Tag {
     pub plugin_id: String,
     pub name: String,
 }
+
 impl FromStr for Tag {
     type Err = ParseTagError;
 
@@ -132,12 +132,14 @@ impl FromStr for Tag {
         }
     }
 }
+
 impl Display for Tag {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let Tag { plugin_id, name } = self;
         write!(f, "{plugin_id}:{name}")
     }
 }
+
 impl LuaUserData for Tag {
     fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(f: &mut F) {
         f.add_field_method_get("plugin_id", |_, t| Ok(t.plugin_id.clone()));
@@ -159,8 +161,8 @@ pub enum ParseTagError {
 
 impl<'de> Deserialize<'de> for Tag {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         use serde::de;
 
@@ -172,8 +174,8 @@ impl<'de> Deserialize<'de> for Tag {
                 write!(f, "a colon-separated string representing a registry tag")
             }
             fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
-            where
-                E: de::Error,
+                where
+                    E: de::Error,
             {
                 Tag::from_str(v).map_err(de::Error::custom)
             }
@@ -188,4 +190,45 @@ pub type RawId = u32;
 #[derive(Clone, Debug, Deserialize)]
 pub struct LanguageKey {
     // TODO
+}
+
+pub struct RegistryBuilder<T> {
+    name: &'static str,
+    data: Vec<(Tag, T)>,
+}
+
+impl<T> RegistryBuilder<T> {
+    pub fn new(name: &'static str) -> RegistryBuilder<T> {
+        Self {
+            name,
+            data: vec![],
+        }
+    }
+
+    pub fn register(&mut self, tag: Tag, element: T) {
+        debug!("Registered {} '{}'", self.name, tag);
+        self.data.push((tag, element));
+    }
+
+
+    pub fn build(mut self, hasher: &mut Hasher) -> Registry<T> {
+        self.data.sort_by(|(i1, _), (i2, _)| {
+            i1.to_string().cmp(&i2.to_string())
+        });
+
+        for (id, (tag, _)) in self.data.iter().enumerate() {
+            hasher.update(&id.to_be_bytes());
+            hasher.update(tag.to_string().as_bytes());
+        }
+
+        let mut registry = Registry::new(self.name);
+
+        for (id, (tag, item)) in self.data.into_iter().enumerate() {
+            registry.entries.push(item);
+            registry.id_to_tag.push(tag.clone());
+            registry.tag_to_id.insert(tag, id as u32);
+        }
+
+        registry
+    }
 }

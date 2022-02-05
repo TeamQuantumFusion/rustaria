@@ -116,7 +116,7 @@ impl<'lua> Deref for Plugins<'lua> {
 
 pub struct Plugin<'lua> {
     pub archive: PluginArchive,
-    manifest: Manifest,
+    pub manifest: Manifest,
     init: LuaFunction<'lua>,
 }
 
@@ -124,7 +124,7 @@ pub struct Plugin<'lua> {
 #[serde(rename_all = "camelCase")]
 pub struct Manifest {
     plugin_id: String,
-    version: String,
+    pub version: String,
     init_path: String,
 }
 

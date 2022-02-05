@@ -24,11 +24,15 @@ struct Opt {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    rustaria::init(Verbosity::VeryVerbose)?;
+    let opt = Opt::from_args();
+    debug!(?opt, "Got command-line args");
+    rustaria::init(opt.inner.verbosity)?;
 
+    let lua = Lua::new();
+    let api = Rustaria::new(opt.inner.plugins_dir, &lua).await?;
 
     let server_addr = SocketAddr::from_str("127.0.0.1:42069").unwrap();
-    let mut server = rustaria::network::server::Server {
+    let mut server = rustaria::Server{
         network: ServerNetwork::new(Some(server_addr), false)
     };
     println!("Server launched");
@@ -36,7 +40,7 @@ async fn main() -> Result<()> {
     loop {
         std::thread::sleep(Duration::from_millis(10));
         server.network.tick();
-        for (source, packet) in server.network.receive() {
+        for (source, packet) in server.network.receive(&api) {
             if let ILoveYou = packet {
                 server.network.send(&source, &ServerPacket::FuckOff);
             }

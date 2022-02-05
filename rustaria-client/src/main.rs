@@ -30,12 +30,18 @@ struct Opt {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    rustaria::init(Verbosity::VeryVerbose)?;
+    let opt = Opt::from_args();
+    debug!(?opt, "Got command-line args");
+    rustaria::init(opt.inner.verbosity)?;
+    info!("Rustaria Client v{}", env!("CARGO_PKG_VERSION"));
+    let runtime = Lua::new();
+    let api = Rustaria::new(opt.inner.plugins_dir, &runtime).await?;
+
     let server_addr = SocketAddr::from_str("127.0.0.1:42069").unwrap();
 
     let addr = SocketAddr::from_str("127.0.0.1:12340").unwrap();
     let mut client = Client {
-        network: RemoteServerCom::new(server_addr, addr)
+        network: RemoteServerCom::new(&api, server_addr, addr)?
     };
 
     client.network.send(&ClientPacket::ILoveYou).unwrap();
@@ -49,7 +55,7 @@ async fn main() -> Result<()> {
     }
 
 
-   //  let opt = Opt::from_args();
+   //      let opt = Opt::from_args();
     //     debug!(?opt, "Got command-line args");
     //
     //     rustaria::init(opt.inner.verbosity)?;

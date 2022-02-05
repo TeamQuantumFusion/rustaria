@@ -1,7 +1,9 @@
 use std::net::SocketAddr;
 use std::time::{Duration, Instant};
 
-use laminar::{Config, Socket, SocketEvent};
+use laminar::{Config, Packet, Socket, SocketEvent};
+use serde::Serialize;
+use crate::blake3::OUT_LEN;
 
 pub mod server;
 pub mod packet;
@@ -25,6 +27,7 @@ pub fn create_socket(self_address: SocketAddr) -> Socket {
 }
 
 pub fn poll_once(socket: &mut Socket) -> SocketEvent {
+    socket.manual_poll(Instant::now());
     let mut thing = socket.recv();
     while thing.is_none() {
         std::thread::sleep(Duration::from_millis(10));
@@ -33,4 +36,16 @@ pub fn poll_once(socket: &mut Socket) -> SocketEvent {
     }
 
     thing.unwrap()
+}
+
+pub fn poll_packet(socket: &mut Socket) -> Option<Vec<u8>> {
+    if let SocketEvent::Packet(packet) = poll_once(socket) {
+        return Some(packet.payload().to_owned());
+    }
+    None
+}
+
+pub fn send_obj<D: Serialize>(socket: &mut Socket, addr: SocketAddr, data: &D) -> eyre::Result<()>{
+    socket.send(Packet::reliable_unordered(addr, bincode::serialize(data)?));
+    Ok(())
 }
