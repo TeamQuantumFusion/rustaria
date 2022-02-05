@@ -9,6 +9,10 @@ use tracing::{debug, info};
 
 use rustaria::api::Rustaria;
 use rustaria::chunk::Chunk;
+use rustaria::network::packet::ClientPacket::ILoveYou;
+use rustaria::network::packet::ServerPacket;
+use rustaria::network::server::ServerNetwork;
+use rustaria::opt::Verbosity;
 use rustaria::world::World;
 
 #[derive(Debug, StructOpt)]
@@ -20,12 +24,23 @@ struct Opt {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    rustaria::init(Verbosity::VeryVerbose)?;
+
+
     let server_addr = SocketAddr::from_str("127.0.0.1:42069").unwrap();
-    let mut server = rustaria::network::server::new_dedicated_server(server_addr);
+    let mut server = rustaria::network::server::Server {
+        network: ServerNetwork::new(Some(server_addr), false)
+    };
+    println!("Server launched");
 
     loop {
         std::thread::sleep(Duration::from_millis(10));
-        server.tick();
+        server.network.tick();
+        for (source, packet) in server.network.receive() {
+            if let ILoveYou = packet {
+                server.network.send(&source, &ServerPacket::FuckOff);
+            }
+        }
     }
 
 //     let opt = Opt::from_args();

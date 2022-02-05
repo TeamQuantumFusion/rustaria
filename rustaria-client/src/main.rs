@@ -15,7 +15,8 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 use rustaria::network::packet::ClientPacket;
-use crate::network::{Client, LocalServerCom, RemoteServerCom};
+use rustaria::opt::Verbosity;
+use crate::network::{Client, LocalServerCom, RemoteServerCom, ServerCom};
 
 pub mod renderer;
 mod network;
@@ -29,18 +30,22 @@ struct Opt {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    rustaria::init(Verbosity::VeryVerbose)?;
     let server_addr = SocketAddr::from_str("127.0.0.1:42069").unwrap();
 
-    let addr = SocketAddr::from_str("127.0.0.1:12345").unwrap();
+    let addr = SocketAddr::from_str("127.0.0.1:12340").unwrap();
     let mut client = Client {
         network: RemoteServerCom::new(server_addr, addr)
     };
 
-    client.send(&ClientPacket::ILoveYou);
+    client.network.send(&ClientPacket::ILoveYou).unwrap();
 
     loop {
         std::thread::sleep(Duration::from_millis(10));
-        client.tick();
+        client.network.tick();
+        for packet in client.network.receive() {
+            info!("Received {:?}", packet);
+        }
     }
 
 

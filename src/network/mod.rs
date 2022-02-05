@@ -19,6 +19,7 @@ pub enum PacketOrder {
 pub fn create_socket(self_address: SocketAddr) -> Socket {
     Socket::bind_with_config(self_address, Config {
         idle_connection_timeout: Duration::from_secs(60),
+        heartbeat_interval: Some(Duration::from_secs(10)),
         ..Config::default()
     }).unwrap()
 }

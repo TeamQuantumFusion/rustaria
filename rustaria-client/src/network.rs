@@ -3,10 +3,11 @@ use std::time::Instant;
 
 use crossbeam::channel::{Receiver, Sender};
 use laminar::{Packet, Socket, SocketEvent};
+use tracing::{debug, warn};
+
 use rustaria::network::{create_socket, poll_once};
 use rustaria::network::packet::{ClientPacket, ServerPacket};
-use rustaria::network::server::{ClientCom, LocalPlayerJoin, Server};
-
+use rustaria::Server;
 
 // Client
 pub trait ServerCom {
@@ -19,20 +20,7 @@ pub struct Client<C: ServerCom> {
     pub network: C,
 }
 
-impl<C: ServerCom> Client<C> {
-    pub fn tick(&mut self) {
-        self.network.tick();
-
-        for packet in self.network.receive() {
-            println!("CLIENT: Received \"{:?}\"", packet);
-        }
-    }
-
-    pub fn send(&mut self, packet: &ClientPacket) {
-        println!("CLIENT: Sending \"{:?}\"", packet);
-        self.network.send(packet);
-    }
-}
+impl<C: ServerCom> Client<C> {}
 
 // Server Com Implementations
 pub struct RemoteServerCom {
@@ -74,6 +62,7 @@ impl ServerCom for RemoteServerCom {
     }
 
     fn send(&mut self, packet: &ClientPacket) -> eyre::Result<()> {
+        debug!("Sending {:?}", packet);
         self.socket.send(Packet::reliable_unordered(self.server_addr, bincode::serialize(packet)?))?;
         Ok(())
     }
@@ -85,10 +74,11 @@ impl ServerCom for RemoteServerCom {
                 SocketEvent::Packet(packet) => {
                     if packet.addr() == self.server_addr {
                         if let Ok(packet) = bincode::deserialize(packet.payload()) {
+                            debug!("Received {:?}", packet);
                             out.push(packet);
                         }
                     } else {
-                        println!("Warning unknown packet");
+                        debug!("UNKNOWN PACKET");
                     }
                 }
                 SocketEvent::Connect(_) => {}
@@ -112,10 +102,11 @@ pub struct LocalServerCom {
 }
 
 impl LocalServerCom {
-    pub fn new<LPJ: LocalPlayerJoin + ClientCom>(server: &mut Server<LPJ>) -> LocalServerCom {
+    pub fn new(server: &mut Server) -> LocalServerCom {
         let (to_client, from_server) = crossbeam::channel::unbounded();
         let (to_server, from_client) = crossbeam::channel::unbounded();
-        server.network.join(to_client, from_client);
+        // todo dont unwrap
+        server.network.join_local(to_client, from_client).unwrap();
         LocalServerCom {
             to_server,
             from_server,
@@ -129,14 +120,15 @@ impl ServerCom for LocalServerCom {
     }
 
     fn send(&mut self, packet: &ClientPacket) -> eyre::Result<()> {
-        self.to_server.send((*packet).clone());
-
+        debug!("Sending {:?}", packet);
+        self.to_server.send((*packet).clone())?;
         Ok(())
     }
 
     fn receive(&mut self) -> Vec<ServerPacket> {
         let mut out = Vec::new();
         while let Ok(packet) = self.from_server.try_recv() {
+            debug!("Received {:?}", packet);
             out.push(packet);
         }
         out

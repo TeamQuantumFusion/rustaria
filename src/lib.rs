@@ -8,6 +8,7 @@ use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
+use crate::network::server::ServerNetwork;
 
 pub mod api;
 pub mod chunk;
@@ -51,4 +52,8 @@ pub fn init(verbosity: Verbosity) -> eyre::Result<()> {
         .init();
 
     Ok(())
+}
+
+pub struct Server {
+    pub network: ServerNetwork,
 }
