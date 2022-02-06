@@ -235,6 +235,8 @@ impl ClientCom for RemoteClientCom {
                             _ => {}
                         };
                     } else if packet.payload() == [69] {
+                        info!("New shit");
+                        HandshakingStep::KernelSend.handle(rustaria, addr, &packet, &self.socket.get_packet_sender());
                         self.remote_players.insert(
                             addr,
                             ClientConnection::Handshaking(HandshakingStep::KernelProceedAwait),
