@@ -1,18 +1,18 @@
-use std::collections::{HashMap};
-use std::fmt::Formatter;
+use std::collections::HashMap;
 use std::fmt::Display;
+use std::fmt::Formatter;
 use std::net::SocketAddr;
 use std::time::Instant;
 
 use crossbeam::channel::{Receiver, Sender};
-use eyre::{ContextCompat, eyre};
+use eyre::{ContextCompat};
 use laminar::{Packet, Socket, SocketEvent};
 use tracing::{debug, info, warn};
 
-use crate::api::{Rustaria, RustariaHash};
-use crate::KERNEL_VERSION;
-use crate::network::{create_socket, send_obj};
+use crate::api::{Rustaria};
 use crate::network::packet::{ClientPacket, ModListPacket, ServerPacket};
+use crate::network::{create_socket, send_obj};
+use crate::KERNEL_VERSION;
 
 pub trait ClientCom {
     fn tick(&mut self);
@@ -39,8 +39,7 @@ impl ServerNetwork {
                 Box::new(RemoteClientCom {
                     socket: create_socket(addr),
                     remote_players: Default::default(),
-                }
-                )
+                })
             }),
         }
     }
@@ -149,7 +148,7 @@ impl ClientCom for LocalClientCom {
         Ok(())
     }
 
-    fn receive(&mut self, rustaria: &Rustaria) -> Vec<(Token, ClientPacket)> {
+    fn receive(&mut self, _: &Rustaria) -> Vec<(Token, ClientPacket)> {
         let mut out = Vec::new();
         for (id, (_, receiver)) in &self.local_players {
             while let Ok(packet) = receiver.try_recv() {
@@ -225,36 +224,24 @@ impl ClientCom for RemoteClientCom {
                             warn!("Unknown Packet from {:?}", token);
                         }
                     } else if let Some(ClientConnection::Handshaking(hand)) = connection {
-                        match hand {
-                            HandshakingStep::KernelProceedAwait => {
-                                if packet.payload() == [1] {
-                                    debug!("HS {}: Sending Rustaria Hash", addr);
-                                    send_obj(&mut self.socket, addr, &rustaria.hash);
-                                    *hand = HandshakingStep::RegistryMatchAwait;
-                                } else {
-                                    self.remote_players.remove(&addr);
-                                }
+                        hand.handle(rustaria, addr, &packet, &self.socket.get_packet_sender());
+                        match &hand {
+                            HandshakingStep::Failed => {
+                                self.remote_players.remove(&addr);
                             }
-                            HandshakingStep::RegistryMatchAwait => {
-                                if packet.payload() == [1] {
-                                    debug!("HS {}: Sending Modlist", addr);
-                                    send_obj(&mut self.socket, addr, &ModListPacket::new(rustaria));
-                                    self.remote_players.remove(&addr);
-                                } else if packet.payload() == [0] {
-                                    debug!("HS {}: Player Connected", addr);
-                                    self.remote_players.insert(addr, ClientConnection::Playing);
-                                } else {
-                                    self.remote_players.remove(&addr);
-                                }
+                            HandshakingStep::Joined => {
+                                self.remote_players.insert(addr, ClientConnection::Playing);
                             }
-                        }
-                    } else if packet.payload() == &[69] {
-                        send_obj(&mut self.socket, addr, &KERNEL_VERSION);
-                        self.remote_players
-                            .insert(addr, ClientConnection::Handshaking(HandshakingStep::KernelProceedAwait));
+                            _ => {}
+                        };
+                    } else if packet.payload() == [69] {
+                        self.remote_players.insert(
+                            addr,
+                            ClientConnection::Handshaking(HandshakingStep::KernelProceedAwait),
+                        );
                     }
                 }
-                SocketEvent::Connect(address) => {
+                SocketEvent::Connect(_) => {
                     // kinda irrelevant.
                 }
                 SocketEvent::Timeout(address) => {
@@ -271,45 +258,67 @@ impl ClientCom for RemoteClientCom {
     }
 }
 
-impl RemoteClientCom {
-    fn handshake(
-        packet: &Packet,
-        addr: SocketAddr,
-        rec: Receiver<Packet>,
-        packet_sender: Sender<Packet>,
-        hash: RustariaHash,
-    ) -> eyre::Result<()> {
-        if packet.payload() == vec![69] {
-            packet_sender.send(Packet::reliable_unordered(
-                addr,
-                bincode::serialize(&crate::KERNEL_VERSION)?,
-            ));
-        } else {
-            return Err(eyre!("Wrong handshake byte."));
-        }
-
-        if rec.recv()?.payload() == vec![1] {
-            packet_sender.send(Packet::reliable_unordered(addr, (&hash.data).to_vec()));
-        } else {
-            return Err(eyre!("Wrong handshake format."));
-        }
-
-        if rec.recv()?.payload() == vec![1] {
-            // Send modlist and kill it
-        }
-
-        Ok(())
-    }
-}
-
 pub enum ClientConnection {
     Handshaking(HandshakingStep),
     Playing,
 }
 
 pub enum HandshakingStep {
+    KernelSend,
     KernelProceedAwait,
     RegistryMatchAwait,
+    Failed,
+    Joined,
+}
+
+impl HandshakingStep {
+    pub fn handle(
+        &mut self,
+        rustaria: &Rustaria,
+        addr: SocketAddr,
+        packet: &Packet,
+        sender: &Sender<Packet>,
+    ) {
+        match self {
+            HandshakingStep::KernelSend => {
+                debug!("HS {}: Sending Kernel Version", addr);
+                if let Err(error) = send_obj(&sender, addr, &KERNEL_VERSION) {
+                    warn!("Could not send kernel version {}", error.to_string());
+                    *self = HandshakingStep::Failed;
+                } else {
+                    *self = HandshakingStep::KernelProceedAwait;
+                }
+            }
+            HandshakingStep::KernelProceedAwait => {
+                if packet.payload() == [1] {
+                    debug!("HS {}: Sending Rustaria Hash", addr);
+                    if let Err(error) = send_obj(&sender, addr, &rustaria.hash) {
+                        warn!("Could not send Rustaria Hash {}", error.to_string());
+                        *self = HandshakingStep::Failed;
+                    } else {
+                        *self = HandshakingStep::RegistryMatchAwait;
+                    }
+                } else {
+                    *self = HandshakingStep::Failed;
+                }
+            }
+            HandshakingStep::RegistryMatchAwait => {
+                if packet.payload() == [1] {
+                    debug!("HS {}: Sending Modlist", addr);
+                    if let Err(error) = send_obj(&sender, addr, &ModListPacket::new(rustaria)) {
+                        warn!("Could not send modlist {}", error.to_string());
+                    }
+                    *self = HandshakingStep::Failed;
+                } else if packet.payload() == [0] {
+                    debug!("HS {}: Player Connected", addr);
+                    *self = HandshakingStep::Joined;
+                } else {
+                    *self = HandshakingStep::Failed;
+                }
+            }
+            _ => {}
+        }
+    }
 }
 
 pub enum ServerError {

@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 use std::time::{Duration, Instant};
+use crossbeam::channel::Sender;
 
 use laminar::{Config, Packet, Socket, SocketEvent};
 use serde::Serialize;
@@ -45,7 +46,7 @@ pub fn poll_packet(socket: &mut Socket) -> Option<Vec<u8>> {
     None
 }
 
-pub fn send_obj<D: Serialize>(socket: &mut Socket, addr: SocketAddr, data: &D) -> eyre::Result<()>{
+pub fn send_obj<D: Serialize>(socket: &Sender<Packet>, addr: SocketAddr, data: &D) -> eyre::Result<()>{
     socket.send(Packet::reliable_unordered(addr, bincode::serialize(data)?));
     Ok(())
 }
