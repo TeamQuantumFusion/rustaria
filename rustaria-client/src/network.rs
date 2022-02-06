@@ -9,13 +9,13 @@ use tracing::{debug, info, warn};
 use rustaria::{KERNEL_VERSION, Server};
 use rustaria::api::Rustaria;
 use rustaria::api::RustariaHash;
-use rustaria::network::{create_socket, poll_once, poll_packet};
+use rustaria::network::{create_socket, PacketDescriptor, poll_once, poll_packet};
 use rustaria::network::packet::{ClientPacket, ModListPacket, ServerPacket};
 
 // Client
 pub trait ServerCom {
     fn tick(&mut self);
-    fn send(&mut self, packet: &ClientPacket) -> eyre::Result<()>;
+    fn send(&mut self, packet: &ClientPacket, desc: PacketDescriptor) -> eyre::Result<()>;
     fn receive(&mut self) -> Vec<ServerPacket>;
 }
 
@@ -105,9 +105,9 @@ impl ServerCom for RemoteServerCom {
         self.socket.manual_poll(Instant::now());
     }
 
-    fn send(&mut self, packet: &ClientPacket) -> eyre::Result<()> {
+    fn send(&mut self, packet: &ClientPacket, desc: PacketDescriptor) -> eyre::Result<()> {
         debug!("Sending {:?}", packet);
-        self.socket.send(Packet::reliable_unordered(self.server_addr, bincode::serialize(packet)?))?;
+        self.socket.send(desc.to_packet(&self.server_addr, bincode::serialize(packet)?))?;
         Ok(())
     }
 
@@ -163,7 +163,7 @@ impl ServerCom for LocalServerCom {
         // beg
     }
 
-    fn send(&mut self, packet: &ClientPacket) -> eyre::Result<()> {
+    fn send(&mut self, packet: &ClientPacket, desc: PacketDescriptor) -> eyre::Result<()> {
         debug!("Sending {:?}", packet);
         self.to_server.send((*packet).clone())?;
         Ok(())

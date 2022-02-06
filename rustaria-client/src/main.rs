@@ -1,12 +1,9 @@
 use std::net::SocketAddr;
 use std::str::FromStr;
-use crate::renderer::Renderer;
+use std::time::{Duration, Instant};
+
 use eyre::{eyre, Result};
 use mlua::Lua;
-use rustaria::api::Rustaria;
-use rustaria::chunk::Chunk;
-use rustaria::world::World;
-use std::time::{Duration, Instant};
 use structopt::StructOpt;
 use tracing::{debug, error, info};
 use winit::{
@@ -14,10 +11,17 @@ use winit::{
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
     window::{Window, WindowBuilder},
 };
+
+use rustaria::api::Rustaria;
+use rustaria::chunk::Chunk;
 use rustaria::network::packet::{ClientPacket, ServerPacket};
+use rustaria::network::{PacketDescriptor, PacketOrder, PacketPriority};
 use rustaria::opt::Verbosity;
 use rustaria::types::ChunkPos;
+use rustaria::world::World;
+
 use crate::network::{Client, LocalServerCom, RemoteServerCom, ServerCom};
+use crate::renderer::Renderer;
 
 pub mod renderer;
 mod network;
@@ -45,10 +49,13 @@ async fn main() -> Result<()> {
         network: RemoteServerCom::new(&api, server_addr, addr)?
     };
 
-    client.network.send(&ClientPacket::RequestChunk(ChunkPos  {
+    client.network.send(&ClientPacket::RequestChunk(ChunkPos {
         x: 0,
-        y: 0
-    })).unwrap();
+        y: 0,
+    }), PacketDescriptor {
+        priority: PacketPriority::Reliable,
+        order: PacketOrder::Unordered,
+    }).unwrap();
 
     loop {
         std::thread::sleep(Duration::from_millis(1));
@@ -64,7 +71,7 @@ async fn main() -> Result<()> {
     }
 
 
-   //      let opt = Opt::from_args();
+    //      let opt = Opt::from_args();
     //     debug!(?opt, "Got command-line args");
     //
     //     rustaria::init(opt.inner.verbosity)?;
@@ -126,11 +133,11 @@ fn event_loop(
             WindowEvent::CloseRequested
             | WindowEvent::KeyboardInput {
                 input:
-                    KeyboardInput {
-                        state: ElementState::Pressed,
-                        virtual_keycode: Some(VirtualKeyCode::Escape),
-                        ..
-                    },
+                KeyboardInput {
+                    state: ElementState::Pressed,
+                    virtual_keycode: Some(VirtualKeyCode::Escape),
+                    ..
+                },
                 ..
             } => *cf = ControlFlow::Exit,
             WindowEvent::Resized(physical_size) => renderer.resize(*physical_size),

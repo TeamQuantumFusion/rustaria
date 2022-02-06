@@ -11,13 +11,13 @@ use tracing::{debug, info, warn};
 
 use crate::api::{Rustaria};
 use crate::network::packet::{ClientPacket, ModListPacket, ServerPacket};
-use crate::network::{create_socket, send_obj};
+use crate::network::{create_socket, PacketDescriptor, send_obj};
 use crate::KERNEL_VERSION;
 
 pub trait ClientCom {
     fn tick(&mut self);
-    fn distribute(&mut self, source: &Token, packet: &ServerPacket) -> eyre::Result<()>;
-    fn send(&mut self, target: &Token, packet: &ServerPacket) -> eyre::Result<()>;
+    fn distribute(&mut self, source: &Token, packet: &ServerPacket, desc: PacketDescriptor) -> eyre::Result<()>;
+    fn send(&mut self, target: &Token, packet: &ServerPacket, desc: PacketDescriptor) -> eyre::Result<()>;
     fn receive(&mut self, rustaria: &Rustaria) -> Vec<(Token, ClientPacket)>;
 }
 
@@ -68,22 +68,22 @@ impl ServerNetwork {
         Ok(id)
     }
 
-    pub fn distribute(&mut self, source: &Token, packet: &ServerPacket) -> eyre::Result<()> {
+    pub fn distribute(&mut self, source: &Token, packet: &ServerPacket, desc: PacketDescriptor) -> eyre::Result<()> {
         if let Some(com) = &mut self.local_com {
-            com.distribute(source, packet)?;
+            com.distribute(source, packet, desc)?;
         }
         if let Some(com) = &mut self.remote_com {
-            com.distribute(source, packet)?;
+            com.distribute(source, packet, desc)?;
         }
         Ok(())
     }
 
-    pub fn send(&mut self, token: &Token, packet: &ServerPacket) -> eyre::Result<()> {
+    pub fn send(&mut self, token: &Token, packet: &ServerPacket, desc: PacketDescriptor) -> eyre::Result<()> {
         if let Some(com) = &mut self.local_com {
-            com.send(token, packet)?;
+            com.send(token, packet, desc)?;
         }
         if let Some(com) = &mut self.remote_com {
-            com.send(token, packet)?;
+            com.send(token, packet, desc)?;
         }
         Ok(())
     }
@@ -125,7 +125,7 @@ impl ClientCom for LocalClientCom {
         // beg
     }
 
-    fn distribute(&mut self, source: &Token, packet: &ServerPacket) -> eyre::Result<()> {
+    fn distribute(&mut self, source: &Token, packet: &ServerPacket, desc: PacketDescriptor) -> eyre::Result<()> {
         debug!("Distributing {:?} from {:?}", packet, source);
 
         for (id, (to_client, _)) in &self.local_players {
@@ -137,7 +137,7 @@ impl ClientCom for LocalClientCom {
         Ok(())
     }
 
-    fn send(&mut self, target: &Token, packet: &ServerPacket) -> eyre::Result<()> {
+    fn send(&mut self, target: &Token, packet: &ServerPacket, desc: PacketDescriptor) -> eyre::Result<()> {
         if let Token::Local(id) = target {
             if let Some((sender, _)) = self.local_players.get(id) {
                 debug!("Sending {:?} to {:?}", packet, target);
@@ -173,16 +173,14 @@ impl ClientCom for RemoteClientCom {
         self.socket.manual_poll(Instant::now());
     }
 
-    fn distribute(&mut self, source: &Token, packet: &ServerPacket) -> eyre::Result<()> {
+    fn distribute(&mut self, source: &Token, packet: &ServerPacket, desc: PacketDescriptor) -> eyre::Result<()> {
         debug!("Distributing {:?} from {:?}", packet, source);
         for (addr, connection) in &self.remote_players {
             if let ClientConnection::Playing = connection {
                 if Token::Remote(*addr) != *source {
+                    let payload = bincode::serialize(packet)?;
                     self.socket
-                        .send(Packet::reliable_unordered(
-                            *addr,
-                            bincode::serialize(packet)?,
-                        ))
+                        .send(desc.to_packet(addr, payload))
                         .unwrap();
                 }
             }
@@ -191,17 +189,14 @@ impl ClientCom for RemoteClientCom {
         Ok(())
     }
 
-    fn send(&mut self, target: &Token, packet: &ServerPacket) -> eyre::Result<()> {
+    fn send(&mut self, target: &Token, packet: &ServerPacket, desc: PacketDescriptor) -> eyre::Result<()> {
         if let Token::Remote(addr) = target {
             // todo i dont think we should unwrap or return on serialize fail. this may just be a rouge client.
             let data = bincode::serialize(packet)?;
             debug!("Sending {} to {:?}. {}B", packet.get_type_str(), target, data.len());
 
             self.socket
-                .send(Packet::reliable_unordered(
-                    *addr,
-                    data,
-                ))
+                .send(desc.to_packet(addr, data))
                 .unwrap();
         }
 
