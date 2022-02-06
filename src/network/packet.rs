@@ -1,23 +1,36 @@
 use std::collections::HashMap;
+use std::io::Read;
+use lz4::{Decoder, EncoderBuilder};
 use crate::chunk::Chunk;
 
 use serde::Serialize;
 use serde::Deserialize;
 use crate::api::Rustaria;
+use crate::types::ChunkPos;
 
 // server > client
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ServerPacket {
     Chunk {
-        data: Box<Chunk>
+        data: Box<ChunkPacket>
     },
     FuckOff
+}
+
+impl ServerPacket {
+    pub fn get_type_str(&self) -> &str {
+        match self {
+            ServerPacket::Chunk { .. } => "Chunk",
+            ServerPacket::FuckOff => "Funny",
+        }
+    }
 }
 
 // client > server
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ClientPacket {
-    ILoveYou
+    ILoveYou,
+    RequestChunk(ChunkPos)
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -40,3 +53,30 @@ impl ModListPacket {
     }
 }
 
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ChunkPacket {
+    data: Vec<u8>
+}
+
+impl ChunkPacket {
+    pub fn new(chunk: &Chunk) -> eyre::Result<ChunkPacket> {
+        let out = Vec::new();
+        let mut encoder = EncoderBuilder::new()
+            .level(4)
+            .build(out)?;
+        bincode::serialize_into(&mut encoder, chunk)?;
+        let (data, result) = encoder.finish();
+        result?;
+
+        Ok(ChunkPacket  { data })
+    }
+
+    pub fn export(self) ->  eyre::Result<Chunk> {
+        let mut result = Decoder::new(self.data.as_slice())?;
+        let mut out = Vec::new();
+        result.read_to_end(&mut out)?;
+        result.finish().1?;
+        Ok(bincode::deserialize(out.as_slice())?)
+    }
+}

@@ -32,52 +32,26 @@ async fn main() -> Result<()> {
     let api = Rustaria::new(opt.inner.plugins_dir, &lua).await?;
 
     let server_addr = SocketAddr::from_str("127.0.0.1:42069").unwrap();
-    let mut server = rustaria::Server{
-        network: ServerNetwork::new(Some(server_addr), false)
-    };
+    let air_tile = api
+        .tiles
+        .get_id_from_tag(&"rustaria:air".parse()?)
+        .expect("Could not find air tile");
+    let air_wall = api
+        .walls
+        .get_id_from_tag(&"rustaria:air".parse()?)
+        .expect("Could not find air wall");
+    let empty_chunk = Chunk::new(&api, air_tile, air_wall).expect("Could not create empty chunk");
+    let world = World::new(
+        (2, 2),
+        vec![empty_chunk, empty_chunk, empty_chunk, empty_chunk],
+    )?;
+
+    let mut server = rustaria::Server::new(world, ServerNetwork::new(Some(server_addr), false));
     println!("Server launched");
 
     loop {
-        std::thread::sleep(Duration::from_millis(10));
-        server.network.tick();
-        for (source, packet) in server.network.receive(&api) {
-            if let ILoveYou = packet {
-                server.network.send(&source, &ServerPacket::FuckOff);
-            }
-        }
+        server.tick(&api).unwrap();
     }
-
-//     let opt = Opt::from_args();
-//     debug!(?opt, "Got command-line args");
-//
-//     rustaria::init(opt.inner.verbosity)?;
-//
-//     info!("Rustaria Dedicated Server v{}", env!("CARGO_PKG_VERSION"));
-//     let lua = Lua::new();
-//     let api = Rustaria::new(opt.inner.plugins_dir, &lua).await?;
-//
-//     // create runtime
-//     let air_tile = api
-//         .tiles
-//         .get_id_from_tag(&"rustaria:air".parse()?)
-//         .expect("Could not find air tile");
-//     let air_wall = api
-//         .walls
-//         .get_id_from_tag(&"rustaria:air".parse()?)
-//         .expect("Could not find air wall");
-//     let empty_chunk = Chunk::new(&api, air_tile, air_wall).expect("Could not create empty chunk");
-//     let mut world = World::new(
-//         (2, 2),
-//         vec![empty_chunk, empty_chunk, empty_chunk, empty_chunk],
-//     )?;
-//
-//     let player = api
-//         .entities
-//         .get_from_tag(&"rustaria:player".parse()?)
-//         .expect("Could not find player entity");
-//     player.spawn(&mut world);
-//
-//     debug!("{:?}", world.comps);
 
     Ok(())
 }

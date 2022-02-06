@@ -1,16 +1,27 @@
 extern crate core;
 
-use opt::Verbosity;
 use std::env;
+use std::ops::AddAssign;
+use std::time::{Duration, Instant};
+
+use eyre::Report;
 use time::macros::format_description;
+use tracing::{info, warn};
 use tracing_error::ErrorLayer;
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::EnvFilter;
+
+use opt::Verbosity;
+use crate::api::Rustaria;
+use crate::network::packet::{ChunkPacket, ClientPacket, ServerPacket};
+
 use crate::network::server::ServerNetwork;
+use crate::world::World;
 
 pub const KERNEL_VERSION: (u8, u8, u8) = (0, 0, 1);
+pub const UPS: u32 = 60;
 
 pub mod api;
 pub mod chunk;
@@ -58,5 +69,65 @@ pub fn init(verbosity: Verbosity) -> eyre::Result<()> {
 }
 
 pub struct Server {
+    world: World,
     pub network: ServerNetwork,
+
+    last_tick: Instant,
+}
+
+
+impl Server {
+    pub fn new(world: World, network: ServerNetwork) -> Server {
+        Server {
+            world,
+            network,
+            last_tick: Instant::now(),
+        }
+    }
+
+    fn tick_internal(&mut self, rustaria: &Rustaria) -> eyre::Result<()> {
+        self.network.tick();
+        for (source, packet) in self.network.receive(rustaria) {
+            match packet {
+                ClientPacket::ILoveYou => {
+
+                }
+                ClientPacket::RequestChunk(pos) => {
+                    if let Some(chunk) = self.world.get_chunk(pos) {
+                        match ChunkPacket::new(chunk) {
+                            Ok(packet) => {
+                                self.network.send(&source, &ServerPacket::Chunk {
+                                    data: Box::new(packet)
+                                }).unwrap();
+                            }
+                            Err(err) => {
+                                warn!("Could not send chunk  {}", err)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn tick(&mut self, rustaria: &Rustaria) -> eyre::Result<()> {
+        while {
+            {
+                let duration = self.last_tick.elapsed();
+                let seconds = duration.as_secs();
+                if seconds > 60 {
+                    return Err(Report::msg("Server ran 1 minute behind. Closing server."));
+                } else if seconds > 5 {
+                    warn!("Server running {} behind" ,seconds)
+                }
+                duration.as_millis()
+            }
+        } >= (1000.0 / UPS as f32) as u128 {
+            self.tick_internal(rustaria)?;
+            self.last_tick += Duration::from_millis((1000.0 / UPS as f32) as u64);
+        }
+
+        Ok(())
+    }
 }

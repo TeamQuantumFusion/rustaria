@@ -14,8 +14,9 @@ use winit::{
     event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
     window::{Window, WindowBuilder},
 };
-use rustaria::network::packet::ClientPacket;
+use rustaria::network::packet::{ClientPacket, ServerPacket};
 use rustaria::opt::Verbosity;
+use rustaria::types::ChunkPos;
 use crate::network::{Client, LocalServerCom, RemoteServerCom, ServerCom};
 
 pub mod renderer;
@@ -44,13 +45,21 @@ async fn main() -> Result<()> {
         network: RemoteServerCom::new(&api, server_addr, addr)?
     };
 
-    client.network.send(&ClientPacket::ILoveYou).unwrap();
+    client.network.send(&ClientPacket::RequestChunk(ChunkPos  {
+        x: 0,
+        y: 0
+    })).unwrap();
 
     loop {
-        std::thread::sleep(Duration::from_millis(10));
+        std::thread::sleep(Duration::from_millis(1));
         client.network.tick();
         for packet in client.network.receive() {
-            info!("Received {:?}", packet);
+            match packet {
+                ServerPacket::Chunk { data } => {
+                    info!("Received {:?}", data.export().unwrap());
+                }
+                ServerPacket::FuckOff => {}
+            }
         }
     }
 

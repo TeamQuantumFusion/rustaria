@@ -193,11 +193,14 @@ impl ClientCom for RemoteClientCom {
 
     fn send(&mut self, target: &Token, packet: &ServerPacket) -> eyre::Result<()> {
         if let Token::Remote(addr) = target {
-            debug!("Sending {:?} to {:?}", packet, target);
+            // todo i dont think we should unwrap or return on serialize fail. this may just be a rouge client.
+            let data = bincode::serialize(packet)?;
+            debug!("Sending {} to {:?}. {}B", packet.get_type_str(), target, data.len());
+
             self.socket
                 .send(Packet::reliable_unordered(
                     *addr,
-                    bincode::serialize(packet)?,
+                    data,
                 ))
                 .unwrap();
         }
