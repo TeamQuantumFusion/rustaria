@@ -1,30 +1,27 @@
 use std::net::SocketAddr;
 use std::str::FromStr;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use eyre::{eyre, Result};
+use eyre::Result;
+use glfw::{Action, Context, Key, Modifiers, SwapInterval, WindowEvent};
 use mlua::Lua;
 use structopt::StructOpt;
-use tracing::{debug, error, info};
-use winit::{
-    event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
-    event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
-    window::{Window, WindowBuilder},
-};
+use tracing::{debug, info};
 
+use opengl_render::OpenGlBackend;
 use rustaria::api::Rustaria;
-use rustaria::chunk::Chunk;
-use rustaria::network::packet::{ClientPacket, ServerPacket};
 use rustaria::network::{PacketDescriptor, PacketOrder, PacketPriority};
-use rustaria::opt::Verbosity;
+use rustaria::network::packet::{ClientPacket, ServerPacket};
 use rustaria::types::ChunkPos;
-use rustaria::world::World;
 
-use crate::network::{Client, LocalServerCom, RemoteServerCom, ServerCom};
-use crate::renderer::Renderer;
+use crate::network::{Client, RemoteServerCom, ServerCom};
+use crate::render::RustariaRenderer;
 
-pub mod renderer;
 mod network;
+mod render;
+
+const DEBUG_MOD: Modifiers = Modifiers::from_bits_truncate(glfw::ffi::MOD_ALT | glfw::ffi::MOD_SHIFT);
+
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "rustaria-client", about = "The interactive client of Rustaria")]
@@ -38,138 +35,47 @@ async fn main() -> Result<()> {
     let opt = Opt::from_args();
     debug!(?opt, "Got command-line args");
     rustaria::init(opt.inner.verbosity)?;
-    info!("Rustaria Client v{}", env!("CARGO_PKG_VERSION"));
-    let runtime = Lua::new();
-    let api = Rustaria::new(opt.inner.plugins_dir, &runtime).await?;
 
-    let server_addr = SocketAddr::from_str("127.0.0.1:42069").unwrap();
 
-    let addr = SocketAddr::from_str("127.0.0.1:12340").unwrap();
-    let mut client = Client {
-        network: RemoteServerCom::new(&api, server_addr, addr)?
-    };
+    let title = &*format!("Rustaria Client v{}", env!("CARGO_PKG_VERSION"));
+    info!(title);
 
-    client.network.send(&ClientPacket::RequestChunk(ChunkPos {
-        x: 0,
-        y: 0,
-    }), PacketDescriptor {
-        priority: PacketPriority::Reliable,
-        order: PacketOrder::Unordered,
-    }).unwrap();
+    info!(target: "render", "Launching GLFW");
+    let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
-    loop {
-        std::thread::sleep(Duration::from_millis(1));
-        client.network.tick();
-        for packet in client.network.receive() {
-            match packet {
-                ServerPacket::Chunk { data } => {
-                    info!("Received {:?}", data.export().unwrap());
+    info!(target: "render", "Creating Window");
+    let (mut window, events) = glfw.create_window(900, 600, title, glfw::WindowMode::Windowed)
+        .expect("Failed to create GLFW window.");
+
+    info!(target: "render", "Loading OpenGL backend");
+    window.set_key_polling(true);
+    window.set_size_polling(true);
+    window.make_current();
+    glfw.set_swap_interval(SwapInterval::Sync(1));
+
+    let mut renderer = RustariaRenderer::new(&glfw, &window);
+
+
+    while !window.should_close() {
+        glfw.poll_events();
+        for (_, event) in glfw::flush_messages(&events) {
+            match event {
+                WindowEvent::Size(width, height) => {
+                    renderer.resize(width as u32, height as u32);
                 }
-                ServerPacket::FuckOff => {}
+                WindowEvent::Key(Key::Q, _, Action::Press, DEBUG_MOD) => window.set_should_close(true),
+                WindowEvent::Key(Key::W, _, Action::Press, DEBUG_MOD) => renderer.wireframe = !renderer.wireframe,
+                _ => {}
             }
         }
+        // render stuff
+        renderer.draw()?;
+        window.swap_buffers();
     }
 
 
-    //      let opt = Opt::from_args();
-    //     debug!(?opt, "Got command-line args");
-    //
-    //     rustaria::init(opt.inner.verbosity)?;
-    //
-    //     info!("Rustaria Client v{}", env!("CARGO_PKG_VERSION"));
-    //     let runtime = Lua::new();
-    //     let api = Rustaria::new(opt.inner.plugins_dir, &runtime).await?;
-    //
-    //     // create runtime
-    //     let air_tile = api
-    //         .tiles
-    //         .get_id_from_tag(&"rustaria:air".parse()?)
-    //         .expect("Could not find air tile");
-    //     let air_wall = api
-    //         .walls
-    //         .get_id_from_tag(&"rustaria:air".parse()?)
-    //         .expect("Could not find air wall");
-    //     let empty_chunk = Chunk::new(&api, air_tile, air_wall).expect("Could not create empty chunk");
-    //     let mut world = World::new(
-    //         (2, 2),
-    //         vec![empty_chunk, empty_chunk, empty_chunk, empty_chunk],
-    //     )?;
-    //
-    //     let player = api
-    //         .entities
-    //         .get_from_tag(&"rustaria:player".parse()?)
-    //         .expect("Could not find player entity");
-    //     player.spawn(&mut world);
-    //
-    //     // world.player_join(Player::new(0.0, 0.0, "dev".to_string()));
-    //     let evloop = EventLoop::new();
-    //     let mut window = WindowBuilder::new().build(&evloop)?;
-    //
-    //     let mut renderer = Renderer::new(&window, &api).await;
-    //
-    //     let mut profiler = Profiler {
-    //         last_fps: Instant::now(),
-    //         fps: 0,
-    //     };
-    //
-    //     evloop.run(move |event, target, cf| {
-    //         event_loop(&mut window, &mut renderer, event, target, cf, &mut profiler)
-    //     });
+    Ok(())
 }
 
-fn event_loop(
-    window: &mut Window,
-    renderer: &mut Renderer,
-    event: Event<()>,
-    _target: &EventLoopWindowTarget<()>,
-    cf: &mut ControlFlow,
-    profiler: &mut Profiler,
-) {
-    match event {
-        Event::WindowEvent {
-            ref event,
-            window_id,
-        } if window_id == window.id() => match event {
-            WindowEvent::CloseRequested
-            | WindowEvent::KeyboardInput {
-                input:
-                KeyboardInput {
-                    state: ElementState::Pressed,
-                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                    ..
-                },
-                ..
-            } => *cf = ControlFlow::Exit,
-            WindowEvent::Resized(physical_size) => renderer.resize(*physical_size),
-            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                renderer.resize(**new_inner_size)
-            }
-            _ => {}
-        },
-        Event::MainEventsCleared => {
-            renderer.update();
-            match renderer.render() {
-                Ok(_) => {
-                    profiler.fps += 1;
-                    if profiler.last_fps.elapsed().as_millis() > 1000 {
-                        debug!(?profiler.fps);
 
-                        profiler.fps = 0;
-                        profiler.last_fps = Instant::now();
-                    }
-                }
-                // Reconfigure the surface if lost
-                Err(wgpu::SurfaceError::Lost) => renderer.resize(renderer.size),
-                // The system is out of memory, we should probably quit
-                Err(wgpu::SurfaceError::OutOfMemory) => *cf = ControlFlow::Exit,
-                Err(e) => error!("{:?}", e),
-            }
-        }
-        _ => {}
-    }
-}
-
-pub struct Profiler {
-    last_fps: Instant,
-    fps: u128,
-}
+pub fn create_window() {}

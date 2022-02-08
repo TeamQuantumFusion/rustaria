@@ -7,12 +7,11 @@ edition = "2021"
 
 [dependencies]
 rustaria = { version = "*", path = "../" }
+opengl-render = { path  = "./opengl-render"}
+glfw = "0.43.0"
 
 mlua = { version = "0.7.1", features = ["luajit", "vendored"] }
 tokio = { version = "1.15.0", features = ["rt-multi-thread", "macros"] }
-wgpu = { version = "0.12.0" }
-winit = "0.26.0"
-naga = "0.8.1"
 eyre = "0.6.5"
 tracing = "0.1.29"
 tracing-futures = "0.2.5"
