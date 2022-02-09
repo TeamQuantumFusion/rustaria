@@ -5,8 +5,10 @@ use glfw::{Context, FlushedMessages, Glfw, Window, WindowEvent};
 use tracing::info;
 
 use opengl::gl;
-use opengl::gl::types::GLbitfield;
-use crate::texture::{Sampler2d, Texture};
+use opengl::gl::types::{GLbitfield, GLenum};
+
+use crate::texture::{Sampler2d, Texture, USampler2d};
+use crate::util::RustGlEnum;
 
 #[macro_use]
 mod util;
@@ -40,6 +42,17 @@ impl OpenGlBackend {
         }
         Sampler2d {
             unit
+        }
+    }
+
+    pub fn enable(&mut self, feature: OpenGlFeature) {
+        unsafe {
+            match feature {
+                OpenGlFeature::Alpha => {
+                    gl::Enable(gl::BLEND);
+                    gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+                }
+            }
         }
     }
 
@@ -83,4 +96,9 @@ pub enum ClearDescriptor {
     Color(f32, f32, f32, f32),
     Depth,
 }
+
+pub enum OpenGlFeature {
+    Alpha
+}
+
 

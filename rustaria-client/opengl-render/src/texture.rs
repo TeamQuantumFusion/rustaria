@@ -234,10 +234,7 @@ impl RustGlEnum for WrapType {
 
 // Filter
 default!(TextureMinFilter =>
-TextureMinFilter::Mipmap(
-    FilterType::Nearest,
-    FilterType::Linear
-));
+TextureMinFilter::Basic(FilterType::Nearest));
 pub enum TextureMinFilter {
     Basic(FilterType),
     Mipmap(FilterType, FilterType),
@@ -285,7 +282,7 @@ impl RustGlEnum for FilterType {
 }
 
 // Sampelr stuff
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct Sampler2d {
     pub(crate) unit: u8
 }
@@ -296,10 +293,13 @@ impl GlType for Sampler2d {
     }
 }
 
-impl Default for Sampler2d {
-    fn default() -> Self {
-        Self  {
-            unit: 0
-        }
+#[derive(Copy, Clone, Default)]
+pub struct USampler2d {
+    pub(crate) unit: u8
+}
+
+impl GlType for USampler2d {
+    fn gl_enum() -> GLenum {
+        gl::UNSIGNED_INT_SAMPLER_2D
     }
 }

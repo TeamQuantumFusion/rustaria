@@ -1,7 +1,10 @@
 use std::ffi::c_void;
 use std::marker::PhantomData;
-use std::ops::{Deref, Range};
+use std::ops::{Add, AddAssign, Deref, Range};
 use std::rc::Rc;
+
+use image::Primitive;
+use tracing::info;
 
 use opengl::gl;
 use opengl::gl::types::GLenum;
@@ -49,16 +52,10 @@ impl VertexBufferLayout {
                 let mut offset = 0;
                 unsafe {
                     for x in attributes {
+                        info!("{:?} offset {} stride {}", x, offset, stride);
                         let attr_size = x.attribute_type.get_size();
                         self.bind();
-                        gl::VertexAttribPointer(
-                            x.index,
-                            x.attribute_type.get_amount() as i32,
-                            x.attribute_type.get_gl_type(),
-                            gl::FALSE,
-                            stride as i32,
-                            offset as *const c_void,
-                        );
+                        x.attribute_type.attrib(x.index, stride as i32, offset as *const c_void);
                         gl::EnableVertexAttribArray(x.index);
                         offset += attr_size;
                     }
@@ -143,6 +140,7 @@ impl<T> Buffer<T> {
         self.size / std::mem::size_of::<T>()
     }
 
+
     pub fn upload(&mut self, data: &[T], buffer_usage: BufferUsage, buffer_access: BufferAccess) {
         let target = self.buffer_type.get_gl();
         let size = data.len() * std::mem::size_of::<T>();
@@ -158,6 +156,10 @@ impl<T> Buffer<T> {
             );
             self.size = size;
         }
+    }
+
+    pub unsafe fn bind(&self)  {
+        gl::BindBuffer(self.buffer_type.get_gl(), self.raw.gl_id);
     }
 
     pub fn update(&mut self, offset: usize, data: &[T]) {
@@ -202,30 +204,40 @@ impl<T> Buffer<T> {
     }
 }
 
-impl<T: GlType + Copy> Buffer<T> {
-    pub fn create_index(base_order: Vec<T>, elements: usize) -> Buffer<T> {
-        let data = Self::generate_index(&base_order, elements);
+impl<T: GlType + Copy + IndexType> Buffer<T> {
+    pub fn create_index(base_order: Vec<T>, element_size: usize, elements: usize) -> Buffer<T> {
+        let data = Self::generate_index(&base_order, element_size, elements);
         Self::create(BufferType::Index(base_order), BufferUsage::Static, BufferAccess::Draw, Some(&data))
     }
 
-    pub fn update_index(&mut self, elements: usize) {
+    pub fn update_index(&mut self, element_size: usize, elements: usize) {
         match &self.buffer_type {
             BufferType::Index(base_order) => {
-                let data = Self::generate_index(base_order, elements);
+                let data = Self::generate_index(base_order, element_size, elements);
                 self.upload(&data, BufferUsage::Static, BufferAccess::Draw);
             }
             _ => panic!("Not an index buffer.")
         }
     }
 
-    fn generate_index(base_order: &[T], elements: usize) -> Vec<T> {
+    fn generate_index(base_order: &[T], element_size: usize, elements: usize) -> Vec<T> {
         let mut data = Vec::new();
-        for _ in 0..elements {
+        for i in 0..elements {
             for index in base_order {
-                data.push(index.clone());
+                data.push(index.clone().add(i * element_size));
             }
         }
         data
+    }
+}
+
+pub trait IndexType {
+    fn add(self, size: usize) -> Self;
+}
+
+impl IndexType for u16 {
+    fn add(self, size: usize) -> Self {
+        self + size as u16
     }
 }
 

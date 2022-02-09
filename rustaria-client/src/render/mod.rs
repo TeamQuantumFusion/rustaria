@@ -10,12 +10,6 @@ use crate::render::world_render::WorldRenderer;
 
 mod world_render;
 
-#[repr(C)]
-pub struct QuadImageVertex {
-    pos: [f32; 2],
-    pos_texture: [f32; 2],
-}
-
 pub struct RustariaRenderer {
     backend: OpenGlBackend,
     world_renderer: WorldRenderer,

@@ -1,5 +1,8 @@
+use std::ffi::c_void;
+
 use opengl::gl;
 use opengl::gl::types::GLenum;
+
 use crate::types::GlType;
 
 pub struct FormatDescriptor {
@@ -7,22 +10,22 @@ pub struct FormatDescriptor {
 }
 
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct AttributeDescriptor {
     pub index: u32,
     pub attribute_type: AttributeType,
 }
 
 impl AttributeDescriptor {
-    pub fn new(index: u32, attribute_type: AttributeType) -> AttributeDescriptor  {
+    pub fn new(index: u32, attribute_type: AttributeType) -> AttributeDescriptor {
         AttributeDescriptor {
             index,
-            attribute_type
+            attribute_type,
         }
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum AttributeType {
     Float(u8),
     Double(u8),
@@ -49,18 +52,44 @@ impl AttributeType {
         }
     }
 
-    pub fn get_amount(&self) -> u8 {
+    pub(crate) unsafe fn attrib(&self, index: u32, stride: i32, offset: *const c_void) {
         match self {
-            AttributeType::Float(amount) => *amount,
-            AttributeType::Double(amount) => *amount,
-            AttributeType::Byte(amount) => *amount,
-            AttributeType::UnsignedByte(amount) => *amount,
-            AttributeType::Short(amount) => *amount,
-            AttributeType::UnsignedShort(amount) => *amount,
-            AttributeType::Int(amount) => *amount,
-            AttributeType::UnsignedInt(amount) => *amount,
+            AttributeType::Float(amount) | AttributeType::Double(amount) => {
+                //gl::VertexAttribPointer(
+                //    x.index,
+                //    x.attribute_type.get_amount() as i32,
+                //    x.attribute_type.get_gl_type(),
+                //    gl::FALSE,
+                //    stride as i32,
+                //    offset as *const c_void,
+                //);
+                let size = (*amount);
+                gl::VertexAttribPointer(
+                    index,
+                    size as i32,
+                    self.get_gl_type(),
+                    gl::FALSE,
+                    stride,
+                    offset,
+                );
+            }
+            AttributeType::Byte(amount) |
+            AttributeType::UnsignedByte(amount) |
+            AttributeType::Short(amount) |
+            AttributeType::UnsignedShort(amount) |
+            AttributeType::Int(amount) |
+            AttributeType::UnsignedInt(amount) => {
+                gl::VertexAttribIPointer(
+                    index,
+                    *amount as i32,
+                    self.get_gl_type(),
+                    stride,
+                    offset,
+                );
+            }
         }
     }
+
 
     pub fn get_gl_type(&self) -> GLenum {
         match self {

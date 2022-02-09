@@ -14,13 +14,11 @@ use crate::uniform::{Uniform, UniformError, UniformType, UniformValueBinder};
 
 pub struct VertexPipeline {
     id: RawProgram,
-    attributes: Vec<AttributeDescriptor>,
     uniforms: Vec<(i32, Rc<RwLock<UniformValueBinder>>)>,
 }
 
 impl VertexPipeline {
     pub fn new(
-        attributes: Vec<AttributeDescriptor>,
         vertex_code: String,
         fragment_code: String,
     ) -> VertexPipeline {
@@ -62,7 +60,6 @@ impl VertexPipeline {
 
         VertexPipeline {
             id: RawProgram { gl_id: id },
-            attributes,
             uniforms: vec![],
         }
     }

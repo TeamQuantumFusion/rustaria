@@ -4,7 +4,7 @@ use std::sync::{Mutex, RwLock};
 
 use opengl::gl;
 use opengl::gl::types::GLenum;
-use crate::texture::Sampler2d;
+use crate::texture::{Sampler2d, USampler2d};
 
 use crate::types::GlType;
 
@@ -52,6 +52,7 @@ pub enum UniformValueBinder {
     UIVec3([u32; 3]),
     UIVec4([u32; 4]),
     Sampler2D(Sampler2d),
+    USampler2D(USampler2d),
 }
 
 impl UniformValueBinder {
@@ -73,7 +74,9 @@ impl UniformValueBinder {
             UniformValueBinder::UIVec2(value) => gl::Uniform2uiv(location, 1, value.as_ptr()),
             UniformValueBinder::UIVec3(value) => gl::Uniform3uiv(location, 1, value.as_ptr()),
             UniformValueBinder::UIVec4(value) => gl::Uniform4uiv(location, 1, value.as_ptr()),
-            UniformValueBinder::Sampler2D(sampler) => gl::Uniform1i(location, sampler.unit as i32)
+            UniformValueBinder::Sampler2D(sampler) => gl::Uniform1i(location, sampler.unit as i32),
+            UniformValueBinder::USampler2D(sampler) => gl::Uniform1i(location, sampler.unit as i32),
+            _ => {}
         }
     }
 }
@@ -114,5 +117,6 @@ uniform_bind_impl!(
     [u32; 3] => UIVec3
     [u32; 4] => UIVec4
     Sampler2d => Sampler2D
+    USampler2d => USampler2D
 );
 // todo matrix / images / whatever
