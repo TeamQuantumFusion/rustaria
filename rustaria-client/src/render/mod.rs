@@ -12,7 +12,7 @@ mod world_render;
 
 pub struct RustariaRenderer {
     backend: OpenGlBackend,
-    world_renderer: WorldRenderer,
+    pub world_renderer: WorldRenderer,
 
     pub wireframe: bool,
 }
@@ -39,7 +39,8 @@ impl RustariaRenderer {
         self.world_renderer.resize(width, height);
     }
 
-    pub fn draw(&mut self) -> eyre::Result<()> {
+    pub fn draw(&mut self, x: f32, y: f32) -> eyre::Result<()> {
+        self.world_renderer.qi_pos.set_value([x, y]);
         self.backend.clear_frame();
         self.world_renderer.draw(self.wireframe);
         Ok(())

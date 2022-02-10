@@ -11,26 +11,28 @@ use opengl_render::texture::{
 };
 use opengl_render::uniform::Uniform;
 use opengl_render::{OpenGlBackend, OpenGlFeature};
+use opengl_render::atlas::{Atlas, AtlasBuilder};
 
 macro_rules! vertex {
     ($(pos: [$X:literal, $Y:literal] tex: [$XT:literal, $YT:literal]),*) => {
         vec![
             $(
-             QuadImageVertex {
-             pos: [$X + 0.0, $Y + 0.0],
-             pos_texture: [$XT  / 12.0 , ($YT)  / 4.0],
-         },
-         QuadImageVertex {
-             pos: [$X + 0.0, $Y + 1.0],
-             pos_texture: [($XT + 1.0)  / 12.0, ($YT)  / 4.0],
-         },
+
          QuadImageVertex {
              pos: [$X + 1.0,$Y + 1.0],
-             pos_texture: [($XT + 1.0)  / 12.0, ($YT + 1.0) / 4.0],
+             pos_texture: [$XT + 1.0, $YT],
          },
          QuadImageVertex {
              pos: [$X + 1.0,$Y + 0.0],
-             pos_texture: [$XT / 12.0, ($YT + 1.0) / 4.0],
+             pos_texture:[$XT + 1.0, $YT + 1.0] ,
+         },
+         QuadImageVertex {
+             pos: [$X + 0.0, $Y + 0.0],
+             pos_texture: [$XT, $YT + 1.0],
+         },
+                     QuadImageVertex {
+             pos: [$X + 0.0, $Y + 1.0],
+             pos_texture: [$XT, $YT ],
          }
             ),*
         ]
@@ -44,15 +46,16 @@ pub struct QuadImageVertex {
 }
 
 pub struct WorldRenderer {
-    qi_atlas: Texture,
+    qi_atlas: Atlas<String>,
     qi_u_atlas_sampler: Uniform<Sampler2d>,
     qi_atlas_sampler: Sampler2d,
     qi_pipeline: VertexPipeline,
     qi_layout: VertexBufferLayout,
     qi_buffer: Buffer<QuadImageVertex>,
     qi_u_screen_y_ratio: Uniform<f32>,
-    qi_u_zoom: Uniform<f32>,
-    qi_index_buffer: Buffer<u16>,
+    pub qi_u_zoom: Uniform<f32>,
+    pub qi_pos: Uniform<[f32; 2]>,
+    pub qi_index_buffer: Buffer<u16>,
 }
 
 impl WorldRenderer {
@@ -66,15 +69,13 @@ impl WorldRenderer {
             include_str!("./shader/quad_image.f.glsl").to_string(),
         );
 
-        let index_buffer = Buffer::create_index(vec![0, 1, 2, 0, 2, 3u16], 4, 3);
+        let index_buffer = Buffer::create_index(vec![0, 1, 3, 1, 2, 3u16], 4, 1);
         let buffer = Buffer::create(
             BufferType::Vertex(vec![a_pos, a_tex]),
             BufferUsage::Static,
             BufferAccess::Draw,
             Some(&vertex!(
-            pos: [1.0, 0.0] tex: [0.0, 1.0],
-            pos: [1.0, 1.0] tex: [1.0, 1.0],
-            pos: [0.0, 0.0] tex: [1.0, 0.0]
+            pos: [0.0, 0.0] tex: [0.0, 0.0]
             )),
         );
 
@@ -82,31 +83,23 @@ impl WorldRenderer {
         layout.bind_buffer(&buffer);
         layout.bind_index(&index_buffer);
 
-        let image = image::open(
-            "/home/alphasucks/CLionProjects/rustaria-main/run/assets/sprite/tile/grass.png",
-        )
-        .unwrap();
-        let atlas = Texture::new::<u8>(
-            TextureType::Texture2d {
-                images: Some(vec![TextureData {
-                    texture_data: Vec::from(image.as_bytes()),
-                    texture_format: TextureDataFormat::Rgba,
-                }]),
-                internal: InternalFormat::Rgba,
-                width: image.width(),
-                height: image.height(),
-                border: 0,
-            },
-            TextureDescriptor {
-                mag_filter: TextureMagFilter(FilterType::Nearest),
-                ..TextureDescriptor::default()
-            },
-        );
+        let mut atlas = AtlasBuilder::new();
+        for x in std::fs::read_dir("./assets/sprite/tile/").unwrap() {
+            let entry = x.unwrap();
+            if !entry.path().is_dir() {
+                let string = entry.file_name().into_string().unwrap();
+                atlas.push(string, image::open(entry.path()).unwrap());
+            }
+        }
+
+        let atlas = atlas.export(4);
+
         let uniform = pipeline.get_uniform("atlas").unwrap();
-        let sampler = backend.create_sampler(0, &atlas);
+        let sampler = backend.create_sampler(0, &atlas.texture);
 
         let mut screen_y_ratio = pipeline.get_uniform("screen_y_ratio").unwrap();
         let mut zoom = pipeline.get_uniform("zoom").unwrap();
+        let pos = pipeline.get_uniform("pos").unwrap();
         let (width, height) = window.get_size();
         screen_y_ratio.set_value(width as f32 / height as f32);
         zoom.set_value(0.1f32);
@@ -119,6 +112,7 @@ impl WorldRenderer {
             qi_buffer: buffer,
             qi_u_screen_y_ratio: screen_y_ratio,
             qi_u_zoom: zoom,
+            qi_pos: pos,
             qi_index_buffer: index_buffer,
         }
     }
@@ -132,7 +126,7 @@ impl WorldRenderer {
         self.qi_pipeline
             .draw(&self.qi_layout, 0..self.qi_index_buffer.get_size(), {
                 if wireframe {
-                    DrawMode::LineLoop
+                    DrawMode::Line
                 } else {
                     DrawMode::Triangle
                 }

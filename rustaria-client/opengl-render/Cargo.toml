@@ -10,3 +10,4 @@ opengl = { path = "opengl-raw" }
 glfw = "0.43.0"
 tracing = "0.1.29"
 image = "0.24.0"
+rectangle-pack = "0.4.2"

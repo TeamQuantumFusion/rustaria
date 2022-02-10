@@ -17,6 +17,7 @@ pub mod attribute;
 pub mod buffer;
 pub mod uniform;
 pub mod texture;
+pub mod atlas;
 mod raw;
 mod types;
 

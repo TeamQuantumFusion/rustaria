@@ -1,5 +1,7 @@
 use std::ffi::c_void;
 
+use tracing::info;
+
 use opengl::gl;
 use opengl::gl::types::GLenum;
 
@@ -30,7 +32,7 @@ impl Texture {
 
             Texture {
                 raw: RawTexture { gl_id: id },
-                target
+                target,
             }
         }
     }
@@ -92,13 +94,20 @@ impl<T: GlType> TextureType<T> {
                 border,
             } => {
                 if let Some(images) = images {
+                    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAX_LOD, images.len() as i32 - 1);
+                    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_LOD, 0);
+                    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, images.len() as i32 - 1);
+                    gl::TexParameterf(gl::TEXTURE_2D, gl::TEXTURE_LOD_BIAS, 0.1f32);
                     for (level, data) in images.iter().enumerate() {
+                        let width = *width as i32 >> level;
+                        let height = *height as i32 >> level;
+                        info!("m{}: {}x{}",level, width, height);
                         gl::TexImage2D(
                             self.to_gl(),
                             level as i32,
                             internal.to_gl() as i32,
-                            *width as i32,
-                            *height as i32,
+                            width,
+                            height,
                             *border,
                             data.texture_format.to_gl(),
                             T::gl_enum(),
@@ -174,11 +183,13 @@ impl RustGlEnum for TextureDataFormat {
 // Lod
 default!(TextureLod => TextureLod {
     max_level: 1000,
+    lod_bias: 1.0,
     min: -1000.0,
     max: 1000.0
 });
 pub struct TextureLod {
     pub max_level: i32,
+    pub lod_bias: f32,
     pub min: f32,
     pub max: f32,
 }
@@ -186,6 +197,7 @@ pub struct TextureLod {
 impl TextureLod {
     unsafe fn apply(&self, target: GLenum) {
         gl::TexParameteri(target, gl::TEXTURE_MAX_LEVEL, self.max_level);
+        gl::TexParameterf(target, gl::TEXTURE_LOD_BIAS, self.lod_bias);
         gl::TexParameterf(target, gl::TEXTURE_MIN_LOD, self.min);
         gl::TexParameterf(target, gl::TEXTURE_MAX_LOD, self.max);
     }
@@ -258,7 +270,7 @@ impl RustGlEnum for TextureMinFilter {
     }
 }
 
-default!(TextureMagFilter => TextureMagFilter(FilterType::Linear));
+default!(TextureMagFilter => TextureMagFilter(FilterType::Nearest));
 pub struct TextureMagFilter(pub FilterType);
 
 impl RustGlEnum for TextureMagFilter {
@@ -284,7 +296,7 @@ impl RustGlEnum for FilterType {
 // Sampelr stuff
 #[derive(Copy, Clone, Default)]
 pub struct Sampler2d {
-    pub(crate) unit: u8
+    pub(crate) unit: u8,
 }
 
 impl GlType for Sampler2d {
@@ -295,7 +307,7 @@ impl GlType for Sampler2d {
 
 #[derive(Copy, Clone, Default)]
 pub struct USampler2d {
-    pub(crate) unit: u8
+    pub(crate) unit: u8,
 }
 
 impl GlType for USampler2d {

@@ -55,14 +55,6 @@ impl AttributeType {
     pub(crate) unsafe fn attrib(&self, index: u32, stride: i32, offset: *const c_void) {
         match self {
             AttributeType::Float(amount) | AttributeType::Double(amount) => {
-                //gl::VertexAttribPointer(
-                //    x.index,
-                //    x.attribute_type.get_amount() as i32,
-                //    x.attribute_type.get_gl_type(),
-                //    gl::FALSE,
-                //    stride as i32,
-                //    offset as *const c_void,
-                //);
                 let size = (*amount);
                 gl::VertexAttribPointer(
                     index,

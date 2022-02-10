@@ -50,12 +50,21 @@ async fn main() -> Result<()> {
     info!(target: "render", "Loading OpenGL backend");
     window.set_key_polling(true);
     window.set_size_polling(true);
+    window.set_scroll_polling(true);
     window.make_current();
     glfw.set_swap_interval(SwapInterval::Sync(1));
 
     let mut renderer = RustariaRenderer::new(&glfw, &window);
 
 
+    let mut zoom = 0.0;
+    let mut w = false;
+    let mut a = false;
+    let mut s = false;
+    let mut d = false;
+
+    let mut x = 0.0;
+    let mut y = 0.0;
     while !window.should_close() {
         glfw.poll_events();
         for (_, event) in glfw::flush_messages(&events) {
@@ -63,13 +72,25 @@ async fn main() -> Result<()> {
                 WindowEvent::Size(width, height) => {
                     renderer.resize(width as u32, height as u32);
                 }
+                WindowEvent::Scroll(x, y) => {
+                    zoom -= y * 0.01;
+                    info!("{zoom}");
+                    renderer.world_renderer.qi_u_zoom.set_value(zoom as f32);
+                }
                 WindowEvent::Key(Key::Q, _, Action::Press, DEBUG_MOD) => window.set_should_close(true),
                 WindowEvent::Key(Key::W, _, Action::Press, DEBUG_MOD) => renderer.wireframe = !renderer.wireframe,
+                WindowEvent::Key(Key::W, _, action, _) => w = action != Action::Release,
+                WindowEvent::Key(Key::A, _, action, _) => a = action != Action::Release,
+                WindowEvent::Key(Key::S, _, action, _) => s = action != Action::Release,
+                WindowEvent::Key(Key::D, _, action, _) => d = action != Action::Release,
                 _ => {}
             }
         }
+
+        x += (d as i8 - a as i8) as f32 * 0.008;
+        y += (w as i8 - s as i8) as f32 * 0.008;
         // render stuff
-        renderer.draw()?;
+        renderer.draw(x, y)?;
         window.swap_buffers();
     }
 

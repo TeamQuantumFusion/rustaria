@@ -1,0 +1,129 @@
+use std::collections::{BTreeMap, HashMap};
+use std::hash::Hash;
+
+use image::{DynamicImage, GenericImage, GenericImageView, RgbaImage};
+use image::DynamicImage::ImageRgba8;
+use image::imageops::FilterType;
+use rectangle_pack::{contains_smallest_box, GroupedRectsToPlace, pack_rects, RectanglePackError, RectanglePackOk, RectToInsert, TargetBin, volume_heuristic};
+use tracing::{debug, info};
+use crate::Texture;
+use crate::texture::{InternalFormat, TextureData, TextureDataFormat, TextureDescriptor, TextureLod, TextureMagFilter, TextureMinFilter, TextureType};
+
+pub struct AtlasBuilder<T: Hash + Ord + Clone> {
+    images: Vec<(T, DynamicImage)>,
+}
+
+impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
+    pub fn new() -> AtlasBuilder<T> {
+        AtlasBuilder {
+            images: vec![]
+        }
+    }
+
+    pub fn push(&mut self, tag: T, image: DynamicImage) {
+        self.images.push((tag, image));
+    }
+
+    pub fn export(self, levels: u8) -> Atlas<T> {
+
+        // Pack everything
+        debug!("Packing atlas.");
+        let mut rects_to_place = GroupedRectsToPlace::new();
+
+        for (id, (_, image)) in self.images.iter().enumerate() {
+            rects_to_place.push_rect(
+                id as u32,
+                Some(vec![0u8]),
+                RectToInsert::new(image.width(), image.height(), 1),
+            );
+        }
+
+        let mut rectangle_placements = Err(RectanglePackError::NotEnoughBinSpace);
+        let mut max_width = 8;
+        let mut max_height = 8;
+        while let Err(RectanglePackError::NotEnoughBinSpace) = rectangle_placements {
+            max_width *= 2;
+            max_height *= 2;
+
+            let mut target_bins = BTreeMap::new();
+            target_bins.insert(0, TargetBin::new(max_width, max_height, 1));
+            rectangle_placements = pack_rects(
+                &rects_to_place,
+                &mut target_bins,
+                &volume_heuristic,
+                &contains_smallest_box
+            );
+        }
+
+        debug!("Creating atlas");
+        // Create image and lookup
+        let pack = rectangle_placements.unwrap();
+        let locations = pack.packed_locations();
+        let mut image = image::DynamicImage::new_rgba8(max_width, max_height);
+        let mut lookup = HashMap::new();
+        for (id, (_, location)) in locations {
+            let (tag, source) = &self.images[*id as usize];
+            lookup.insert(tag.clone(), AtlasLocation {
+                x: 0.0,
+                y: 0.0,
+                width: 0.0,
+                height: 0.0,
+            });
+            let x_offset = location.x();
+            let y_offset = location.y();
+            for y in 0..location.height() {
+                for x in 0..location.width() {
+                    image.put_pixel(x_offset + x, y_offset + y, source.get_pixel(x, y));
+                }
+            }
+        }
+
+        debug!("Uploading atlas");
+        // Generate Mipmaps
+        let mut images = Vec::new();
+        for level in 0..levels {
+            let image = image.resize(image.width() >> level as u32, image.height() >> level as u32, FilterType::Nearest);
+            images.push(TextureData  {
+                texture_data: image.into_bytes(),
+                texture_format: TextureDataFormat::Rgba
+            });
+        }
+
+        // upload
+        let texture = Texture::new(TextureType::Texture2d {
+            images: Some(images),
+            internal: InternalFormat::Rgba,
+            width: max_width,
+            height: max_height,
+            border: 0,
+        }, TextureDescriptor {
+            lod: TextureLod {
+                max_level: levels as i32,
+                lod_bias: 0.1,
+                min: 0.0,
+                max: 1.0
+            },
+            min_filter: TextureMinFilter::Mipmap(crate::texture::FilterType::Nearest, crate::texture::FilterType::Linear),
+            mag_filter: TextureMagFilter(crate::texture::FilterType::Nearest),
+            ..Default::default()
+        });
+
+        info!("Created atlas {}x{}", max_width, max_height);
+        Atlas {
+            texture,
+            lookup
+        }
+    }
+}
+
+pub struct Atlas<T: Hash + Ord> {
+    pub texture: Texture,
+    pub lookup: HashMap<T, AtlasLocation>
+}
+
+pub struct AtlasLocation {
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+}
