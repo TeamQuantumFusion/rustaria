@@ -6,6 +6,7 @@ use image::DynamicImage::ImageRgba8;
 use image::imageops::FilterType;
 use rectangle_pack::{contains_smallest_box, GroupedRectsToPlace, pack_rects, RectanglePackError, RectanglePackOk, RectToInsert, TargetBin, volume_heuristic};
 use tracing::{debug, info};
+
 use crate::Texture;
 use crate::texture::{InternalFormat, TextureData, TextureDataFormat, TextureDescriptor, TextureLod, TextureMagFilter, TextureMinFilter, TextureType};
 
@@ -25,7 +26,6 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
     }
 
     pub fn export(self, levels: u8) -> Atlas<T> {
-
         // Pack everything
         debug!("Packing atlas.");
         let mut rects_to_place = GroupedRectsToPlace::new();
@@ -51,7 +51,7 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
                 &rects_to_place,
                 &mut target_bins,
                 &volume_heuristic,
-                &contains_smallest_box
+                &contains_smallest_box,
             );
         }
 
@@ -64,10 +64,10 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
         for (id, (_, location)) in locations {
             let (tag, source) = &self.images[*id as usize];
             lookup.insert(tag.clone(), AtlasLocation {
-                x: 0.0,
-                y: 0.0,
-                width: 0.0,
-                height: 0.0,
+                x: location.x() as f32 / max_width as f32,
+                y: location.y() as f32 / max_height as f32,
+                width: location.width() as f32 / max_width as f32,
+                height: location.height() as f32 / max_height as f32,
             });
             let x_offset = location.x();
             let y_offset = location.y();
@@ -83,9 +83,9 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
         let mut images = Vec::new();
         for level in 0..levels {
             let image = image.resize(image.width() >> level as u32, image.height() >> level as u32, FilterType::Nearest);
-            images.push(TextureData  {
+            images.push(TextureData {
                 texture_data: image.into_bytes(),
-                texture_format: TextureDataFormat::Rgba
+                texture_format: TextureDataFormat::Rgba,
             });
         }
 
@@ -101,7 +101,7 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
                 max_level: levels as i32,
                 lod_bias: 0.1,
                 min: 0.0,
-                max: 1.0
+                max: 1.0,
             },
             min_filter: TextureMinFilter::Mipmap(crate::texture::FilterType::Nearest, crate::texture::FilterType::Linear),
             mag_filter: TextureMagFilter(crate::texture::FilterType::Nearest),
@@ -111,14 +111,14 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
         info!("Created atlas {}x{}", max_width, max_height);
         Atlas {
             texture,
-            lookup
+            lookup,
         }
     }
 }
 
 pub struct Atlas<T: Hash + Ord> {
     pub texture: Texture,
-    pub lookup: HashMap<T, AtlasLocation>
+    pub lookup: HashMap<T, AtlasLocation>,
 }
 
 pub struct AtlasLocation {

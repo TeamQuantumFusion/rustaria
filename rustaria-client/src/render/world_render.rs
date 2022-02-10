@@ -1,5 +1,9 @@
+use std::hash::Hash;
+
 use glfw::Window;
 
+use opengl_render::{OpenGlBackend, OpenGlFeature};
+use opengl_render::atlas::{Atlas, AtlasBuilder};
 use opengl_render::attribute::{AttributeDescriptor, AttributeType};
 use opengl_render::buffer::{
     Buffer, BufferAccess, BufferType, BufferUsage, DrawMode, VertexBufferLayout,
@@ -10,39 +14,40 @@ use opengl_render::texture::{
     TextureDescriptor, TextureMagFilter, TextureType, USampler2d,
 };
 use opengl_render::uniform::Uniform;
-use opengl_render::{OpenGlBackend, OpenGlFeature};
-use opengl_render::atlas::{Atlas, AtlasBuilder};
 
-macro_rules! vertex {
-    ($(pos: [$X:literal, $Y:literal] tex: [$XT:literal, $YT:literal]),*) => {
-        vec![
-            $(
-
-         QuadImageVertex {
-             pos: [$X + 1.0,$Y + 1.0],
-             pos_texture: [$XT + 1.0, $YT],
-         },
-         QuadImageVertex {
-             pos: [$X + 1.0,$Y + 0.0],
-             pos_texture:[$XT + 1.0, $YT + 1.0] ,
-         },
-         QuadImageVertex {
-             pos: [$X + 0.0, $Y + 0.0],
-             pos_texture: [$XT, $YT + 1.0],
-         },
-                     QuadImageVertex {
-             pos: [$X + 0.0, $Y + 1.0],
-             pos_texture: [$XT, $YT ],
-         }
-            ),*
-        ]
-    };
-}
+use crate::render::texture_format::TileImagePos;
 
 #[repr(C)]
 pub struct QuadImageVertex {
     pos: [f32; 2],
     pos_texture: [f32; 2],
+}
+
+impl QuadImageVertex {
+    pub fn quad(atlas: &Atlas<String>, data: &mut Vec<QuadImageVertex>, x: f32, y: f32, tile: &str, ty: TileImagePos) {
+        let loc = atlas.lookup.get(&tile.to_owned()).unwrap();
+
+        let tile_size = loc.height / 4.0;
+        let (o_x, o_y) = ty.get_tex_pos();
+        let (t_x, t_y) = (loc.x + (o_x * tile_size), loc.y + (o_y * tile_size));
+        // todo custom variant amounts. currently its forced to be 3
+        data.push(QuadImageVertex {
+            pos: [(x + 1.0) / 100.0, (y + 1.0) / 100.0],
+            pos_texture: [t_x + tile_size, t_y],
+        });
+        data.push(QuadImageVertex {
+            pos: [(x + 1.0) / 100.0, (y + 0.0) / 100.0],
+            pos_texture: [t_x + tile_size, t_y + tile_size],
+        });
+        data.push(QuadImageVertex {
+            pos: [(x + 0.0) / 100.0, (y + 0.0) / 100.0],
+            pos_texture: [t_x, t_y + tile_size],
+        });
+        data.push( QuadImageVertex {
+            pos: [(x + 0.0) / 100.0, (y + 1.0) / 100.0],
+            pos_texture: [t_x, t_y],
+        });
+    }
 }
 
 pub struct WorldRenderer {
@@ -62,6 +67,19 @@ impl WorldRenderer {
     pub fn new(backend: &mut OpenGlBackend, window: &Window) -> WorldRenderer {
         backend.enable(OpenGlFeature::Alpha);
 
+        let mut atlas = AtlasBuilder::new();
+        for x in std::fs::read_dir("./assets/sprite/tile/").unwrap() {
+            let entry = x.unwrap();
+            if !entry.path().is_dir() {
+                let string = entry.file_name().into_string().unwrap();
+                println!("{}", string);
+                atlas.push(string, image::open(entry.path()).unwrap());
+            }
+        }
+
+        let atlas = atlas.export(4);
+
+
         let a_pos = AttributeDescriptor::new(0, AttributeType::Float(2));
         let a_tex = AttributeDescriptor::new(1, AttributeType::Float(2));
         let mut pipeline = VertexPipeline::new(
@@ -69,30 +87,25 @@ impl WorldRenderer {
             include_str!("./shader/quad_image.f.glsl").to_string(),
         );
 
-        let index_buffer = Buffer::create_index(vec![0, 1, 3, 1, 2, 3u16], 4, 1);
+        let mut data = Vec::new();
+        for y in 0..24 {
+            for x in 0..24 {
+                QuadImageVertex::quad(&atlas, &mut data, 0.0 + x as f32, 0.0 + y as f32, "grass.png", TileImagePos::Solid);
+            }
+        }
+
+
+        let index_buffer = Buffer::create_index(vec![0, 1, 3, 1, 2, 3u16], 4, 24 * 24);
         let buffer = Buffer::create(
             BufferType::Vertex(vec![a_pos, a_tex]),
             BufferUsage::Static,
             BufferAccess::Draw,
-            Some(&vertex!(
-            pos: [0.0, 0.0] tex: [0.0, 0.0]
-            )),
+            Some(&data),
         );
 
         let mut layout = VertexBufferLayout::new();
         layout.bind_buffer(&buffer);
         layout.bind_index(&index_buffer);
-
-        let mut atlas = AtlasBuilder::new();
-        for x in std::fs::read_dir("./assets/sprite/tile/").unwrap() {
-            let entry = x.unwrap();
-            if !entry.path().is_dir() {
-                let string = entry.file_name().into_string().unwrap();
-                atlas.push(string, image::open(entry.path()).unwrap());
-            }
-        }
-
-        let atlas = atlas.export(4);
 
         let uniform = pipeline.get_uniform("atlas").unwrap();
         let sampler = backend.create_sampler(0, &atlas.texture);

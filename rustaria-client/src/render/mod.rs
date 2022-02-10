@@ -9,6 +9,7 @@ use opengl_render::program::VertexPipeline;
 use crate::render::world_render::WorldRenderer;
 
 mod world_render;
+mod texture_format;
 
 pub struct RustariaRenderer {
     backend: OpenGlBackend,
