@@ -38,7 +38,7 @@ fn main() -> Result<()> {
     rustaria::init(opt.inner.verbosity)?;
 
 
-    let title = &*format!("Rustaria Client v{}", env!("CARGO_PKG_VERSION"));
+    let title = &*format!("Rustaria Client {}", env!("CARGO_PKG_VERSION"));
     info!(title);
 
     info!(target: "render", "Launching GLFW");
