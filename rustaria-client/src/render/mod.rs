@@ -11,15 +11,15 @@ use crate::render::world_render::WorldRenderer;
 mod world_render;
 mod texture_format;
 
-pub struct RustariaRenderer {
+pub struct RenderHandler {
     backend: OpenGlBackend,
     pub world_renderer: WorldRenderer,
 
     pub wireframe: bool,
 }
 
-impl RustariaRenderer {
-    pub fn new(glfw: &Glfw, window: &Window) -> RustariaRenderer {
+impl RenderHandler {
+    pub fn new(glfw: &Glfw, window: &Window) -> RenderHandler {
         let size = window.get_size();
         let mut opengl = OpenGlBackend::new((size.0 as u32, size.1 as u32), |procname| glfw.get_proc_address_raw(procname));
         opengl.set_clear_command(ClearCommand {
@@ -28,7 +28,7 @@ impl RustariaRenderer {
             ]
         });
         let renderer = WorldRenderer::new(&mut opengl, window);
-        RustariaRenderer {
+        RenderHandler {
             backend: opengl,
             world_renderer: renderer,
             wireframe: false
@@ -40,8 +40,8 @@ impl RustariaRenderer {
         self.world_renderer.resize(width, height);
     }
 
-    pub fn draw(&mut self, x: f32, y: f32) -> eyre::Result<()> {
-        self.world_renderer.qi_pos.set_value([x, y]);
+    pub fn draw(&mut self, pos: (f32, f32)) -> eyre::Result<()> {
+        self.world_renderer.qi_pos.set_value([pos.0, pos.1]);
         self.backend.clear_frame();
         self.world_renderer.draw(self.wireframe);
         Ok(())

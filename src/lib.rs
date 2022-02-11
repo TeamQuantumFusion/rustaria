@@ -22,7 +22,7 @@ use crate::network::server::ServerNetwork;
 use crate::world::World;
 
 pub const KERNEL_VERSION: (u8, u8, u8) = (0, 0, 1);
-pub const UPS: u32 = 60;
+pub const UPS: u32 = 20;
 
 pub mod api;
 mod blake3;
@@ -34,6 +34,7 @@ pub mod opt;
 pub mod registry;
 pub mod types;
 pub mod world;
+pub mod player;
 
 /// Common initialization code for both Rustaria client and dedicated server.
 /// This currently sets up [`color_eyre`] and [`tracing`].

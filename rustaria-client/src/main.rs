@@ -1,10 +1,11 @@
 use std::net::SocketAddr;
 use std::ops::{Add, AddAssign};
 use std::str::FromStr;
+use std::sync::mpsc::Receiver;
 use std::time::Duration;
 
 use eyre::Result;
-use glfw::{Action, Context, Key, Modifiers, SwapInterval, WindowEvent};
+use glfw::{Action, Context, Glfw, Key, Modifiers, SwapInterval, Window, WindowEvent};
 use mlua::Lua;
 use structopt::StructOpt;
 use tokio::time::Instant;
@@ -14,16 +15,18 @@ use opengl_render::OpenGlBackend;
 use rustaria::api::Rustaria;
 use rustaria::network::{PacketDescriptor, PacketOrder, PacketPriority};
 use rustaria::network::packet::{ClientPacket, ServerPacket};
+use rustaria::player::Player;
 use rustaria::types::ChunkPos;
+use rustaria::UPS;
 
 use crate::network::{Client, RemoteServerCom, ServerCom};
-use crate::render::RustariaRenderer;
+use crate::render::RenderHandler;
 
 mod network;
 mod render;
 
 const DEBUG_MOD: Modifiers = Modifiers::from_bits_truncate(glfw::ffi::MOD_ALT | glfw::ffi::MOD_SHIFT);
-
+const UPDATE_TIME: Duration = Duration::from_micros(1000000 / UPS as u64);
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "rustaria-client", about = "The interactive client of Rustaria")]
@@ -37,89 +40,148 @@ fn main() -> Result<()> {
     debug!(?opt, "Got command-line args");
     rustaria::init(opt.inner.verbosity)?;
 
+    let mut client = RustariaClient::new();
+    let mut previous_update = Instant::now();
+    let mut lag = Duration::ZERO;
+    while client.running() {
+        lag += previous_update.elapsed();
+        previous_update = Instant::now();
 
-    let title = &*format!("Rustaria Client {}", env!("CARGO_PKG_VERSION"));
-    info!(title);
+        client.draw(lag.as_micros() as f32 / UPDATE_TIME.as_micros() as f32)?;
+        while lag >= UPDATE_TIME {
+            client.tick();
+            lag -= UPDATE_TIME;
+        }
 
-    info!(target: "render", "Launching GLFW");
-    let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
+    }
+    Ok(())
+}
 
-    info!(target: "render", "Creating Window");
-    let (mut window, events) = glfw.create_window(900, 600, title, glfw::WindowMode::Windowed)
-        .expect("Failed to create GLFW window.");
+pub struct RustariaClient {
+    glfw: Glfw,
+    glfw_window: Window,
+    glfw_events: Receiver<(f64, WindowEvent)>,
 
-    info!(target: "render", "Loading OpenGL backend");
-    window.set_key_polling(true);
-    window.set_size_polling(true);
-    window.set_scroll_polling(true);
-    window.make_current();
-    glfw.set_swap_interval(SwapInterval::Sync(1));
-    //glfw.set_swap_interval(SwapInterval::Sync(1));
+    player: Player,
+    zoom: f32,
+    // this is bad
+    w: bool,
+    a: bool,
+    s: bool,
+    d: bool,
 
-    let mut renderer = RustariaRenderer::new(&glfw, &window);
-    let mut perf = PerfDisplayer {
-        old_print: Instant::now(),
-        update_time: Default::default(),
-        update_times: 0,
-    };
+    render: RenderHandler,
+    perf: PerfDisplayerHandler,
+}
 
-    let mut zoom = 0.0;
-    let mut w = false;
-    let mut a = false;
-    let mut s = false;
-    let mut d = false;
+impl RustariaClient {
+    #[allow(clippy::new_without_default)]
+    pub fn new() -> RustariaClient {
+        let title = &*format!("Rustaria Client {}", env!("CARGO_PKG_VERSION"));
+        info!(title);
 
-    let mut x = 0.0;
-    let mut y = 0.0;
-    while !window.should_close() {
+        info!(target: "render", "Launching GLFW");
+        let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
-        glfw.poll_events();
-        for (_, event) in glfw::flush_messages(&events) {
+        info!(target: "render", "Creating Window");
+        let (mut glfw_window, glfw_events) = glfw.create_window(900, 600, title, glfw::WindowMode::Windowed)
+            .expect("Failed to create GLFW window.");
+
+        info!(target: "render", "Loading OpenGL backend");
+        glfw_window.set_key_polling(true);
+        glfw_window.set_size_polling(true);
+        glfw_window.set_scroll_polling(true);
+        glfw_window.make_current();
+        glfw.set_swap_interval(SwapInterval::Sync(1));
+
+        let render = RenderHandler::new(&glfw, &glfw_window);
+        RustariaClient {
+            glfw,
+            glfw_window,
+            glfw_events,
+            player: Player { pos: (0.0, 0.0), vel: (0.0, 0.0) },
+            zoom: 1.0,
+            w: false,
+            a: false,
+            s: false,
+            d: false,
+            render,
+            perf: PerfDisplayerHandler {
+                old_print: Instant::now(),
+                frame_time: Default::default(),
+                frame_count: 0,
+                update_time: Default::default(),
+                update_count: 0,
+            },
+        }
+    }
+
+    pub fn running(&self) -> bool {
+        !self.glfw_window.should_close()
+    }
+
+    pub fn tick(&mut self) {
+        let update_time = Instant::now();
+
+        self.player.vel.1 = (self.w as i8 - self.s as i8) as f32 * 0.008;
+        self.player.vel.0 = (self.d as i8 - self.a as i8) as f32 * 0.008;
+        self.player.tick();
+
+        self.perf.update_time.add_assign(update_time.elapsed());
+        self.perf.update_count += 1;
+    }
+
+    pub fn draw(&mut self, delta: f32) -> eyre::Result<()> {
+        self.glfw.poll_events();
+        for (_, event) in glfw::flush_messages(&self.glfw_events) {
             match event {
                 WindowEvent::Size(width, height) => {
-                    renderer.resize(width as u32, height as u32);
+                    self.render.resize(width as u32, height as u32);
                 }
                 WindowEvent::Scroll(x, y) => {
-                    zoom -= y * 0.01;
-                    renderer.world_renderer.qi_u_zoom.set_value(zoom as f32);
+                    self.zoom -= y as f32 * 0.01;
+                    self.render.world_renderer.qi_u_zoom.set_value(self.zoom);
                 }
-                WindowEvent::Key(Key::Q, _, Action::Press, DEBUG_MOD) => window.set_should_close(true),
-                WindowEvent::Key(Key::W, _, Action::Press, DEBUG_MOD) => renderer.wireframe = !renderer.wireframe,
-                WindowEvent::Key(Key::W, _, action, _) => w = action != Action::Release,
-                WindowEvent::Key(Key::A, _, action, _) => a = action != Action::Release,
-                WindowEvent::Key(Key::S, _, action, _) => s = action != Action::Release,
-                WindowEvent::Key(Key::D, _, action, _) => d = action != Action::Release,
+                WindowEvent::Key(Key::Q, _, Action::Press, DEBUG_MOD) => self.glfw_window.set_should_close(true),
+                WindowEvent::Key(Key::W, _, Action::Press, DEBUG_MOD) => self.render.wireframe = !self.render.wireframe,
+                WindowEvent::Key(Key::W, _, action, _) => self.w = action != Action::Release,
+                WindowEvent::Key(Key::A, _, action, _) => self.a = action != Action::Release,
+                WindowEvent::Key(Key::S, _, action, _) => self.s = action != Action::Release,
+                WindowEvent::Key(Key::D, _, action, _) => self.d = action != Action::Release,
                 _ => {}
             }
         }
 
-        x += (d as i8 - a as i8) as f32 * 0.008;
-        y += (w as i8 - s as i8) as f32 * 0.008;
-        // render stuff
-        let update_time = Instant::now();
-        renderer.draw(x, y)?;
-        perf.update_time.add_assign(update_time.elapsed());
-        perf.update_times += 1;
-        perf.tick();
-        window.swap_buffers();
+        let draw_time = Instant::now();
+        let pos = (self.player.pos.0 + (self.player.vel.0 * delta), self.player.pos.1 + (self.player.vel.1 * delta));
+        self.render.draw(pos)?;
+        self.perf.frame_time.add_assign(draw_time.elapsed());
+        self.perf.frame_count += 1;
+        self.perf.tick();
+        self.glfw_window.swap_buffers();
+        Ok(())
     }
-
-    Ok(())
 }
 
 
-struct PerfDisplayer {
+struct PerfDisplayerHandler {
     old_print: Instant,
+    frame_time: Duration,
+    frame_count: u64,
     update_time: Duration,
-    update_times: u64,
+    update_count: u64,
 }
 
-impl PerfDisplayer {
+impl PerfDisplayerHandler {
     pub(crate) fn tick(&mut self) {
         if self.old_print.elapsed() > Duration::from_secs(1) {
-            debug!("{}UPS {}MSPU", self.update_times, self.update_time.as_millis() as f32 / self.update_times as f32);
-            self.update_times = 0;
+            let mspu = self.update_time.as_millis() as f32 / self.update_count as f32;
+            let mspf = self.frame_time.as_millis() as f32 / self.frame_count as f32;
+            debug!("{}FPS {}MSPF / {}UPS {}MSPU",self.frame_count, mspf,  self.update_count, mspu);
+            self.update_count = 0;
             self.update_time = Duration::ZERO;
+            self.frame_count = 0;
+            self.frame_time = Duration::ZERO;
             self.old_print = Instant::now();
         }
     }
