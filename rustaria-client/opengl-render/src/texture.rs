@@ -3,7 +3,7 @@ use std::ffi::c_void;
 use tracing::info;
 
 use opengl::gl;
-use opengl::gl::types::GLenum;
+use opengl::gl::GLenum;
 
 use crate::raw::RawTexture;
 use crate::types::GlType;

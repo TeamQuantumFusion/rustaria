@@ -5,7 +5,7 @@ use std::rc::Rc;
 use std::sync::{Mutex, RwLock};
 
 use opengl::gl;
-use opengl::gl::types::{GLenum, GLint, GLuint};
+use opengl::gl::{GLenum, GLint, GLuint};
 
 use crate::attribute::{AttributeDescriptor, FormatDescriptor};
 use crate::buffer::{DrawMode, VertexBufferLayout};

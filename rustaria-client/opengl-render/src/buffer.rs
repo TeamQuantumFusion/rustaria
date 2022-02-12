@@ -7,7 +7,7 @@ use image::Primitive;
 use tracing::info;
 
 use opengl::gl;
-use opengl::gl::types::GLenum;
+use opengl::gl::GLenum;
 
 use crate::attribute::AttributeDescriptor;
 use crate::raw::{RawBuffer, RawVertexBuffer};
@@ -243,7 +243,6 @@ impl IndexType for u16 {
 
 pub enum DrawMode {
     Point,
-    Patches,
     Line,
     LineLoop,
     LineStrip,
@@ -260,7 +259,6 @@ impl DrawMode {
     pub(crate) fn get_gl(&self) -> GLenum {
         match self {
             DrawMode::Point => gl::POINTS,
-            DrawMode::Patches => gl::PATCHES,
             DrawMode::Line => gl::LINES,
             DrawMode::LineLoop => gl::LINE_LOOP,
             DrawMode::LineStrip => gl::LINE_STRIP,

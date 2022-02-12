@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use opengl::gl::types::GLenum;
+use opengl::gl::GLenum;
 
 macro_rules! default {
     ($TYPE:ty => $DEF:expr) => {

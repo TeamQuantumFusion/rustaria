@@ -1,7 +1,7 @@
 use std::ffi::c_void;
 
 use opengl::gl;
-use opengl::gl::types::GLenum;
+use opengl::gl::GLenum;
 
 use crate::types::GlType;
 

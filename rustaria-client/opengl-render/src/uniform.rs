@@ -3,7 +3,7 @@ use std::rc::Rc;
 use std::sync::{Mutex, RwLock};
 
 use opengl::gl;
-use opengl::gl::types::GLenum;
+use opengl::gl::GLenum;
 use crate::texture::{Sampler2d, USampler2d};
 
 use crate::types::GlType;

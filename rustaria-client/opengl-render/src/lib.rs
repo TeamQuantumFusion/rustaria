@@ -1,11 +1,12 @@
 use std::ffi::c_void;
+use std::rc::Rc;
 use std::sync::mpsc::Receiver;
 
 use glfw::{Context, FlushedMessages, Glfw, Window, WindowEvent};
 use tracing::info;
 
 use opengl::gl;
-use opengl::gl::types::{GLbitfield, GLenum};
+use opengl::gl::{GLbitfield, GLenum};
 
 use crate::texture::{Sampler2d, Texture, USampler2d};
 use crate::util::RustGlEnum;
@@ -27,8 +28,8 @@ pub struct OpenGlBackend {
 }
 
 impl OpenGlBackend {
-    pub fn new<F: FnMut(&'static str) -> *const c_void>(viewport_size: (u32, u32), loader_func: F) -> OpenGlBackend {
-        gl::load_with(loader_func);
+    pub fn new<F: FnMut(&'static str) -> *const c_void>(viewport_size: (u32, u32), mut loader_func: F) -> OpenGlBackend {
+        unsafe { gl::load_gl(&mut loader_func); }
         OpenGlBackend {
             clear_bit: 0,
             viewport_size,

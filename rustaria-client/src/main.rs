@@ -44,14 +44,15 @@ fn main() -> Result<()> {
     let mut previous_update = Instant::now();
     let mut lag = Duration::ZERO;
     while client.running() {
-        lag += previous_update.elapsed();
+        let duration = previous_update.elapsed();
+        lag += duration;
         previous_update = Instant::now();
 
-        client.draw(lag.as_micros() as f32 / UPDATE_TIME.as_micros() as f32)?;
         while lag >= UPDATE_TIME {
             client.tick();
             lag -= UPDATE_TIME;
         }
+        client.draw(duration.as_micros() as f32 / UPDATE_TIME.as_micros() as f32)?;
 
     }
     Ok(())
@@ -122,11 +123,6 @@ impl RustariaClient {
 
     pub fn tick(&mut self) {
         let update_time = Instant::now();
-
-        self.player.vel.1 = (self.w as i8 - self.s as i8) as f32 * 0.008;
-        self.player.vel.0 = (self.d as i8 - self.a as i8) as f32 * 0.008;
-        self.player.tick();
-
         self.perf.update_time.add_assign(update_time.elapsed());
         self.perf.update_count += 1;
     }

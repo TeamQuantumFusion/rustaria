@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 
-use image::{DynamicImage, GenericImage, GenericImageView, RgbaImage};
+use image::{ColorType, DynamicImage, GenericImage, GenericImageView, RgbaImage};
 use image::DynamicImage::ImageRgba8;
 use image::imageops::FilterType;
 use rectangle_pack::{contains_smallest_box, GroupedRectsToPlace, pack_rects, RectanglePackError, RectanglePackOk, RectToInsert, TargetBin, volume_heuristic};
@@ -78,7 +78,7 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
             }
         }
 
-        debug!("Uploading atlas");
+        debug!("Mipmapping atlas");
         // Generate Mipmaps
         let mut images = Vec::new();
         for level in 0..levels {
@@ -89,6 +89,7 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
             });
         }
 
+        debug!("Uploading atlas");
         // upload
         let texture = Texture::new(TextureType::Texture2d {
             images: Some(images),

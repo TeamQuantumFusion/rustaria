@@ -1,7 +1,7 @@
 use tracing::debug;
 
 use opengl::gl;
-use opengl::gl::types::GLuint;
+use opengl::gl::GLuint;
 
 pub(crate) struct RawProgram {
     pub(crate) gl_id: GLuint,

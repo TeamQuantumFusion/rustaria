@@ -1,6 +1,7 @@
 use std::sync::mpsc::Receiver;
 
 use glfw::{Context, Glfw, Window, WindowEvent};
+use tracing::info;
 
 use opengl_render::{ClearCommand, ClearDescriptor, OpenGlBackend};
 use opengl_render::buffer::{Buffer, VertexBufferLayout};
@@ -21,7 +22,10 @@ pub struct RenderHandler {
 impl RenderHandler {
     pub fn new(glfw: &Glfw, window: &Window) -> RenderHandler {
         let size = window.get_size();
-        let mut opengl = OpenGlBackend::new((size.0 as u32, size.1 as u32), |procname| glfw.get_proc_address_raw(procname));
+        let mut opengl = OpenGlBackend::new((size.0 as u32, size.1 as u32), |procname| {
+            info!("{}", procname);
+            glfw.get_proc_address_raw(procname)
+        });
         opengl.set_clear_command(ClearCommand {
             commands: vec![
                 ClearDescriptor::Color(0.2, 0.2, 0.2, 1.0)
