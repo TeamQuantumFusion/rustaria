@@ -1,16 +1,12 @@
-use std::sync::mpsc::Receiver;
-
-use glfw::{Context, Glfw, Window, WindowEvent};
+use glfw::{Glfw, Window};
 use tracing::info;
 
 use opengl_render::{ClearCommand, ClearDescriptor, OpenGlBackend};
-use opengl_render::buffer::{Buffer, VertexBufferLayout};
-use opengl_render::program::VertexPipeline;
 
 use crate::render::world_render::WorldRenderer;
 
-mod world_render;
 mod texture_format;
+mod world_render;
 
 pub struct RenderHandler {
     backend: OpenGlBackend,
@@ -27,15 +23,13 @@ impl RenderHandler {
             glfw.get_proc_address_raw(procname)
         });
         opengl.set_clear_command(ClearCommand {
-            commands: vec![
-                ClearDescriptor::Color(0.2, 0.2, 0.2, 1.0)
-            ]
+            commands: vec![ClearDescriptor::Color(0.2, 0.2, 0.2, 1.0)],
         });
         let renderer = WorldRenderer::new(&mut opengl, window);
         RenderHandler {
             backend: opengl,
             world_renderer: renderer,
-            wireframe: false
+            wireframe: false,
         }
     }
 

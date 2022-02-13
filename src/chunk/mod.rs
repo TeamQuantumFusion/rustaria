@@ -1,12 +1,12 @@
 #![allow(unused)] // alpha, remove this when you're done - leocth
 
-use serde::{Deserialize, Serialize};
-use serde::de::DeserializeOwned;
 use crate::api::{Prototype, Rustaria};
 use crate::chunk::tile::Tile;
 use crate::chunk::wall::Wall;
 use crate::registry::{RawId, Tag};
 use crate::types::{ChunkSubPos, Direction, CHUNK_SIZE};
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 
 use self::tile::TilePrototype;
 use self::wall::WallPrototype;
@@ -105,19 +105,19 @@ impl NeighborType<Wall> for Neighbor {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::chunk::{Chunk, ChunkGrid};
     use crate::chunk::tile::LockableValue::Fixed;
     use crate::chunk::tile::Tile;
+    use crate::chunk::{Chunk, ChunkGrid};
     use crate::registry::RawId;
     use crate::types::CHUNK_SIZE;
 
     pub fn new(tile_id: RawId, wall_id: RawId) -> Chunk {
-       Chunk {
+        Chunk {
             tiles: ChunkGrid {
-                grid: [[crate::chunk::tile::tests::new(tile_id); CHUNK_SIZE]; CHUNK_SIZE]
+                grid: [[crate::chunk::tile::tests::new(tile_id); CHUNK_SIZE]; CHUNK_SIZE],
             },
             walls: ChunkGrid {
-                grid: [[crate::chunk::wall::tests::new(wall_id); CHUNK_SIZE]; CHUNK_SIZE]
+                grid: [[crate::chunk::wall::tests::new(wall_id); CHUNK_SIZE]; CHUNK_SIZE],
             },
         }
     }

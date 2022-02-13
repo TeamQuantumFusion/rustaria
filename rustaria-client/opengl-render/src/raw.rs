@@ -16,7 +16,6 @@ impl Drop for RawProgram {
     }
 }
 
-
 pub(crate) struct RawBuffer {
     pub(crate) gl_id: GLuint,
 }

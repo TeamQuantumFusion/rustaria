@@ -16,10 +16,7 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub fn new<T: GlType>(
-        ty: TextureType<T>,
-        desc: TextureDescriptor,
-    ) -> Texture {
+    pub fn new<T: GlType>(ty: TextureType<T>, desc: TextureDescriptor) -> Texture {
         let target = ty.to_gl();
 
         unsafe {
@@ -96,12 +93,16 @@ impl<T: GlType> TextureType<T> {
                 if let Some(images) = images {
                     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAX_LOD, images.len() as i32 - 1);
                     gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_LOD, 0);
-                    gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAX_LEVEL, images.len() as i32 - 1);
+                    gl::TexParameteri(
+                        gl::TEXTURE_2D,
+                        gl::TEXTURE_MAX_LEVEL,
+                        images.len() as i32 - 1,
+                    );
                     gl::TexParameterf(gl::TEXTURE_2D, gl::TEXTURE_LOD_BIAS, 0.1f32);
                     for (level, data) in images.iter().enumerate() {
                         let width = *width as i32 >> level;
                         let height = *height as i32 >> level;
-                        info!("m{}: {}x{}",level, width, height);
+                        info!("m{}: {}x{}", level, width, height);
                         gl::TexImage2D(
                             self.to_gl(),
                             level as i32,

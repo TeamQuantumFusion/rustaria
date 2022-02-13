@@ -56,7 +56,6 @@ impl<'lua> Rustaria<'lua> {
         let walls = walls.build(&mut hasher);
         let entities = entities.build(&mut hasher);
 
-
         Ok(Self {
             plugins,
             hash: hasher.finalize(),
@@ -134,13 +133,13 @@ pub trait Prototype<T, Id = crate::registry::RawId> {
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize)]
 pub struct RustariaHash {
-    pub data: [u8; OUT_LEN]
+    pub data: [u8; OUT_LEN],
 }
 
 impl RustariaHash {
     pub fn parse(data: Vec<u8>) -> RustariaHash {
         RustariaHash {
-            data: <[u8; 32]>::try_from(data.as_slice()).unwrap()
+            data: <[u8; 32]>::try_from(data.as_slice()).unwrap(),
         }
     }
 }

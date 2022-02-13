@@ -58,16 +58,16 @@
 //! Tags, on the other hand, _are_ persistent, and they are recommended for use
 //! in save files, data files, etc, as the tag will always be the same if the
 //! registry stayed persistent, regardless of its inner layout details.
-use std::{fmt::Display, str::FromStr};
 use std::collections::HashMap;
-use std::fmt::{Debug, Pointer};
+use std::fmt::Debug;
+use std::{fmt::Display, str::FromStr};
 
 use mlua::prelude::*;
 use serde::{Deserialize, Deserializer};
 use thiserror::Error;
 use tracing::debug;
 
-use crate::blake3::{Hasher, OUT_LEN};
+use crate::blake3::Hasher;
 
 /// A registry containing and managing user-added data to Rustaria.
 /// See the [module documentation](index.html) for more details.
@@ -161,8 +161,8 @@ pub enum ParseTagError {
 
 impl<'de> Deserialize<'de> for Tag {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         use serde::de;
 
@@ -174,8 +174,8 @@ impl<'de> Deserialize<'de> for Tag {
                 write!(f, "a colon-separated string representing a registry tag")
             }
             fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
-                where
-                    E: de::Error,
+            where
+                E: de::Error,
             {
                 Tag::from_str(v).map_err(de::Error::custom)
             }
@@ -199,10 +199,7 @@ pub struct RegistryBuilder<T> {
 
 impl<T> RegistryBuilder<T> {
     pub fn new(name: &'static str) -> RegistryBuilder<T> {
-        Self {
-            name,
-            data: vec![],
-        }
+        Self { name, data: vec![] }
     }
 
     pub fn register(&mut self, tag: Tag, element: T) {
@@ -210,11 +207,9 @@ impl<T> RegistryBuilder<T> {
         self.data.push((tag, element));
     }
 
-
     pub fn build(mut self, hasher: &mut Hasher) -> Registry<T> {
-        self.data.sort_by(|(i1, _), (i2, _)| {
-            i1.to_string().cmp(&i2.to_string())
-        });
+        self.data
+            .sort_by(|(i1, _), (i2, _)| i1.to_string().cmp(&i2.to_string()));
 
         for (id, (tag, _)) in self.data.iter().enumerate() {
             hasher.update(&id.to_be_bytes());

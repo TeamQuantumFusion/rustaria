@@ -1,19 +1,14 @@
-use std::hash::Hash;
-
 use glfw::Window;
 
-use opengl_render::{OpenGlBackend, OpenGlFeature};
 use opengl_render::atlas::{Atlas, AtlasBuilder};
 use opengl_render::attribute::{AttributeDescriptor, AttributeType};
 use opengl_render::buffer::{
     Buffer, BufferAccess, BufferType, BufferUsage, DrawMode, VertexBufferLayout,
 };
 use opengl_render::program::VertexPipeline;
-use opengl_render::texture::{
-    FilterType, InternalFormat, Sampler2d, Texture, TextureData, TextureDataFormat,
-    TextureDescriptor, TextureMagFilter, TextureType, USampler2d,
-};
+use opengl_render::texture::Sampler2d;
 use opengl_render::uniform::Uniform;
+use opengl_render::{OpenGlBackend, OpenGlFeature};
 
 use crate::render::texture_format::TileImagePos;
 
@@ -24,7 +19,14 @@ pub struct QuadImageVertex {
 }
 
 impl QuadImageVertex {
-    pub fn quad(atlas: &Atlas<String>, data: &mut Vec<QuadImageVertex>, x: f32, y: f32, tile: &str, ty: TileImagePos) {
+    pub fn quad(
+        atlas: &Atlas<String>,
+        data: &mut Vec<QuadImageVertex>,
+        x: f32,
+        y: f32,
+        tile: &str,
+        ty: TileImagePos,
+    ) {
         let loc = atlas.lookup.get(&tile.to_owned()).unwrap();
 
         let tile_size = loc.height / 4.0;
@@ -43,7 +45,7 @@ impl QuadImageVertex {
             pos: [(x + 0.0) / 100.0, (y + 0.0) / 100.0],
             pos_texture: [t_x, t_y + tile_size],
         });
-        data.push( QuadImageVertex {
+        data.push(QuadImageVertex {
             pos: [(x + 0.0) / 100.0, (y + 1.0) / 100.0],
             pos_texture: [t_x, t_y],
         });
@@ -79,7 +81,6 @@ impl WorldRenderer {
 
         let atlas = atlas.export(4);
 
-
         let a_pos = AttributeDescriptor::new(0, AttributeType::Float(2));
         let a_tex = AttributeDescriptor::new(1, AttributeType::Float(2));
         let mut pipeline = VertexPipeline::new(
@@ -90,10 +91,16 @@ impl WorldRenderer {
         let mut data = Vec::new();
         for y in 0..24 {
             for x in 0..24 {
-                QuadImageVertex::quad(&atlas, &mut data, 0.0 + x as f32, 0.0 + y as f32, "grass.png", TileImagePos::Solid);
+                QuadImageVertex::quad(
+                    &atlas,
+                    &mut data,
+                    0.0 + x as f32,
+                    0.0 + y as f32,
+                    "grass.png",
+                    TileImagePos::Solid,
+                );
             }
         }
-
 
         let index_buffer = Buffer::create_index(vec![0, 1, 3, 1, 2, 3u16], 4, 24 * 24);
         let buffer = Buffer::create(

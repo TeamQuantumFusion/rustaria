@@ -84,8 +84,14 @@ mod tests {
         // Get
         for y in 0..WORLD_SIZE {
             for x in 0..WORLD_SIZE {
-                let pos = ChunkPos { x: x as u32, y: y as u32 };
-                assert_eq!(world.get_chunk(pos).unwrap(), &chunk::tests::new(x as u32, y as u32));
+                let pos = ChunkPos {
+                    x: x as u32,
+                    y: y as u32,
+                };
+                assert_eq!(
+                    world.get_chunk(pos).unwrap(),
+                    &chunk::tests::new(x as u32, y as u32)
+                );
             }
         }
     }

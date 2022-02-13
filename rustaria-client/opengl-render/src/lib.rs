@@ -13,14 +13,14 @@ use crate::util::RustGlEnum;
 
 #[macro_use]
 mod util;
-pub mod program;
+pub mod atlas;
 pub mod attribute;
 pub mod buffer;
-pub mod uniform;
-pub mod texture;
-pub mod atlas;
+pub mod program;
 mod raw;
+pub mod texture;
 mod types;
+pub mod uniform;
 
 pub struct OpenGlBackend {
     clear_bit: GLbitfield,
@@ -28,8 +28,13 @@ pub struct OpenGlBackend {
 }
 
 impl OpenGlBackend {
-    pub fn new<F: FnMut(&'static str) -> *const c_void>(viewport_size: (u32, u32), mut loader_func: F) -> OpenGlBackend {
-        unsafe { gl::load_gl(&mut loader_func); }
+    pub fn new<F: FnMut(&'static str) -> *const c_void>(
+        viewport_size: (u32, u32),
+        mut loader_func: F,
+    ) -> OpenGlBackend {
+        unsafe {
+            gl::load_gl(&mut loader_func);
+        }
         OpenGlBackend {
             clear_bit: 0,
             viewport_size,
@@ -42,9 +47,7 @@ impl OpenGlBackend {
             gl::ActiveTexture(gl_unit);
             texture.bind();
         }
-        Sampler2d {
-            unit
-        }
+        Sampler2d { unit }
     }
 
     pub fn enable(&mut self, feature: OpenGlFeature) {
@@ -100,7 +103,5 @@ pub enum ClearDescriptor {
 }
 
 pub enum OpenGlFeature {
-    Alpha
+    Alpha,
 }
-
-

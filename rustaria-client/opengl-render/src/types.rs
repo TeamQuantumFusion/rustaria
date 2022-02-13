@@ -1,6 +1,6 @@
-use std::ops::Deref;
 use opengl::gl;
 use opengl::gl::GLenum;
+use std::ops::Deref;
 
 pub trait GlType: Copy {
     fn gl_enum() -> GLenum;

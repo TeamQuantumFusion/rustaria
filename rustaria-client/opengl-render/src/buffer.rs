@@ -26,9 +26,7 @@ impl VertexBufferLayout {
             gl::GenVertexArrays(1, &mut gl_id);
         }
         VertexBufferLayout {
-            raw: Rc::new(RawVertexBuffer {
-                gl_id,
-            }),
+            raw: Rc::new(RawVertexBuffer { gl_id }),
             index_buffer: None,
             vbo: vec![],
         }
@@ -39,7 +37,10 @@ impl VertexBufferLayout {
             BufferType::Index(_) => {
                 self.index_buffer = Some((buffer.raw.clone(), T::gl_enum()));
             }
-            _ => panic!("BufferType {:?} is not an index buffer", buffer.buffer_type.get_gl()),
+            _ => panic!(
+                "BufferType {:?} is not an index buffer",
+                buffer.buffer_type.get_gl()
+            ),
         }
     }
 
@@ -48,14 +49,17 @@ impl VertexBufferLayout {
             BufferType::Vertex(attributes) => {
                 let mut attributes = attributes.clone();
                 attributes.sort_by(|a1, a2| a1.index.cmp(&a2.index));
-                let stride = attributes.iter().fold(0, |total, elem| total + elem.attribute_type.get_size());
+                let stride = attributes
+                    .iter()
+                    .fold(0, |total, elem| total + elem.attribute_type.get_size());
                 let mut offset = 0;
                 unsafe {
                     for x in attributes {
                         info!("{:?} offset {} stride {}", x, offset, stride);
                         let attr_size = x.attribute_type.get_size();
                         self.bind();
-                        x.attribute_type.attrib(x.index, stride as i32, offset as *const c_void);
+                        x.attribute_type
+                            .attrib(x.index, stride as i32, offset as *const c_void);
                         gl::EnableVertexAttribArray(x.index);
                         offset += attr_size;
                     }
@@ -64,7 +68,10 @@ impl VertexBufferLayout {
                 self.vbo.push(buffer.raw.clone());
             }
 
-            _ => panic!("BufferType {:?} not bindable to VAO.", buffer.buffer_type.get_gl()),
+            _ => panic!(
+                "BufferType {:?} not bindable to VAO.",
+                buffer.buffer_type.get_gl()
+            ),
         }
     }
 
@@ -75,12 +82,14 @@ impl VertexBufferLayout {
         gl::BindVertexArray(self.raw.gl_id);
     }
 
-
     pub(crate) unsafe fn draw(&self, range: Range<usize>, mode: DrawMode) {
         match &self.index_buffer {
-            Some((_, index_type)) => {
-                gl::DrawElements(mode.get_gl(), range.end as i32, *index_type, (range.start as i32) as *const c_void)
-            }
+            Some((_, index_type)) => gl::DrawElements(
+                mode.get_gl(),
+                range.end as i32,
+                *index_type,
+                (range.start as i32) as *const c_void,
+            ),
             None => {
                 gl::DrawArrays(mode.get_gl(), range.start as i32, range.end as i32);
             }
@@ -94,7 +103,6 @@ impl Default for VertexBufferLayout {
     }
 }
 
-
 pub struct Buffer<T> {
     raw: Rc<RawBuffer>,
     size: usize,
@@ -107,7 +115,8 @@ impl<T> Buffer<T> {
         buffer_type: BufferType<T>,
         buffer_usage: BufferUsage,
         buffer_access: BufferAccess,
-        data: Option<&Vec<T>>) -> Buffer<T> {
+        data: Option<&Vec<T>>,
+    ) -> Buffer<T> {
         let target = buffer_type.get_gl();
         let usage = Self::get_usage_enum(buffer_usage, buffer_access);
 
@@ -118,18 +127,11 @@ impl<T> Buffer<T> {
         unsafe {
             gl::GenBuffers(1, &mut buffer);
             gl::BindBuffer(target, buffer);
-            gl::BufferData(
-                target,
-                size as isize,
-                data,
-                usage,
-            );
+            gl::BufferData(target, size as isize, data, usage);
         }
 
         Buffer {
-            raw: Rc::new(RawBuffer {
-                gl_id: buffer,
-            }),
+            raw: Rc::new(RawBuffer { gl_id: buffer }),
             size,
             buffer_type,
             buffer_elements: Default::default(),
@@ -139,7 +141,6 @@ impl<T> Buffer<T> {
     pub fn get_size(&self) -> usize {
         self.size / std::mem::size_of::<T>()
     }
-
 
     pub fn upload(&mut self, data: &[T], buffer_usage: BufferUsage, buffer_access: BufferAccess) {
         let target = self.buffer_type.get_gl();
@@ -158,7 +159,7 @@ impl<T> Buffer<T> {
         }
     }
 
-    pub unsafe fn bind(&self)  {
+    pub unsafe fn bind(&self) {
         gl::BindBuffer(self.buffer_type.get_gl(), self.raw.gl_id);
     }
 
@@ -169,17 +170,15 @@ impl<T> Buffer<T> {
         let data = data.as_ptr() as *const c_void;
 
         if offset + size > self.size {
-            panic!("{} + {} is bigger than the buffer size {}", offset, size, self.size);
+            panic!(
+                "{} + {} is bigger than the buffer size {}",
+                offset, size, self.size
+            );
         }
 
         unsafe {
             gl::BindBuffer(target, self.raw.gl_id);
-            gl::BufferSubData(
-                target,
-                offset as isize,
-                size as isize,
-                data,
-            )
+            gl::BufferSubData(target, offset as isize, size as isize, data)
         }
     }
 
@@ -189,17 +188,17 @@ impl<T> Buffer<T> {
                 BufferAccess::Draw => gl::STREAM_DRAW,
                 BufferAccess::Read => gl::STREAM_READ,
                 BufferAccess::Copy => gl::STREAM_COPY,
-            }
+            },
             BufferUsage::Static => match buffer_access {
                 BufferAccess::Draw => gl::STATIC_DRAW,
                 BufferAccess::Read => gl::STATIC_READ,
                 BufferAccess::Copy => gl::STATIC_COPY,
-            }
+            },
             BufferUsage::Dynamic => match buffer_access {
                 BufferAccess::Draw => gl::DYNAMIC_DRAW,
                 BufferAccess::Read => gl::DYNAMIC_READ,
                 BufferAccess::Copy => gl::DYNAMIC_COPY,
-            }
+            },
         }
     }
 }
@@ -207,7 +206,12 @@ impl<T> Buffer<T> {
 impl<T: GlType + Copy + IndexType> Buffer<T> {
     pub fn create_index(base_order: Vec<T>, element_size: usize, elements: usize) -> Buffer<T> {
         let data = Self::generate_index(&base_order, element_size, elements);
-        Self::create(BufferType::Index(base_order), BufferUsage::Static, BufferAccess::Draw, Some(&data))
+        Self::create(
+            BufferType::Index(base_order),
+            BufferUsage::Static,
+            BufferAccess::Draw,
+            Some(&data),
+        )
     }
 
     pub fn update_index(&mut self, element_size: usize, elements: usize) {
@@ -216,7 +220,7 @@ impl<T: GlType + Copy + IndexType> Buffer<T> {
                 let data = Self::generate_index(base_order, element_size, elements);
                 self.upload(&data, BufferUsage::Static, BufferAccess::Draw);
             }
-            _ => panic!("Not an index buffer.")
+            _ => panic!("Not an index buffer."),
         }
     }
 

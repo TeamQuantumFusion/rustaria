@@ -1,5 +1,3 @@
 pub mod gl;
 
-pub fn hi()  {
-
-}
+pub fn hi() {}

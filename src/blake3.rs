@@ -1,8 +1,8 @@
 //! https://github.com/BLAKE3-team/BLAKE3/blob/master/reference_impl/reference_impl.rs
 
+use crate::api::RustariaHash;
 use core::cmp::min;
 use core::convert::TryInto;
-use crate::api::RustariaHash;
 
 pub const OUT_LEN: usize = 32;
 
@@ -355,8 +355,6 @@ impl Hasher {
 
         let mut out = [0; OUT_LEN];
         output.root_output_bytes(&mut out);
-        RustariaHash {
-            data: out
-        }
+        RustariaHash { data: out }
     }
 }
