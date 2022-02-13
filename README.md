@@ -37,7 +37,7 @@ Install the libraries with this command:
 sudo yum install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel -y
 ```
 
-##### `dnf`-based (ex. Fedora)
+#### `dnf`-based (ex. Fedora)
 
 The same as [`yum`-based distros](#yum-based-ex-fedora-centos), albeit with `dnf` instead of `yum`:
 
