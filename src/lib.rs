@@ -21,7 +21,8 @@ use crate::network::server::ServerNetwork;
 use crate::world::World;
 
 pub const KERNEL_VERSION: (u8, u8, u8) = (0, 0, 1);
-pub const UPS: u32 = 20;
+pub const UPS: u32 = 20; // updates per second
+pub const MS_PER_UPDATE: u64 = (1000.0 / UPS as f32) as u64;
 
 pub mod api;
 mod blake3;
@@ -119,20 +120,19 @@ impl Server {
     }
 
     pub fn tick(&mut self, rustaria: &Rustaria) -> eyre::Result<()> {
-        while {
+        loop {
             let duration = self.last_tick.elapsed();
             match duration.as_secs() {
                 60.. => bail!("Server ran 1 minute behind. Closing server."),
                 secs @ 5..=59 => warn!("Server running {secs} behind"),
                 _ => {}
             }
-            duration.as_millis()
-        } >= (1000.0 / UPS as f32) as u128
-        {
+            if duration.as_millis() < MS_PER_UPDATE as u128 {
+                break; // done
+            }
             self.tick_internal(rustaria)?;
-            self.last_tick += Duration::from_millis((1000.0 / UPS as f32) as u64);
+            self.last_tick += Duration::from_millis(MS_PER_UPDATE);
         }
-
         Ok(())
     }
 }

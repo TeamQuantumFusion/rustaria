@@ -1,6 +1,7 @@
 /target
 /run
 Cargo.lock
+rustaria-client/assets
 
 # OS weirdness
 .DS_Store

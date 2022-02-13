@@ -10,22 +10,22 @@ package! {
 
 #[mooncake(lua)]
 fn trace(msg: String) -> LuaResult<()> {
-    trace!("[{}]: {}", get_plugin_id(lua)?, msg);
+    trace!("[{}]: {msg}", get_plugin_id(lua)?);
     Ok(())
 }
 #[mooncake(lua)]
 fn debug(msg: String) -> LuaResult<()> {
-    debug!("[{}]: {}", get_plugin_id(lua)?, msg);
+    debug!("[{}]: {msg}", get_plugin_id(lua)?);
     Ok(())
 }
 #[mooncake(lua)]
 fn info(msg: String) -> LuaResult<()> {
-    info!("[{}]: {}", get_plugin_id(lua)?, msg);
+    info!("[{}]: {msg}", get_plugin_id(lua)?);
     Ok(())
 }
 #[mooncake(lua)]
 fn warn(msg: String) -> LuaResult<()> {
-    warn!("[{}]: {}", get_plugin_id(lua)?, msg);
+    warn!("[{}]: {msg}", get_plugin_id(lua)?);
     Ok(())
 }
 #[mooncake(lua)]

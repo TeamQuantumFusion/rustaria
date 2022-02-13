@@ -151,11 +151,11 @@ impl ClientCom for LocalClientCom {
         packet: &ServerPacket,
         desc: PacketDescriptor,
     ) -> eyre::Result<()> {
-        debug!("Distributing {:?} from {:?}", packet, source);
+        debug!("Distributing {packet:?} from {source:?}");
 
         for (id, (to_client, _)) in &self.local_players {
             if Token::Local(*id) != *source {
-                to_client.send((*packet).clone())?;
+                to_client.send(packet.clone())?;
             }
         }
 
@@ -170,8 +170,8 @@ impl ClientCom for LocalClientCom {
     ) -> eyre::Result<()> {
         if let Token::Local(id) = target {
             if let Some((sender, _)) = self.local_players.get(id) {
-                debug!("Sending {:?} to {:?}", packet, target);
-                sender.send((*packet).clone())?;
+                debug!("Sending {packet:?} to {target:?}");
+                sender.send(packet.clone())?;
             }
         }
 
@@ -183,7 +183,7 @@ impl ClientCom for LocalClientCom {
         for (id, (_, receiver)) in &self.local_players {
             while let Ok(packet) = receiver.try_recv() {
                 let token = Token::Local(*id);
-                debug!("Received {:?} from {:?}", packet, token);
+                debug!("Received {packet:?} from {token:?}");
                 out.push((token, packet))
             }
         }
@@ -209,7 +209,7 @@ impl ClientCom for RemoteClientCom {
         packet: &ServerPacket,
         desc: PacketDescriptor,
     ) -> eyre::Result<()> {
-        debug!("Distributing {:?} from {:?}", packet, source);
+        debug!("Distributing {packet:?} from {source:?}");
         for (addr, connection) in &self.remote_players {
             if let ClientConnection::Playing = connection {
                 if Token::Remote(*addr) != *source {
@@ -257,10 +257,10 @@ impl ClientCom for RemoteClientCom {
                         let c_packet: bincode::Result<ClientPacket> =
                             bincode::deserialize(packet.payload());
                         if let Ok(client_packet) = c_packet {
-                            debug!("Received {:?} from {:?}", client_packet, token);
+                            debug!("Received {client_packet:?} from {token:?}");
                             out.push((token, client_packet));
                         } else {
-                            warn!("Unknown Packet from {:?}", token);
+                            warn!("Unknown Packet from {token:?}");
                         }
                     } else if let Some(ClientConnection::Handshaking(hand)) = connection {
                         hand.handle(rustaria, addr, &packet, &self.socket.get_packet_sender());
@@ -290,12 +290,12 @@ impl ClientCom for RemoteClientCom {
                 SocketEvent::Connect(_) => {
                     // kinda irrelevant.
                 }
-                SocketEvent::Timeout(address) => {
-                    info!("Client Timed out {}", address);
+                SocketEvent::Timeout(addr) => {
+                    info!("Client Timed out {addr}");
                 }
-                SocketEvent::Disconnect(address) => {
-                    info!("Client Disconnected {}", address);
-                    self.remote_players.remove(&address);
+                SocketEvent::Disconnect(addr) => {
+                    info!("Client Disconnected {addr}");
+                    self.remote_players.remove(&addr);
                 }
             }
         }
@@ -327,9 +327,9 @@ impl HandshakingStep {
     ) {
         match self {
             HandshakingStep::KernelSend => {
-                debug!("HS {}: Sending Kernel Version", addr);
+                debug!("HS {addr}: Sending Kernel Version");
                 if let Err(error) = send_obj(&sender, addr, &KERNEL_VERSION) {
-                    warn!("Could not send kernel version {}", error.to_string());
+                    warn!("Could not send kernel version {error}");
                     *self = HandshakingStep::Failed;
                 } else {
                     *self = HandshakingStep::KernelProceedAwait;
@@ -337,9 +337,9 @@ impl HandshakingStep {
             }
             HandshakingStep::KernelProceedAwait => {
                 if packet.payload() == [1] {
-                    debug!("HS {}: Sending Rustaria Hash", addr);
+                    debug!("HS {addr}: Sending Rustaria Hash");
                     if let Err(error) = send_obj(&sender, addr, &rustaria.hash) {
-                        warn!("Could not send Rustaria Hash {}", error.to_string());
+                        warn!("Could not send Rustaria Hash {error}");
                         *self = HandshakingStep::Failed;
                     } else {
                         *self = HandshakingStep::RegistryMatchAwait;
@@ -350,13 +350,13 @@ impl HandshakingStep {
             }
             HandshakingStep::RegistryMatchAwait => {
                 if packet.payload() == [1] {
-                    debug!("HS {}: Sending Modlist", addr);
+                    debug!("HS {addr}: Sending Modlist");
                     if let Err(error) = send_obj(&sender, addr, &ModListPacket::new(rustaria)) {
-                        warn!("Could not send modlist {}", error.to_string());
+                        warn!("Could not send modlist {error}");
                     }
                     *self = HandshakingStep::Failed;
                 } else if packet.payload() == [0] {
-                    debug!("HS {}: Player Connected", addr);
+                    debug!("HS {addr}: Player Connected");
                     *self = HandshakingStep::Joined;
                 } else {
                     *self = HandshakingStep::Failed;
