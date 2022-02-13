@@ -22,14 +22,13 @@ struct Opt {
     inner: rustaria::opt::Opt,
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     let opt = Opt::from_args();
     debug!(?opt, "Got command-line args");
     rustaria::init(opt.inner.verbosity)?;
 
     let lua = Lua::new();
-    let api = Rustaria::new(opt.inner.plugins_dir, &lua).await?;
+    let api = Rustaria::new(opt.inner.plugins_dir, &lua)?;
 
     let server_addr = SocketAddr::from_str("127.0.0.1:42069").unwrap();
     let air_tile = api

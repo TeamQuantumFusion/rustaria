@@ -35,9 +35,9 @@ pub struct Rustaria<'lua> {
 }
 
 impl<'lua> Rustaria<'lua> {
-    pub async fn new(plugins_dir: PathBuf, lua: &'lua Lua) -> Result<Rustaria<'lua>> {
+    pub fn new(plugins_dir: PathBuf, lua: &'lua Lua) -> Result<Rustaria<'lua>> {
         let mut receiver = register_rustaria_api(lua)?;
-        let plugins = plugin::scan_and_load_plugins(&plugins_dir, lua).await?;
+        let plugins = plugin::scan_and_load_plugins(&plugins_dir, lua)?;
 
         plugins.init(lua)?;
 

@@ -1,7 +1,7 @@
 #![allow(clippy::needless_lifetimes)]
 
 use std::collections::HashMap;
-use std::fs::File;
+use std::fs::{DirEntry, File};
 use std::io::Read;
 use std::ops::Deref;
 use std::{
@@ -10,48 +10,44 @@ use std::{
 };
 
 use eyre::{bail, ContextCompat, Result};
-use futures::StreamExt;
 use mlua::prelude::*;
 use serde::{Deserialize, Serialize};
-use tokio::fs::{self, DirEntry};
-use tokio_stream::wrappers::ReadDirStream;
 use tracing::{debug, info, warn};
 use zip::ZipArchive;
 
 use crate::api::context::PluginContext;
 
-pub async fn scan_and_load_plugins<'lua>(
+pub fn scan_and_load_plugins<'lua>(
     plugins_dir: &Path,
     lua: &'lua Lua,
 ) -> Result<Plugins<'lua>> {
     info!("Scanning for plugins in directory {:?}", plugins_dir);
 
-    let plugins = if let Ok(read_dir) = fs::read_dir(&plugins_dir).await {
-        let plugins = ReadDirStream::new(read_dir).filter_map(|entry| async {
+    let plugins = if let Ok(read_dir) = std::fs::read_dir(&plugins_dir) {
+        Plugins(read_dir.filter_map(|entry| {
             match entry {
-                Ok(entry) => process_file(entry, lua).await,
+                Ok(entry) => process_file(entry, lua),
                 Err(e) => {
                     warn!("Unable to access file `{}` for reading! Permissions are perhaps insufficient!", e);
                     None
                 }
             }
-        }).map(|plugin| (plugin.manifest.plugin_id.clone(), plugin));
-        Plugins(plugins.collect().await)
+        }).map(|plugin| (plugin.manifest.plugin_id.clone(), plugin)).collect())
     } else {
         warn!("Plugin directory not found! Creating one...");
-        fs::create_dir_all("plugins").await?;
+        std::fs::create_dir_all("plugins")?;
         Plugins::default()
     };
     info!("Found and loaded {} plugin(s)", plugins.len());
     Ok(plugins)
 }
 
-async fn process_file<'lua>(entry: DirEntry, lua: &'lua Lua) -> Option<Plugin<'lua>> {
+fn process_file<'lua>(entry: DirEntry, lua: &'lua Lua) -> Option<Plugin<'lua>> {
     let path = entry.path();
 
     // only look at zip files
     if let Some("zip") = path.extension().and_then(OsStr::to_str) {
-        match load_plugin(&path, lua).await {
+        match load_plugin(&path, lua) {
             Ok(plugin) => return Some(plugin),
             Err(e) => {
                 warn!(
@@ -65,7 +61,7 @@ async fn process_file<'lua>(entry: DirEntry, lua: &'lua Lua) -> Option<Plugin<'l
     None
 }
 
-async fn load_plugin<'lua>(path: &Path, lua: &'lua Lua) -> Result<Plugin<'lua>> {
+fn load_plugin<'lua>(path: &Path, lua: &'lua Lua) -> Result<Plugin<'lua>> {
     let mut archive = PluginArchive::new(path)?;
     archive.enable_reading()?;
 
