@@ -67,7 +67,7 @@ use serde::{Deserialize, Deserializer};
 use thiserror::Error;
 use tracing::debug;
 
-use blake3::Hasher;
+use crate::blake3::Hasher;
 
 /// A registry containing and managing user-added data to Rustaria.
 /// See the [module documentation](index.html) for more details.
