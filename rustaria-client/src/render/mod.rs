@@ -1,5 +1,4 @@
 use glfw::{Glfw, Window};
-use tracing::info;
 
 use opengl_render::{ClearCommand, ClearDescriptor, OpenGlBackend};
 
@@ -19,7 +18,6 @@ impl RenderHandler {
     pub fn new(glfw: &Glfw, window: &Window) -> RenderHandler {
         let size = window.get_size();
         let mut opengl = OpenGlBackend::new((size.0 as u32, size.1 as u32), |procname| {
-            info!("{}", procname);
             glfw.get_proc_address_raw(procname)
         });
         opengl.set_clear_command(ClearCommand {

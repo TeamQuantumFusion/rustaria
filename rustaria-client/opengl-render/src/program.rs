@@ -2,12 +2,12 @@ use std::ffi::CString;
 use std::ops::Range;
 use std::os::raw::c_char;
 use std::rc::Rc;
-use std::sync::{Mutex, RwLock};
+use std::sync::RwLock;
 
 use opengl::gl;
 use opengl::gl::{GLenum, GLint, GLuint};
 
-use crate::attribute::{AttributeDescriptor, FormatDescriptor};
+use crate::attribute::FormatDescriptor;
 use crate::buffer::{DrawMode, VertexBufferLayout};
 use crate::raw::RawProgram;
 use crate::uniform::{Uniform, UniformError, UniformType, UniformValueBinder};

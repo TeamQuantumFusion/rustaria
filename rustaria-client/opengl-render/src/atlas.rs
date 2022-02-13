@@ -2,11 +2,10 @@ use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 
 use image::imageops::FilterType;
-use image::DynamicImage::ImageRgba8;
-use image::{ColorType, DynamicImage, GenericImage, GenericImageView, RgbaImage};
+use image::{DynamicImage, GenericImage, GenericImageView};
 use rectangle_pack::{
     contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert,
-    RectanglePackError, RectanglePackOk, TargetBin,
+    RectanglePackError, TargetBin,
 };
 use tracing::{debug, info};
 

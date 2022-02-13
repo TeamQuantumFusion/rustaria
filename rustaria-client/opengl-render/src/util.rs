@@ -1,5 +1,3 @@
-use std::ops::Add;
-
 use opengl::gl::GLenum;
 
 macro_rules! default {

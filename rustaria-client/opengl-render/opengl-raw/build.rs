@@ -32,7 +32,7 @@ impl Generator for NiceGenerator {
     {
         // Header
         dest.write_all(
-            "#![allow(non_upper_case_globals, non_snake_case, non_camel_case_types, dead_code)]\n"
+            "#![allow(non_upper_case_globals, non_snake_case, non_camel_case_types, dead_code, missing_safety_doc)]\n"
                 .as_ref(),
         )?;
         dest.write_all("use std::ffi::c_void;\n".as_ref())?;

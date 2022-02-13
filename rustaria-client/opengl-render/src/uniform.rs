@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use std::rc::Rc;
-use std::sync::{Mutex, RwLock};
+use std::sync::RwLock;
 
 use crate::texture::{Sampler2d, USampler2d};
 use opengl::gl;
@@ -57,25 +57,26 @@ pub enum UniformValueBinder {
 
 impl UniformValueBinder {
     pub(crate) unsafe fn bind(&self, location: i32) {
+        use UniformValueBinder::*;
         match self {
-            UniformValueBinder::Float(v0) => gl::Uniform1f(location, *v0),
-            UniformValueBinder::Double(v0) => gl::Uniform1d(location, *v0),
-            UniformValueBinder::Int(v0) => gl::Uniform1i(location, *v0),
-            UniformValueBinder::UInt(v0) => gl::Uniform1ui(location, *v0),
-            UniformValueBinder::FVec2(value) => gl::Uniform2fv(location, 1, value.as_ptr()),
-            UniformValueBinder::FVec3(value) => gl::Uniform3fv(location, 1, value.as_ptr()),
-            UniformValueBinder::FVec4(value) => gl::Uniform4fv(location, 1, value.as_ptr()),
-            UniformValueBinder::DVec2(value) => gl::Uniform2dv(location, 1, value.as_ptr()),
-            UniformValueBinder::DVec3(value) => gl::Uniform3dv(location, 1, value.as_ptr()),
-            UniformValueBinder::DVec4(value) => gl::Uniform4dv(location, 1, value.as_ptr()),
-            UniformValueBinder::IVec2(value) => gl::Uniform2iv(location, 1, value.as_ptr()),
-            UniformValueBinder::IVec3(value) => gl::Uniform3iv(location, 1, value.as_ptr()),
-            UniformValueBinder::IVec4(value) => gl::Uniform4iv(location, 1, value.as_ptr()),
-            UniformValueBinder::UIVec2(value) => gl::Uniform2uiv(location, 1, value.as_ptr()),
-            UniformValueBinder::UIVec3(value) => gl::Uniform3uiv(location, 1, value.as_ptr()),
-            UniformValueBinder::UIVec4(value) => gl::Uniform4uiv(location, 1, value.as_ptr()),
-            UniformValueBinder::Sampler2D(sampler) => gl::Uniform1i(location, sampler.unit as i32),
-            UniformValueBinder::USampler2D(sampler) => gl::Uniform1i(location, sampler.unit as i32),
+            Float(v0) => gl::Uniform1f(location, *v0),
+            Double(v0) => gl::Uniform1d(location, *v0),
+            Int(v0) => gl::Uniform1i(location, *v0),
+            UInt(v0) => gl::Uniform1ui(location, *v0),
+            FVec2(value) => gl::Uniform2fv(location, 1, value.as_ptr()),
+            FVec3(value) => gl::Uniform3fv(location, 1, value.as_ptr()),
+            FVec4(value) => gl::Uniform4fv(location, 1, value.as_ptr()),
+            DVec2(value) => gl::Uniform2dv(location, 1, value.as_ptr()),
+            DVec3(value) => gl::Uniform3dv(location, 1, value.as_ptr()),
+            DVec4(value) => gl::Uniform4dv(location, 1, value.as_ptr()),
+            IVec2(value) => gl::Uniform2iv(location, 1, value.as_ptr()),
+            IVec3(value) => gl::Uniform3iv(location, 1, value.as_ptr()),
+            IVec4(value) => gl::Uniform4iv(location, 1, value.as_ptr()),
+            UIVec2(value) => gl::Uniform2uiv(location, 1, value.as_ptr()),
+            UIVec3(value) => gl::Uniform3uiv(location, 1, value.as_ptr()),
+            UIVec4(value) => gl::Uniform4uiv(location, 1, value.as_ptr()),
+            Sampler2D(sampler) => gl::Uniform1i(location, sampler.unit as i32),
+            USampler2D(sampler) => gl::Uniform1i(location, sampler.unit as i32),
             _ => {}
         }
     }

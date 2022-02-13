@@ -1,9 +1,8 @@
 use std::ffi::c_void;
 use std::marker::PhantomData;
-use std::ops::{Add, AddAssign, Deref, Range};
+use std::ops::Range;
 use std::rc::Rc;
 
-use image::Primitive;
 use tracing::info;
 
 use opengl::gl;

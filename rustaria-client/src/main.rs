@@ -1,25 +1,16 @@
-use std::net::SocketAddr;
-use std::ops::{Add, AddAssign};
-use std::str::FromStr;
+use std::ops::AddAssign;
 use std::sync::mpsc::Receiver;
 use std::time::Duration;
 
 use eyre::Result;
 use glfw::{Action, Context, Glfw, Key, Modifiers, SwapInterval, Window, WindowEvent};
-use mlua::Lua;
 use structopt::StructOpt;
 use tokio::time::Instant;
 use tracing::{debug, info};
 
-use opengl_render::OpenGlBackend;
-use rustaria::api::Rustaria;
-use rustaria::network::packet::{ClientPacket, ServerPacket};
-use rustaria::network::{PacketDescriptor, PacketOrder, PacketPriority};
 use rustaria::player::Player;
-use rustaria::types::ChunkPos;
 use rustaria::UPS;
 
-use crate::network::{Client, RemoteServerCom, ServerCom};
 use crate::render::RenderHandler;
 
 mod network;
@@ -76,7 +67,6 @@ pub struct RustariaClient {
 }
 
 impl RustariaClient {
-    #[allow(clippy::new_without_default)]
     pub fn new() -> RustariaClient {
         let title = format!("Rustaria Client {}", env!("CARGO_PKG_VERSION"));
         info!("{}", title);
@@ -138,7 +128,7 @@ impl RustariaClient {
                 WindowEvent::Size(width, height) => {
                     self.render.resize(width as u32, height as u32);
                 }
-                WindowEvent::Scroll(x, y) => {
+                WindowEvent::Scroll(_, y) => {
                     self.zoom -= y as f32 * 0.01;
                     self.render.world_renderer.qi_u_zoom.set_value(self.zoom);
                 }
@@ -167,6 +157,12 @@ impl RustariaClient {
         self.perf.tick();
         self.glfw_window.swap_buffers();
         Ok(())
+    }
+}
+
+impl Default for RustariaClient {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

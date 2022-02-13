@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 use std::time::Instant;
 
 use crossbeam::channel::{Receiver, Sender};
-use eyre::bail;
+use eyre::{bail, eyre};
 use laminar::{Packet, Socket, SocketEvent};
 use tracing::{debug, warn};
 
@@ -55,7 +55,7 @@ impl RemoteServerCom {
 
         // Check kernel version
         debug!("{server_addr} RC: Checking Kernel Version");
-        let packet = poll_packet(&mut socket).context("Invalid Handshake order")?;
+        let packet = poll_packet(&mut socket).ok_or_else(|| eyre!("Invalid Handshake order"))?;
         let server_version = (packet[0], packet[1], packet[2]);
         if server_version != KERNEL_VERSION {
             socket.send(Packet::reliable_unordered(server_addr, vec![0]))?;
@@ -68,14 +68,15 @@ impl RemoteServerCom {
 
         // get sha256
         debug!("{server_addr} RC: Checking Rustaria Hash");
-        let hash =
-            RustariaHash::parse(poll_packet(&mut socket).context("Could not get RegistryHash")?);
+        let hash = RustariaHash::parse(
+            poll_packet(&mut socket).ok_or_else(|| eyre!("Could not get RegistryHash"))?,
+        );
 
         if hash != rustaria.hash {
             // send modlist
             socket.send(Packet::reliable_unordered(server_addr, vec![1]))?;
 
-            let pkt = poll_packet(&mut socket).context("Could not get ModList")?;
+            let pkt = poll_packet(&mut socket).ok_or_else(|| eyre!("Could not get ModList"))?;
             let mod_list: ModListPacket = bincode::deserialize(&pkt)?;
 
             for (mod_name, mod_version) in mod_list.data.into_iter() {

@@ -3,8 +3,6 @@ use std::ffi::c_void;
 use opengl::gl;
 use opengl::gl::GLenum;
 
-use crate::types::GlType;
-
 pub struct FormatDescriptor {
     pub attributes: Vec<AttributeDescriptor>,
 }
@@ -53,7 +51,7 @@ impl AttributeType {
     pub(crate) unsafe fn attrib(&self, index: u32, stride: i32, offset: *const c_void) {
         match self {
             AttributeType::Float(amount) | AttributeType::Double(amount) => {
-                let size = (*amount);
+                let size = *amount;
                 gl::VertexAttribPointer(
                     index,
                     size as i32,

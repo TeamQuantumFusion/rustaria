@@ -1,16 +1,9 @@
 use std::ffi::c_void;
-use std::rc::Rc;
-use std::sync::mpsc::Receiver;
-
-use glfw::{Context, FlushedMessages, Glfw, Window, WindowEvent};
-use tracing::info;
 
 use opengl::gl;
-use opengl::gl::{GLbitfield, GLenum};
+use opengl::gl::GLbitfield;
 
-use crate::texture::{Sampler2d, Texture, USampler2d};
-use crate::util::RustGlEnum;
-
+use crate::texture::{Sampler2d, Texture};
 #[macro_use]
 mod util;
 pub mod atlas;

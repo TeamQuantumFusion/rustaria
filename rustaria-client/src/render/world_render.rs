@@ -74,7 +74,6 @@ impl WorldRenderer {
             let entry = x.unwrap();
             if !entry.path().is_dir() {
                 let string = entry.file_name().into_string().unwrap();
-                println!("{}", string);
                 atlas.push(string, image::open(entry.path()).unwrap());
             }
         }

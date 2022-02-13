@@ -9,7 +9,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use eyre::{bail, ContextCompat, Result};
+use eyre::{bail, eyre, Result};
 use mlua::prelude::*;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, warn};
@@ -17,10 +17,7 @@ use zip::ZipArchive;
 
 use crate::api::context::PluginContext;
 
-pub fn scan_and_load_plugins<'lua>(
-    plugins_dir: &Path,
-    lua: &'lua Lua,
-) -> Result<Plugins<'lua>> {
+pub fn scan_and_load_plugins<'lua>(plugins_dir: &Path, lua: &'lua Lua) -> Result<Plugins<'lua>> {
     info!("Scanning for plugins in directory {:?}", plugins_dir);
 
     let plugins = if let Ok(read_dir) = std::fs::read_dir(&plugins_dir) {
@@ -189,8 +186,8 @@ impl PluginArchive {
     pub fn get_asset(&self, path: &ArchivePath) -> Result<&Vec<u8>> {
         let option = &self.data;
         match option {
-            None => Err(eyre::Error::msg("Reading not active")),
-            Some(files) => Ok(files.get(path).wrap_err("Could not find file")?),
+            None => bail!("Reading not active"),
+            Some(files) => files.get(path).ok_or_else(|| eyre!("Could not find file")),
         }
     }
 }

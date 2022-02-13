@@ -5,7 +5,6 @@ use std::net::SocketAddr;
 use std::time::Instant;
 
 use crossbeam::channel::{Receiver, Sender};
-use eyre::ContextCompat;
 use laminar::{Packet, Socket, SocketEvent};
 use tracing::{debug, info, warn};
 
@@ -71,7 +70,7 @@ impl ServerNetwork {
         let x = self
             .local_com
             .as_mut()
-            .wrap_err(ServerError::DedicatedServerDoesNotSupportLocalPlayer)?;
+            .ok_or(ServerError::DedicatedServerDoesNotSupportLocalPlayer)?;
         let id = x.local_id;
         x.local_id += 1;
         x.local_players.insert(id, (send, receiver));
@@ -367,6 +366,7 @@ impl HandshakingStep {
     }
 }
 
+#[derive(Debug)]
 pub enum ServerError {
     InvalidIp,
     DedicatedServerDoesNotSupportLocalPlayer,
@@ -388,3 +388,5 @@ impl Display for ServerError {
         f.write_str(self.as_str())
     }
 }
+
+impl std::error::Error for ServerError {}

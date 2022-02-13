@@ -7,7 +7,6 @@ use opengl::gl::GLenum;
 
 use crate::raw::RawTexture;
 use crate::types::GlType;
-use crate::uniform::{UniformType, UniformValueBinder};
 use crate::util::RustGlEnum;
 
 pub struct Texture {
