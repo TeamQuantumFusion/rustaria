@@ -24,7 +24,6 @@ pub const KERNEL_VERSION: (u8, u8, u8) = (0, 0, 1);
 pub const UPS: u32 = 20;
 
 pub mod api;
-mod blake3;
 pub mod chunk;
 pub mod comps;
 pub mod entity;
