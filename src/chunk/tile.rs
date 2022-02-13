@@ -109,15 +109,15 @@ pub enum Filter<T: Hash + Eq> {
 }
 
 mod blast_resistance_serde {
-    use serde::{Deserialize, Deserializer};
     use serde::de::{Error, Visitor};
+    use serde::{Deserialize, Deserializer};
 
     use super::BlastResistance;
 
     impl<'de> Deserialize<'de> for BlastResistance {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where
-                D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
         {
             struct BRVisitor;
             impl<'de> Visitor<'de> for BRVisitor {
@@ -127,15 +127,15 @@ mod blast_resistance_serde {
                     write!(formatter, r#"either a string "indestructible" or a number"#)
                 }
                 fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
-                    where
-                        E: Error,
+                where
+                    E: Error,
                 {
                     let v = u32::try_from(v).map_err(Error::custom)?;
                     Ok(BlastResistance::Some(v))
                 }
                 fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-                    where
-                        E: Error,
+                where
+                    E: Error,
                 {
                     if v.eq_ignore_ascii_case("indestructible") {
                         Ok(BlastResistance::Indestructible)

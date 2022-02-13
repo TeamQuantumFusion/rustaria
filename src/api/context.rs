@@ -5,7 +5,7 @@ use mlua::prelude::*;
 /// _internally_, and should not be relied upon by scripts.
 #[derive(Debug, Clone)]
 pub struct PluginContext {
-    pub plugin_id: String
+    pub plugin_id: String,
 }
 impl PluginContext {
     pub fn get(lua: &Lua) -> LuaResult<Self> {

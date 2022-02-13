@@ -13,8 +13,8 @@ use tracing::{debug, info};
 
 use opengl_render::OpenGlBackend;
 use rustaria::api::Rustaria;
-use rustaria::network::{PacketDescriptor, PacketOrder, PacketPriority};
 use rustaria::network::packet::{ClientPacket, ServerPacket};
+use rustaria::network::{PacketDescriptor, PacketOrder, PacketPriority};
 use rustaria::player::Player;
 use rustaria::types::ChunkPos;
 use rustaria::UPS;
@@ -25,7 +25,8 @@ use crate::render::RenderHandler;
 mod network;
 mod render;
 
-const DEBUG_MOD: Modifiers = Modifiers::from_bits_truncate(glfw::ffi::MOD_ALT | glfw::ffi::MOD_SHIFT);
+const DEBUG_MOD: Modifiers =
+    Modifiers::from_bits_truncate(glfw::ffi::MOD_ALT | glfw::ffi::MOD_SHIFT);
 const UPDATE_TIME: Duration = Duration::from_micros(1000000 / UPS as u64);
 
 #[derive(Debug, StructOpt)]
@@ -53,7 +54,6 @@ fn main() -> Result<()> {
             lag -= UPDATE_TIME;
         }
         client.draw(duration.as_micros() as f32 / UPDATE_TIME.as_micros() as f32)?;
-
     }
     Ok(())
 }
@@ -78,14 +78,15 @@ pub struct RustariaClient {
 impl RustariaClient {
     #[allow(clippy::new_without_default)]
     pub fn new() -> RustariaClient {
-        let title = &*format!("Rustaria Client {}", env!("CARGO_PKG_VERSION"));
-        info!(title);
+        let title = format!("Rustaria Client {}", env!("CARGO_PKG_VERSION"));
+        info!("{}", title);
 
         info!(target: "render", "Launching GLFW");
         let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
         info!(target: "render", "Creating Window");
-        let (mut glfw_window, glfw_events) = glfw.create_window(900, 600, title, glfw::WindowMode::Windowed)
+        let (mut glfw_window, glfw_events) = glfw
+            .create_window(900, 600, &title, glfw::WindowMode::Windowed)
             .expect("Failed to create GLFW window.");
 
         info!(target: "render", "Loading OpenGL backend");
@@ -100,7 +101,10 @@ impl RustariaClient {
             glfw,
             glfw_window,
             glfw_events,
-            player: Player { pos: (0.0, 0.0), vel: (0.0, 0.0) },
+            player: Player {
+                pos: (0.0, 0.0),
+                vel: (0.0, 0.0),
+            },
             zoom: 1.0,
             w: false,
             a: false,
@@ -138,8 +142,12 @@ impl RustariaClient {
                     self.zoom -= y as f32 * 0.01;
                     self.render.world_renderer.qi_u_zoom.set_value(self.zoom);
                 }
-                WindowEvent::Key(Key::Q, _, Action::Press, DEBUG_MOD) => self.glfw_window.set_should_close(true),
-                WindowEvent::Key(Key::W, _, Action::Press, DEBUG_MOD) => self.render.wireframe = !self.render.wireframe,
+                WindowEvent::Key(Key::Q, _, Action::Press, DEBUG_MOD) => {
+                    self.glfw_window.set_should_close(true)
+                }
+                WindowEvent::Key(Key::W, _, Action::Press, DEBUG_MOD) => {
+                    self.render.wireframe = !self.render.wireframe
+                }
                 WindowEvent::Key(Key::W, _, action, _) => self.w = action != Action::Release,
                 WindowEvent::Key(Key::A, _, action, _) => self.a = action != Action::Release,
                 WindowEvent::Key(Key::S, _, action, _) => self.s = action != Action::Release,
@@ -149,7 +157,10 @@ impl RustariaClient {
         }
 
         let draw_time = Instant::now();
-        let pos = (self.player.pos.0 + (self.player.vel.0 * delta), self.player.pos.1 + (self.player.vel.1 * delta));
+        let pos = (
+            self.player.pos.0 + (self.player.vel.0 * delta),
+            self.player.pos.1 + (self.player.vel.1 * delta),
+        );
         self.render.draw(pos)?;
         self.perf.frame_time.add_assign(draw_time.elapsed());
         self.perf.frame_count += 1;
@@ -158,7 +169,6 @@ impl RustariaClient {
         Ok(())
     }
 }
-
 
 struct PerfDisplayerHandler {
     old_print: Instant,
@@ -173,7 +183,10 @@ impl PerfDisplayerHandler {
         if self.old_print.elapsed() > Duration::from_secs(1) {
             let mspu = self.update_time.as_millis() as f32 / self.update_count as f32;
             let mspf = self.frame_time.as_millis() as f32 / self.frame_count as f32;
-            debug!("{}FPS {}MSPF / {}UPS {}MSPU",self.frame_count, mspf,  self.update_count, mspu);
+            debug!(
+                "{}FPS {}MSPF / {}UPS {}MSPU",
+                self.frame_count, mspf, self.update_count, mspu
+            );
             self.update_count = 0;
             self.update_time = Duration::ZERO;
             self.frame_count = 0;

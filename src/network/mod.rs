@@ -5,8 +5,8 @@ use crossbeam::channel::Sender;
 use laminar::{Config, Packet, Socket, SocketEvent};
 use serde::Serialize;
 
-pub mod server;
 pub mod packet;
+pub mod server;
 
 pub type Channel = u8;
 
@@ -22,13 +22,19 @@ impl PacketDescriptor {
             PacketPriority::Unreliable => match self.order {
                 PacketOrder::Unordered => Packet::unreliable(*addr, payload),
                 PacketOrder::Ordered(_) => panic!("Cannot have Ordered Unreliable packets."),
-                PacketOrder::Sequenced(stream_id) => Packet::unreliable_sequenced(*addr, payload, stream_id),
+                PacketOrder::Sequenced(stream_id) => {
+                    Packet::unreliable_sequenced(*addr, payload, stream_id)
+                }
             },
             PacketPriority::Reliable => match self.order {
                 PacketOrder::Unordered => Packet::reliable_unordered(*addr, payload),
-                PacketOrder::Ordered(stream_id) => Packet::reliable_ordered(*addr, payload, stream_id),
-                PacketOrder::Sequenced(stream_id) => Packet::reliable_sequenced(*addr, payload, stream_id),
-            }
+                PacketOrder::Ordered(stream_id) => {
+                    Packet::reliable_ordered(*addr, payload, stream_id)
+                }
+                PacketOrder::Sequenced(stream_id) => {
+                    Packet::reliable_sequenced(*addr, payload, stream_id)
+                }
+            },
         }
     }
 }
@@ -47,11 +53,15 @@ pub enum PacketOrder {
 }
 
 pub fn create_socket(self_address: SocketAddr) -> Socket {
-    Socket::bind_with_config(self_address, Config {
-        idle_connection_timeout: Duration::from_secs(60),
-        heartbeat_interval: Some(Duration::from_secs(10)),
-        ..Config::default()
-    }).unwrap()
+    Socket::bind_with_config(
+        self_address,
+        Config {
+            idle_connection_timeout: Duration::from_secs(60),
+            heartbeat_interval: Some(Duration::from_secs(10)),
+            ..Config::default()
+        },
+    )
+    .unwrap()
 }
 
 pub fn poll_once(socket: &mut Socket) -> SocketEvent {
@@ -73,7 +83,11 @@ pub fn poll_packet(socket: &mut Socket) -> Option<Vec<u8>> {
     None
 }
 
-pub fn send_obj<D: Serialize>(socket: &Sender<Packet>, addr: SocketAddr, data: &D) -> eyre::Result<()> {
+pub fn send_obj<D: Serialize>(
+    socket: &Sender<Packet>,
+    addr: SocketAddr,
+    data: &D,
+) -> eyre::Result<()> {
     socket.send(Packet::reliable_unordered(addr, bincode::serialize(data)?));
     Ok(())
 }

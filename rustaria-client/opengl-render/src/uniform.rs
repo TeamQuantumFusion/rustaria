@@ -2,9 +2,9 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 use std::sync::{Mutex, RwLock};
 
+use crate::texture::{Sampler2d, USampler2d};
 use opengl::gl;
 use opengl::gl::GLenum;
-use crate::texture::{Sampler2d, USampler2d};
 
 use crate::types::GlType;
 
@@ -81,8 +81,10 @@ impl UniformValueBinder {
     }
 }
 
-
-pub trait UniformType: GlType + Default where Self: Sized {
+pub trait UniformType: GlType + Default
+where
+    Self: Sized,
+{
     fn get_binder(self) -> UniformValueBinder;
 }
 
@@ -97,7 +99,6 @@ macro_rules! uniform_bind_impl {
          )*
     };
 }
-
 
 uniform_bind_impl!(
     f32 => Float

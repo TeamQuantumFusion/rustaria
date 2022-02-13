@@ -9,7 +9,6 @@ pub struct FormatDescriptor {
     pub attributes: Vec<AttributeDescriptor>,
 }
 
-
 #[derive(Copy, Clone, Debug)]
 pub struct AttributeDescriptor {
     pub index: u32,
@@ -36,7 +35,6 @@ pub enum AttributeType {
     Int(u8),
     UnsignedInt(u8),
 }
-
 
 impl AttributeType {
     pub fn get_size(&self) -> usize {
@@ -65,23 +63,16 @@ impl AttributeType {
                     offset,
                 );
             }
-            AttributeType::Byte(amount) |
-            AttributeType::UnsignedByte(amount) |
-            AttributeType::Short(amount) |
-            AttributeType::UnsignedShort(amount) |
-            AttributeType::Int(amount) |
-            AttributeType::UnsignedInt(amount) => {
-                gl::VertexAttribIPointer(
-                    index,
-                    *amount as i32,
-                    self.get_gl_type(),
-                    stride,
-                    offset,
-                );
+            AttributeType::Byte(amount)
+            | AttributeType::UnsignedByte(amount)
+            | AttributeType::Short(amount)
+            | AttributeType::UnsignedShort(amount)
+            | AttributeType::Int(amount)
+            | AttributeType::UnsignedInt(amount) => {
+                gl::VertexAttribIPointer(index, *amount as i32, self.get_gl_type(), stride, offset);
             }
         }
     }
-
 
     pub fn get_gl_type(&self) -> GLenum {
         match self {

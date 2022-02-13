@@ -74,7 +74,9 @@ impl Offset for Direction {
 }
 
 // ======================================== POSITION ========================================
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, serde::Serialize, serde::Deserialize,
+)]
 pub struct ChunkPos {
     pub x: u32,
     pub y: u32,

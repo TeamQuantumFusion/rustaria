@@ -1,12 +1,11 @@
 extern crate core;
 
 use std::env;
-use std::ops::AddAssign;
 use std::time::{Duration, Instant};
 
-use eyre::Report;
+use eyre::bail;
 use time::macros::format_description;
-use tracing::{info, warn};
+use tracing::warn;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::layer::SubscriberExt;
@@ -25,16 +24,15 @@ pub const KERNEL_VERSION: (u8, u8, u8) = (0, 0, 1);
 pub const UPS: u32 = 20;
 
 pub mod api;
-mod blake3;
 pub mod chunk;
 pub mod comps;
 pub mod entity;
 pub mod network;
 pub mod opt;
+pub mod player;
 pub mod registry;
 pub mod types;
 pub mod world;
-pub mod player;
 
 /// Common initialization code for both Rustaria client and dedicated server.
 /// This currently sets up [`color_eyre`] and [`tracing`].
@@ -121,16 +119,13 @@ impl Server {
 
     pub fn tick(&mut self, rustaria: &Rustaria) -> eyre::Result<()> {
         while {
-            {
-                let duration = self.last_tick.elapsed();
-                let seconds = duration.as_secs();
-                if seconds > 60 {
-                    return Err(Report::msg("Server ran 1 minute behind. Closing server."));
-                } else if seconds > 5 {
-                    warn!("Server running {} behind", seconds)
-                }
-                duration.as_millis()
+            let duration = self.last_tick.elapsed();
+            match duration.as_secs() {
+                60.. => bail!("Server ran 1 minute behind. Closing server."),
+                secs @ 5..=59 => warn!("Server running {secs} behind"),
+                _ => {}
             }
+            duration.as_millis()
         } >= (1000.0 / UPS as f32) as u128
         {
             self.tick_internal(rustaria)?;

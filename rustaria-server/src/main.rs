@@ -1,18 +1,13 @@
 use eyre::Result;
 use mlua::Lua;
-use std::env;
 use std::net::SocketAddr;
 use std::str::FromStr;
-use std::time::Duration;
 use structopt::StructOpt;
-use tracing::{debug, info};
+use tracing::debug;
 
 use rustaria::api::Rustaria;
 use rustaria::chunk::Chunk;
-use rustaria::network::packet::ClientPacket::ILoveYou;
-use rustaria::network::packet::ServerPacket;
 use rustaria::network::server::ServerNetwork;
-use rustaria::opt::Verbosity;
 use rustaria::world::World;
 
 #[derive(Debug, StructOpt)]
@@ -51,6 +46,4 @@ fn main() -> Result<()> {
     loop {
         server.tick(&api).unwrap();
     }
-
-    Ok(())
 }

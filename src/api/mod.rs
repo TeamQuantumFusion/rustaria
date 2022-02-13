@@ -7,11 +7,11 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 use crate::api::hook::Hook;
 use crate::api::plugin::{PluginArchive, Plugins};
-use crate::blake3::{Hasher, OUT_LEN};
 use crate::chunk::tile::TilePrototype;
 use crate::chunk::wall::WallPrototype;
 use crate::entity::EntityPrototype;
 use crate::registry::{Registry, RegistryBuilder, Tag};
+use blake3::Hasher;
 
 use self::context::PluginContext;
 
@@ -26,7 +26,7 @@ pub mod plugin;
 pub struct Rustaria<'lua> {
     pub plugins: Plugins<'lua>,
 
-    pub hash: RustariaHash,
+    pub hash: blake3::Hash,
     pub tiles: Registry<TilePrototype>,
     pub walls: Registry<WallPrototype>,
     pub entities: Registry<EntityPrototype>,
@@ -55,7 +55,6 @@ impl<'lua> Rustaria<'lua> {
         let tiles = tiles.build(&mut hasher);
         let walls = walls.build(&mut hasher);
         let entities = entities.build(&mut hasher);
-
 
         Ok(Self {
             plugins,
@@ -130,17 +129,4 @@ pub enum PrototypeRequest {
 
 pub trait Prototype<T, Id = crate::registry::RawId> {
     fn create(&self, id: Id) -> T;
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, serde::Serialize)]
-pub struct RustariaHash {
-    pub data: [u8; OUT_LEN]
-}
-
-impl RustariaHash {
-    pub fn parse(data: Vec<u8>) -> RustariaHash {
-        RustariaHash {
-            data: <[u8; 32]>::try_from(data.as_slice()).unwrap()
-        }
-    }
 }

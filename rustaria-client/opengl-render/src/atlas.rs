@@ -1,14 +1,20 @@
 use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 
-use image::{ColorType, DynamicImage, GenericImage, GenericImageView, RgbaImage};
-use image::DynamicImage::ImageRgba8;
 use image::imageops::FilterType;
-use rectangle_pack::{contains_smallest_box, GroupedRectsToPlace, pack_rects, RectanglePackError, RectanglePackOk, RectToInsert, TargetBin, volume_heuristic};
+use image::DynamicImage::ImageRgba8;
+use image::{ColorType, DynamicImage, GenericImage, GenericImageView, RgbaImage};
+use rectangle_pack::{
+    contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert,
+    RectanglePackError, RectanglePackOk, TargetBin,
+};
 use tracing::{debug, info};
 
+use crate::texture::{
+    InternalFormat, TextureData, TextureDataFormat, TextureDescriptor, TextureLod,
+    TextureMagFilter, TextureMinFilter, TextureType,
+};
 use crate::Texture;
-use crate::texture::{InternalFormat, TextureData, TextureDataFormat, TextureDescriptor, TextureLod, TextureMagFilter, TextureMinFilter, TextureType};
 
 pub struct AtlasBuilder<T: Hash + Ord + Clone> {
     images: Vec<(T, DynamicImage)>,
@@ -16,9 +22,7 @@ pub struct AtlasBuilder<T: Hash + Ord + Clone> {
 
 impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
     pub fn new() -> AtlasBuilder<T> {
-        AtlasBuilder {
-            images: vec![]
-        }
+        AtlasBuilder { images: vec![] }
     }
 
     pub fn push(&mut self, tag: T, image: DynamicImage) {
@@ -63,12 +67,15 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
         let mut lookup = HashMap::new();
         for (id, (_, location)) in locations {
             let (tag, source) = &self.images[*id as usize];
-            lookup.insert(tag.clone(), AtlasLocation {
-                x: location.x() as f32 / max_width as f32,
-                y: location.y() as f32 / max_height as f32,
-                width: location.width() as f32 / max_width as f32,
-                height: location.height() as f32 / max_height as f32,
-            });
+            lookup.insert(
+                tag.clone(),
+                AtlasLocation {
+                    x: location.x() as f32 / max_width as f32,
+                    y: location.y() as f32 / max_height as f32,
+                    width: location.width() as f32 / max_width as f32,
+                    height: location.height() as f32 / max_height as f32,
+                },
+            );
             let x_offset = location.x();
             let y_offset = location.y();
             for y in 0..location.height() {
@@ -82,7 +89,11 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
         // Generate Mipmaps
         let mut images = Vec::new();
         for level in 0..levels {
-            let image = image.resize(image.width() >> level as u32, image.height() >> level as u32, FilterType::Nearest);
+            let image = image.resize(
+                image.width() >> level as u32,
+                image.height() >> level as u32,
+                FilterType::Nearest,
+            );
             images.push(TextureData {
                 texture_data: image.into_bytes(),
                 texture_format: TextureDataFormat::Rgba,
@@ -91,29 +102,32 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
 
         debug!("Uploading atlas");
         // upload
-        let texture = Texture::new(TextureType::Texture2d {
-            images: Some(images),
-            internal: InternalFormat::Rgba,
-            width: max_width,
-            height: max_height,
-            border: 0,
-        }, TextureDescriptor {
-            lod: TextureLod {
-                max_level: levels as i32,
-                lod_bias: 0.1,
-                min: 0.0,
-                max: 1.0,
+        let texture = Texture::new(
+            TextureType::Texture2d {
+                images: Some(images),
+                internal: InternalFormat::Rgba,
+                width: max_width,
+                height: max_height,
+                border: 0,
             },
-            min_filter: TextureMinFilter::Mipmap(crate::texture::FilterType::Nearest, crate::texture::FilterType::Linear),
-            mag_filter: TextureMagFilter(crate::texture::FilterType::Nearest),
-            ..Default::default()
-        });
+            TextureDescriptor {
+                lod: TextureLod {
+                    max_level: levels as i32,
+                    lod_bias: 0.1,
+                    min: 0.0,
+                    max: 1.0,
+                },
+                min_filter: TextureMinFilter::Mipmap(
+                    crate::texture::FilterType::Nearest,
+                    crate::texture::FilterType::Linear,
+                ),
+                mag_filter: TextureMagFilter(crate::texture::FilterType::Nearest),
+                ..Default::default()
+            },
+        );
 
         info!("Created atlas {}x{}", max_width, max_height);
-        Atlas {
-            texture,
-            lookup,
-        }
+        Atlas { texture, lookup }
     }
 }
 

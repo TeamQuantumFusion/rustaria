@@ -18,10 +18,7 @@ pub struct VertexPipeline {
 }
 
 impl VertexPipeline {
-    pub fn new(
-        vertex_code: String,
-        fragment_code: String,
-    ) -> VertexPipeline {
+    pub fn new(vertex_code: String, fragment_code: String) -> VertexPipeline {
         let id = unsafe {
             let id = gl::CreateProgram();
             let vertex_shader = Self::create_shader(vertex_code, ShaderType::Vertex);
@@ -64,10 +61,7 @@ impl VertexPipeline {
         }
     }
 
-    pub fn get_uniform<T: UniformType>(
-        &mut self,
-        name: &str,
-    ) -> Result<Uniform<T>, UniformError> {
+    pub fn get_uniform<T: UniformType>(&mut self, name: &str) -> Result<Uniform<T>, UniformError> {
         let string = CString::new(name).unwrap();
         unsafe {
             let index = gl::GetUniformLocation(self.id.gl_id, string.as_ptr());

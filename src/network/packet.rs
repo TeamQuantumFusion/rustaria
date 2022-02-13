@@ -1,20 +1,18 @@
+use crate::chunk::Chunk;
+use lz4::{Decoder, EncoderBuilder};
 use std::collections::HashMap;
 use std::io::Read;
-use lz4::{Decoder, EncoderBuilder};
-use crate::chunk::Chunk;
 
-use serde::Serialize;
-use serde::Deserialize;
 use crate::api::Rustaria;
 use crate::types::ChunkPos;
+use serde::Deserialize;
+use serde::Serialize;
 
 // server > client
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ServerPacket {
-    Chunk {
-        data: Box<ChunkPacket>
-    },
-    FuckOff
+    Chunk { data: Box<ChunkPacket> },
+    FuckOff,
 }
 
 impl ServerPacket {
@@ -30,13 +28,13 @@ impl ServerPacket {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ClientPacket {
     ILoveYou,
-    RequestChunk(ChunkPos)
+    RequestChunk(ChunkPos),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ModListPacket {
     // List of (mod name, mod version)
-    pub data: HashMap<String, String>
+    pub data: HashMap<String, String>,
 }
 
 impl ModListPacket {
@@ -46,33 +44,27 @@ impl ModListPacket {
             out.insert(name.clone(), plugin.manifest.version.clone());
         }
 
-        ModListPacket {
-            data: out
-        }
-
+        ModListPacket { data: out }
     }
 }
 
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ChunkPacket {
-    data: Vec<u8>
+    data: Vec<u8>,
 }
 
 impl ChunkPacket {
     pub fn new(chunk: &Chunk) -> eyre::Result<ChunkPacket> {
         let out = Vec::new();
-        let mut encoder = EncoderBuilder::new()
-            .level(4)
-            .build(out)?;
+        let mut encoder = EncoderBuilder::new().level(4).build(out)?;
         bincode::serialize_into(&mut encoder, chunk)?;
         let (data, result) = encoder.finish();
         result?;
 
-        Ok(ChunkPacket  { data })
+        Ok(ChunkPacket { data })
     }
 
-    pub fn export(self) ->  eyre::Result<Chunk> {
+    pub fn export(self) -> eyre::Result<Chunk> {
         let mut result = Decoder::new(self.data.as_slice())?;
         let mut out = Vec::new();
         result.read_to_end(&mut out)?;
