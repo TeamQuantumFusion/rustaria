@@ -71,6 +71,7 @@ use crate::blake3::Hasher;
 
 /// A registry containing and managing user-added data to Rustaria.
 /// See the [module documentation](index.html) for more details.
+#[derive(Debug, Clone)]
 pub struct Registry<P> {
     name: &'static str,
     tag_to_id: HashMap<Tag, RawId>,

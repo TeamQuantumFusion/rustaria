@@ -169,7 +169,7 @@ impl ServerCom for LocalServerCom {
         // beg
     }
 
-    fn send(&mut self, packet: &ClientPacket, desc: PacketDescriptor) -> eyre::Result<()> {
+    fn send(&mut self, packet: &ClientPacket, _desc: PacketDescriptor) -> eyre::Result<()> {
         debug!("Sending {:?}", packet);
         self.to_server.send((*packet).clone())?;
         Ok(())

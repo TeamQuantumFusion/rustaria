@@ -111,7 +111,7 @@ pub fn register_rustaria_api(lua: &Lua) -> LuaResult<UnboundedReceiver<Prototype
     preload.set("meta", meta::package(lua)?)?;
     preload.set("wall", wall_methods(lua, tx.clone())?)?;
     preload.set("tile", tile_methods(lua, tx.clone())?)?;
-    preload.set("entity", entity_methods(lua, tx.clone())?)?;
+    preload.set("entity", entity_methods(lua, tx)?)?;
     Ok(rx)
 }
 

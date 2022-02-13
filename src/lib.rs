@@ -1,4 +1,4 @@
-extern crate core;
+#![allow(clippy::new_without_default)]
 
 use std::env;
 use std::time::{Duration, Instant};

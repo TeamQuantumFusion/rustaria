@@ -33,11 +33,7 @@ impl World {
         self.chunks.get(pos.get_raw_pos(self.chunk_size)?)
     }
 
-    fn get_chunk_mut(&mut self, pos: ChunkPos) -> Option<&mut Chunk> {
-        self.chunks.get_mut(pos.get_raw_pos(self.chunk_size)?)
-    }
-
-    pub fn tick(&mut self, rustaria: &Rustaria) {}
+    pub fn tick(&mut self, _rustaria: &Rustaria) {}
 }
 
 // NOTE(leocth): `thiserror` might be appropriate here

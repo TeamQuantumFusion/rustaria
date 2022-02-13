@@ -84,10 +84,10 @@ pub fn poll_packet(socket: &mut Socket) -> Option<Vec<u8>> {
 }
 
 pub fn send_obj<D: Serialize>(
-    socket: &Sender<Packet>,
+    socket: Sender<Packet>,
     addr: SocketAddr,
     data: &D,
 ) -> eyre::Result<()> {
-    socket.send(Packet::reliable_unordered(addr, bincode::serialize(data)?));
+    socket.send(Packet::reliable_unordered(addr, bincode::serialize(data)?))?;
     Ok(())
 }

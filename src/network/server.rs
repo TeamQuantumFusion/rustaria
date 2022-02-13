@@ -148,7 +148,7 @@ impl ClientCom for LocalClientCom {
         &mut self,
         source: &Token,
         packet: &ServerPacket,
-        desc: PacketDescriptor,
+        _desc: PacketDescriptor,
     ) -> eyre::Result<()> {
         debug!("Distributing {packet:?} from {source:?}");
 
@@ -165,7 +165,7 @@ impl ClientCom for LocalClientCom {
         &mut self,
         target: &Token,
         packet: &ServerPacket,
-        desc: PacketDescriptor,
+        _desc: PacketDescriptor,
     ) -> eyre::Result<()> {
         if let Token::Local(id) = target {
             if let Some((sender, _)) = self.local_players.get(id) {
@@ -262,7 +262,7 @@ impl ClientCom for RemoteClientCom {
                             warn!("Unknown Packet from {token:?}");
                         }
                     } else if let Some(ClientConnection::Handshaking(hand)) = connection {
-                        hand.handle(rustaria, addr, &packet, &self.socket.get_packet_sender());
+                        hand.handle(rustaria, addr, &packet, self.socket.get_packet_sender());
                         match &hand {
                             HandshakingStep::Failed => {
                                 self.remote_players.remove(&addr);
@@ -278,7 +278,7 @@ impl ClientCom for RemoteClientCom {
                             rustaria,
                             addr,
                             &packet,
-                            &self.socket.get_packet_sender(),
+                            self.socket.get_packet_sender(),
                         );
                         self.remote_players.insert(
                             addr,
@@ -322,12 +322,12 @@ impl HandshakingStep {
         rustaria: &Rustaria,
         addr: SocketAddr,
         packet: &Packet,
-        sender: &Sender<Packet>,
+        sender: Sender<Packet>,
     ) {
         match self {
             HandshakingStep::KernelSend => {
                 debug!("HS {addr}: Sending Kernel Version");
-                if let Err(error) = send_obj(&sender, addr, &KERNEL_VERSION) {
+                if let Err(error) = send_obj(sender, addr, &KERNEL_VERSION) {
                     warn!("Could not send kernel version {error}");
                     *self = HandshakingStep::Failed;
                 } else {
@@ -337,7 +337,7 @@ impl HandshakingStep {
             HandshakingStep::KernelProceedAwait => {
                 if packet.payload() == [1] {
                     debug!("HS {addr}: Sending Rustaria Hash");
-                    if let Err(error) = send_obj(&sender, addr, &rustaria.hash) {
+                    if let Err(error) = send_obj(sender, addr, &rustaria.hash) {
                         warn!("Could not send Rustaria Hash {error}");
                         *self = HandshakingStep::Failed;
                     } else {
@@ -350,7 +350,7 @@ impl HandshakingStep {
             HandshakingStep::RegistryMatchAwait => {
                 if packet.payload() == [1] {
                     debug!("HS {addr}: Sending Modlist");
-                    if let Err(error) = send_obj(&sender, addr, &ModListPacket::new(rustaria)) {
+                    if let Err(error) = send_obj(sender, addr, &ModListPacket::new(rustaria)) {
                         warn!("Could not send modlist {error}");
                     }
                     *self = HandshakingStep::Failed;

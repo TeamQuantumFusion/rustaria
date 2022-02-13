@@ -15,8 +15,8 @@ const CHUNK_END: u32 = 1 << 1;
 const PARENT: u32 = 1 << 2;
 const ROOT: u32 = 1 << 3;
 const KEYED_HASH: u32 = 1 << 4;
-const DERIVE_KEY_CONTEXT: u32 = 1 << 5;
-const DERIVE_KEY_MATERIAL: u32 = 1 << 6;
+const _DERIVE_KEY_CONTEXT: u32 = 1 << 5;
+const _DERIVE_KEY_MATERIAL: u32 = 1 << 6;
 
 const IV: [u32; 8] = [
     0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A, 0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19,
@@ -139,12 +139,11 @@ impl Output {
     }
 
     fn root_output_bytes(&self, out_slice: &mut [u8]) {
-        let mut output_block_counter = 0;
-        for out_block in out_slice.chunks_mut(2 * OUT_LEN) {
+        for (counter, out_block) in out_slice.chunks_mut(2 * OUT_LEN).enumerate() {
             let words = compress(
                 &self.input_chaining_value,
                 &self.block_words,
-                output_block_counter,
+                counter as u64,
                 self.block_len,
                 self.flags | ROOT,
             );
@@ -152,7 +151,6 @@ impl Output {
             for (word, out_word) in words.iter().zip(out_block.chunks_mut(4)) {
                 out_word.copy_from_slice(&word.to_le_bytes()[..out_word.len()]);
             }
-            output_block_counter += 1;
         }
     }
 }
