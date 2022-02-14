@@ -1,11 +1,10 @@
 use std::ops::AddAssign;
 use std::sync::mpsc::Receiver;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use eyre::Result;
 use glfw::{Action, Context, Glfw, Key, Modifiers, SwapInterval, Window, WindowEvent};
 use structopt::StructOpt;
-use tokio::time::Instant;
 use tracing::{debug, info};
 
 use rustaria::player::Player;

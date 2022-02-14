@@ -8,8 +8,7 @@ edition = "2021"
 [dependencies]
 rustaria = { path = "../" }
 
-mlua = { version = "0.7.1", features = ["luajit", "vendored"] }
-tokio = { version = "1.15.0", features = ["rt-multi-thread", "macros", "fs"] }
+mlua = { version = "0.7.1", features = ["lua54", "vendored"] }
 tracing = "0.1.29"
 tracing-futures = "0.2.5"
 eyre = "0.6.5"

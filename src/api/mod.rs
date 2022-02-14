@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
+use crossbeam::channel::{Receiver, Sender, unbounded};
 
 use eyre::Result;
 use mlua::prelude::*;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 use crate::api::hook::Hook;
 use crate::api::plugin::{PluginArchive, Plugins};
@@ -79,7 +79,7 @@ fn get_plugin_id(lua: &Lua) -> LuaResult<String> {
 macro_rules! proto {
     ($($name:ident => $proto:ty | $request:ident),* $(,)?) => {
         $(
-            fn $name(lua: &Lua, send: UnboundedSender<PrototypeRequest>) -> LuaResult<LuaFunction> {
+            fn $name(lua: &Lua, send: Sender<PrototypeRequest>) -> LuaResult<LuaFunction> {
                 lua.create_function(move |lua, _: ()| {
                     let send = send.clone();
                     lua.create_table_from([
@@ -102,8 +102,8 @@ macro_rules! proto {
 }
 
 /// Registers Rustaria's Lua modding APIs.
-pub fn register_rustaria_api(lua: &Lua) -> LuaResult<UnboundedReceiver<PrototypeRequest>> {
-    let (tx, rx) = unbounded_channel();
+pub fn register_rustaria_api(lua: &Lua) -> LuaResult<Receiver<PrototypeRequest>> {
+    let (tx, rx) = unbounded();
     let package: LuaTable = lua.globals().get("package")?;
     let preload: LuaTable = package.get("preload")?;
 
