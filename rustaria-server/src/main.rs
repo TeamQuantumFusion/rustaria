@@ -1,7 +1,8 @@
+pub mod config;
+
 use eyre::Result;
 use mlua::Lua;
-use std::net::SocketAddr;
-use std::str::FromStr;
+use rustaria::Server;
 use structopt::StructOpt;
 use tracing::{debug, info};
 
@@ -9,6 +10,8 @@ use rustaria::api::Rustaria;
 use rustaria::chunk::Chunk;
 use rustaria::network::server::ServerNetwork;
 use rustaria::world::World;
+
+use crate::config::Config;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "rustaria-server", about = "The serverside face of Rustaria")]
@@ -20,12 +23,16 @@ struct Opt {
 fn main() -> Result<()> {
     let opt = Opt::from_args();
     debug!(?opt, "Got command-line args");
-    rustaria::init(opt.inner.verbosity)?;
 
+    let Opt {
+        inner: rustaria::opt::Opt { verbosity, run_dir },
+    } = opt;
+    rustaria::init(verbosity)?;
+
+    let config = Config::from_file_or_default(&run_dir.join("config.toml"));
     let lua = Lua::new();
-    let api = Rustaria::new(opt.inner.plugins_dir, &lua)?;
+    let api = Rustaria::new(run_dir, &lua)?;
 
-    let server_addr = SocketAddr::from_str("127.0.0.1:42069").unwrap();
     let air_tile = api
         .tiles
         .get_id_from_tag(&"rustaria:air".parse()?)
@@ -40,10 +47,13 @@ fn main() -> Result<()> {
         vec![empty_chunk, empty_chunk, empty_chunk, empty_chunk],
     )?;
 
-    let mut server = rustaria::Server::new(world, ServerNetwork::new(Some(server_addr), false));
-    info!("Server launched");
+    let mut server = Server::new(
+        world,
+        ServerNetwork::new(Some(config.server.server_addr), false),
+    );
+    info!("Server listening on {}", config.server.server_addr);
 
     loop {
-        server.tick(&api).unwrap();
+        server.tick(&api)?;
     }
 }

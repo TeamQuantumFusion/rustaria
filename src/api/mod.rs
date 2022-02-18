@@ -1,6 +1,6 @@
+use crossbeam::channel::{unbounded, Receiver, Sender};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use crossbeam::channel::{Receiver, Sender, unbounded};
 
 use eyre::Result;
 use mlua::prelude::*;
@@ -36,8 +36,8 @@ pub struct Rustaria<'lua> {
 
 impl<'lua> Rustaria<'lua> {
     pub fn new(plugins_dir: PathBuf, lua: &'lua Lua) -> Result<Rustaria<'lua>> {
-        let mut receiver = register_rustaria_api(lua)?;
-        let plugins = plugin::scan_and_load_plugins(&plugins_dir, lua)?;
+        let receiver = register_rustaria_api(lua)?;
+        let plugins = plugin::scan_and_load_plugins(&plugins_dir.join("plugins"), lua)?;
 
         plugins.init(lua)?;
 

@@ -8,7 +8,7 @@
 use std::{
     fs::{self, File},
     io::{self, BufWriter},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use walkdir::WalkDir;
@@ -16,10 +16,27 @@ use zip::{write::FileOptions, CompressionMethod, ZipWriter};
 
 fn main() {
     println!("cargo:rerun-if-changed=rustaria-plugin/");
-    fs::create_dir_all("run/plugins")
-        .expect("Could not create plugins directory; check if your permissions are sufficient");
-    let zip = File::create("run/plugins/rustaria-core.zip").expect("Could not create plugin file");
-    let mut zip = ZipWriter::new(BufWriter::new(zip));
+
+    pack_core_plugins(&[
+        Path::new("rustaria-server/run/plugins"),
+        Path::new("rustaria-client/run/plugins"),
+    ])
+}
+
+fn pack_core_plugins(paths: &[&Path]) {
+    for path in paths {
+        fs::create_dir_all(path)
+            .expect("Could not create plugins directory; check if your permissions are sufficient");
+    }
+
+    let mut zips: Vec<_> = paths
+        .into_iter()
+        .map(|path| {
+            let path = path.join("rustaria-core.zip");
+            let zip = File::create(path).expect("Could not create plugin file");
+            ZipWriter::new(BufWriter::new(zip))
+        })
+        .collect();
 
     let core_path = PathBuf::from("rustaria-plugin");
 
@@ -40,12 +57,17 @@ fn main() {
         let file_type = entry.file_type();
 
         if file_type.is_dir() {
-            zip.add_directory(path, options).unwrap();
+            for zip in &mut zips {
+                zip.add_directory(path.clone(), options)
+                    .expect("Failed to create subdirectory");
+            }
         } else if file_type.is_file() {
-            zip.start_file(path, options)
-                .expect("Could not start file for writing");
-            let mut file = File::open(file_path).expect("Could not open entry for reading");
-            io::copy(&mut file, &mut zip).expect("Failed to add and compress file");
+            for zip in &mut zips {
+                zip.start_file(path.clone(), options)
+                    .expect("Could not start file for writing");
+                let mut file = File::open(file_path).expect("Could not open entry for reading");
+                io::copy(&mut file, zip).expect("Failed to add and compress file");
+            }
         }
     }
 }

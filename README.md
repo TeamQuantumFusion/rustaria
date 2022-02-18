@@ -6,41 +6,34 @@ A Terraria rework in Rust.
 
 (TODO for other OSes)
 
+### Windows
+
+Should compile out of the box with no extra dependencies required.
+
 ### Linux
 
-(TODO Wayland instructions, and did I get everything?)
+You will need to install the [dependencies](https://www.glfw.org/docs/latest/compile.html) to compile GLFW.
 
-If you're running X11, you need to install the development packages of these libraries to build the client:
+## Contributing
 
-- `libX11`
-- `libXrandr`
-- `libXinorama`
-- `libXcursor`
-- `libXi`
-  
-Exact instructions differ from distro to distro, and from package manager to another,
-but here are some (mostly tested) instructions for the more well-known distros:
-
-#### `apt`-based (ex. Debian, Ubuntu)
-
-Install the libraries with this command:
+Contributions are always welcome.
+Simply clone this repository, enter the cloned folder, and finally build and run the server and client binaries.
 
 ```sh
-sudo apt install libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev -y
-```
+git clone https://github.com/TeamQuantumFusion/rustaria
+cd rustaria
 
-#### `yum`-based (ex. RHEL, CentOS)
+# For the server:
+cd rustaria-server
 
-Install the libraries with this command:
+# For the client:
+cd rustaria-client
 
-```sh
-sudo yum install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel -y
-```
+# Run
+cargo test && cargo run -- -vv --run_dir run
 
-#### `dnf`-based (ex. Fedora)
-
-The same as [`yum`-based distros](#yum-based-ex-fedora-centos), albeit with `dnf` instead of `yum`:
-
-```sh
-sudo dnf install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel -y
+# Note that the tests should *always* pass.
+# We could not have builds that have tests fail, since that directly
+# undermines our capability to catch and fix bugs that were introduced
+# in development.
 ```

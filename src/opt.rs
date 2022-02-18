@@ -23,9 +23,9 @@ pub struct Opt {
     #[structopt(short = "v", parse(from_occurrences = Verbosity::from_occurrences))]
     pub verbosity: Verbosity,
 
-    /// The directory Rustaria would try to find its plugins in.
-    #[structopt(long = "plugins_dir", parse(from_os_str), default_value = "./plugins")]
-    pub plugins_dir: PathBuf,
+    /// The directory Rustaria find its configuration file and run in.
+    #[structopt(long = "run_dir", parse(from_os_str), default_value = ".")]
+    pub run_dir: PathBuf,
 }
 
 /// The verbosity setting for the logging output, set in the form of [command-line parameters](Opt).
