@@ -3,7 +3,7 @@ use mlua::Lua;
 use std::net::SocketAddr;
 use std::str::FromStr;
 use structopt::StructOpt;
-use tracing::debug;
+use tracing::{debug, info};
 
 use rustaria::api::Rustaria;
 use rustaria::chunk::Chunk;
@@ -41,7 +41,7 @@ fn main() -> Result<()> {
     )?;
 
     let mut server = rustaria::Server::new(world, ServerNetwork::new(Some(server_addr), false));
-    println!("Server launched");
+    info!("Server launched");
 
     loop {
         server.tick(&api).unwrap();
