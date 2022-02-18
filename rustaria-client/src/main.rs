@@ -179,7 +179,7 @@ impl PerfDisplayerHandler {
             let mspu = self.update_time.as_millis() as f32 / self.update_count as f32;
             let mspf = self.frame_time.as_millis() as f32 / self.frame_count as f32;
             debug!(
-                "{}FPS {}MSPF / {}UPS {}MSPU",
+                "{}FPS {:.2}MSPF / {}UPS {:.2}MSPU",
                 self.frame_count, mspf, self.update_count, mspu
             );
             self.update_count = 0;
