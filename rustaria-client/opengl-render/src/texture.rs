@@ -27,14 +27,14 @@ impl Texture {
             ty.upload();
 
             Texture {
-                raw: RawTexture { gl_id: id },
+                raw: RawTexture::new(id),
                 target,
             }
         }
     }
 
     pub(crate) unsafe fn bind(&self) {
-        gl::BindTexture(self.target, self.raw.gl_id);
+        gl::BindTexture(self.target, self.raw.id());
     }
 }
 

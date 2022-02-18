@@ -25,7 +25,7 @@ impl VertexBufferLayout {
             gl::GenVertexArrays(1, &mut gl_id);
         }
         VertexBufferLayout {
-            raw: Rc::new(RawVertexBuffer { gl_id }),
+            raw: Rc::new(RawVertexBuffer::new(gl_id)),
             index_buffer: None,
             vbo: vec![],
         }
@@ -76,9 +76,9 @@ impl VertexBufferLayout {
 
     pub(crate) unsafe fn bind(&self) {
         if let Some((buffer, _)) = &self.index_buffer {
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, buffer.gl_id);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, buffer.id());
         }
-        gl::BindVertexArray(self.raw.gl_id);
+        gl::BindVertexArray(self.raw.id());
     }
 
     pub(crate) unsafe fn draw(&self, range: Range<usize>, mode: DrawMode) {
@@ -130,7 +130,7 @@ impl<T> Buffer<T> {
         }
 
         Buffer {
-            raw: Rc::new(RawBuffer { gl_id: buffer }),
+            raw: Rc::new(RawBuffer::new(buffer)),
             size,
             buffer_type,
             buffer_elements: Default::default(),
@@ -147,7 +147,7 @@ impl<T> Buffer<T> {
         let data = data.as_ptr() as *const c_void;
 
         unsafe {
-            gl::BindBuffer(target, self.raw.gl_id);
+            gl::BindBuffer(target, self.raw.id());
             gl::BufferData(
                 target,
                 size as isize,
@@ -159,7 +159,7 @@ impl<T> Buffer<T> {
     }
 
     pub unsafe fn bind(&self) {
-        gl::BindBuffer(self.buffer_type.get_gl(), self.raw.gl_id);
+        gl::BindBuffer(self.buffer_type.get_gl(), self.raw.id());
     }
 
     pub fn update(&mut self, offset: usize, data: &[T]) {
@@ -176,7 +176,7 @@ impl<T> Buffer<T> {
         }
 
         unsafe {
-            gl::BindBuffer(target, self.raw.gl_id);
+            gl::BindBuffer(target, self.raw.id());
             gl::BufferSubData(target, offset as isize, size as isize, data)
         }
     }

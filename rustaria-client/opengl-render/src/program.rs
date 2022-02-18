@@ -56,7 +56,7 @@ impl VertexPipeline {
         };
 
         VertexPipeline {
-            id: RawProgram { gl_id: id },
+            id: RawProgram::new(id),
             uniforms: vec![],
         }
     }
@@ -64,7 +64,7 @@ impl VertexPipeline {
     pub fn get_uniform<T: UniformType>(&mut self, name: &str) -> Result<Uniform<T>, UniformError> {
         let string = CString::new(name).unwrap();
         unsafe {
-            let index = gl::GetUniformLocation(self.id.gl_id, string.as_ptr());
+            let index = gl::GetUniformLocation(self.id.id(), string.as_ptr());
             if index == -1 {
                 return Err(UniformError::UniformDoesNotExist);
             }
@@ -72,7 +72,7 @@ impl VertexPipeline {
             let mut amount = 0;
             let mut uniform_type = 0;
             gl::GetActiveUniform(
-                self.id.gl_id,
+                self.id.id(),
                 index as u32,
                 1024,
                 std::ptr::null_mut(),
@@ -132,7 +132,7 @@ impl VertexPipeline {
     pub fn draw(&self, layout: &VertexBufferLayout, range: Range<usize>, mode: DrawMode) {
         unsafe {
             if !range.is_empty() {
-                gl::UseProgram(self.id.gl_id);
+                gl::UseProgram(self.id.id());
                 for (index, uniform) in &self.uniforms {
                     uniform.read().unwrap().bind(*index)
                 }

@@ -49,9 +49,8 @@ fn main() -> Result<()> {
 }
 
 pub struct RustariaClient {
-    glfw: Glfw,
-    glfw_window: Window,
-    glfw_events: Receiver<(f64, WindowEvent)>,
+    render: RenderHandler,
+    perf: PerfDisplayerHandler,
 
     player: Player,
     zoom: f32,
@@ -61,8 +60,9 @@ pub struct RustariaClient {
     s: bool,
     d: bool,
 
-    render: RenderHandler,
-    perf: PerfDisplayerHandler,
+    glfw: Glfw,
+    glfw_window: Window,
+    glfw_events: Receiver<(f64, WindowEvent)>,
 }
 
 impl RustariaClient {

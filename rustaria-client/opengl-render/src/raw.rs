@@ -1,56 +1,67 @@
-use tracing::debug;
+use std::time::Duration;
+use tracing::{debug, info};
 
 use opengl::gl;
 use opengl::gl::GLuint;
 
-pub(crate) struct RawProgram {
-    pub(crate) gl_id: GLuint,
+macro_rules! new {
+    ($TYPE:ty : $NAME:literal => $DEL_METHOD:ident) => {
+        impl $TYPE {
+            pub fn new(gl_id: GLuint) -> Self {
+                debug!(target: "opengl", "Created {} {}", $NAME, gl_id);
+                Self {
+                    gl_id
+                }
+            }
+
+            pub fn id(&self) -> GLuint {
+                self.gl_id
+            }
+        }
+
+        impl Drop for $TYPE {
+            fn drop(&mut self) {
+                unsafe {
+                    debug!(target: "opengl", "Dropped {} {}", $NAME, self.gl_id);
+                    $DEL_METHOD(self.gl_id);
+                }
+            }
+        }
+    };
 }
 
-impl Drop for RawProgram {
-    fn drop(&mut self) {
-        unsafe {
-            debug!(target: "opengl", "Dropped Program {}", self.gl_id);
-            gl::DeleteProgram(self.gl_id);
-        }
-    }
+pub(crate) struct RawProgram {
+    gl_id: GLuint,
 }
 
 pub(crate) struct RawBuffer {
-    pub(crate) gl_id: GLuint,
-}
-
-impl Drop for RawBuffer {
-    fn drop(&mut self) {
-        unsafe {
-            debug!(target: "opengl", "Dropped Buffer {}", self.gl_id);
-            gl::DeleteBuffers(1, &self.gl_id);
-        }
-    }
+    gl_id: GLuint,
 }
 
 pub(crate) struct RawVertexBuffer {
-    pub(crate) gl_id: GLuint,
-}
-
-impl Drop for RawVertexBuffer {
-    fn drop(&mut self) {
-        unsafe {
-            debug!(target: "opengl", "Dropped VAO {}", self.gl_id);
-            gl::DeleteVertexArrays(1, &self.gl_id);
-        }
-    }
+    gl_id: GLuint,
 }
 
 pub(crate) struct RawTexture {
-    pub(crate) gl_id: GLuint,
+    gl_id: GLuint,
+}
+new!(RawProgram : "Program" => del_program);
+new!(RawBuffer : "Buffer" => del_buffer);
+new!(RawVertexBuffer : "VAO" => del_vao);
+new!(RawTexture : "Texture" => del_texture);
+
+unsafe fn del_program(id: GLuint) {
+    gl::DeleteProgram(id);
 }
 
-impl Drop for RawTexture {
-    fn drop(&mut self) {
-        unsafe {
-            debug!(target: "opengl", "Dropped Texture {}", self.gl_id);
-            gl::DeleteTextures(1, &self.gl_id);
-        }
-    }
+unsafe fn del_buffer(id: GLuint) {
+    gl::DeleteBuffers(1, &id);
+}
+
+unsafe fn del_vao(id: GLuint) {
+    gl::DeleteVertexArrays(1, &id);
+}
+
+unsafe fn del_texture(id: GLuint) {
+    gl::DeleteTextures(1, &id);
 }
