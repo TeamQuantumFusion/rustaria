@@ -1,16 +1,26 @@
+pub mod cmd;
 pub mod config;
 
+use std::path::Path;
+use std::time::Duration;
+
+use cmd::Command;
+use crossbeam::channel::{unbounded, Receiver};
+use crossbeam::select;
 use eyre::Result;
 use mlua::Lua;
+use rustaria::api::loader::Loader;
+use rustaria::api::plugin::Plugins;
+use rustaria::api::Rustaria;
 use rustaria::Server;
 use structopt::StructOpt;
-use tracing::{debug, info};
+use tracing::{debug, error, info, trace, warn};
 
-use rustaria::api::Rustaria;
 use rustaria::chunk::Chunk;
 use rustaria::network::server::ServerNetwork;
 use rustaria::world::World;
 
+use crate::cmd::Commands;
 use crate::config::Config;
 
 #[derive(Debug, StructOpt)]
@@ -30,8 +40,47 @@ fn main() -> Result<()> {
     rustaria::init(verbosity)?;
 
     let config = Config::from_file_or_default(&run_dir.join("config.toml"));
+    let cmds = Commands::new();
+
+    let (tx, rx) = unbounded();
+
+    std::thread::spawn(move || server_loop(&run_dir, &config, rx).unwrap());
+
+    let mut cmd = String::new();
+    loop {
+        let stdin = std::io::stdin();
+        stdin.read_line(&mut cmd)?;
+
+        match Commands::exec(cmd.trim()) {
+            Some(cmd) => select! {
+                send(tx, cmd) -> res => {
+                    trace!(?res);
+                    res?;
+                },
+                default(Duration::from_secs(5)) => {
+                    warn!("Server has not received command for 5 seconds! Is the server thread down?");
+                }
+            },
+            None => error!("Invalid command: {cmd}"),
+        }
+        cmd.clear();
+    }
+}
+
+fn server_loop(run_dir: &Path, config: &Config, rx: Receiver<Command>) -> Result<()> {
     let lua = Lua::new();
-    let api = Rustaria::new(run_dir, &lua)?;
+
+    let plugins_dir = run_dir.join("plugins");
+    info!("Scanning for plugins in directory {plugins_dir:?}");
+    let plugins = Plugins::load(&plugins_dir, &lua)?;
+
+    info!("Executing plugins");
+    let loader = Loader::default();
+    let outputs = loader.init(&lua, &plugins)?;
+
+    info!("Initializing API");
+    let mut api = Rustaria::default();
+    api.reload(outputs);
 
     let air_tile = api
         .tiles
@@ -54,6 +103,14 @@ fn main() -> Result<()> {
     info!("Server listening on {}", config.server.server_addr);
 
     loop {
+        while let Ok(cmd) = rx.try_recv() {
+            match cmd {
+                Command::Reload => {
+                    // lua.reload();
+                    // api.reload(&plugin_dir, &lua)?;
+                }
+            }
+        }
         server.tick(&api)?;
     }
 }

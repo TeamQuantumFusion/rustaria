@@ -1,137 +1,100 @@
-use crossbeam::channel::{unbounded, Receiver, Sender};
-use std::collections::HashMap;
-use std::path::PathBuf;
+use std::fmt::Debug;
 
-use eyre::Result;
+use crate::{
+    blake3::{Hasher, OUT_LEN},
+    registry::Registry,
+};
 use mlua::prelude::*;
 
-use crate::api::hook::Hook;
-use crate::api::plugin::{PluginArchive, Plugins};
-use crate::blake3::{Hasher, OUT_LEN};
-use crate::chunk::tile::TilePrototype;
-use crate::chunk::wall::WallPrototype;
-use crate::entity::EntityPrototype;
-use crate::registry::{Registry, RegistryBuilder, Tag};
+use self::{
+    loader::{PluginInput, PluginOutput, PluginOutputs},
+    prototypes::{EntityPrototype, TilePrototype, WallPrototype},
+};
 
-use self::context::PluginContext;
-
-mod log;
-#[macro_use]
-pub(crate) mod macros;
-mod context;
 mod hook;
+pub mod loader;
+mod log;
 mod meta;
 pub mod plugin;
+pub mod prototypes;
+pub mod types;
 
-pub struct Rustaria<'lua> {
-    pub plugins: Plugins<'lua>,
+#[derive(Default)]
+pub struct Rustaria {
+    pub mod_list: ModList,
 
     pub hash: RustariaHash,
     pub tiles: Registry<TilePrototype>,
     pub walls: Registry<WallPrototype>,
     pub entities: Registry<EntityPrototype>,
-
-    pub test_hook: Hook<'lua, (i32, i32)>,
 }
 
-impl<'lua> Rustaria<'lua> {
-    pub fn new(plugins_dir: PathBuf, lua: &'lua Lua) -> Result<Rustaria<'lua>> {
-        let receiver = register_rustaria_api(lua)?;
-        let plugins = plugin::scan_and_load_plugins(&plugins_dir.join("plugins"), lua)?;
-
-        plugins.init(lua)?;
-
-        let mut tiles = RegistryBuilder::new("tile");
-        let mut walls = RegistryBuilder::new("wall");
-        let mut entities = RegistryBuilder::new("entity");
-        while let Ok(prototype) = receiver.try_recv() {
-            match prototype {
-                PrototypeRequest::Tile(id, pt) => tiles.register(id, pt),
-                PrototypeRequest::Wall(id, pt) => walls.register(id, pt),
-                PrototypeRequest::Entity(id, pt) => entities.register(id, pt),
-            };
+impl Rustaria {
+    pub fn reload(&mut self, outputs: PluginOutputs) {
+        if let Some(summarized) = outputs.into_iter().reduce(PluginOutput::combine) {
+            let mut hasher = Hasher::new();
+            self.tiles = summarized.tiles.finish(&mut hasher);
+            self.walls = summarized.walls.finish(&mut hasher);
+            self.entities = summarized.entities.finish(&mut hasher);
         }
-        let mut hasher = Hasher::new();
-        let tiles = tiles.build(&mut hasher);
-        let walls = walls.build(&mut hasher);
-        let entities = entities.build(&mut hasher);
-
-        Ok(Self {
-            plugins,
-            hash: hasher.finalize(),
-            tiles,
-            walls,
-            entities,
-            test_hook: Hook::new(),
-        })
-    }
-
-    pub fn get_plugin_assets(&self, plugin: &str) -> Option<&PluginArchive> {
-        self.plugins.0.get(plugin).map(|plugin| &plugin.archive)
     }
 }
 
-fn get_plugin_id(lua: &Lua) -> LuaResult<String> {
-    let ctx = PluginContext::get(lua)?;
-    Ok(ctx.plugin_id)
-}
+pub type ModList = Vec<(String, String)>;
 
-macro_rules! proto {
-    ($($name:ident => $proto:ty | $request:ident),* $(,)?) => {
-        $(
-            fn $name(lua: &Lua, send: Sender<PrototypeRequest>) -> LuaResult<LuaFunction> {
-                lua.create_function(move |lua, _: ()| {
-                    let send = send.clone();
-                    lua.create_table_from([
-                        ("register", lua.create_function(move |_, prototypes: HashMap<Tag, _>| {
-                            let send = send.clone();
-                            for (tag, prototype) in prototypes {
-                                send.send(PrototypeRequest::$request(tag, prototype))
-                                    .map_err(|err| LuaError::RuntimeError(err.to_string()))?;
-                            }
-                            Ok(())
-                        })?),
-                        ("default", lua.create_function(|lua, t| {
-                            Ok(lua.from_value::<$proto>(LuaValue::Table(t)))
-                        })?)
-                    ])
-                })
-            }
-        )*
-    };
-}
+// impl<'lua> Rustaria<'lua> {
+//     pub fn new(plugins_dir: &Path, lua: &'lua LuaRuntime) -> Result<Rustaria<'lua>> {
+//         let mut api = Self::default();
+//         api.reload(plugins_dir, lua)?;
+//         Ok(api)
+//     }
+//     pub fn reload(&mut self, plugins_dir: &Path, lua: &'lua LuaRuntime) -> Result<()> {
+//         self.plugins = plugin::scan_and_load_plugins(plugins_dir, lua)?;
+//         self.plugins.init(lua)?;
 
-/// Registers Rustaria's Lua modding APIs.
-pub fn register_rustaria_api(lua: &Lua) -> LuaResult<Receiver<PrototypeRequest>> {
-    let (tx, rx) = unbounded();
-    let package: LuaTable = lua.globals().get("package")?;
-    let preload: LuaTable = package.get("preload")?;
+//         let mut hasher = Hasher::new();
+//         self.tiles = RegistryBuilder::new("tiles")
+//             .register_all(lua.registries.tile.read().clone())
+//             .build(&mut hasher);
+//         self.walls = RegistryBuilder::new("walls")
+//             .register_all(lua.registries.wall.read().clone())
+//             .build(&mut hasher);
+//         self.entities = RegistryBuilder::new("entities")
+//             .register_all(lua.registries.entity.read().clone())
+//             .build(&mut hasher);
+//         Ok(())
+//     }
+//     pub fn get_plugin_assets(&self, plugin: &str) -> Option<&PluginArchive> {
+//         self.plugins.0.get(plugin).map(|plugin| &plugin.archive)
+//     }
+// }
 
-    preload.set("log", log::package(lua)?)?;
-    preload.set("meta", meta::package(lua)?)?;
-    preload.set("wall", wall_methods(lua, tx.clone())?)?;
-    preload.set("tile", tile_methods(lua, tx.clone())?)?;
-    preload.set("entity", entity_methods(lua, tx)?)?;
-    Ok(rx)
-}
+// pub struct LuaRuntime {
+//     lua: Lua,
 
-proto! {
-    wall_methods => WallPrototype | Wall,
-    tile_methods => TilePrototype | Tile,
-    entity_methods => EntityPrototype | Entity,
-}
+//     registries: Registries,
+// }
+// impl LuaRuntime {
+//     pub fn new() -> LuaResult<Self> {
+//         let lua = Lua::new();
+//         {
+//             let package: LuaTable = lua.globals().get("package")?;
+//             let preload: LuaTable = package.get("preload")?;
 
-pub enum PrototypeRequest {
-    Tile(Tag, TilePrototype),
-    Wall(Tag, WallPrototype),
-    Entity(Tag, EntityPrototype),
-}
+//             preload.set("log", log::package(&lua)?)?;
+//             preload.set("meta", meta::package(&lua)?)?;
+//         }
 
-pub trait Prototype<T, Id = crate::registry::RawId> {
-    fn create(&self, id: Id) -> T;
-}
+//         let registries = Registries::new(&lua)?;
 
-#[derive(Debug, PartialEq, Eq, Clone, serde::Serialize)]
+//         Ok(Self { lua, registries })
+//     }
+//     pub fn reload(&mut self) {
+//         self.registries.clear();
+//     }
+// }
+
+#[derive(Default, Debug, PartialEq, Eq, Clone, serde::Serialize)]
 pub struct RustariaHash {
     pub data: [u8; OUT_LEN],
 }
@@ -142,4 +105,9 @@ impl RustariaHash {
             data: <[u8; 32]>::try_from(data.as_slice()).unwrap(),
         }
     }
+}
+
+fn plugin_id(lua: &Lua) -> LuaResult<String> {
+    let ctx = PluginInput::get(lua)?;
+    Ok(ctx.id)
 }

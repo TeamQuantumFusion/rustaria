@@ -1,124 +1,91 @@
-#![allow(clippy::needless_lifetimes)]
-
-use std::collections::HashMap;
-use std::fs::{DirEntry, File};
-use std::io::Read;
-use std::ops::Deref;
-use std::{
-    ffi::OsStr,
-    path::{Path, PathBuf},
-};
-
 use eyre::{bail, eyre, Result};
 use mlua::prelude::*;
-use serde::{Deserialize, Serialize};
-use tracing::{debug, info, warn};
+use serde::Deserialize;
+use std::{
+    collections::HashMap,
+    ffi::OsStr,
+    fs::{DirEntry, File},
+    io::Read,
+    ops::Deref,
+    path::{Path, PathBuf},
+};
+use tracing::{info, warn};
 use zip::ZipArchive;
 
-use crate::api::context::PluginContext;
-
-pub fn scan_and_load_plugins<'lua>(plugins_dir: &Path, lua: &'lua Lua) -> Result<Plugins<'lua>> {
-    info!("Scanning for plugins in directory {:?}", plugins_dir);
-
-    let plugins = if let Ok(read_dir) = std::fs::read_dir(&plugins_dir) {
-        Plugins(read_dir.filter_map(|entry| {
-            match entry {
-                Ok(entry) => process_file(entry, lua),
-                Err(e) => {
-                    warn!("Unable to access file `{}` for reading! Permissions are perhaps insufficient!", e);
-                    None
-                }
-            }
-        }).map(|plugin| (plugin.manifest.plugin_id.clone(), plugin)).collect())
-    } else {
-        warn!("Plugin directory not found! Creating one...");
-        std::fs::create_dir_all("plugins")?;
-        Plugins::default()
-    };
-    info!("Found and loaded {} plugin(s)", plugins.len());
-    Ok(plugins)
-}
-
-fn process_file<'lua>(entry: DirEntry, lua: &'lua Lua) -> Option<Plugin<'lua>> {
-    let path = entry.path();
-
-    // only look at zip files
-    if let Some("zip") = path.extension().and_then(OsStr::to_str) {
-        match load_plugin(&path, lua) {
-            Ok(plugin) => return Some(plugin),
-            Err(e) => {
-                warn!(
-                    "Error loading plugin [{}]: {}",
-                    file_name_or_unknown(&path),
-                    e
-                )
-            }
-        }
-    }
-    None
-}
-
-fn load_plugin<'lua>(path: &Path, lua: &'lua Lua) -> Result<Plugin<'lua>> {
-    let mut archive = PluginArchive::new(path)?;
-    archive.enable_reading()?;
-
-    let data = archive.get_asset(&ArchivePath::Manifest)?;
-    let manifest: Manifest = serde_json::from_reader(data.as_slice())?;
-
-    let source = archive.get_asset(&ArchivePath::Src(PathBuf::from(&manifest.init_path)))?;
-    let init = lua.load(source).into_function()?;
-    info!(
-        "Loaded plugin {} v{} from [{}]",
-        manifest.plugin_id,
-        manifest.version,
-        file_name_or_unknown(path)
-    );
-    Ok(Plugin {
-        archive,
-        manifest,
-        init,
-    })
-}
-
-#[derive(Default)]
-pub struct Plugins<'lua>(pub(crate) HashMap<String, Plugin<'lua>>);
+#[derive(Debug, Clone, Default)]
+pub struct Plugins<'lua>(Vec<Plugin<'lua>>);
 
 impl<'lua> Plugins<'lua> {
-    pub fn init(&self, lua: &'lua Lua) -> Result<()> {
-        info!("Initializing plugins");
+    pub fn load(plugins_dir: &Path, lua: &'lua Lua) -> Result<Self> {
+        let plugins = match std::fs::read_dir(&plugins_dir) {
+            Ok(read_dir) => {
+                read_dir.filter_map(|entry| {
+                    match entry {
+                        Ok(entry) => Self::process_file(entry, lua),
+                        Err(e) => {
+                            warn!("Unable to access file `{e}` for reading! Permissions are perhaps insufficient!");
+                            None
+                        }
+                    }
+                }).collect()
+            }
+            Err(e) => {
+                warn!("Plugin directory not found! {e}");
+                warn!("Creating an empty plugin directory...");
+                std::fs::create_dir_all("plugins")?;
+                vec![]
+            }
+        };
+        info!("Found and loaded {} plugin(s)", plugins.len());
+        Ok(Plugins(plugins))
+    }
 
-        for Plugin { manifest, init, .. } in self.values() {
-            debug!("Initializing plugin {}", manifest.plugin_id);
-            let ctx = PluginContext {
-                plugin_id: manifest.plugin_id.clone(),
-            };
-            ctx.set(lua)?;
-            init.call(())?;
-            debug!("Finished initializing plugin {}", manifest.plugin_id);
+    fn process_file(entry: DirEntry, lua: &'lua Lua) -> Option<Plugin<'lua>> {
+        let path = entry.path();
+
+        // only look at zip files
+        if let Some("zip") = path.extension().and_then(OsStr::to_str) {
+            match Self::load_plugin(&path, lua) {
+                Ok(plugin) => return Some(plugin),
+                Err(e) => warn!(
+                    "Error loading plugin [{}]: {e}",
+                    file_name_or_unknown(&path)
+                ),
+            }
         }
-        Ok(())
+        None
+    }
+
+    fn load_plugin(path: &Path, lua: &'lua Lua) -> Result<Plugin<'lua>> {
+        let mut archive = PluginArchive::new(path)?;
+        archive.enable_reading()?;
+
+        let data = archive.get_asset(&ArchivePath::Manifest)?;
+        let manifest: Manifest = serde_json::from_reader(data.as_slice())?;
+
+        let source =
+            archive.get_asset(&ArchivePath::Src(PathBuf::from(manifest.init_path.clone())))?;
+        let init = lua.load(source).into_function()?;
+        info!(
+            "Loaded plugin {} v{} from [{}]",
+            manifest.plugin_id,
+            manifest.version,
+            file_name_or_unknown(path)
+        );
+        Ok(Plugin {
+            archive,
+            manifest,
+            init,
+        })
     }
 }
+
 impl<'lua> Deref for Plugins<'lua> {
-    type Target = HashMap<String, Plugin<'lua>>;
+    type Target = Vec<Plugin<'lua>>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
-}
-
-pub struct Plugin<'lua> {
-    pub archive: PluginArchive,
-    pub manifest: Manifest,
-    init: LuaFunction<'lua>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Manifest {
-    plugin_id: String,
-    pub version: String,
-    init_path: String,
 }
 
 fn file_name_or_unknown(path: &Path) -> &str {
@@ -126,7 +93,20 @@ fn file_name_or_unknown(path: &Path) -> &str {
         .and_then(OsStr::to_str)
         .unwrap_or("<unknown>")
 }
-
+#[derive(Debug, Clone)]
+pub struct Plugin<'lua> {
+    pub archive: PluginArchive,
+    pub manifest: Manifest,
+    pub init: LuaFunction<'lua>,
+}
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Manifest {
+    pub plugin_id: String,
+    pub version: String,
+    pub init_path: String,
+}
+#[derive(Debug, Clone)]
 pub struct PluginArchive {
     path: PathBuf,
     data: Option<HashMap<ArchivePath, Vec<u8>>>,

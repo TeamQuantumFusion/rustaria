@@ -15,6 +15,12 @@ impl<'lua, Args> Hook<'lua, Args> {
     }
 }
 
+impl<'lua, Args> Default for Hook<'lua, Args> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'lua, Args> Hook<'lua, Args>
 where
     Args: ToLuaMulti<'lua> + Clone,

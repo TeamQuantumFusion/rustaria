@@ -73,16 +73,14 @@ use crate::blake3::Hasher;
 /// See the [module documentation](index.html) for more details.
 #[derive(Debug, Clone)]
 pub struct Registry<P> {
-    name: &'static str,
-    tag_to_id: HashMap<Tag, RawId>,
-    id_to_tag: Vec<Tag>,
-    entries: Vec<P>,
+    pub(crate) tag_to_id: HashMap<Tag, RawId>,
+    pub(crate) id_to_tag: Vec<Tag>,
+    pub(crate) entries: Vec<P>,
 }
 
 impl<T> Registry<T> {
-    pub fn new(name: &'static str) -> Self {
+    pub fn new() -> Self {
         Self {
-            name,
             tag_to_id: HashMap::new(),
             id_to_tag: Vec::new(),
             entries: Vec::new(),
@@ -109,6 +107,11 @@ impl<T> Registry<T> {
     }
     pub fn get_from_tag_mut(&mut self, tag: &Tag) -> Option<&mut T> {
         self.get_from_id_mut(self.get_id_from_tag(tag)?)
+    }
+}
+impl<T> Default for Registry<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -203,9 +206,23 @@ impl<T> RegistryBuilder<T> {
         Self { name, data: vec![] }
     }
 
-    pub fn register(&mut self, tag: Tag, element: T) {
-        debug!("Registered {} '{}'", self.name, tag);
+    pub fn register(mut self, tag: Tag, element: T) -> Self {
+        debug!("Registered '{tag}' registry '{}'");
         self.data.push((tag, element));
+        self
+    }
+
+    pub fn register_all(mut self, map: HashMap<Tag, T>) -> Self
+    where
+        T: Debug
+    {
+        debug!("Registering all to registry '{}':", self.name);
+        for (tag, _) in &map {
+            debug!("{tag}");
+        }
+        debug!("");
+        self.data.extend(map);
+        self
     }
 
     pub fn build(mut self, hasher: &mut Hasher) -> Registry<T> {
@@ -217,7 +234,7 @@ impl<T> RegistryBuilder<T> {
             hasher.update(tag.to_string().as_bytes());
         }
 
-        let mut registry = Registry::new(self.name);
+        let mut registry = Registry::new();
 
         for (id, (tag, item)) in self.data.into_iter().enumerate() {
             registry.entries.push(item);

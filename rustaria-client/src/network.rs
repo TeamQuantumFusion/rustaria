@@ -79,7 +79,7 @@ impl RemoteServerCom {
             let pkt = poll_packet(&mut socket).ok_or_else(|| eyre!("Could not get ModList"))?;
             let mod_list: ModListPacket = bincode::deserialize(&pkt)?;
 
-            for (mod_name, mod_version) in mod_list.data.into_iter() {
+            for (mod_name, mod_version) in mod_list.mod_list.into_iter() {
                 if let Some(plugin) = rustaria.plugins.get(&mod_name) {
                     let local_version = &plugin.manifest.version;
                     if local_version != &mod_version {

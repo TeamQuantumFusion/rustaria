@@ -1,15 +1,13 @@
 #![allow(unused)] // alpha, remove this when you're done - leocth
 
-use crate::api::{Prototype, Rustaria};
+use crate::api::Rustaria;
+use crate::api::prototypes::Prototype;
 use crate::chunk::tile::Tile;
 use crate::chunk::wall::Wall;
 use crate::registry::{RawId, Tag};
 use crate::types::{ChunkSubPos, Direction, CHUNK_SIZE};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-
-use self::tile::TilePrototype;
-use self::wall::WallPrototype;
 
 pub mod fluid;
 pub mod foliage;
@@ -105,7 +103,6 @@ impl NeighborType<Wall> for Neighbor {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::chunk::tile::LockableValue::Fixed;
     use crate::chunk::tile::Tile;
     use crate::chunk::{Chunk, ChunkGrid};
     use crate::registry::RawId;

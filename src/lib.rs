@@ -28,7 +28,6 @@ pub mod api;
 mod blake3;
 pub mod chunk;
 pub mod comps;
-pub mod entity;
 pub mod network;
 pub mod opt;
 pub mod player;

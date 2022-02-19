@@ -1,3 +1,4 @@
+use crate::api::ModList;
 use crate::chunk::Chunk;
 use lz4::{Decoder, EncoderBuilder};
 use std::collections::HashMap;
@@ -34,17 +35,12 @@ pub enum ClientPacket {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ModListPacket {
     // List of (mod name, mod version)
-    pub data: HashMap<String, String>,
+    pub mod_list: ModList,
 }
 
 impl ModListPacket {
     pub fn new(rustaria: &Rustaria) -> ModListPacket {
-        let mut out = HashMap::new();
-        for (name, plugin) in &rustaria.plugins.0 {
-            out.insert(name.clone(), plugin.manifest.version.clone());
-        }
-
-        ModListPacket { data: out }
+        ModListPacket { mod_list: rustaria.mod_list.clone() }
     }
 }
 
