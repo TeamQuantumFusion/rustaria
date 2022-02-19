@@ -1,0 +1,23 @@
+[package]
+name = "rsa-api"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Rustaria Modules
+mooncake = {path = "../mooncake"}
+rsa-common = { path = "../rsa-common" }
+rsa-chunk = { path = "../rsa-chunk" }
+rsa-comps = { path = "../rsa-comps" }
+
+# Other
+thiserror = "1.0.30"
+uuid = { version = "0.8.2", features = ["v4"] }
+eyre = "0.6.5"
+tracing = "0.1.29"
+serde = { version = "1.0.133", features = ["derive"] }
+serde_json = "1.0.74"
+mlua = { version = "0.7.1", features = ["lua54", "vendored", "serialize"] }
+zip = "0.5.13"

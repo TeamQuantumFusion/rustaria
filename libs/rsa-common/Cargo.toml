@@ -1,0 +1,16 @@
+[package]
+name = "rsa-common"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+color-eyre = "0.6.0"
+serde = { version = "1.0.133", features = ["derive"] }
+eyre = "0.6.5"
+time = { version = "0.3.5", features = ["macros"] }
+structopt = "0.3.25"
+tracing = "0.1.29"
+tracing-error = "0.2.0"
+tracing-subscriber = { version = "0.3.9", features = ["time"] }

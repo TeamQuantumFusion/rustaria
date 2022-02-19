@@ -1,0 +1,24 @@
+[package]
+name = "rsa-server"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Rustaria Modules
+rsa-api = { path = "../../libs/rsa-api" }
+rsa-world = { path = "../../libs/rsa-world" }
+rsa-chunk = { path = "../../libs/rsa-chunk" }
+rsa-network = { path = "../../libs/rsa-network" }
+rsa-common = { path = "../../libs/rsa-common" }
+
+# Other
+mlua = { version = "0.7.1", features = ["lua54", "vendored"] }
+tracing = "0.1.29"
+tracing-futures = "0.2.5"
+eyre = "0.6.5"
+structopt = "0.3.25"
+toml = "0.5.8"
+serde = "1.0.136"
+crossbeam = "0.8.1"

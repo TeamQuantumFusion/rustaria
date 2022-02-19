@@ -24,10 +24,10 @@ git clone https://github.com/TeamQuantumFusion/rustaria
 cd rustaria
 
 # For the server:
-cd rustaria-server
+cd rsa-server
 
 # For the client:
-cd rustaria-client
+cd rsa-client
 
 # Run
 cargo test && cargo run -- -vv --run_dir run
