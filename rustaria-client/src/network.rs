@@ -15,7 +15,7 @@ use rustaria::{Server, KERNEL_VERSION};
 // Client
 pub trait ServerCom {
     fn tick(&mut self);
-    fn send(&mut self, packet: &ClientPacket, desc: PacketDescriptor) -> eyre::Result<()>;
+    fn send(&mut self, packet: ClientPacket, desc: PacketDescriptor) -> eyre::Result<()>;
     fn receive(&mut self) -> Vec<ServerPacket>;
 }
 
@@ -39,7 +39,7 @@ pub struct RemoteServerCom {
 
 impl RemoteServerCom {
     pub fn new(
-        rustaria: &Rustaria,
+        api: &Rustaria,
         server_addr: SocketAddr,
         self_address: SocketAddr,
     ) -> eyre::Result<RemoteServerCom> {
@@ -72,7 +72,7 @@ impl RemoteServerCom {
             poll_packet(&mut socket).ok_or_else(|| eyre!("Could not get RegistryHash"))?,
         );
 
-        if hash != rustaria.hash {
+        if hash != api.hash {
             // send modlist
             socket.send(Packet::reliable_unordered(server_addr, vec![1]))?;
 
@@ -80,11 +80,10 @@ impl RemoteServerCom {
             let mod_list: ModListPacket = bincode::deserialize(&pkt)?;
 
             for (mod_name, mod_version) in mod_list.mod_list.into_iter() {
-                if let Some(plugin) = rustaria.plugins.get(&mod_name) {
-                    let local_version = &plugin.manifest.version;
-                    if local_version != &mod_version {
+                if let Some(version) = api.mod_list.get(&mod_name) {
+                    if version != &mod_version {
                         warn!(
-                            "Invalid version. [{mod_name}]. Remote: {mod_version}, Local: {local_version}"
+                            "Invalid version. [{mod_name}]. Remote: {mod_version}, Local: {version}"
                         );
                     }
                 }
@@ -110,10 +109,10 @@ impl ServerCom for RemoteServerCom {
         self.socket.manual_poll(Instant::now());
     }
 
-    fn send(&mut self, packet: &ClientPacket, desc: PacketDescriptor) -> eyre::Result<()> {
+    fn send(&mut self, packet: ClientPacket, desc: PacketDescriptor) -> eyre::Result<()> {
         debug!("Sending {packet:?}");
         self.socket
-            .send(desc.to_packet(&self.server_addr, bincode::serialize(packet)?))?;
+            .send(desc.to_packet(&self.server_addr, bincode::serialize(&packet)?))?;
         Ok(())
     }
 
@@ -169,9 +168,9 @@ impl ServerCom for LocalServerCom {
         // beg
     }
 
-    fn send(&mut self, packet: &ClientPacket, _desc: PacketDescriptor) -> eyre::Result<()> {
+    fn send(&mut self, packet: ClientPacket, _desc: PacketDescriptor) -> eyre::Result<()> {
         debug!("Sending {:?}", packet);
-        self.to_server.send((*packet).clone())?;
+        self.to_server.send(packet)?;
         Ok(())
     }
 

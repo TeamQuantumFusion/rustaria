@@ -11,17 +11,17 @@ tile:register {
     [_ "dirt"] = tile:default {},
     [_ "air"] = tile:default {},
     -- a full example of a tile setting
-    -- [_"alpha"] = tile.default {
-    --     sprite = _"tile/dirt.png",
+    -- [_ "alpha"] = tile:default {
+    --     sprite = _ "tile/dirt.png",
     --     transitional = true,
-    --     collision = {fixed = false},
-    --     opaque = {fixed = false},
+    --     collision = { fixed = false },
+    --     opaque = { fixed = false },
     --     blast_resistance = 69,
     --     break_resistance = "indestructible",
     --     tile_type = {
     --         type = "spreadable",
     --         spread_chance = 0.618,
-    --         filter = {whitelist = { _"leo", _"froge" }}
+    --         filter = { whitelist = { _ "leo", _ "froge" } }
     --     }
     -- }
 }
@@ -44,4 +44,4 @@ entity:register {
     }
 }
 
-log.error "that's it, lmao"
+log.error "alpha kinda stinks"

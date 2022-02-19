@@ -108,6 +108,11 @@ impl<T> Registry<T> {
     pub fn get_from_tag_mut(&mut self, tag: &Tag) -> Option<&mut T> {
         self.get_from_id_mut(self.get_id_from_tag(tag)?)
     }
+    pub(crate) fn clear(&mut self) {
+        self.tag_to_id.clear();
+        self.id_to_tag.clear();
+        self.entries.clear();
+    }
 }
 impl<T> Default for Registry<T> {
     fn default() -> Self {

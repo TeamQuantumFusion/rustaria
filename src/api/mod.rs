@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{collections::HashMap, fmt::Debug};
 
 use crate::{
     blake3::{Hasher, OUT_LEN},
@@ -31,8 +31,19 @@ pub struct Rustaria {
 
 impl Rustaria {
     pub fn reload(&mut self, outputs: PluginOutputs) {
-        if let Some(summarized) = outputs.into_iter().reduce(PluginOutput::combine) {
-            let mut hasher = Hasher::new();
+        self.mod_list.clear();
+        self.tiles.clear();
+        self.walls.clear();
+        self.entities.clear();
+
+        let mut hasher = Hasher::new();
+        if let Some(summarized) = outputs
+            .into_iter()
+            .inspect(|o| {
+                self.mod_list.insert(o.id.clone(), o.version.clone());
+            })
+            .reduce(PluginOutput::combine)
+        {
             self.tiles = summarized.tiles.finish(&mut hasher);
             self.walls = summarized.walls.finish(&mut hasher);
             self.entities = summarized.entities.finish(&mut hasher);
@@ -40,7 +51,7 @@ impl Rustaria {
     }
 }
 
-pub type ModList = Vec<(String, String)>;
+pub type ModList = HashMap<String, String>;
 
 // impl<'lua> Rustaria<'lua> {
 //     pub fn new(plugins_dir: &Path, lua: &'lua LuaRuntime) -> Result<Rustaria<'lua>> {
