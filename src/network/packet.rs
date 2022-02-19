@@ -1,7 +1,6 @@
 use crate::api::ModList;
 use crate::chunk::Chunk;
 use lz4::{Decoder, EncoderBuilder};
-use std::collections::HashMap;
 use std::io::Read;
 
 use crate::api::Rustaria;

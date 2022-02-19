@@ -19,7 +19,7 @@ use super::{
 pub struct Loader;
 
 impl Loader {
-    pub fn init<'lua>(&self, lua: &'lua Lua, plugins: &[Plugin<'lua>]) -> LuaResult<PluginOutputs> {
+    pub fn init<'lua>(&mut self, lua: &'lua Lua, plugins: &[Plugin<'lua>]) -> LuaResult<PluginOutputs> {
         plugins.iter().map(|p| Self::plugin_exec(lua, p)).collect()
     }
     fn plugin_exec<'lua>(lua: &'lua Lua, plugin: &'lua Plugin) -> LuaResult<PluginOutput> {

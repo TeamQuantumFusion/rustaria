@@ -6,7 +6,7 @@ impl Commands {
     pub fn new() -> Self {
         Self {}
     }
-    pub fn exec(cmd: &str) -> Option<Command> {
+    pub fn exec(&self, cmd: &str) -> Option<Command> {
         // TODO(leocth): replace with actual logic
         match cmd {
             "reload" => Some(Command::Reload),

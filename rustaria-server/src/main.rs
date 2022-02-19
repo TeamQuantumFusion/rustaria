@@ -51,7 +51,7 @@ fn main() -> Result<()> {
         let stdin = std::io::stdin();
         stdin.read_line(&mut cmd)?;
 
-        match Commands::exec(cmd.trim()) {
+        match cmds.exec(cmd.trim()) {
             Some(cmd) => select! {
                 send(tx, cmd) -> res => {
                     trace!(?res);
@@ -70,17 +70,11 @@ fn main() -> Result<()> {
 fn server_loop(run_dir: &Path, config: &Config, rx: Receiver<Command>) -> Result<()> {
     let lua = Lua::new();
 
-    let plugins_dir = run_dir.join("plugins");
-    info!("Scanning for plugins in directory {plugins_dir:?}");
-    let plugins = Plugins::load(&plugins_dir, &lua)?;
-
-    info!("Executing plugins");
-    let loader = Loader::default();
-    let outputs = loader.init(&lua, &plugins)?;
-
-    info!("Initializing API");
+    let mut loader = Loader::default();
     let mut api = Rustaria::default();
-    api.reload(outputs);
+
+    let plugins_dir = run_dir.join("plugins");
+    reload_plugins(&lua, &plugins_dir, &mut loader, &mut api)?;
 
     let air_tile = api
         .tiles
@@ -106,11 +100,26 @@ fn server_loop(run_dir: &Path, config: &Config, rx: Receiver<Command>) -> Result
         while let Ok(cmd) = rx.try_recv() {
             match cmd {
                 Command::Reload => {
-                    // lua.reload();
-                    // api.reload(&plugin_dir, &lua)?;
+                    info!("Reloading plugins");
+                    reload_plugins(&lua, &plugins_dir, &mut loader, &mut api)?;
                 }
             }
         }
         server.tick(&api)?;
     }
+}
+
+fn reload_plugins(
+    lua: &Lua,
+    plugins_dir: &Path,
+    loader: &mut Loader,
+    api: &mut Rustaria,
+) -> Result<()> {
+    info!("Scanning for plugins in directory {plugins_dir:?}");
+    let plugins = Plugins::load(&plugins_dir, &lua)?;
+    info!("Executing plugins");
+    let outputs = loader.init(&lua, &plugins)?;
+    info!("Initializing API");
+    api.reload(outputs);
+    Ok(())
 }
