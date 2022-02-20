@@ -1,0 +1,13 @@
+[package]
+name = "opengl-render"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+opengl = { path = "opengl-raw" }
+glfw = "0.43.0"
+tracing = "0.1.29"
+image = "0.24.0"
+rectangle-pack = "0.4.2"
