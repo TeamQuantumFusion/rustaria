@@ -1,6 +1,7 @@
 use glfw::{Glfw, Window};
 
 use opengl_render::{ClearCommand, ClearDescriptor, OpenGlBackend};
+use rustaria::api::Rustaria;
 
 use crate::render::world_render::WorldRenderer;
 
@@ -15,7 +16,7 @@ pub struct RenderHandler {
 }
 
 impl RenderHandler {
-    pub fn new(glfw: &Glfw, window: &Window) -> RenderHandler {
+    pub fn new(rsa: &Rustaria, glfw: &Glfw, window: &Window) -> eyre::Result<RenderHandler> {
         let size = window.get_size();
         let mut opengl = OpenGlBackend::new((size.0 as u32, size.1 as u32), |procname| {
             glfw.get_proc_address_raw(procname)
@@ -23,12 +24,12 @@ impl RenderHandler {
         opengl.set_clear_command(ClearCommand {
             commands: vec![ClearDescriptor::Color(0.2, 0.2, 0.2, 1.0)],
         });
-        let renderer = WorldRenderer::new(&mut opengl, window);
-        RenderHandler {
-            backend: opengl,
-            world_renderer: renderer,
-            wireframe: false,
-        }
+        let renderer = WorldRenderer::new(rsa,&mut opengl, window)?;
+       Ok( RenderHandler {
+           backend: opengl,
+           world_renderer: renderer,
+           wireframe: false,
+       })
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {

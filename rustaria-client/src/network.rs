@@ -6,24 +6,20 @@ use eyre::{bail, eyre};
 use laminar::{Packet, Socket, SocketEvent};
 use tracing::{debug, warn};
 
+use rustaria::{KERNEL_VERSION, Server};
 use rustaria::api::Rustaria;
 use rustaria::api::RustariaHash;
+use rustaria::network::{create_socket, PacketDescriptor, poll_once, poll_packet};
 use rustaria::network::packet::{ClientPacket, ModListPacket, ServerPacket};
-use rustaria::network::{create_socket, poll_once, poll_packet, PacketDescriptor};
-use rustaria::{Server, KERNEL_VERSION};
+use rustaria::network::server::ServerNetwork;
+use rustaria::world::World;
 
 // Client
 pub trait ServerCom {
-    fn tick(&mut self);
+    fn tick(&mut self, rsa: &Rustaria) -> eyre::Result<()>;
     fn send(&mut self, packet: ClientPacket, desc: PacketDescriptor) -> eyre::Result<()>;
     fn receive(&mut self) -> Vec<ServerPacket>;
 }
-
-pub struct Client<C: ServerCom> {
-    pub network: C,
-}
-
-impl<C: ServerCom> Client<C> {}
 
 pub enum ConnectionError {
     InvalidHandshake,
@@ -31,18 +27,18 @@ pub enum ConnectionError {
 }
 
 // Server Com Implementations
-pub struct RemoteServerCom {
+pub struct RemoteServer {
     socket: Socket,
     server_addr: SocketAddr,
     shutdown: bool,
 }
 
-impl RemoteServerCom {
+impl RemoteServer {
     pub fn new(
         api: &Rustaria,
         server_addr: SocketAddr,
         self_address: SocketAddr,
-    ) -> eyre::Result<RemoteServerCom> {
+    ) -> eyre::Result<RemoteServer> {
         let mut socket = create_socket(self_address);
 
         debug!("{server_addr} RC: Connecting");
@@ -96,7 +92,7 @@ impl RemoteServerCom {
         }
 
         debug!("{server_addr} RC: Connected");
-        Ok(RemoteServerCom {
+        Ok(RemoteServer {
             socket,
             server_addr,
             shutdown: false,
@@ -104,9 +100,10 @@ impl RemoteServerCom {
     }
 }
 
-impl ServerCom for RemoteServerCom {
-    fn tick(&mut self) {
+impl ServerCom for RemoteServer {
+    fn tick(&mut self, _: &Rustaria) -> eyre::Result<()> {
         self.socket.manual_poll(Instant::now());
+        Ok(())
     }
 
     fn send(&mut self, packet: ClientPacket, desc: PacketDescriptor) -> eyre::Result<()> {
@@ -145,27 +142,31 @@ impl ServerCom for RemoteServerCom {
     }
 }
 
-pub struct LocalServerCom {
+pub struct IntegratedServer {
     to_server: Sender<ClientPacket>,
     from_server: Receiver<ServerPacket>,
+    server: Server,
 }
 
-impl LocalServerCom {
-    pub fn new(server: &mut Server) -> LocalServerCom {
+impl IntegratedServer {
+    pub fn new(world: World, remote: Option<SocketAddr>) -> IntegratedServer {
         let (to_client, from_server) = crossbeam::channel::unbounded();
         let (to_server, from_client) = crossbeam::channel::unbounded();
         // todo dont unwrap
+
+        let mut server = Server::new(world, ServerNetwork::new(remote, true));
         server.network.join_local(to_client, from_client).unwrap();
-        LocalServerCom {
+        IntegratedServer {
             to_server,
             from_server,
+            server,
         }
     }
 }
 
-impl ServerCom for LocalServerCom {
-    fn tick(&mut self) {
-        // beg
+impl ServerCom for IntegratedServer {
+    fn tick(&mut self, rustaria: &Rustaria) -> eyre::Result<()> {
+        self.server.tick(rustaria)
     }
 
     fn send(&mut self, packet: ClientPacket, _desc: PacketDescriptor) -> eyre::Result<()> {

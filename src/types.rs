@@ -100,7 +100,9 @@ impl ChunkPos {
     }
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(
+Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, serde::Serialize, serde::Deserialize,
+)]
 pub struct ChunkSubPos {
     pub x: u8,
     pub y: u8,
@@ -143,7 +145,9 @@ impl ChunkSubPos {
     }
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(
+Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, serde::Serialize, serde::Deserialize,
+)]
 pub struct TilePos {
     chunk: ChunkPos,
     sub: ChunkSubPos,

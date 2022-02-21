@@ -22,9 +22,9 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn new(api: &Rustaria, default_tile: RawId, default_wall: RawId) -> Option<Chunk> {
-        let tile = api.tiles.get_from_id(default_tile)?;
-        let wall = api.walls.get_from_id(default_wall)?;
+    pub fn new(rsa: &Rustaria, default_tile: RawId, default_wall: RawId) -> Option<Chunk> {
+        let tile = rsa.tiles.get_from_id(default_tile)?;
+        let wall = rsa.walls.get_from_id(default_wall)?;
         Some(Chunk {
             tiles: ChunkGrid::new(tile.create(default_tile)),
             walls: ChunkGrid::new(wall.create(default_wall)),

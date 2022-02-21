@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use mlua::prelude::*;
 use serde::de::DeserializeOwned;
@@ -8,6 +9,7 @@ use crate::{
     blake3::Hasher,
     registry::{Registry, Tag},
 };
+use crate::api::plugin::ArchivePath;
 
 use super::{
     log, meta,
@@ -19,10 +21,12 @@ use super::{
 pub struct Loader;
 
 impl Loader {
-    pub fn init<'lua>(&mut self, lua: &'lua Lua, plugins: &[Plugin<'lua>]) -> LuaResult<PluginOutputs> {
-        plugins.iter().map(|p| Self::plugin_exec(lua, p)).collect()
+    pub fn init(&mut self, lua: &Lua, plugins: &HashMap<String, Plugin>) -> eyre::Result<PluginOutputs> {
+        plugins.iter().map(|p| Self::plugin_exec(lua, p.1)).collect()
     }
-    fn plugin_exec<'lua>(lua: &'lua Lua, plugin: &'lua Plugin) -> LuaResult<PluginOutput> {
+
+    fn plugin_exec(lua: &Lua, plugin: &Plugin) -> eyre::Result<PluginOutput> {
+        debug!(target: "engine", "Initializing {}", plugin.manifest.plugin_id);
         // setup
         let package: LuaTable = lua.globals().get("package")?;
         let preload: LuaTable = package.get("preload")?;
@@ -39,7 +43,8 @@ impl Loader {
         preload.set("log", lua.create_function(log::package)?)?;
         preload.set("meta", lua.create_function(meta::package)?)?;
 
-        plugin.init.call(())?;
+        let source = plugin.archive.get_asset(&ArchivePath::Src(PathBuf::from(plugin.manifest.init_path.clone())))?;
+        lua.load(source).call(())?;
 
         let globals = lua.globals();
         Ok(PluginOutput {

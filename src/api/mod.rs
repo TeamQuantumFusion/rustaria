@@ -1,13 +1,18 @@
 use std::{collections::HashMap, fmt::Debug};
+use std::path::Path;
+
+use mlua::prelude::*;
+use tracing::info;
 
 use crate::{
     blake3::{Hasher, OUT_LEN},
     registry::Registry,
 };
-use mlua::prelude::*;
+use crate::api::loader::Loader;
+use crate::api::plugin::Plugins;
 
 use self::{
-    loader::{PluginInput, PluginOutput, PluginOutputs},
+    loader::{PluginInput, PluginOutput},
     prototypes::{EntityPrototype, TilePrototype, WallPrototype},
 };
 
@@ -19,9 +24,11 @@ pub mod plugin;
 pub mod prototypes;
 pub mod types;
 
-#[derive(Default)]
 pub struct Rustaria {
     pub mod_list: ModList,
+
+    pub lua: Lua,
+    pub plugins: Plugins,
 
     pub hash: RustariaHash,
     pub tiles: Registry<TilePrototype>,
@@ -30,7 +37,24 @@ pub struct Rustaria {
 }
 
 impl Rustaria {
-    pub fn reload(&mut self, outputs: PluginOutputs) {
+    pub fn new(plugins_dir: &Path) -> eyre::Result<Rustaria> {
+        Ok(Rustaria {
+            lua: Lua::new(),
+            plugins: Plugins::load(plugins_dir)?,
+            mod_list: Default::default(),
+            hash: Default::default(),
+            tiles: Default::default(),
+            walls: Default::default(),
+            entities: Default::default(),
+        })
+    }
+
+    pub fn reload(&mut self) -> eyre::Result<()> {
+        info!(target: "engine", "Reloading {} plugins.", self.plugins.len());
+        let mut loader = Loader::default();
+        let outputs = loader.init(&self.lua, &self.plugins)?;
+
+
         self.mod_list.clear();
         self.tiles.clear();
         self.walls.clear();
@@ -48,6 +72,8 @@ impl Rustaria {
             self.walls = summarized.walls.finish(&mut hasher);
             self.entities = summarized.entities.finish(&mut hasher);
         }
+
+        Ok(())
     }
 }
 

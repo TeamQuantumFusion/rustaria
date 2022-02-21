@@ -4,8 +4,8 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn tick(&mut self) {
-        self.pos.0 += self.vel.0;
-        self.pos.1 += self.vel.1;
+    pub fn tick(&mut self, delta: f32) {
+        self.pos.0 += self.vel.0 * delta;
+        self.pos.1 += self.vel.1 * delta;
     }
 }

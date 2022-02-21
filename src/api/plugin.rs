@@ -1,6 +1,3 @@
-use eyre::{bail, eyre, Result};
-use mlua::prelude::*;
-use serde::Deserialize;
 use std::{
     collections::HashMap,
     ffi::OsStr,
@@ -9,19 +6,23 @@ use std::{
     ops::Deref,
     path::{Path, PathBuf},
 };
+
+use eyre::{bail, eyre, Result};
+use mlua::prelude::*;
+use serde::Deserialize;
 use tracing::{info, warn};
 use zip::ZipArchive;
 
 #[derive(Debug, Clone, Default)]
-pub struct Plugins<'lua>(Vec<Plugin<'lua>>);
+pub struct Plugins(HashMap<String, Plugin>);
 
-impl<'lua> Plugins<'lua> {
-    pub fn load(plugins_dir: &Path, lua: &'lua Lua) -> Result<Self> {
+impl Plugins {
+    pub fn load(plugins_dir: &Path) -> Result<Self> {
         let plugins = match std::fs::read_dir(&plugins_dir) {
             Ok(read_dir) => {
                 read_dir.filter_map(|entry| {
                     match entry {
-                        Ok(entry) => Self::process_file(entry, lua),
+                        Ok(entry) => Self::process_file(entry),
                         Err(e) => {
                             warn!("Unable to access file `{e}` for reading! Permissions are perhaps insufficient!");
                             None
@@ -37,16 +38,16 @@ impl<'lua> Plugins<'lua> {
             }
         };
         info!("Found and loaded {} plugin(s)", plugins.len());
-        Ok(Plugins(plugins))
+        Ok(Plugins(HashMap::from_iter(plugins.into_iter())))
     }
 
-    fn process_file(entry: DirEntry, lua: &'lua Lua) -> Option<Plugin<'lua>> {
+    fn process_file(entry: DirEntry) -> Option<(String, Plugin)> {
         let path = entry.path();
 
         // only look at zip files
         if let Some("zip") = path.extension().and_then(OsStr::to_str) {
-            match Self::load_plugin(&path, lua) {
-                Ok(plugin) => return Some(plugin),
+            match Self::load_plugin(&path) {
+                Ok(plugin) => return Some((plugin.manifest.plugin_id.clone(), plugin)),
                 Err(e) => warn!(
                     "Error loading plugin [{}]: {e}",
                     file_name_or_unknown(&path)
@@ -56,16 +57,13 @@ impl<'lua> Plugins<'lua> {
         None
     }
 
-    fn load_plugin(path: &Path, lua: &'lua Lua) -> Result<Plugin<'lua>> {
+    fn load_plugin(path: &Path) -> Result<Plugin> {
         let mut archive = PluginArchive::new(path)?;
         archive.enable_reading()?;
 
         let data = archive.get_asset(&ArchivePath::Manifest)?;
         let manifest: Manifest = serde_json::from_reader(data.as_slice())?;
 
-        let source =
-            archive.get_asset(&ArchivePath::Src(PathBuf::from(manifest.init_path.clone())))?;
-        let init = lua.load(source).into_function()?;
         info!(
             "Loaded plugin {} v{} from [{}]",
             manifest.plugin_id,
@@ -75,13 +73,12 @@ impl<'lua> Plugins<'lua> {
         Ok(Plugin {
             archive,
             manifest,
-            init,
         })
     }
 }
 
-impl<'lua> Deref for Plugins<'lua> {
-    type Target = Vec<Plugin<'lua>>;
+impl Deref for Plugins {
+    type Target = HashMap<String, Plugin>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -93,12 +90,13 @@ fn file_name_or_unknown(path: &Path) -> &str {
         .and_then(OsStr::to_str)
         .unwrap_or("<unknown>")
 }
+
 #[derive(Debug, Clone)]
-pub struct Plugin<'lua> {
+pub struct Plugin {
     pub archive: PluginArchive,
     pub manifest: Manifest,
-    pub init: LuaFunction<'lua>,
 }
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Manifest {
@@ -106,6 +104,7 @@ pub struct Manifest {
     pub version: String,
     pub init_path: String,
 }
+
 #[derive(Debug, Clone)]
 pub struct PluginArchive {
     path: PathBuf,

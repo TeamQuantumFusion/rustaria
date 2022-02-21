@@ -116,9 +116,9 @@ fn reload_plugins(
     api: &mut Rustaria,
 ) -> Result<()> {
     info!("Scanning for plugins in directory {plugins_dir:?}");
-    let plugins = Plugins::load(&plugins_dir, &lua)?;
+    let plugins = Plugins::load(plugins_dir)?;
     info!("Executing plugins");
-    let outputs = loader.init(&lua, &plugins)?;
+    let outputs = loader.init(lua, &plugins)?;
     info!("Initializing API");
     api.reload(outputs);
     Ok(())

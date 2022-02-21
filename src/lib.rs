@@ -80,7 +80,7 @@ impl Server {
                 ClientPacket::ILoveYou => {}
                 ClientPacket::RequestChunk(pos) => {
                     if let Some(chunk) = self.world.get_chunk(pos) {
-                        match ChunkPacket::new(chunk) {
+                        match ChunkPacket::new(pos, chunk) {
                             Ok(packet) => {
                                 self.network
                                     .send(

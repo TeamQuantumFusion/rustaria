@@ -64,8 +64,9 @@ use std::{fmt::Display, str::FromStr};
 
 use mlua::prelude::*;
 use serde::{Deserialize, Deserializer};
+use serde::de::{EnumAccess, Error, MapAccess, SeqAccess};
 use thiserror::Error;
-use tracing::debug;
+use tracing::{debug, info};
 
 use crate::blake3::Hasher;
 
@@ -132,6 +133,7 @@ impl FromStr for Tag {
     type Err = ParseTagError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        info!("doiing!");
         match s.split_once(':') {
             Some((plugin_id, name)) => Ok(Self {
                 plugin_id: plugin_id.into(),
@@ -186,6 +188,10 @@ impl<'de> Deserialize<'de> for Tag {
             where
                 E: de::Error,
             {
+                Tag::from_str(v).map_err(de::Error::custom)
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> where E: Error {
                 Tag::from_str(v).map_err(de::Error::custom)
             }
         }
