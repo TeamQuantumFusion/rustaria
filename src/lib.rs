@@ -10,7 +10,6 @@ use tracing_error::ErrorLayer;
 use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::EnvFilter;
 
 use crate::api::Rustaria;
 use crate::network::packet::{ChunkPacket, ClientPacket, ServerPacket};
@@ -49,20 +48,9 @@ pub fn init(verbosity: Verbosity) -> eyre::Result<()> {
         .compact();
     let fmt_layer = tracing_subscriber::fmt::layer().event_format(format);
 
-    let filter_layer = EnvFilter::try_from_default_env().or_else(|_| {
-        EnvFilter::try_new(match verbosity {
-            Verbosity::Normal => "info,wgpu_hal=warn,wgpu_core=warn",
-            Verbosity::Verbose => "debug,wgpu_hal=warn,wgpu_core=warn,naga=info",
-            Verbosity::VeryVerbose => {
-                "trace,wgpu_core::present=info,wgpu_core::device=info,wgpu_hal=info,naga=info"
-            }
-            Verbosity::VeryVeryVerbose => "trace",
-        })
-    })?;
 
     tracing_subscriber::registry()
         .with(fmt_layer)
-        .with(filter_layer)
         .with(ErrorLayer::default())
         .init();
 

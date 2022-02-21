@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 rustaria = { version = "*", path = "../" }
-opengl-render = { path  = "./opengl-render"}
+opengl-render = { path = "./opengl-render" }
 glfw = "0.43.0"
 
 mlua = { version = "0.7.1", features = ["lua54", "vendored"] }
@@ -15,7 +15,7 @@ eyre = "0.6.5"
 tracing = "0.1.29"
 tracing-futures = "0.2.5"
 bytemuck = { version = "1.7.3", features = ["derive"] }
-image = "0.24.0"
+image = { version = "0.24.0", default-features = false, features = ["png"] }
 rectangle-pack = "0.4.2"
 structopt = "0.3.25"
 laminar = "0.5.0"

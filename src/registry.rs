@@ -212,7 +212,7 @@ impl<T> RegistryBuilder<T> {
     }
 
     pub fn register(mut self, tag: Tag, element: T) -> Self {
-        debug!("Registered '{tag}' registry '{}'");
+        debug!("Registered '{tag}' registry '{}'", self.name);
         self.data.push((tag, element));
         self
     }
