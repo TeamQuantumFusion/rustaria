@@ -17,6 +17,17 @@ pub enum BlastResistance {
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
+pub enum ConnectionType {
+    // air
+    Isolated,
+    // tiles
+    Connected,
+    // dirt
+    Transitional
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum BreakResistance {
     Any,
     Indestructible,

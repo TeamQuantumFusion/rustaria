@@ -20,49 +20,16 @@ use rustaria::registry::RawId;
 use rustaria::types::{CHUNK_SIZE, ChunkPos};
 
 use crate::render::texture_format::TileImagePos;
+use crate::render::world_mesher::WorldMeshHandler;
 
 #[repr(C)]
 pub struct QuadImageVertex {
-    pos: [f32; 2],
-    pos_texture: [f32; 2],
-}
-
-impl QuadImageVertex {
-    pub fn quad(
-        atlas: &Atlas<AtlasId>,
-        data: &mut Vec<QuadImageVertex>,
-        x: f32,
-        y: f32,
-        id: &AtlasId,
-        ty: TileImagePos,
-    ) {
-        let loc = atlas.lookup.get(id).unwrap_or_else(|| atlas.lookup.get(&AtlasId::Missing).unwrap());
-
-        let tile_size = loc.height / 4.0;
-        let (o_x, o_y) = ty.get_tex_pos();
-        let (t_x, t_y) = (loc.x + (o_x * tile_size), loc.y + (o_y * tile_size));
-        // todo custom variant amounts. currently its forced to be 3
-        data.push(QuadImageVertex {
-            pos: [(x + 1.0), (y + 1.0)],
-            pos_texture: [t_x + tile_size, t_y],
-        });
-        data.push(QuadImageVertex {
-            pos: [(x + 1.0), (y + 0.0)],
-            pos_texture: [t_x + tile_size, t_y + tile_size],
-        });
-        data.push(QuadImageVertex {
-            pos: [(x + 0.0) , (y + 0.0)],
-            pos_texture: [t_x, t_y + tile_size],
-        });
-        data.push(QuadImageVertex {
-            pos: [(x + 0.0) , (y + 1.0) ],
-            pos_texture: [t_x, t_y],
-        });
-    }
+    pub pos: [f32; 2],
+    pub pos_texture: [f32; 2],
 }
 
 pub struct WorldRenderer {
-    dirty_mesh: bool,
+    mesher: WorldMeshHandler,
 
     qi_atlas: Atlas<AtlasId>,
     qi_u_atlas_sampler: Uniform<Sampler2d>,
@@ -126,7 +93,7 @@ impl WorldRenderer {
         screen_y_ratio.set_value(width as f32 / height as f32);
         zoom.set_value(24f32);
         Ok(WorldRenderer {
-            dirty_mesh: false,
+            mesher: WorldMeshHandler::new(rsa, &atlas)?,
             qi_atlas: atlas,
             qi_u_atlas_sampler: uniform,
             qi_atlas_sampler: sampler,
@@ -140,31 +107,15 @@ impl WorldRenderer {
         })
     }
 
-    pub fn build_mesh(&mut self, rsa: &Rustaria, chunks: &HashMap<ChunkPos, Chunk>) -> eyre::Result<()> {
-        let mut data = Vec::new();
+    pub fn submit_chunk(&mut self, pos: ChunkPos, chunk: &Chunk) {
+        self.mesher.add_chunk(pos, chunk);
+    }
+
+    pub fn build_mesh(&mut self) -> eyre::Result<()> {
         debug!("Rebuilding world mesh.");
+        let data = self.mesher.build();
 
-        let mut tiles = 0;
-        for (pos, chunk) in chunks {
-            for (y, row) in chunk.tiles.grid.iter().enumerate() {
-                for (x, tile) in row.iter().enumerate() {
-                    // Check if it has a sprite. If not you dont render it.
-                    if let Some(prot) = rsa.tiles.get_from_id(tile.id) {
-                        if prot.sprite.is_some() {
-                            QuadImageVertex::quad(&self.qi_atlas,
-                                                  &mut data,
-                                                  (pos.x as f32 * CHUNK_SIZE as f32) + x as f32,
-                                                  (pos.y as f32 * CHUNK_SIZE as f32) + y as f32,
-                                                  &AtlasId::Tile(tile.id),
-                                                  TileImagePos::Solid);
-                            tiles += 1;
-                        }
-                    }
-                }
-            }
-        }
-
-        self.qi_index_buffer.update_index(4, tiles);
+        self.qi_index_buffer.update_index(4, data.len() / 4);
         self.qi_buffer.upload(&data, BufferUsage::Static, BufferAccess::Draw);
         Ok(())
     }

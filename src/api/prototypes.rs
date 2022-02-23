@@ -21,8 +21,8 @@ pub struct TilePrototype {
     // name: LanguageKey,
     #[serde(default)]
     pub sprite: Option<Tag>,
-    #[serde(default)]
-    pub transitional: bool,
+    #[serde(default = "TilePrototype::default_connection")]
+    pub connection: ConnectionType,
     #[serde(default = "TilePrototype::default_collision")]
     pub collision: LockableValue<bool>,
     #[serde(default = "TilePrototype::default_opaque")]
@@ -35,6 +35,9 @@ pub struct TilePrototype {
     pub tile_type: TileType<Tag>,
 }
 impl TilePrototype {
+    fn default_connection() -> ConnectionType {
+        ConnectionType::Connected
+    }
     fn default_collision() -> LockableValue<bool> {
         LockableValue::Dynamic(true)
     }

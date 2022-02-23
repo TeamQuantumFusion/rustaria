@@ -1,13 +1,14 @@
 #![allow(unused)] // alpha, remove this when you're done - leocth
 
 use crate::api::Rustaria;
-use crate::api::prototypes::Prototype;
+use crate::api::prototypes::{Prototype, TilePrototype};
 use crate::chunk::tile::Tile;
 use crate::chunk::wall::Wall;
 use crate::registry::{RawId, Tag};
 use crate::types::{ChunkSubPos, Direction, CHUNK_SIZE};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use crate::api::types::ConnectionType;
 
 pub mod fluid;
 pub mod foliage;
@@ -15,7 +16,7 @@ pub mod tile;
 pub mod tree;
 pub mod wall;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Chunk {
     pub tiles: ChunkGrid<Tile>,
     pub walls: ChunkGrid<Wall>,
@@ -73,31 +74,6 @@ where
         );
 
         &mut self.grid[pos.y as usize][pos.x as usize]
-    }
-}
-
-#[derive(Copy, Clone)]
-pub enum Neighbor {
-    Solid,
-    Air,
-}
-
-pub trait NeighborType<V>
-where
-    V: Clone + Copy,
-{
-    fn new(value: &V) -> Self;
-}
-
-impl NeighborType<Tile> for Neighbor {
-    fn new(value: &Tile) -> Self {
-        Neighbor::Solid
-    }
-}
-
-impl NeighborType<Wall> for Neighbor {
-    fn new(value: &Wall) -> Self {
-        Neighbor::Solid
     }
 }
 

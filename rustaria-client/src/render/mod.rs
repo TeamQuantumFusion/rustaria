@@ -7,6 +7,7 @@ use crate::render::world_render::WorldRenderer;
 
 mod texture_format;
 mod world_render;
+mod world_mesher;
 
 pub struct RenderHandler {
     backend: OpenGlBackend,

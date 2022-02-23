@@ -8,13 +8,14 @@ use eyre::Result;
 use glfw::{Action, Context, Glfw, Key, Modifiers, SwapInterval, Window, WindowEvent};
 use structopt::StructOpt;
 use tracing::{debug, error, info};
+use rustaria::api::prototypes::Prototype;
 
 use rustaria::api::Rustaria;
 use rustaria::chunk::Chunk;
 use rustaria::network::{PacketDescriptor, PacketOrder, PacketPriority};
 use rustaria::network::packet::{ChunkPacket, ClientPacket, ServerPacket};
 use rustaria::player::Player;
-use rustaria::types::{ChunkPos, TilePos};
+use rustaria::types::{CHUNK_SIZE, ChunkPos, TilePos};
 use rustaria::UPS;
 use rustaria::world::World;
 
@@ -113,16 +114,30 @@ impl RustariaClient {
         // World creation
         let air_tile = rsa
             .tiles
+            .get_id_from_tag(&"rustaria:air".parse()?)
+            .expect("Could not find air tile");
+        let dirt_tile = rsa
+            .tiles
             .get_id_from_tag(&"rustaria:dirt".parse()?)
             .expect("Could not find air tile");
         let air_wall = rsa
             .walls
             .get_id_from_tag(&"rustaria:air".parse()?)
             .expect("Could not find air wall");
-        let empty_chunk = Chunk::new(&rsa, air_tile, air_wall).expect("Could not create empty chunk");
+        let mut chunk = Chunk::new(&rsa, air_tile, air_wall).expect("Could not create empty chunk");
+
+        let dirt_prot = rsa.tiles.get_from_id(dirt_tile).unwrap();
+        for y in 0..CHUNK_SIZE {
+            for x in 0..CHUNK_SIZE {
+                if (y ^ x) % 3 == 0 {
+                    chunk.tiles.grid[y][x] = dirt_prot.create(dirt_tile);
+                }
+            }
+        }
+
         let world = World::new(
             (2, 2),
-            vec![empty_chunk, empty_chunk, empty_chunk, empty_chunk],
+            vec![chunk.clone(), chunk.clone(), chunk.clone(), chunk.clone()],
         )?;
 
         let integrated_server = IntegratedServer::new(world, None);
@@ -182,6 +197,7 @@ impl RustariaClient {
                     ServerPacket::Chunk { data } => {
                         match data.export() {
                             Ok((pos, chunk)) => {
+                                self.render.world_renderer.submit_chunk(pos, &chunk);
                                 self.chunks.insert(pos, chunk);
                                 self.chunks_dirty = true;
                             }
@@ -228,7 +244,7 @@ impl RustariaClient {
         }
 
         if self.chunks_dirty {
-            self.render.world_renderer.build_mesh(&self.rsa, &self.chunks).unwrap();
+            self.render.world_renderer.build_mesh().unwrap();
             self.chunks_dirty = false;
         }
 

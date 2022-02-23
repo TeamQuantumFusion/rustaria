@@ -9,7 +9,7 @@ pub trait Offset {
 }
 
 // ======================================== DIRECTION ========================================
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum Direction {
     Top,
     Left,
@@ -56,18 +56,18 @@ impl Direction {
 }
 
 impl Offset for Direction {
-    fn offset_y(self) -> i8 {
+    fn offset_x(self) -> i8 {
         match self {
-            Direction::Top => 1,
-            Direction::Bottom => -1,
+            Direction::Left => -1,
+            Direction::Right => 1,
             _ => 0,
         }
     }
 
-    fn offset_x(self) -> i8 {
+    fn offset_y(self) -> i8 {
         match self {
-            Direction::Left => 1,
-            Direction::Right => -1,
+            Direction::Top => 1,
+            Direction::Bottom => -1,
             _ => 0,
         }
     }

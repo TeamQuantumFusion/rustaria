@@ -135,6 +135,7 @@ pub struct Atlas<T: Hash + Ord> {
     pub lookup: HashMap<T, AtlasLocation>,
 }
 
+#[derive(Copy, Clone)]
 pub struct AtlasLocation {
     pub x: f32,
     pub y: f32,
