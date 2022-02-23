@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::time::Instant;
+
 use tracing::info;
 
 use opengl_render::atlas::{Atlas, AtlasLocation};
@@ -57,15 +58,12 @@ impl WorldMeshHandler {
     pub fn new(rsa: &Rustaria, atlas: &Atlas<AtlasId>) -> eyre::Result<WorldMeshHandler> {
         let mut lookup = Vec::new();
         for (id, prot) in rsa.tiles.entries().iter().enumerate() {
-            if prot.sprite.is_some() {
-                let sprite = atlas.lookup.get(&AtlasId::Tile(id as u32)).unwrap_or_else(|| atlas.lookup.get(&AtlasId::Missing).unwrap());
-                lookup.push(Option::Some(RenderTile {
+            lookup.push(prot.sprite.is_some().then(||
+                RenderTile {
                     ty: prot.connection,
-                    sprite: *sprite,
-                }))
-            } else {
-                lookup.push(Option::None)
-            }
+                    sprite: *atlas.lookup.get(&AtlasId::Tile(id as u32)).unwrap_or_else(|| atlas.lookup.get(&AtlasId::Missing).unwrap()),
+                }
+            ));
         }
         Ok(WorldMeshHandler {
             tile_lookup: lookup,
@@ -74,13 +72,11 @@ impl WorldMeshHandler {
     }
 
     pub fn add_chunk(&mut self, pos: ChunkPos, chunk: &Chunk) {
-        let start = Instant::now();
         let mut render_chunk = RenderChunk::new(chunk, self);
 
         render_chunk.compile_internal();
         self.compile_borders(pos, &mut render_chunk);
 
-        info!("Compiled chunk borders in {}ms", start.elapsed().as_micros() as f32 / 1000.0);
         self.chunks.insert(pos, render_chunk);
     }
 
@@ -88,34 +84,28 @@ impl WorldMeshHandler {
         for offset in Direction::all() {
             if let Some(neighbor_pos) = pos.offset(offset) {
                 if let Some(neighbor) = self.chunks.get_mut(&neighbor_pos) {
-                    let pos = ChunkSubPos {
-                        x: ((CHUNK_SIZE - 1) * (offset.offset_y().abs() as usize)) as u8,
-                        y: ((CHUNK_SIZE - 1) * (offset.offset_x().abs() as usize)) as u8,
-                    };
+                    let y_offset = offset.offset_y().max(0) as usize * (CHUNK_SIZE - 1);
+                    let x_offset = offset.offset_x().max(0) as usize * (CHUNK_SIZE - 1);
+                    let y_length = (CHUNK_SIZE - 1) * (offset.offset_x().abs() as usize);
+                    let x_length = (CHUNK_SIZE - 1) * (offset.offset_y().abs() as usize);
+                    for y in y_offset..=y_length + y_offset {
+                        let row = &chunk.tile.grid[y];
+                        // clippy having a stroke
+                        #[allow(clippy::needless_range_loop)]
+                        for x in x_offset..=x_length + x_offset {
+                            let neighbor_sub_pos = ChunkSubPos { x: x as u8, y: y as u8 }.overflowing_offset(offset);
 
-                    let y_offset = offset.offset_y().max(0) as u8 * (CHUNK_SIZE as u8 - 1);
-                    let x_offset = offset.offset_x().max(0) as u8 * (CHUNK_SIZE as u8 - 1);
-                    for y in 0..=pos.y {
-                        let y = y + y_offset;
-                        let row = &chunk.tile.grid[y as usize];
-                        for x in 0..=pos.x {
-                            let x = x + x_offset;
-                            let neighbor_sub_pos = ChunkSubPos { x, y }.overflowing_offset(offset);
-                            let neighbor_tile = neighbor.tile.get(neighbor_sub_pos);
-                            if let Some(tile) = &row[x as usize] {
-                                if let Some(neighbor_tile) = neighbor_tile {
+                            let mut ty = ConnectionType::Isolated;
+                            if let Some(tile) = &row[x] {
+                                if let Some(neighbor_tile) = neighbor.tile.get(neighbor_sub_pos) {
                                     if let (ConnectionType::Connected, ConnectionType::Connected) = (tile.ty, neighbor_tile.ty) {
-                                        chunk.tile_neighbor.grid[y as usize][x as usize].set(offset, ConnectionType::Connected);
-                                        neighbor.tile_neighbor.get_mut(neighbor_sub_pos).set(offset.flip(), ConnectionType::Connected);
-                                        // get out of here else isolated will run
-                                        continue;
+                                        ty = ConnectionType::Connected;
                                     }
                                 }
                             }
 
-                            // if fail
-                            chunk.tile_neighbor.grid[y as usize][x as usize].set(offset, ConnectionType::Isolated);
-                            neighbor.tile_neighbor.get_mut(neighbor_sub_pos).set(offset.flip(), ConnectionType::Isolated);
+                            chunk.tile_neighbor.grid[y][x].set(offset, ty);
+                            neighbor.tile_neighbor.get_mut(neighbor_sub_pos).set(offset.flip(), ty);
                         }
                     }
                 }
@@ -186,21 +176,13 @@ impl RenderChunk {
     }
 
     fn compile_internal(&mut self) {
-        // compile to every top right neighbor
         for y in 0..CHUNK_SIZE {
             let row = &self.tile.grid[y];
-            // pretty lazy approach to not get index out of bounds but whatever.
-            let top_row = if y != CHUNK_SIZE - 1 {
-                &self.tile.grid[y + 1]
-            } else {
-                row
-            };
             for x in 0..CHUNK_SIZE {
                 if let Some(tile) = &row[x] {
                     if tile.ty == ConnectionType::Connected {
-                        // check if its on the top iteration, where the top neighbor is in another chunk.
                         if y != CHUNK_SIZE - 1 {
-                            if let Some(top_tile) = &top_row[x] {
+                            if let Some(top_tile) = &self.tile.grid[y + 1][x] {
                                 if let ConnectionType::Connected = top_tile.ty {
                                     self.tile_neighbor.grid[y][x].up = ConnectionType::Connected;
                                     self.tile_neighbor.grid[y + 1][x].dw = ConnectionType::Connected;
@@ -208,7 +190,6 @@ impl RenderChunk {
                             }
                         }
 
-                        // check if its on the right most iteration, where the right neighbor is in another chunk.
                         if x != CHUNK_SIZE - 1 {
                             if let Some(right_tile) = &row[x + 1] {
                                 if let ConnectionType::Connected = right_tile.ty {
