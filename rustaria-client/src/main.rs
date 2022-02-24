@@ -8,8 +8,8 @@ use eyre::Result;
 use glfw::{Action, Context, Glfw, Key, Modifiers, SwapInterval, Window, WindowEvent};
 use structopt::StructOpt;
 use tracing::{debug, error, info};
-use rustaria::api::prototypes::Prototype;
 
+use rustaria::api::prototypes::Prototype;
 use rustaria::api::Rustaria;
 use rustaria::chunk::Chunk;
 use rustaria::network::{PacketDescriptor, PacketOrder, PacketPriority};
@@ -63,7 +63,6 @@ pub struct RustariaClient {
     perf: PerfDisplayerHandler,
 
     reload_chunks: bool,
-    chunks_dirty: bool,
     chunks: HashMap<ChunkPos, Chunk>,
     server: Option<Box<dyn ServerCom>>,
 
@@ -116,28 +115,29 @@ impl RustariaClient {
             .tiles
             .get_id_from_tag(&"rustaria:air".parse()?)
             .expect("Could not find air tile");
-        let dirt_tile = rsa
-            .tiles
-            .get_id_from_tag(&"rustaria:dirt".parse()?)
-            .expect("Could not find air tile");
         let air_wall = rsa
             .walls
             .get_id_from_tag(&"rustaria:air".parse()?)
             .expect("Could not find air wall");
+
         let mut chunk = Chunk::new(&rsa, air_tile, air_wall).expect("Could not create empty chunk");
 
-        let dirt_prot = rsa.tiles.get_from_id(dirt_tile).unwrap();
+        let dirt_tag = &"rustaria:dirt".parse()?;
+        let stone_tag = &"rustaria:stone".parse()?;
+        let dirt_prot = rsa.tiles.get_from_tag(dirt_tag).unwrap();
+        let dirt_id = rsa.tiles.get_id_from_tag(dirt_tag).unwrap();
+
+        let stone_prot = rsa.tiles.get_from_tag(stone_tag).unwrap();
+        let stone_id = rsa.tiles.get_id_from_tag(stone_tag).unwrap();
         for y in 0..CHUNK_SIZE {
             for x in 0..CHUNK_SIZE {
-                if (y * x) % 3 == 0 {
-                    chunk.tiles.grid[y][x] = dirt_prot.create(dirt_tile);
-                }
+                chunk.tiles.grid[y][x] = dirt_prot.create(dirt_id);
             }
         }
 
         let world = World::new(
-            (2, 2),
-            vec![chunk.clone(), chunk.clone(), chunk.clone(), chunk.clone()],
+            (32, 32),
+            vec![chunk; 32 * 32],
         )?;
 
         let integrated_server = IntegratedServer::new(world, None);
@@ -167,7 +167,6 @@ impl RustariaClient {
                 update_count: 0,
             },
             reload_chunks: true,
-            chunks_dirty: false,
             chunks: Default::default(),
             server: Some(Box::new(integrated_server)),
             rsa,
@@ -184,9 +183,18 @@ impl RustariaClient {
             // todo dont unwrap
             if let Some(pos) = TilePos::new(self.player.pos.0 as u64, self.player.pos.1 as u64) {
                 if self.reload_chunks || self.old_chunk != pos.chunk_pos() {
-                    server.send(ClientPacket::RequestChunk(pos.chunk_pos()), PacketDescriptor { priority: PacketPriority::Reliable, order: PacketOrder::Unordered }).unwrap();
+                    for y in -8..8 {
+                        for x in -8..8 {
+                            if let Some(pos) = pos.chunk_pos().offset((x, y)) {
+                                if !self.chunks.contains_key(&pos) {
+                                    server.send(ClientPacket::RequestChunk(pos), PacketDescriptor { priority: PacketPriority::Reliable, order: PacketOrder::Unordered }).unwrap();
+                                }
+                            }
+                        }
+                    }
                     self.old_chunk = pos.chunk_pos();
                     self.reload_chunks = false;
+
                 }
             }
 
@@ -199,7 +207,6 @@ impl RustariaClient {
                             Ok((pos, chunk)) => {
                                 self.render.world_renderer.submit_chunk(pos, &chunk);
                                 self.chunks.insert(pos, chunk);
-                                self.chunks_dirty = true;
                             }
                             Err(_) => {
                                 error!("oops");
@@ -235,6 +242,9 @@ impl RustariaClient {
                 WindowEvent::Key(Key::R, _, Action::Press, DEBUG_MOD) => {
                     self.reload_chunks = true;
                 }
+                WindowEvent::Key(Key::C, _, Action::Press, DEBUG_MOD) => {
+                    self.chunks.clear();
+                }
                 WindowEvent::Key(Key::W, _, action, _) => self.w = action != Action::Release,
                 WindowEvent::Key(Key::A, _, action, _) => self.a = action != Action::Release,
                 WindowEvent::Key(Key::S, _, action, _) => self.s = action != Action::Release,
@@ -243,13 +253,8 @@ impl RustariaClient {
             }
         }
 
-        if self.chunks_dirty {
-            self.render.world_renderer.build_mesh().unwrap();
-            self.chunks_dirty = false;
-        }
-
-        self.player.vel.0 = (self.d as u8 as f32 - self.a as u8 as f32) * 4.0;
-        self.player.vel.1 = (self.w as u8 as f32 - self.s as u8 as f32) * 4.0;
+        self.player.vel.0 = (self.d as u8 as f32 - self.a as u8 as f32) * 32.0;
+        self.player.vel.1 = (self.w as u8 as f32 - self.s as u8 as f32) * 32.0;
 
         self.player.tick(delta);
         self.render.prepare_draw();

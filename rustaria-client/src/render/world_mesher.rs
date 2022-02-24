@@ -1,9 +1,15 @@
 use std::collections::HashMap;
-use std::time::Instant;
+use std::ops::BitXorAssign;
+use std::sync::{Arc, RwLock, RwLockReadGuard};
 
-use tracing::info;
+use std::thread;
+use std::time::{Duration};
+
+use crossbeam::channel::{Receiver, Sender};
+
 
 use opengl_render::atlas::{Atlas, AtlasLocation};
+use opengl_render::buffer::{Buffer, BufferAccess, BufferUsage};
 use rustaria::api::Rustaria;
 use rustaria::api::types::ConnectionType;
 use rustaria::chunk::{Chunk, ChunkGrid};
@@ -50,12 +56,17 @@ pub struct RenderTile {
 }
 
 pub struct WorldMeshHandler {
+    buffer: Buffer<QuadImageVertex>,
+    pub index_buffer: Buffer<u32>,
+    mesh_channel: (Sender<(Vec<QuadImageVertex>, Vec<u32>)>, Receiver<(Vec<QuadImageVertex>, Vec<u32>)>),
+
     tile_lookup: Vec<Option<RenderTile>>,
-    chunks: HashMap<ChunkPos, RenderChunk>,
+    chunks: Arc<RwLock<HashMap<ChunkPos, RenderChunk>>>,
+    new_chunks: HashMap<ChunkPos, RenderChunk>,
 }
 
 impl WorldMeshHandler {
-    pub fn new(rsa: &Rustaria, atlas: &Atlas<AtlasId>) -> eyre::Result<WorldMeshHandler> {
+    pub fn new(rsa: &Rustaria, atlas: &Atlas<AtlasId>, buffer: Buffer<QuadImageVertex>, index_buffer: Buffer<u32>) -> eyre::Result<WorldMeshHandler> {
         let mut lookup = Vec::new();
         for (id, prot) in rsa.tiles.entries().iter().enumerate() {
             lookup.push(prot.sprite.is_some().then(||
@@ -66,24 +77,25 @@ impl WorldMeshHandler {
             ));
         }
         Ok(WorldMeshHandler {
+            buffer,
+            index_buffer,
+            mesh_channel: crossbeam::channel::unbounded(),
             tile_lookup: lookup,
             chunks: Default::default(),
+            new_chunks: Default::default(),
         })
     }
 
     pub fn add_chunk(&mut self, pos: ChunkPos, chunk: &Chunk) {
         let mut render_chunk = RenderChunk::new(chunk, self);
-
         render_chunk.compile_internal();
-        self.compile_borders(pos, &mut render_chunk);
-
-        self.chunks.insert(pos, render_chunk);
+        self.new_chunks.insert(pos, render_chunk);
     }
 
-    fn compile_borders(&mut self, pos: ChunkPos, chunk: &mut RenderChunk) {
+    fn compile_borders(chunks: &mut HashMap<ChunkPos, RenderChunk>, pos: ChunkPos, chunk: &mut RenderChunk) {
         for offset in Direction::all() {
             if let Some(neighbor_pos) = pos.offset(offset) {
-                if let Some(neighbor) = self.chunks.get_mut(&neighbor_pos) {
+                if let Some(neighbor) = chunks.get_mut(&neighbor_pos) {
                     let y_offset = offset.offset_y().max(0) as usize * (CHUNK_SIZE - 1);
                     let x_offset = offset.offset_x().max(0) as usize * (CHUNK_SIZE - 1);
                     let y_length = (CHUNK_SIZE - 1) * (offset.offset_x().abs() as usize);
@@ -113,10 +125,38 @@ impl WorldMeshHandler {
         }
     }
 
-    pub fn build(&self) -> Vec<QuadImageVertex> {
-        let mut data = Vec::new();
+    pub fn tick(&mut self) {
+        if !self.new_chunks.is_empty() {
+            if let Ok(mut chunks) = self.chunks.try_write() {
+                for (pos, mut chunk) in self.new_chunks.drain() {
+                    Self::compile_borders(&mut chunks, pos, &mut chunk);
+                    chunks.insert(pos, chunk);
+                }
+                std::mem::drop(chunks);
+                let channel = self.mesh_channel.0.clone();
+                let chunks = self.chunks.clone();
+                thread::spawn(move || {
+                    if let Ok(read) = chunks.read() {
+                        Self::build_mesh(channel, read);
+                    }
+                });
+            }
+        }
 
-        for (pos, chunk) in &self.chunks {
+
+
+        if let Ok((vertex, index)) = self.mesh_channel.1.try_recv() {
+            self.index_buffer.upload(&index, BufferUsage::Static, BufferAccess::Draw);
+            self.buffer.upload(&vertex, BufferUsage::Static, BufferAccess::Draw);
+        }
+    }
+
+    fn build_mesh(channel: Sender<(Vec<QuadImageVertex>, Vec<u32>)>, read: RwLockReadGuard<HashMap<ChunkPos, RenderChunk>>) {
+        thread::sleep(Duration::from_millis(100));
+        let mut data = Vec::new();
+        let mut indices = Vec::new();
+
+        for (pos, chunk) in read.iter() {
             for y in 0..CHUNK_SIZE {
                 let row = &chunk.tile.grid[y];
                 let row_neighbor = &chunk.tile_neighbor.grid[y];
@@ -127,11 +167,28 @@ impl WorldMeshHandler {
 
                         let x = x as f32 + (pos.x as f32 * CHUNK_SIZE as f32);
                         let y = y as f32 + (pos.y as f32 * CHUNK_SIZE as f32);
+
+                        let var = {
+                            let mut p = u32::from_le_bytes(x.to_be_bytes()).wrapping_mul(9).wrapping_add(u32::from_le_bytes(y.to_le_bytes()));
+                            p.bitxor_assign(p.wrapping_shl(11));
+                            p.bitxor_assign(p.wrapping_shr(7));
+                            p.bitxor_assign(p.wrapping_shl(17));
+                            p
+                        } % 3;
+
                         let tile_size = img.height / 4.0;
                         let (o_x, o_y) = TileImagePos::new(tile.up, tile.dw, tile.lf, tile.rg).get_tex_pos();
-                        let (t_x, t_y) = (img.x + (o_x * tile_size), img.y + (o_y * tile_size));
+                        let (t_x, t_y) = (img.x + (o_x * tile_size) + (var as f32 * img.height), img.y + (o_y * tile_size));
                         // todo custom variant amounts. currently its forced to be 3
                         // todo make a builder.
+                        //0, 1, 3, 1, 2, 3u32
+                        let len = data.len() as u32;
+                        indices.push(0 + len);
+                        indices.push(1 + len);
+                        indices.push(3 + len);
+                        indices.push(1 + len);
+                        indices.push(2 + len);
+                        indices.push(3 + len);
                         data.push(QuadImageVertex {
                             pos: [(x + 1.0), (y + 1.0)],
                             pos_texture: [t_x + tile_size, t_y],
@@ -153,7 +210,7 @@ impl WorldMeshHandler {
             }
         }
 
-        data
+        channel.send((data, indices)).unwrap();
     }
 }
 

@@ -1,8 +1,5 @@
-use std::collections::HashMap;
-use std::path::PathBuf;
-
 use glfw::Window;
-use tracing::{debug, info, warn};
+use tracing::{warn};
 
 use opengl_render::{OpenGlBackend, OpenGlFeature};
 use opengl_render::atlas::{Atlas, AtlasBuilder};
@@ -17,9 +14,8 @@ use rustaria::api::plugin::ArchivePath;
 use rustaria::api::Rustaria;
 use rustaria::chunk::Chunk;
 use rustaria::registry::RawId;
-use rustaria::types::{CHUNK_SIZE, ChunkPos};
+use rustaria::types::{ChunkPos};
 
-use crate::render::texture_format::TileImagePos;
 use crate::render::world_mesher::WorldMeshHandler;
 
 #[repr(C)]
@@ -36,11 +32,9 @@ pub struct WorldRenderer {
     qi_atlas_sampler: Sampler2d,
     qi_pipeline: VertexPipeline,
     qi_layout: VertexBufferLayout,
-    qi_buffer: Buffer<QuadImageVertex>,
     qi_u_screen_y_ratio: Uniform<f32>,
     pub qi_u_zoom: Uniform<f32>,
     pub qi_pos: Uniform<[f32; 2]>,
-    pub qi_index_buffer: Buffer<u16>,
 }
 
 impl WorldRenderer {
@@ -71,7 +65,7 @@ impl WorldRenderer {
             include_str!("./shader/quad_image.f.glsl").to_string(),
         );
 
-        let index_buffer = Buffer::create_index(vec![0, 1, 3, 1, 2, 3u16], 4, 0);
+        let index_buffer = Buffer::create_index(vec![0, 1, 3, 1, 2, 3u32], 4, 0);
         let buffer = Buffer::create(
             BufferType::Vertex(vec![a_pos, a_tex]),
             BufferUsage::Static,
@@ -93,17 +87,15 @@ impl WorldRenderer {
         screen_y_ratio.set_value(width as f32 / height as f32);
         zoom.set_value(24f32);
         Ok(WorldRenderer {
-            mesher: WorldMeshHandler::new(rsa, &atlas)?,
+            mesher: WorldMeshHandler::new(rsa, &atlas, buffer, index_buffer)?,
             qi_atlas: atlas,
             qi_u_atlas_sampler: uniform,
             qi_atlas_sampler: sampler,
             qi_pipeline: pipeline,
             qi_layout: layout,
-            qi_buffer: buffer,
             qi_u_screen_y_ratio: screen_y_ratio,
             qi_u_zoom: zoom,
             qi_pos: pos,
-            qi_index_buffer: index_buffer,
         })
     }
 
@@ -111,23 +103,15 @@ impl WorldRenderer {
         self.mesher.add_chunk(pos, chunk);
     }
 
-    pub fn build_mesh(&mut self) -> eyre::Result<()> {
-        debug!("Rebuilding world mesh.");
-        let data = self.mesher.build();
-
-        self.qi_index_buffer.update_index(4, data.len() / 4);
-        self.qi_buffer.upload(&data, BufferUsage::Static, BufferAccess::Draw);
-        Ok(())
-    }
-
     pub fn resize(&mut self, width: u32, height: u32) {
         self.qi_u_screen_y_ratio
             .set_value(width as f32 / height as f32);
     }
 
-    pub fn draw(&self, wireframe: bool) {
+    pub fn draw(&mut self, wireframe: bool) {
+        self.mesher.tick();
         self.qi_pipeline
-            .draw(&self.qi_layout, 0..self.qi_index_buffer.get_size(), {
+            .draw(&self.qi_layout, 0..self.mesher.index_buffer.get_size(), {
                 if wireframe {
                     DrawMode::Line
                 } else {

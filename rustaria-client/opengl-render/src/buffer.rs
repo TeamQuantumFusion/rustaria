@@ -2,6 +2,7 @@ use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::ops::Range;
 use std::rc::Rc;
+use std::time::Instant;
 
 use tracing::info;
 
@@ -204,7 +205,7 @@ impl<T> Buffer<T> {
 
 impl<T: GlType + Copy + IndexType> Buffer<T> {
     pub fn create_index(base_order: Vec<T>, element_size: usize, elements: usize) -> Buffer<T> {
-        let data = Self::generate_index(&base_order, element_size, elements);
+        let data = Self::compile_indices(&base_order, element_size, elements);
         Self::create(
             BufferType::Index(base_order),
             BufferUsage::Static,
@@ -216,20 +217,26 @@ impl<T: GlType + Copy + IndexType> Buffer<T> {
     pub fn update_index(&mut self, element_size: usize, elements: usize) {
         match &self.buffer_type {
             BufferType::Index(base_order) => {
-                let data = Self::generate_index(base_order, element_size, elements);
+                let data = Self::compile_indices(base_order, element_size, elements);
                 self.upload(&data, BufferUsage::Static, BufferAccess::Draw);
             }
             _ => panic!("Not an index buffer."),
         }
     }
 
-    fn generate_index(base_order: &[T], element_size: usize, elements: usize) -> Vec<T> {
+    pub fn compile_indices(base_order: &[T], element_size: usize, elements: usize) -> Vec<T> {
+        let start = Instant::now();
         let mut data = Vec::new();
+        data.reserve_exact(base_order.len() * elements);
+        info!("Allocated in {}ms", start.elapsed().as_millis());
+        let start = Instant::now();
         for i in 0..elements {
             for index in base_order {
-                data.push(index.clone().add(i * element_size));
+                data.push((*index).add(i * element_size));
             }
         }
+        info!("Filled in {}ms", start.elapsed().as_millis());
+
         data
     }
 }
@@ -241,6 +248,12 @@ pub trait IndexType {
 impl IndexType for u16 {
     fn add(self, size: usize) -> Self {
         self + size as u16
+    }
+}
+
+impl IndexType for u32 {
+    fn add(self, size: usize) -> Self {
+        self + size as u32
     }
 }
 

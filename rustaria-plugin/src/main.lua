@@ -11,6 +11,9 @@ tile:register {
     [_ "dirt"] = tile:default {
         sprite = tostring(_("missing")),
     },
+    [_ "stone"] = tile:default {
+        sprite = tostring(_("stone")),
+    },
     [_ "air"] = tile:default {},
     -- a full example of a tile setting
     -- [_ "alpha"] = tile:default {

@@ -73,9 +73,19 @@ impl Offset for Direction {
     }
 }
 
+impl Offset for (i8, i8) {
+    fn offset_x(self) -> i8 {
+        self.0
+    }
+
+    fn offset_y(self) -> i8 {
+        self.1
+    }
+}
+
 // ======================================== POSITION ========================================
 #[derive(
-    Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, serde::Serialize, serde::Deserialize,
+Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, serde::Serialize, serde::Deserialize,
 )]
 pub struct ChunkPos {
     pub x: u32,
@@ -83,6 +93,13 @@ pub struct ChunkPos {
 }
 
 impl ChunkPos {
+    pub fn new(x: u64, y: u64) -> Option<ChunkPos> {
+        Some(ChunkPos {
+            x: u32::try_from(x).ok()?,
+            y: u32::try_from(y).ok()?,
+        })
+    }
+
     pub fn offset<O: Offset + Copy>(&self, offset: O) -> Option<Self> {
         // FIXME(leocth): this is cursed
         Some(Self {
@@ -156,10 +173,7 @@ pub struct TilePos {
 impl TilePos {
     pub fn new(x: u64, y: u64) -> Option<Self> {
         Some(Self {
-            chunk: ChunkPos {
-                x: u32::try_from(x / CHUNK_SIZE as u64).ok()?,
-                y: u32::try_from(y / CHUNK_SIZE as u64).ok()?,
-            },
+            chunk: ChunkPos::new(x / CHUNK_SIZE as u64, y / CHUNK_SIZE as u64)?,
             sub: ChunkSubPos {
                 x: (x % CHUNK_SIZE as u64) as u8,
                 y: (y % CHUNK_SIZE as u64) as u8,
