@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use glfw::Window;
-use tracing::{debug, warn};
+use tracing::{debug, info, warn};
 
 use opengl_render::{OpenGlBackend, OpenGlFeature};
 use opengl_render::atlas::{Atlas, AtlasBuilder};
@@ -51,7 +51,7 @@ impl WorldRenderer {
         for (raw, prototype) in rsa.tiles.entries().iter().enumerate() {
             if let Some(sprite) = &prototype.sprite {
                 if let Some(data) = rsa.plugins.get(&*sprite.plugin_id).and_then(|plugin| {
-                    plugin.archive.get_asset(&ArchivePath::Asset(PathBuf::from(format!("sprite/tile/{}.png", sprite.name)))).ok()
+                    plugin.archive.get_asset(&ArchivePath::Asset(format!("sprite/tile/{}.png", sprite.name))).ok()
                 }) {
                     atlas.push(AtlasId::Tile(raw as u32), image::load_from_memory(data)?);
                 } else {

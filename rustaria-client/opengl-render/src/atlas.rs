@@ -30,7 +30,7 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
 
     pub fn export(self, levels: u8) -> Atlas<T> {
         // Pack everything
-        debug!("Packing atlas.");
+        info!(target: "opengl", "Packing atlas.");
         let mut rects_to_place = GroupedRectsToPlace::new();
 
         for (id, (_, image)) in self.images.iter().enumerate() {
@@ -58,7 +58,7 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
             );
         }
 
-        debug!("Creating atlas");
+        info!(target: "opengl", "Creating atlas");
         // Create image and lookup
         let pack = rectangle_placements.unwrap();
         let locations = pack.packed_locations();
@@ -84,7 +84,9 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
             }
         }
 
-        debug!("Mipmapping atlas");
+        image.save("./atlas.png");
+
+        info!(target: "opengl", "Mipmapping atlas");
         // Generate Mipmaps
         let mut images = Vec::new();
         for level in 0..levels {
@@ -99,7 +101,7 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
             });
         }
 
-        debug!("Uploading atlas");
+        info!(target: "opengl", "Uploading atlas");
         // upload
         let texture = Texture::new(
             TextureType::Texture2d {

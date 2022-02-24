@@ -113,8 +113,8 @@ pub struct PluginArchive {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Deserialize)]
 pub enum ArchivePath {
-    Asset(PathBuf),
-    Src(PathBuf),
+    Asset(String),
+    Src(String),
     Manifest,
 }
 
@@ -136,15 +136,15 @@ impl PluginArchive {
                     let buf = name.to_path_buf();
                     let mut components = buf.components();
                     let option = components.next().unwrap();
-                    let path = components.collect();
+                    let path: PathBuf = components.collect();
 
                     let mut file_data = Vec::with_capacity(file.size() as usize);
                     file.read_to_end(&mut file_data)?;
 
                     data.insert(
                         match option.as_os_str().to_str().unwrap() {
-                            "src" => ArchivePath::Src(path),
-                            "asset" => ArchivePath::Asset(path),
+                            "src" => ArchivePath::Src(path.as_os_str().to_str().unwrap().to_string()),
+                            "asset" => ArchivePath::Asset(path.as_os_str().to_str().unwrap().to_string()),
                             "manifest.json" => ArchivePath::Manifest,
                             _ => bail!("Unknown File type."),
                         },
@@ -163,8 +163,7 @@ impl PluginArchive {
     }
 
     pub fn get_asset(&self, path: &ArchivePath) -> Result<&Vec<u8>> {
-        let option = &self.data;
-        match option {
+        match &self.data {
             None => bail!("Reading not active"),
             Some(files) => files.get(path).ok_or_else(|| eyre!("Could not find file")),
         }

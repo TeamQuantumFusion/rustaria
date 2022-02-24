@@ -129,7 +129,7 @@ impl RustariaClient {
         let dirt_prot = rsa.tiles.get_from_id(dirt_tile).unwrap();
         for y in 0..CHUNK_SIZE {
             for x in 0..CHUNK_SIZE {
-                if (y ^ x) % 3 == 0 {
+                if (y * x) % 3 == 0 {
                     chunk.tiles.grid[y][x] = dirt_prot.create(dirt_tile);
                 }
             }
@@ -251,9 +251,9 @@ impl RustariaClient {
         self.player.vel.0 = (self.d as u8 as f32 - self.a as u8 as f32) * 4.0;
         self.player.vel.1 = (self.w as u8 as f32 - self.s as u8 as f32) * 4.0;
 
-        let draw_time = Instant::now();
         self.player.tick(delta);
-
+        self.render.prepare_draw();
+        let draw_time = Instant::now();
         self.render.draw(self.player.pos)?;
         self.perf.frame_time.add_assign(draw_time.elapsed());
         self.perf.frame_count += 1;

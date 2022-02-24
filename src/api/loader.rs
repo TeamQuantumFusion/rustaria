@@ -43,7 +43,7 @@ impl Loader {
         preload.set("log", lua.create_function(log::package)?)?;
         preload.set("meta", lua.create_function(meta::package)?)?;
 
-        let source = plugin.archive.get_asset(&ArchivePath::Src(PathBuf::from(plugin.manifest.init_path.clone())))?;
+        let source = plugin.archive.get_asset(&ArchivePath::Src(plugin.manifest.init_path.clone()))?;
         lua.load(source).call(())?;
 
         let globals = lua.globals();
