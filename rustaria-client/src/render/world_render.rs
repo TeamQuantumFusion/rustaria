@@ -1,7 +1,6 @@
 use glfw::Window;
-use tracing::{warn};
+use tracing::warn;
 
-use opengl_render::{OpenGlBackend, OpenGlFeature};
 use opengl_render::atlas::{Atlas, AtlasBuilder};
 use opengl_render::attribute::{AttributeDescriptor, AttributeType};
 use opengl_render::buffer::{
@@ -10,11 +9,12 @@ use opengl_render::buffer::{
 use opengl_render::program::VertexPipeline;
 use opengl_render::texture::Sampler2d;
 use opengl_render::uniform::Uniform;
+use opengl_render::{OpenGlBackend, OpenGlFeature};
 use rustaria::api::plugin::ArchivePath;
 use rustaria::api::Rustaria;
 use rustaria::chunk::Chunk;
 use rustaria::registry::RawId;
-use rustaria::types::{ChunkPos};
+use rustaria::types::ChunkPos;
 
 use crate::render::world_mesher::WorldMeshHandler;
 
@@ -38,14 +38,24 @@ pub struct WorldRenderer {
 }
 
 impl WorldRenderer {
-    pub fn new(rsa: &Rustaria, backend: &mut OpenGlBackend, window: &Window) -> eyre::Result<WorldRenderer> {
+    pub fn new(
+        rsa: &Rustaria,
+        backend: &mut OpenGlBackend,
+        window: &Window,
+    ) -> eyre::Result<WorldRenderer> {
         backend.enable(OpenGlFeature::Alpha);
 
         let mut atlas = AtlasBuilder::new();
         for (raw, prototype) in rsa.tiles.entries().iter().enumerate() {
             if let Some(sprite) = &prototype.sprite {
-                if let Some(data) = rsa.plugins.get(&*sprite.plugin_id).and_then(|plugin| {
-                    plugin.archive.get_asset(&ArchivePath::Asset(format!("sprite/tile/{}.png", sprite.name))).ok()
+                if let Some(data) = rsa.plugins.get(sprite.plugin_id()).and_then(|plugin| {
+                    plugin
+                        .archive
+                        .get_asset(&ArchivePath::Asset(format!(
+                            "sprite/tile/{}.png",
+                            sprite.name()
+                        )))
+                        .ok()
                 }) {
                     atlas.push(AtlasId::Tile(raw as u32), image::load_from_memory(data)?);
                 } else {
@@ -54,7 +64,10 @@ impl WorldRenderer {
             }
         }
 
-        atlas.push(AtlasId::Missing, image::load_from_memory(include_bytes!("./sprite/missing.png"))?);
+        atlas.push(
+            AtlasId::Missing,
+            image::load_from_memory(include_bytes!("./sprite/missing.png"))?,
+        );
 
         let atlas = atlas.export(4);
 

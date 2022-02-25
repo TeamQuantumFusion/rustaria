@@ -66,9 +66,6 @@ use mlua::prelude::*;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer};
 use thiserror::Error;
-use tracing::{debug, info};
-
-use crate::blake3::Hasher;
 
 /// A registry containing and managing user-added data to Rustaria.
 /// See the [module documentation](index.html) for more details.
@@ -125,36 +122,47 @@ impl<T> Default for Registry<T> {
 // by the registry map.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Tag {
-    pub plugin_id: String,
-    pub name: String,
+    inner: String,
+    colon_index: usize,
+}
+impl Tag {
+    pub fn from_string(s: String) -> Result<Self, ParseTagError> {
+        let colon_index = s.find(':').ok_or(ParseTagError::NotColonSeparated)?;
+        Ok(Self {
+            inner: s,
+            colon_index,
+        })
+    }
+    pub fn plugin_id(&self) -> &str {
+        &self.inner[..self.colon_index]
+    }
+    pub fn name(&self) -> &str {
+        &self.inner[self.colon_index + 1..]
+    }
 }
 
 impl FromStr for Tag {
     type Err = ParseTagError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        info!("doiing!");
-        match s.split_once(':') {
-            Some((plugin_id, name)) => Ok(Self {
-                plugin_id: plugin_id.into(),
-                name: name.into(),
-            }),
-            None => Err(ParseTagError::NotColonSeparated),
-        }
+        let colon_index = s.find(':').ok_or(ParseTagError::NotColonSeparated)?;
+        Ok(Self {
+            inner: s.to_string(),
+            colon_index,
+        })
     }
 }
 
 impl Display for Tag {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let Tag { plugin_id, name } = self;
-        write!(f, "{plugin_id}:{name}")
+        write!(f, "{}", self.inner)
     }
 }
 
 impl LuaUserData for Tag {
     fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(f: &mut F) {
-        f.add_field_method_get("plugin_id", |_, t| Ok(t.plugin_id.clone()));
-        f.add_field_method_get("name", |_, t| Ok(t.name.clone()));
+        f.add_field_method_get("plugin_id", |_, t| Ok(t.plugin_id().to_owned()));
+        f.add_field_method_get("name", |_, t| Ok(t.name().to_owned()));
     }
 
     fn add_methods<'lua, M: LuaUserDataMethods<'lua, Self>>(m: &mut M) {
