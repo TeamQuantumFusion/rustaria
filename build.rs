@@ -30,7 +30,7 @@ fn pack_core_plugins(paths: &[&Path]) {
     }
 
     let mut zips: Vec<_> = paths
-        .into_iter()
+        .iter()
         .map(|path| {
             let path = path.join("rustaria-core.zip");
             let zip = File::create(path).expect("Could not create plugin file");

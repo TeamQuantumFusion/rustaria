@@ -7,7 +7,7 @@ use rectangle_pack::{
     contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert,
     RectanglePackError, TargetBin,
 };
-use tracing::{debug, info};
+use tracing::info;
 
 use crate::texture::{
     InternalFormat, TextureData, TextureDataFormat, TextureDescriptor, TextureLod,
