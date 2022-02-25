@@ -25,7 +25,7 @@ pub struct QuadImageVertex {
 }
 
 pub struct WorldRenderer {
-    mesher: WorldMeshHandler,
+    pub mesher: WorldMeshHandler,
 
     qi_atlas: Atlas<AtlasId>,
     qi_u_atlas_sampler: Uniform<Sampler2d>,

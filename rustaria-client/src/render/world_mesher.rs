@@ -151,7 +151,7 @@ impl WorldMeshHandler {
         }
     }
 
-    fn build_mesh(channel: Sender<(Vec<QuadImageVertex>, Vec<u32>)>, read: RwLockReadGuard<HashMap<ChunkPos, RenderChunk>>) {
+    pub fn build_mesh(channel: Sender<(Vec<QuadImageVertex>, Vec<u32>)>, read: RwLockReadGuard<HashMap<ChunkPos, RenderChunk>>) {
         thread::sleep(Duration::from_millis(100));
         let mut data = Vec::new();
         let mut indices = Vec::new();

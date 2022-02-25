@@ -238,10 +238,10 @@ impl RustariaClient {
         }
 
         if self.chunks_dirty {
-            self.render
-                .world_renderer
-                .build_mesh(&self.rsa, &self.chunks)
-                .unwrap();
+            // self.render
+            //     .world_renderer
+            //     .build_mesh(&self.rsa, &self.chunks)
+            //     .unwrap();
             self.chunks_dirty = false;
         }
 
