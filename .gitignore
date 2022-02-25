@@ -1,5 +1,6 @@
 /target
 Cargo.lock
+rustaria-client/atlas.png
 rustaria-client/assets
 rustaria-client/run
 rustaria-server/run

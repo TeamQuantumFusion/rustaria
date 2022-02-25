@@ -84,6 +84,7 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
             }
         }
 
+        // FIXME(leocth) save it in the run dir
         image.save("./atlas.png");
 
         info!(target: "opengl", "Mipmapping atlas");

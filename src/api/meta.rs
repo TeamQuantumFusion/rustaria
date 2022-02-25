@@ -1,6 +1,8 @@
 use mlua::{prelude::*, Variadic};
 use mooncake::mooncake;
 
+use crate::registry::Tag;
+
 use super::loader::PluginInput;
 
 #[mooncake::mooncake(lua)]
@@ -19,14 +21,21 @@ fn plugin_id() -> LuaResult<String> {
     Ok(ctx.id)
 }
 #[mooncake(lua)]
-fn make_id(strs: Variadic<String>) -> LuaResult<String> {
+fn make_id(strs: Variadic<String>) -> LuaResult<Tag> {
     match strs.len() {
         // just name
-        1 => Ok(format!("{}:{}", plugin_id(lua, ())?, strs[0])),
+        1 => Ok(Tag {
+            plugin_id: plugin_id(lua, ())?,
+            name: strs[0].clone(),
+        }),
         // both plugin id and name specified
-        2 => Ok(format!("{}:{}", strs[0], strs[1])),
+        2 => Ok(Tag {
+            plugin_id: strs[0].clone(),
+            name: strs[1].clone(),
+        }),
         _ => Err(LuaError::DeserializeError(
             "more than two strings provided".into(),
         )),
     }
 }
+
