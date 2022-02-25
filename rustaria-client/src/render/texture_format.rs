@@ -21,14 +21,14 @@ pub enum TileImagePos {
 }
 
 impl TileImagePos {
-    pub fn new(up: ConnectionType, down: ConnectionType, left: ConnectionType, right: ConnectionType) -> TileImagePos {
+    pub fn new(
+        up: ConnectionType,
+        down: ConnectionType,
+        left: ConnectionType,
+        right: ConnectionType,
+    ) -> TileImagePos {
         use ConnectionType::{Connected, Isolated};
-        match (
-            up,
-            down,
-            left,
-            right,
-        ) {
+        match (up, down, left, right) {
             (Connected, Connected, Connected, Connected) => TileImagePos::Solid,
             (Isolated, Isolated, Isolated, Isolated) => TileImagePos::Standalone,
             (Connected, Connected, Isolated, Isolated) => TileImagePos::Vertical,

@@ -7,8 +7,8 @@ use rustaria::api::Rustaria;
 use crate::render::world_render::WorldRenderer;
 
 mod texture_format;
-mod world_render;
 mod world_mesher;
+mod world_render;
 
 pub struct RenderHandler {
     backend: OpenGlBackend,
@@ -30,12 +30,12 @@ impl RenderHandler {
         opengl.set_clear_command(ClearCommand {
             commands: vec![ClearDescriptor::Color(0.15, 0.15, 0.15, 1.0)],
         });
-        let renderer = WorldRenderer::new(rsa,&mut opengl, window)?;
-       Ok( RenderHandler {
-           backend: opengl,
-           world_renderer: renderer,
-           wireframe: false,
-       })
+        let renderer = WorldRenderer::new(rsa, &mut opengl, window)?;
+        Ok(RenderHandler {
+            backend: opengl,
+            world_renderer: renderer,
+            wireframe: false,
+        })
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {

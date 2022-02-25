@@ -6,13 +6,13 @@ use eyre::{bail, eyre};
 use laminar::{Packet, Socket, SocketEvent};
 use tracing::{debug, warn};
 
-use rustaria::{KERNEL_VERSION, Server};
 use rustaria::api::Rustaria;
 use rustaria::api::RustariaHash;
-use rustaria::network::{create_socket, PacketDescriptor, poll_once, poll_packet};
 use rustaria::network::packet::{ClientPacket, ModListPacket, ServerPacket};
 use rustaria::network::server::ServerNetwork;
+use rustaria::network::{create_socket, poll_once, poll_packet, PacketDescriptor};
 use rustaria::world::World;
+use rustaria::{Server, KERNEL_VERSION};
 
 // Client
 pub trait ServerCom {
