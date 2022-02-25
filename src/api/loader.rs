@@ -22,7 +22,7 @@ pub struct Loader;
 
 impl Loader {
     pub fn init(&mut self, lua: &Lua, plugins: &HashMap<String, Plugin>) -> eyre::Result<PluginOutputs> {
-        plugins.iter().map(|p| Self::plugin_exec(lua, p.1)).collect()
+        plugins.iter().map(|(_, p)| Self::plugin_exec(lua, p)).collect()
     }
 
     fn plugin_exec(lua: &Lua, plugin: &Plugin) -> eyre::Result<PluginOutput> {

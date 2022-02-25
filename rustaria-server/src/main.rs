@@ -8,9 +8,6 @@ use cmd::Command;
 use crossbeam::channel::{unbounded, Receiver};
 use crossbeam::select;
 use eyre::Result;
-use mlua::Lua;
-use rustaria::api::loader::Loader;
-use rustaria::api::plugin::Plugins;
 use rustaria::api::Rustaria;
 use rustaria::Server;
 use structopt::StructOpt;
@@ -68,13 +65,10 @@ fn main() -> Result<()> {
 }
 
 fn server_loop(run_dir: &Path, config: &Config, rx: Receiver<Command>) -> Result<()> {
-    let lua = Lua::new();
-
-    let mut loader = Loader::default();
-    let mut api = Rustaria::default();
-
     let plugins_dir = run_dir.join("plugins");
-    reload_plugins(&lua, &plugins_dir, &mut loader, &mut api)?;
+    let mut api = Rustaria::new(plugins_dir);
+
+    api.reload()?;
 
     let air_tile = api
         .tiles
@@ -101,25 +95,10 @@ fn server_loop(run_dir: &Path, config: &Config, rx: Receiver<Command>) -> Result
             match cmd {
                 Command::Reload => {
                     info!("Reloading plugins");
-                    reload_plugins(&lua, &plugins_dir, &mut loader, &mut api)?;
+                    api.reload()?;
                 }
             }
         }
         server.tick(&api)?;
     }
-}
-
-fn reload_plugins(
-    lua: &Lua,
-    plugins_dir: &Path,
-    loader: &mut Loader,
-    api: &mut Rustaria,
-) -> Result<()> {
-    info!("Scanning for plugins in directory {plugins_dir:?}");
-    let plugins = Plugins::load(plugins_dir)?;
-    info!("Executing plugins");
-    let outputs = loader.init(lua, &plugins)?;
-    info!("Initializing API");
-    api.reload(outputs);
-    Ok(())
 }

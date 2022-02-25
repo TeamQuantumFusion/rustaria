@@ -1,6 +1,5 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::ops::AddAssign;
-use std::path::Path;
 use std::sync::mpsc::Receiver;
 use std::time::{Duration, Instant};
 
@@ -9,15 +8,14 @@ use glfw::{Action, Context, Glfw, Key, Modifiers, SwapInterval, Window, WindowEv
 use structopt::StructOpt;
 use tracing::{debug, error, info};
 
-use rustaria::api::prototypes::Prototype;
 use rustaria::api::Rustaria;
 use rustaria::chunk::Chunk;
+use rustaria::network::packet::{ClientPacket, ServerPacket};
 use rustaria::network::{PacketDescriptor, PacketOrder, PacketPriority};
-use rustaria::network::packet::{ChunkPacket, ClientPacket, ServerPacket};
 use rustaria::player::Player;
-use rustaria::types::{CHUNK_SIZE, ChunkPos, TilePos};
-use rustaria::UPS;
+use rustaria::types::{ChunkPos, TilePos};
 use rustaria::world::World;
+use rustaria::UPS;
 
 use crate::network::{IntegratedServer, ServerCom};
 use crate::render::RenderHandler;
@@ -25,13 +23,21 @@ use crate::render::RenderHandler;
 mod network;
 mod render;
 
+// HACK(leocth): this should really be written more like this:
+// ```
+// const DEBUG_MOD: Modifiers = Modifiers::Alt | Modifiers::Shift;
+// ```
+// but apparently BitOr is not yet const ready????
+// I have _no_ idea what's going on.
+
 const DEBUG_MOD: Modifiers =
     Modifiers::from_bits_truncate(glfw::ffi::MOD_ALT | glfw::ffi::MOD_SHIFT);
+
 const UPDATE_TIME: Duration = Duration::from_micros(1000000 / UPS as u64);
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "rustaria-client", about = "The interactive client of Rustaria")]
-struct Opt {
+pub struct Opt {
     #[structopt(flatten)]
     inner: rustaria::opt::Opt,
 }
@@ -41,7 +47,7 @@ fn main() -> Result<()> {
     debug!(?opt, "Got command-line args");
     rustaria::init(opt.inner.verbosity)?;
 
-    let mut client = RustariaClient::new()?;
+    let mut client = RustariaClient::new(opt)?;
     let mut previous_update = Instant::now();
     let mut lag = Duration::ZERO;
     while client.running() {
@@ -63,6 +69,7 @@ pub struct RustariaClient {
     perf: PerfDisplayerHandler,
 
     reload_chunks: bool,
+    chunks_dirty: bool,
     chunks: HashMap<ChunkPos, Chunk>,
     server: Option<Box<dyn ServerCom>>,
 
@@ -83,13 +90,13 @@ pub struct RustariaClient {
 }
 
 impl RustariaClient {
-    pub fn new() -> eyre::Result<RustariaClient> {
+    pub fn new(opt: Opt) -> Result<RustariaClient> {
         let title = format!("Rustaria Client {}", env!("CARGO_PKG_VERSION"));
-        info!("{}", title);
+        info!("{title}");
 
         info!(target: "api", "Launching Rustaria API");
-        let plugins_dir = Path::new("./plugins");
-        let mut rsa = Rustaria::new(plugins_dir)?;
+        let plugins_dir = opt.inner.run_dir.join("plugins");
+        let mut rsa = Rustaria::new(plugins_dir);
         rsa.reload()?;
 
         info!(target: "render", "Launching GLFW");
@@ -109,39 +116,24 @@ impl RustariaClient {
 
         let render = RenderHandler::new(&rsa, &glfw, &glfw_window)?;
 
-
         // World creation
         let air_tile = rsa
             .tiles
-            .get_id_from_tag(&"rustaria:air".parse()?)
+            .get_id_from_tag(&"rustaria:dirt".parse()?)
             .expect("Could not find air tile");
         let air_wall = rsa
             .walls
             .get_id_from_tag(&"rustaria:air".parse()?)
             .expect("Could not find air wall");
-
-        let mut chunk = Chunk::new(&rsa, air_tile, air_wall).expect("Could not create empty chunk");
-
-        let dirt_tag = &"rustaria:dirt".parse()?;
-        let stone_tag = &"rustaria:stone".parse()?;
-        let dirt_prot = rsa.tiles.get_from_tag(dirt_tag).unwrap();
-        let dirt_id = rsa.tiles.get_id_from_tag(dirt_tag).unwrap();
-
-        let stone_prot = rsa.tiles.get_from_tag(stone_tag).unwrap();
-        let stone_id = rsa.tiles.get_id_from_tag(stone_tag).unwrap();
-        for y in 0..CHUNK_SIZE {
-            for x in 0..CHUNK_SIZE {
-                chunk.tiles.grid[y][x] = dirt_prot.create(dirt_id);
-            }
-        }
-
+        let empty_chunk =
+            Chunk::new(&rsa, air_tile, air_wall).expect("Could not create empty chunk");
         let world = World::new(
-            (32, 32),
-            vec![chunk; 32 * 32],
+            (2, 2),
+            vec![empty_chunk, empty_chunk, empty_chunk, empty_chunk],
         )?;
 
         let integrated_server = IntegratedServer::new(world, None);
-        Ok(RustariaClient {
+        Ok(Self {
             glfw,
             glfw_window,
             glfw_events,
@@ -149,10 +141,7 @@ impl RustariaClient {
                 pos: (0.0, 0.0),
                 vel: (0.0, 0.0),
             },
-            old_chunk: ChunkPos {
-                x: 0,
-                y: 0,
-            },
+            old_chunk: ChunkPos { x: 0, y: 0 },
             zoom: 24.0,
             w: false,
             a: false,
@@ -167,6 +156,7 @@ impl RustariaClient {
                 update_count: 0,
             },
             reload_chunks: true,
+            chunks_dirty: false,
             chunks: Default::default(),
             server: Some(Box::new(integrated_server)),
             rsa,
@@ -183,18 +173,17 @@ impl RustariaClient {
             // todo dont unwrap
             if let Some(pos) = TilePos::new(self.player.pos.0 as u64, self.player.pos.1 as u64) {
                 if self.reload_chunks || self.old_chunk != pos.chunk_pos() {
-                    for y in -8..8 {
-                        for x in -8..8 {
-                            if let Some(pos) = pos.chunk_pos().offset((x, y)) {
-                                if !self.chunks.contains_key(&pos) {
-                                    server.send(ClientPacket::RequestChunk(pos), PacketDescriptor { priority: PacketPriority::Reliable, order: PacketOrder::Unordered }).unwrap();
-                                }
-                            }
-                        }
-                    }
+                    server
+                        .send(
+                            ClientPacket::RequestChunk(pos.chunk_pos()),
+                            PacketDescriptor {
+                                priority: PacketPriority::Reliable,
+                                order: PacketOrder::Unordered,
+                            },
+                        )
+                        .unwrap();
                     self.old_chunk = pos.chunk_pos();
                     self.reload_chunks = false;
-
                 }
             }
 
@@ -202,17 +191,15 @@ impl RustariaClient {
 
             for x in server.receive() {
                 match x {
-                    ServerPacket::Chunk { data } => {
-                        match data.export() {
-                            Ok((pos, chunk)) => {
-                                self.render.world_renderer.submit_chunk(pos, &chunk);
-                                self.chunks.insert(pos, chunk);
-                            }
-                            Err(_) => {
-                                error!("oops");
-                            }
+                    ServerPacket::Chunk { data } => match data.export() {
+                        Ok((pos, chunk)) => {
+                            self.chunks.insert(pos, chunk);
+                            self.chunks_dirty = true;
                         }
-                    }
+                        Err(_) => {
+                            error!("oops");
+                        }
+                    },
                     ServerPacket::FuckOff => {}
                 }
             }
@@ -222,7 +209,7 @@ impl RustariaClient {
         self.perf.update_count += 1;
     }
 
-    pub fn draw(&mut self, delta: f32) -> eyre::Result<()> {
+    pub fn draw(&mut self, delta: f32) -> Result<()> {
         self.glfw.poll_events();
         for (_, event) in glfw::flush_messages(&self.glfw_events) {
             match event {
@@ -242,9 +229,6 @@ impl RustariaClient {
                 WindowEvent::Key(Key::R, _, Action::Press, DEBUG_MOD) => {
                     self.reload_chunks = true;
                 }
-                WindowEvent::Key(Key::C, _, Action::Press, DEBUG_MOD) => {
-                    self.chunks.clear();
-                }
                 WindowEvent::Key(Key::W, _, action, _) => self.w = action != Action::Release,
                 WindowEvent::Key(Key::A, _, action, _) => self.a = action != Action::Release,
                 WindowEvent::Key(Key::S, _, action, _) => self.s = action != Action::Release,
@@ -253,12 +237,20 @@ impl RustariaClient {
             }
         }
 
-        self.player.vel.0 = (self.d as u8 as f32 - self.a as u8 as f32) * 32.0;
-        self.player.vel.1 = (self.w as u8 as f32 - self.s as u8 as f32) * 32.0;
+        if self.chunks_dirty {
+            self.render
+                .world_renderer
+                .build_mesh(&self.rsa, &self.chunks)
+                .unwrap();
+            self.chunks_dirty = false;
+        }
 
-        self.player.tick(delta);
-        self.render.prepare_draw();
+        self.player.vel.0 = (self.d as u8 as f32 - self.a as u8 as f32) * 4.0;
+        self.player.vel.1 = (self.w as u8 as f32 - self.s as u8 as f32) * 4.0;
+
         let draw_time = Instant::now();
+        self.player.tick(delta);
+
         self.render.draw(self.player.pos)?;
         self.perf.frame_time.add_assign(draw_time.elapsed());
         self.perf.frame_count += 1;

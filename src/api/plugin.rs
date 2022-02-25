@@ -8,7 +8,6 @@ use std::{
 };
 
 use eyre::{bail, eyre, Result};
-use mlua::prelude::*;
 use serde::Deserialize;
 use tracing::{info, warn};
 use zip::ZipArchive;
@@ -70,10 +69,7 @@ impl Plugins {
             manifest.version,
             file_name_or_unknown(path)
         );
-        Ok(Plugin {
-            archive,
-            manifest,
-        })
+        Ok(Plugin { archive, manifest })
     }
 }
 

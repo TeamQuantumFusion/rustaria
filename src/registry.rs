@@ -63,8 +63,8 @@ use std::fmt::Debug;
 use std::{fmt::Display, str::FromStr};
 
 use mlua::prelude::*;
+use serde::de::Error;
 use serde::{Deserialize, Deserializer};
-use serde::de::{EnumAccess, Error, MapAccess, SeqAccess};
 use thiserror::Error;
 use tracing::{debug, info};
 
@@ -191,7 +191,10 @@ impl<'de> Deserialize<'de> for Tag {
                 Tag::from_str(v).map_err(de::Error::custom)
             }
 
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> where E: Error {
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
                 Tag::from_str(v).map_err(de::Error::custom)
             }
         }
@@ -205,54 +208,4 @@ pub type RawId = u32;
 #[derive(Clone, Debug, Deserialize)]
 pub struct LanguageKey {
     // TODO
-}
-
-pub struct RegistryBuilder<T> {
-    name: &'static str,
-    data: Vec<(Tag, T)>,
-}
-
-impl<T> RegistryBuilder<T> {
-    pub fn new(name: &'static str) -> RegistryBuilder<T> {
-        Self { name, data: vec![] }
-    }
-
-    pub fn register(mut self, tag: Tag, element: T) -> Self {
-        debug!("Registered '{tag}' registry '{}'", self.name);
-        self.data.push((tag, element));
-        self
-    }
-
-    pub fn register_all(mut self, map: HashMap<Tag, T>) -> Self
-    where
-        T: Debug
-    {
-        debug!("Registering all to registry '{}':", self.name);
-        for (tag, _) in &map {
-            debug!("{tag}");
-        }
-        debug!("");
-        self.data.extend(map);
-        self
-    }
-
-    pub fn build(mut self, hasher: &mut Hasher) -> Registry<T> {
-        self.data
-            .sort_by(|(i1, _), (i2, _)| i1.to_string().cmp(&i2.to_string()));
-
-        for (id, (tag, _)) in self.data.iter().enumerate() {
-            hasher.update(&id.to_be_bytes());
-            hasher.update(tag.to_string().as_bytes());
-        }
-
-        let mut registry = Registry::new();
-
-        for (id, (tag, item)) in self.data.into_iter().enumerate() {
-            registry.entries.push(item);
-            registry.id_to_tag.push(tag.clone());
-            registry.tag_to_id.insert(tag, id as u32);
-        }
-
-        registry
-    }
 }
