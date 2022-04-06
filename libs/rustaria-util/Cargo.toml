@@ -1,0 +1,21 @@
+[package]
+name = "rustaria-util"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Logging
+tracing = "0.1.29"
+tracing-futures = "0.2.5"
+tracing-error = "0.2.0"
+tracing-subscriber = { version = "0.3.7", features = ["time"] }
+time = { version = "0.3.5", features = ["macros"] }
+
+# Errors
+eyre = "0.6.5"
+color-eyre = "0.6.0"
+
+# Tags
+uuid = { version = "0.8.2", features = ["v4"] }

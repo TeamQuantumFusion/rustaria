@@ -20,7 +20,7 @@ eyre = "0.6.5"
 color-eyre = "0.6.0"
 serde = { version = "1.0.133", features = ["derive"] }
 serde_json = "1.0.74"
-mooncake = { path = "mooncake" }
+mooncake = { path = "libs/mooncake" }
 structopt = "0.3.25"
 uuid = { version = "0.8.2", features = ["v4"] }
 thiserror = "1.0.30"
@@ -34,7 +34,7 @@ zip = "0.5.0"
 walkdir = "2.3.2"
 
 [workspace]
-members = ["mooncake", "rustaria-client", "rustaria-server"]
+members = ["libs/mooncake", "libs/rustaria-network", "libs/rustaria-util", "rustaria-client", "rustaria-server"]
 
 [profile.release]
 panic = "abort"
