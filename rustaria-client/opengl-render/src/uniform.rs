@@ -77,7 +77,6 @@ impl UniformValueBinder {
             UIVec4(value) => gl::Uniform4uiv(location, 1, value.as_ptr()),
             Sampler2D(sampler) => gl::Uniform1i(location, sampler.unit as i32),
             USampler2D(sampler) => gl::Uniform1i(location, sampler.unit as i32),
-            _ => {}
         }
     }
 }

@@ -20,21 +20,21 @@ fn plugin_id() -> LuaResult<String> {
     let ctx = PluginInput::get(lua)?;
     Ok(ctx.id)
 }
+
 #[mooncake(lua)]
 fn make_id(strs: Variadic<String>) -> LuaResult<Tag> {
-    match strs.len() {
+    let s = match strs.len() {
         // just name
-        1 => Ok(Tag {
-            plugin_id: plugin_id(lua, ())?,
-            name: strs[0].clone(),
-        }),
+        1 => format!("{}:{}", plugin_id(lua, ())?, strs[0]),
         // both plugin id and name specified
-        2 => Ok(Tag {
-            plugin_id: strs[0].clone(),
-            name: strs[1].clone(),
-        }),
-        _ => Err(LuaError::DeserializeError(
-            "more than two strings provided".into(),
-        )),
-    }
+        2 => format!("{}:{}", strs[0], strs[1]),
+        _ => {
+            return Err(LuaError::DeserializeError(
+                "more than two strings provided".into(),
+            ))
+        }
+    };
+    let tag = Tag::from_string(s)
+        .expect("Constructed tag is not colon-delimited - this is certainly a bug!");
+    Ok(tag)
 }

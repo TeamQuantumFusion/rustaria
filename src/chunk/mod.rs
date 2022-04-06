@@ -16,7 +16,7 @@ pub mod tile;
 pub mod tree;
 pub mod wall;
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Chunk {
     pub tiles: ChunkGrid<Tile>,
     pub walls: ChunkGrid<Wall>,

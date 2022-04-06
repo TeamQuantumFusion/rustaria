@@ -7,7 +7,7 @@ use rectangle_pack::{
     contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert,
     RectanglePackError, TargetBin,
 };
-use tracing::{debug, info};
+use tracing::info;
 
 use crate::texture::{
     InternalFormat, TextureData, TextureDataFormat, TextureDescriptor, TextureLod,
@@ -84,6 +84,7 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
             }
         }
 
+        // FIXME(leocth) save it in the run dir
         image.save("./atlas.png");
 
         info!(target: "opengl", "Mipmapping atlas");

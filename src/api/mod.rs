@@ -1,6 +1,6 @@
-use std::{collections::HashMap, fmt::Debug};
-use std::path::Path;
+use std::{collections::HashMap, fmt::Debug, path::PathBuf};
 
+use eyre::Result;
 use mlua::prelude::*;
 use tracing::info;
 
@@ -28,6 +28,7 @@ pub struct Rustaria {
     pub mod_list: ModList,
 
     pub lua: Lua,
+    pub plugins_dir: PathBuf,
     pub plugins: Plugins,
 
     pub hash: RustariaHash,
@@ -37,24 +38,27 @@ pub struct Rustaria {
 }
 
 impl Rustaria {
-    pub fn new(plugins_dir: &Path) -> eyre::Result<Rustaria> {
-        Ok(Rustaria {
+    pub fn new(plugins_dir: impl Into<PathBuf>) -> Self {
+        Self {
             lua: Lua::new(),
-            plugins: Plugins::load(plugins_dir)?,
+            plugins_dir: plugins_dir.into(),
+            plugins: Default::default(),
             mod_list: Default::default(),
             hash: Default::default(),
             tiles: Default::default(),
             walls: Default::default(),
             entities: Default::default(),
-        })
+        }
     }
 
-    pub fn reload(&mut self) -> eyre::Result<()> {
-        info!(target: "engine", "Reloading {} plugins.", self.plugins.len());
+    pub fn reload(&mut self) -> Result<()> {
+        info!("Scanning for plugins in directory {:?}", self.plugins_dir);
+        self.plugins = Plugins::load(&self.plugins_dir)?;
+        info!("Executing plugins");
         let mut loader = Loader::default();
         let outputs = loader.init(&self.lua, &self.plugins)?;
 
-
+        info!("Initializing API");
         self.mod_list.clear();
         self.tiles.clear();
         self.walls.clear();
@@ -78,58 +82,6 @@ impl Rustaria {
 }
 
 pub type ModList = HashMap<String, String>;
-
-// impl<'lua> Rustaria<'lua> {
-//     pub fn new(plugins_dir: &Path, lua: &'lua LuaRuntime) -> Result<Rustaria<'lua>> {
-//         let mut api = Self::default();
-//         api.reload(plugins_dir, lua)?;
-//         Ok(api)
-//     }
-//     pub fn reload(&mut self, plugins_dir: &Path, lua: &'lua LuaRuntime) -> Result<()> {
-//         self.plugins = plugin::scan_and_load_plugins(plugins_dir, lua)?;
-//         self.plugins.init(lua)?;
-
-//         let mut hasher = Hasher::new();
-//         self.tiles = RegistryBuilder::new("tiles")
-//             .register_all(lua.registries.tile.read().clone())
-//             .build(&mut hasher);
-//         self.walls = RegistryBuilder::new("walls")
-//             .register_all(lua.registries.wall.read().clone())
-//             .build(&mut hasher);
-//         self.entities = RegistryBuilder::new("entities")
-//             .register_all(lua.registries.entity.read().clone())
-//             .build(&mut hasher);
-//         Ok(())
-//     }
-//     pub fn get_plugin_assets(&self, plugin: &str) -> Option<&PluginArchive> {
-//         self.plugins.0.get(plugin).map(|plugin| &plugin.archive)
-//     }
-// }
-
-// pub struct LuaRuntime {
-//     lua: Lua,
-
-//     registries: Registries,
-// }
-// impl LuaRuntime {
-//     pub fn new() -> LuaResult<Self> {
-//         let lua = Lua::new();
-//         {
-//             let package: LuaTable = lua.globals().get("package")?;
-//             let preload: LuaTable = package.get("preload")?;
-
-//             preload.set("log", log::package(&lua)?)?;
-//             preload.set("meta", meta::package(&lua)?)?;
-//         }
-
-//         let registries = Registries::new(&lua)?;
-
-//         Ok(Self { lua, registries })
-//     }
-//     pub fn reload(&mut self) {
-//         self.registries.clear();
-//     }
-// }
 
 #[derive(Default, Debug, PartialEq, Eq, Clone, serde::Serialize)]
 pub struct RustariaHash {

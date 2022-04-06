@@ -1,5 +1,4 @@
-use std::time::Duration;
-use tracing::{debug, info};
+use tracing::debug;
 
 use opengl::gl;
 use opengl::gl::GLuint;

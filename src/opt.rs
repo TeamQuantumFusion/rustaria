@@ -35,7 +35,7 @@ pub struct Opt {
 ///
 /// [`init`]: crate::init
 /// [`EnvFilter`]: tracing_subscriber::filter::EnvFilter
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Verbosity {
     /// Only info-level information shown, least verbose.
     ///

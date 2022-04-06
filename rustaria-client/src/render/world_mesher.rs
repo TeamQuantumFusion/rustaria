@@ -3,17 +3,16 @@ use std::ops::BitXorAssign;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 
 use std::thread;
-use std::time::{Duration};
+use std::time::Duration;
 
 use crossbeam::channel::{Receiver, Sender};
 
-
 use opengl_render::atlas::{Atlas, AtlasLocation};
 use opengl_render::buffer::{Buffer, BufferAccess, BufferUsage};
-use rustaria::api::Rustaria;
 use rustaria::api::types::ConnectionType;
+use rustaria::api::Rustaria;
 use rustaria::chunk::{Chunk, ChunkGrid};
-use rustaria::types::{CHUNK_SIZE, ChunkPos, ChunkSubPos, Direction, Offset};
+use rustaria::types::{ChunkPos, ChunkSubPos, Direction, Offset, CHUNK_SIZE};
 
 use crate::render::texture_format::TileImagePos;
 use crate::render::world_render::{AtlasId, QuadImageVertex};
@@ -58,7 +57,10 @@ pub struct RenderTile {
 pub struct WorldMeshHandler {
     buffer: Buffer<QuadImageVertex>,
     pub index_buffer: Buffer<u32>,
-    mesh_channel: (Sender<(Vec<QuadImageVertex>, Vec<u32>)>, Receiver<(Vec<QuadImageVertex>, Vec<u32>)>),
+    mesh_channel: (
+        Sender<(Vec<QuadImageVertex>, Vec<u32>)>,
+        Receiver<(Vec<QuadImageVertex>, Vec<u32>)>,
+    ),
 
     tile_lookup: Vec<Option<RenderTile>>,
     chunks: Arc<RwLock<HashMap<ChunkPos, RenderChunk>>>,
@@ -66,15 +68,23 @@ pub struct WorldMeshHandler {
 }
 
 impl WorldMeshHandler {
-    pub fn new(rsa: &Rustaria, atlas: &Atlas<AtlasId>, buffer: Buffer<QuadImageVertex>, index_buffer: Buffer<u32>) -> eyre::Result<WorldMeshHandler> {
+    pub fn new(
+        rsa: &Rustaria,
+        atlas: &Atlas<AtlasId>,
+        buffer: Buffer<QuadImageVertex>,
+        index_buffer: Buffer<u32>,
+    ) -> eyre::Result<WorldMeshHandler> {
         let mut lookup = Vec::new();
         for (id, prot) in rsa.tiles.entries().iter().enumerate() {
-            lookup.push(prot.sprite.is_some().then(||
+            lookup.push(prot.sprite.is_some().then(|| {
                 RenderTile {
                     ty: prot.connection,
-                    sprite: *atlas.lookup.get(&AtlasId::Tile(id as u32)).unwrap_or_else(|| atlas.lookup.get(&AtlasId::Missing).unwrap()),
+                    sprite: *atlas
+                        .lookup
+                        .get(&AtlasId::Tile(id as u32))
+                        .unwrap_or_else(|| atlas.lookup.get(&AtlasId::Missing).unwrap()),
                 }
-            ));
+            }));
         }
         Ok(WorldMeshHandler {
             buffer,
@@ -92,7 +102,11 @@ impl WorldMeshHandler {
         self.new_chunks.insert(pos, render_chunk);
     }
 
-    fn compile_borders(chunks: &mut HashMap<ChunkPos, RenderChunk>, pos: ChunkPos, chunk: &mut RenderChunk) {
+    fn compile_borders(
+        chunks: &mut HashMap<ChunkPos, RenderChunk>,
+        pos: ChunkPos,
+        chunk: &mut RenderChunk,
+    ) {
         for offset in Direction::all() {
             if let Some(neighbor_pos) = pos.offset(offset) {
                 if let Some(neighbor) = chunks.get_mut(&neighbor_pos) {
@@ -105,19 +119,28 @@ impl WorldMeshHandler {
                         // clippy having a stroke
                         #[allow(clippy::needless_range_loop)]
                         for x in x_offset..=x_length + x_offset {
-                            let neighbor_sub_pos = ChunkSubPos { x: x as u8, y: y as u8 }.overflowing_offset(offset);
+                            let neighbor_sub_pos = ChunkSubPos {
+                                x: x as u8,
+                                y: y as u8,
+                            }
+                            .overflowing_offset(offset);
 
                             let mut ty = ConnectionType::Isolated;
                             if let Some(tile) = &row[x] {
                                 if let Some(neighbor_tile) = neighbor.tile.get(neighbor_sub_pos) {
-                                    if let (ConnectionType::Connected, ConnectionType::Connected) = (tile.ty, neighbor_tile.ty) {
+                                    if let (ConnectionType::Connected, ConnectionType::Connected) =
+                                        (tile.ty, neighbor_tile.ty)
+                                    {
                                         ty = ConnectionType::Connected;
                                     }
                                 }
                             }
 
                             chunk.tile_neighbor.grid[y][x].set(offset, ty);
-                            neighbor.tile_neighbor.get_mut(neighbor_sub_pos).set(offset.flip(), ty);
+                            neighbor
+                                .tile_neighbor
+                                .get_mut(neighbor_sub_pos)
+                                .set(offset.flip(), ty);
                         }
                     }
                 }
@@ -143,15 +166,18 @@ impl WorldMeshHandler {
             }
         }
 
-
-
         if let Ok((vertex, index)) = self.mesh_channel.1.try_recv() {
-            self.index_buffer.upload(&index, BufferUsage::Static, BufferAccess::Draw);
-            self.buffer.upload(&vertex, BufferUsage::Static, BufferAccess::Draw);
+            self.index_buffer
+                .upload(&index, BufferUsage::Static, BufferAccess::Draw);
+            self.buffer
+                .upload(&vertex, BufferUsage::Static, BufferAccess::Draw);
         }
     }
 
-    fn build_mesh(channel: Sender<(Vec<QuadImageVertex>, Vec<u32>)>, read: RwLockReadGuard<HashMap<ChunkPos, RenderChunk>>) {
+    pub fn build_mesh(
+        channel: Sender<(Vec<QuadImageVertex>, Vec<u32>)>,
+        read: RwLockReadGuard<HashMap<ChunkPos, RenderChunk>>,
+    ) {
         thread::sleep(Duration::from_millis(100));
         let mut data = Vec::new();
         let mut indices = Vec::new();
@@ -169,7 +195,9 @@ impl WorldMeshHandler {
                         let y = y as f32 + (pos.y as f32 * CHUNK_SIZE as f32);
 
                         let var = {
-                            let mut p = u32::from_le_bytes(x.to_be_bytes()).wrapping_mul(9).wrapping_add(u32::from_le_bytes(y.to_le_bytes()));
+                            let mut p = u32::from_le_bytes(x.to_be_bytes())
+                                .wrapping_mul(9)
+                                .wrapping_add(u32::from_le_bytes(y.to_le_bytes()));
                             p.bitxor_assign(p.wrapping_shl(11));
                             p.bitxor_assign(p.wrapping_shr(7));
                             p.bitxor_assign(p.wrapping_shl(17));
@@ -177,8 +205,12 @@ impl WorldMeshHandler {
                         } % 3;
 
                         let tile_size = img.height / 4.0;
-                        let (o_x, o_y) = TileImagePos::new(tile.up, tile.dw, tile.lf, tile.rg).get_tex_pos();
-                        let (t_x, t_y) = (img.x + (o_x * tile_size) + (var as f32 * img.height), img.y + (o_y * tile_size));
+                        let (o_x, o_y) =
+                            TileImagePos::new(tile.up, tile.dw, tile.lf, tile.rg).get_tex_pos();
+                        let (t_x, t_y) = (
+                            img.x + (o_x * tile_size) + (var as f32 * img.height),
+                            img.y + (o_y * tile_size),
+                        );
                         // todo custom variant amounts. currently its forced to be 3
                         // todo make a builder.
                         //0, 1, 3, 1, 2, 3u32
@@ -214,7 +246,6 @@ impl WorldMeshHandler {
     }
 }
 
-
 impl RenderChunk {
     pub fn new(chunk: &Chunk, handler: &WorldMeshHandler) -> RenderChunk {
         let mut tile = ChunkGrid::new(None);
@@ -242,7 +273,8 @@ impl RenderChunk {
                             if let Some(top_tile) = &self.tile.grid[y + 1][x] {
                                 if let ConnectionType::Connected = top_tile.ty {
                                     self.tile_neighbor.grid[y][x].up = ConnectionType::Connected;
-                                    self.tile_neighbor.grid[y + 1][x].dw = ConnectionType::Connected;
+                                    self.tile_neighbor.grid[y + 1][x].dw =
+                                        ConnectionType::Connected;
                                 }
                             }
                         }
@@ -251,7 +283,8 @@ impl RenderChunk {
                             if let Some(right_tile) = &row[x + 1] {
                                 if let ConnectionType::Connected = right_tile.ty {
                                     self.tile_neighbor.grid[y][x].rg = ConnectionType::Connected;
-                                    self.tile_neighbor.grid[y][x + 1].lf = ConnectionType::Connected;
+                                    self.tile_neighbor.grid[y][x + 1].lf =
+                                        ConnectionType::Connected;
                                 }
                             }
                         }

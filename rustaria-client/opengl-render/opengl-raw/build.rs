@@ -1,6 +1,5 @@
 extern crate gl_generator;
 
-use std::borrow::Cow;
 use std::fs::File;
 use std::io;
 use std::io::Write;
@@ -10,7 +9,7 @@ use gl_generator::{Api, Fallbacks, Generator, Profile, Registry};
 use gl_generator::{Binding, Cmd, Enum};
 
 fn main() {
-    let path = Path::new(&"./src/gl.rs");
+    let path = Path::new("./src/gl.rs");
     if !path.exists() {
         let mut file = File::create(&path).unwrap();
 
@@ -32,8 +31,16 @@ impl Generator for NiceGenerator {
     {
         // Header
         dest.write_all(
-            "#![allow(non_upper_case_globals, non_snake_case, non_camel_case_types, dead_code, missing_safety_doc)]\n"
-                .as_ref(),
+            br#"
+#![allow(
+    non_upper_case_globals, 
+    non_snake_case, 
+    non_camel_case_types,
+    dead_code,
+    clippy::missing_safety_doc,
+    clippy::too_many_arguments,
+)]
+            "#
         )?;
         dest.write_all("use std::ffi::c_void;\n".as_ref())?;
         dest.write_all("use std::mem::transmute;\n".as_ref())?;
@@ -65,34 +72,36 @@ impl Generator for NiceGenerator {
 
         // Loading
         dest.write_all(
-            "\
-		static ERR: extern \"system\" fn() = gl_not_loaded;
-		extern \"system\" fn gl_not_loaded() {
-			panic!(\"GL Function not loaded\")
-		}"
-            .as_ref(),
+            br#"
+
+static ERR: extern "system" fn() = gl_not_loaded;
+extern "system" fn gl_not_loaded() {
+    panic!("GL Function not loaded")
+}
+"#
         )?;
 
         dest.write_all(
-            "\
-				#[inline(never)]
-		unsafe fn load(func: &mut dyn FnMut(&'static str) -> *const c_void,
-				   symbol: &'static str,
-				   fallbacks: &[&'static str]) -> *const c_void {
-			let mut ptr = func(symbol);
-			if ptr.is_null() {
-				for &sym in fallbacks {
-					ptr = func(sym);
-					if !ptr.is_null() { break; }
-				}
-			}
-            if ptr.is_null() {
-                ptr = transmute(ERR);
-            }
-			ptr
-		}
-		"
-            .as_ref(),
+    br#"
+#[inline(never)]
+unsafe fn load(
+    func: &mut dyn FnMut(&'static str) -> *const c_void,
+    symbol: &'static str,
+    fallbacks: &[&'static str]
+) -> *const c_void {
+    let mut ptr = func(symbol);
+    if ptr.is_null() {
+        for &sym in fallbacks {
+            ptr = func(sym);
+            if !ptr.is_null() { break; }
+        }
+    }
+    if ptr.is_null() {
+        ptr = transmute(ERR as *const std::ffi::c_void);
+    }
+    ptr
+}
+"#
         )?;
 
         dest.write_all(
@@ -151,12 +160,12 @@ pub fn write_const<W: io::Write>(w: &mut W, en: &Enum) {
     w.write_all(string.as_ref()).unwrap();
 }
 
-fn ty_str(str: &Cow<'static, str>) -> String {
+fn ty_str(str: &str) -> String {
     str.replace("types::", "")
         .replace("__gl_imports::raw::", "")
 }
 
-fn param_ret_str(params: &Vec<Binding>, proto: &Binding, names: bool) -> String {
+fn param_ret_str(params: &[Binding], proto: &Binding, names: bool) -> String {
     let params = params_str(params, names);
     if proto.ty != "()" {
         format!("({params}) -> {}", ty_str(&proto.ty))
@@ -165,14 +174,14 @@ fn param_ret_str(params: &Vec<Binding>, proto: &Binding, names: bool) -> String 
     }
 }
 
-fn params_str(params: &Vec<Binding>, names: bool) -> String {
+fn params_str(params: &[Binding], names: bool) -> String {
     let params: Vec<String> = params
         .iter()
         .map(|bind| {
             if names {
                 format!("{}: {}", bind.ident, ty_str(&bind.ty))
             } else {
-                format!("{}", ty_str(&bind.ty))
+                ty_str(&bind.ty)
             }
         })
         .collect();

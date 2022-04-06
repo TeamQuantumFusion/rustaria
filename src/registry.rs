@@ -63,12 +63,9 @@ use std::fmt::Debug;
 use std::{fmt::Display, str::FromStr};
 
 use mlua::prelude::*;
+use serde::de::Error;
 use serde::{Deserialize, Deserializer};
-use serde::de::{EnumAccess, Error, MapAccess, SeqAccess};
 use thiserror::Error;
-use tracing::{debug, info};
-
-use crate::blake3::Hasher;
 
 /// A registry containing and managing user-added data to Rustaria.
 /// See the [module documentation](index.html) for more details.
@@ -125,36 +122,47 @@ impl<T> Default for Registry<T> {
 // by the registry map.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Tag {
-    pub plugin_id: String,
-    pub name: String,
+    inner: String,
+    colon_index: usize,
+}
+impl Tag {
+    pub fn from_string(s: String) -> Result<Self, ParseTagError> {
+        let colon_index = s.find(':').ok_or(ParseTagError::NotColonSeparated)?;
+        Ok(Self {
+            inner: s,
+            colon_index,
+        })
+    }
+    pub fn plugin_id(&self) -> &str {
+        &self.inner[..self.colon_index]
+    }
+    pub fn name(&self) -> &str {
+        &self.inner[self.colon_index + 1..]
+    }
 }
 
 impl FromStr for Tag {
     type Err = ParseTagError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        info!("doiing!");
-        match s.split_once(':') {
-            Some((plugin_id, name)) => Ok(Self {
-                plugin_id: plugin_id.into(),
-                name: name.into(),
-            }),
-            None => Err(ParseTagError::NotColonSeparated),
-        }
+        let colon_index = s.find(':').ok_or(ParseTagError::NotColonSeparated)?;
+        Ok(Self {
+            inner: s.to_string(),
+            colon_index,
+        })
     }
 }
 
 impl Display for Tag {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let Tag { plugin_id, name } = self;
-        write!(f, "{plugin_id}:{name}")
+        write!(f, "{}", self.inner)
     }
 }
 
 impl LuaUserData for Tag {
     fn add_fields<'lua, F: LuaUserDataFields<'lua, Self>>(f: &mut F) {
-        f.add_field_method_get("plugin_id", |_, t| Ok(t.plugin_id.clone()));
-        f.add_field_method_get("name", |_, t| Ok(t.name.clone()));
+        f.add_field_method_get("plugin_id", |_, t| Ok(t.plugin_id().to_owned()));
+        f.add_field_method_get("name", |_, t| Ok(t.name().to_owned()));
     }
 
     fn add_methods<'lua, M: LuaUserDataMethods<'lua, Self>>(m: &mut M) {
@@ -191,7 +199,10 @@ impl<'de> Deserialize<'de> for Tag {
                 Tag::from_str(v).map_err(de::Error::custom)
             }
 
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> where E: Error {
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
                 Tag::from_str(v).map_err(de::Error::custom)
             }
         }
@@ -205,54 +216,4 @@ pub type RawId = u32;
 #[derive(Clone, Debug, Deserialize)]
 pub struct LanguageKey {
     // TODO
-}
-
-pub struct RegistryBuilder<T> {
-    name: &'static str,
-    data: Vec<(Tag, T)>,
-}
-
-impl<T> RegistryBuilder<T> {
-    pub fn new(name: &'static str) -> RegistryBuilder<T> {
-        Self { name, data: vec![] }
-    }
-
-    pub fn register(mut self, tag: Tag, element: T) -> Self {
-        debug!("Registered '{tag}' registry '{}'", self.name);
-        self.data.push((tag, element));
-        self
-    }
-
-    pub fn register_all(mut self, map: HashMap<Tag, T>) -> Self
-    where
-        T: Debug
-    {
-        debug!("Registering all to registry '{}':", self.name);
-        for (tag, _) in &map {
-            debug!("{tag}");
-        }
-        debug!("");
-        self.data.extend(map);
-        self
-    }
-
-    pub fn build(mut self, hasher: &mut Hasher) -> Registry<T> {
-        self.data
-            .sort_by(|(i1, _), (i2, _)| i1.to_string().cmp(&i2.to_string()));
-
-        for (id, (tag, _)) in self.data.iter().enumerate() {
-            hasher.update(&id.to_be_bytes());
-            hasher.update(tag.to_string().as_bytes());
-        }
-
-        let mut registry = Registry::new();
-
-        for (id, (tag, item)) in self.data.into_iter().enumerate() {
-            registry.entries.push(item);
-            registry.id_to_tag.push(tag.clone());
-            registry.tag_to_id.insert(tag, id as u32);
-        }
-
-        registry
-    }
 }
