@@ -8,3 +8,4 @@ rustaria-server/run
 # OS weirdness
 .DS_Store
 desktop.ini
+/plugin/asset/

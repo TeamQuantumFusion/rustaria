@@ -1,13 +1,14 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
-use std::net::SocketAddr;
+use std::marker::PhantomData;
+
 use std::sync::RwLock;
 
-use crossbeam::channel::{unbounded, Receiver, Sender};
+use crossbeam::channel::{Receiver, Sender, unbounded};
 
 use crate::{EstablishingInstance, NetworkBackend, NetworkInterface, Packet, Token};
 
-pub struct LocalBackend<I, O, C>
+pub struct LocalBackend<I, O, EI, C>
 where
     I: Packet,
     O: Packet,
@@ -16,26 +17,29 @@ where
     clients: HashMap<Token, (Sender<O>, Receiver<I>)>,
     connected: RwLock<HashSet<(Token, C)>>,
     disconnected: RwLock<HashSet<Token>>,
+    ei: PhantomData<EI>
 }
 
-impl<I, O, C> LocalBackend<I, O, C>
+impl<I, O, EI, C> LocalBackend<I, O, EI, C>
 where
     I: Packet,
     O: Packet,
     C: Eq + Hash,
+    EI: EstablishingInstance<C>,
 {
-    pub fn new() -> LocalBackend<I, O, C> {
+    pub fn new() -> LocalBackend<I, O, EI, C>{
         Self {
             this: rustaria_util::uuid(),
             clients: HashMap::new(),
             connected: RwLock::new(HashSet::new()),
             disconnected: RwLock::new(HashSet::new()),
+            ei: Default::default()
         }
     }
 
     pub fn connect<OC: Eq + Hash>(
         &mut self,
-        other: &mut LocalBackend<O, I, OC>,
+        other: &mut LocalBackend<O, I, EI, OC>,
         this_info: C,
         other_info: OC,
     ) {
@@ -59,7 +63,7 @@ where
     }
 }
 
-impl<I, O, EI, C> NetworkBackend<I, O, EI, C> for LocalBackend<I, O, C>
+impl<I, O, EI, C> NetworkBackend<I, O, EI, C> for LocalBackend<I, O, EI, C>
 where
     I: Packet,
     O: Packet,
@@ -73,7 +77,7 @@ where
         }
         // Trigger disconnect to clear all usages of the token.
         // Happens if the client does not exist or if the sender is closed.
-        self.disconnect(to);
+        self.disconnected.write().unwrap().insert(to);
         Ok(())
     }
 
@@ -86,10 +90,10 @@ where
         Ok(())
     }
 
-    fn poll<NI: NetworkInterface<I, O, C, EI>>(&mut self, interface: &mut NI) {
-        for (from, (_, receiver)) in self.clients {
+    fn poll(&mut self, interface: &mut impl NetworkInterface<I, O, C, EI>) {
+        for (from, (_, receiver)) in &self.clients {
             while let Ok(value) = receiver.try_recv() {
-                interface.receive(from, value);
+                interface.receive(*from, value);
             }
         }
 

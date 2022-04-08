@@ -1,7 +1,4 @@
-use std::net::SocketAddr;
-use serde::de::DeserializeOwned;
-use serde::{Serialize};
-
+use serde::{de::DeserializeOwned, Serialize};
 use rustaria_util::{Result, Uuid};
 
 pub mod local;
@@ -16,11 +13,11 @@ pub trait NetworkBackend<I, O, EI, C>
 where
     I: Packet,
     O: Packet,
-    EI: EstablishingInstance<C>
+    EI: EstablishingInstance<C>,
 {
     fn send(&self, to: Token, packet: O) -> Result<()>;
     fn distribute(&self, from: Token, packet: O) -> Result<()>;
-    fn poll<NI: NetworkInterface<I, O, C, EI>>(&mut self, interface: &mut NI);
+    fn poll(&mut self, interface: &mut impl NetworkInterface<I, O, C, EI>);
 }
 
 /// A NetworkInterface takes care of handling events that come from the other clients.

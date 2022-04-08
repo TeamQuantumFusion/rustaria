@@ -87,7 +87,7 @@ where
         Ok(())
     }
 
-    fn poll<NI: NetworkInterface<I, O, C, EI>>(&mut self, interface: &mut NI) {
+    fn poll(&mut self, interface: &mut impl NetworkInterface<I, O, C, EI>) {
         // kinda cringe ngl, maybe we should create a thread separate for this.
         self.socket.manual_poll(Instant::now());
 

@@ -19,3 +19,6 @@ color-eyre = "0.6.0"
 
 # Tags
 uuid = { version = "0.8.2", features = ["v4"] }
+
+# Types
+serde = { version = "1.0.133", features = ["derive"] }

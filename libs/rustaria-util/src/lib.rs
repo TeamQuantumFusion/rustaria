@@ -1,16 +1,18 @@
 // Re-exports
-pub use tracing::*;
 pub use eyre::*;
-pub use uuid::Uuid;
-
 // Imports
 use time::macros::format_description;
+pub use tracing::*;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+pub use uuid::Uuid;
 
-pub fn initialize()  -> eyre::Result<()> {
+pub mod blake3;
+pub mod ty;
+
+pub fn initialize() -> eyre::Result<()> {
     std::env::set_var("RUST_BACKTRACE", "1");
     color_eyre::install()?;
 

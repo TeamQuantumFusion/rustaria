@@ -15,11 +15,10 @@ use walkdir::WalkDir;
 use zip::{write::FileOptions, CompressionMethod, ZipWriter};
 
 fn main() {
-    println!("cargo:rerun-if-changed=rustaria-plugin/");
+    println!("cargo:rerun-if-changed=plugin/");
 
     pack_core_plugins(&[
-        Path::new("rustaria-server/run/plugins"),
-        Path::new("rustaria-client/run/plugins"),
+        Path::new("runtime/client/run/plugins"),
     ])
 }
 
@@ -38,7 +37,7 @@ fn pack_core_plugins(paths: &[&Path]) {
         })
         .collect();
 
-    let core_path = PathBuf::from("rustaria-plugin");
+    let core_path = PathBuf::from("plugin");
 
     for entry in WalkDir::new(&core_path)
         .into_iter()
