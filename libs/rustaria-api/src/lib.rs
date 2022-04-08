@@ -1,6 +1,5 @@
 use std::any::{type_name, Any};
 use std::collections::HashMap;
-use std::mem;
 use std::path::PathBuf;
 
 use glob::glob;
@@ -35,13 +34,16 @@ pub struct ApiHandler {
 }
 
 impl ApiHandler {
-    pub fn new() -> ApiHandler {
-        ApiHandler {
+    pub fn new() -> Result<ApiHandler> {
+        let mut handler = ApiHandler {
             lua: Lua::new(),
             plugins: HashMap::new(),
             registries: TypeMap::new(),
             hash: [0u8; 32],
-        }
+        };
+        lua::register_api(&handler.lua)?;
+        handler.load_plugins()?;
+        Ok(handler)
     }
 
     pub fn reload(&mut self) -> ApiReloadInstance {
@@ -61,28 +63,6 @@ impl ApiHandler {
         self.plugins.get(id)
     }
 
-    pub fn load_plugins(&mut self) -> Result<()> {
-        let mut errors = Vec::new();
-        for path in glob("./plugins/*.zip")
-            .wrap_err("Could not find plugin directory.")?
-            .flatten()
-        {
-            if let Err(error) = self.load_plugin(path.clone()) {
-                errors.push(error.wrap_err(format!("Failed to load plugin at {:?}", path)));
-            }
-        }
-
-        if !errors.is_empty() {
-            let mut report = Report::msg("Failed to load plugins");
-            for plugin_error in errors {
-                report = report.wrap_err(plugin_error);
-            }
-            return Err(report);
-        }
-
-        Ok(())
-    }
-
     pub fn get_registry<P: Prototype>(&self) -> &Registry<P> {
         self.registries
             .get::<Registry<P>>()
@@ -91,14 +71,22 @@ impl ApiHandler {
     }
 }
 
-impl Default for ApiHandler {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 // Internal methods
 impl ApiHandler {
+    fn load_plugins(&mut self) -> Result<()> {
+        debug!("Loading plugins");
+        for path in glob("./plugins/*.zip")
+            .wrap_err("Could not find plugin directory.")?
+            .flatten()
+        {
+            self.load_plugin(path.clone()).wrap_err(format!("Failed to load plugin at {:?}", path))? ;
+        }
+
+
+        Ok(())
+    }
+
+
     fn load_plugin(&mut self, path: PathBuf) -> Result<()> {
         let plugin = Plugin::new(path)?;
 
@@ -116,7 +104,7 @@ pub struct ApiReloadInstance<'a> {
 
 impl ApiReloadInstance<'_> {
     pub fn register_builder<P: 'static + Prototype>(&mut self) -> Result<()> {
-        let name = type_name::<P>();
+        let name = P::name();
         debug!("Registered {}", name);
         RegistryBuilder::<P>::new(name).register(&self.api.lua)?;
         Ok(())
@@ -150,7 +138,7 @@ impl ApiReloadInstance<'_> {
     }
 
     pub fn compile_builder<P: 'static + Prototype>(&mut self) -> Result<()> {
-        let name = type_name::<P>();
+        let name = P::name();
         debug!("Compiling {}", name);
         let builder: RegistryBuilder<P> = self.api.lua.globals().get(name)?;
         self.registries

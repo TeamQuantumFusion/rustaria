@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 use rustaria_api::{ApiHandler};
 use rustaria_util::Result;
@@ -12,6 +12,12 @@ pub struct Api {
 }
 
 impl Api {
+    pub fn new() -> Api {
+        Api {
+            instance: ApiHandler::new().unwrap()
+        }
+    }
+
     pub fn reload(&mut self) -> Result<()> {
         let mut reload = self.instance.reload();
         prototypes!({ reload.register_builder::<P>()? });
@@ -27,6 +33,13 @@ impl Deref for Api {
 
     fn deref(&self) -> &Self::Target {
         &self.instance
+    }
+}
+
+impl DerefMut for Api {
+
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.instance
     }
 }
 

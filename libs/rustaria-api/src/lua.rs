@@ -2,11 +2,18 @@ mod log;
 mod meta;
 
 use mlua::Lua;
-use mlua::prelude::{LuaResult, LuaUserData};
-use crate::Plugin;
+use mlua::prelude::{LuaResult, LuaTable, LuaUserData};
+use crate::{info, Plugin};
+use rustaria_util::Result;
 
-pub fn register_api(lua: &Lua) {
-
+pub fn register_api(lua: &Lua) -> Result<()> {
+	info!("Registering api");
+	let package: LuaTable = lua.globals().get("package")?;
+	let preload: LuaTable = package.get("preload")?;
+	preload.set("log", lua.create_function(log::package)?)?;
+	preload.set("meta", lua.create_function(meta::package)?)?;
+	preload.set("meta", lua.create_function(meta::package)?)?;
+	Ok(())
 }
 
 

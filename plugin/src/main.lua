@@ -1,5 +1,5 @@
-local log = require "lua.log"
-local meta = require "lua.meta"
+local log = require "log"
+local meta = require "meta"
 local _ = meta._
 
 log.warn "IDK what alpha's on, one entrypoint is good enough"
@@ -31,22 +31,22 @@ tile:register {
     -- }
 }
 
-wall:register {
-    [_ "air"] = wall:default {},
-    [_ "another"] = wall:default {}
-}
-
-entity:register {
-    [_ "player"] = entity:default {
-        health = {
-            maximum = 100
-        }
-    },
-    [_ "bunne"] = entity:default {
-        health = {
-            maximum = 5
-        }
-    }
-}
+-- wall:register {
+--    [_ "air"] = wall:default {},
+--    [_ "another"] = wall:default {}
+--}
+--
+--entity:register {
+--    [_ "player"] = entity:default {
+--        health = {
+--            maximum = 100
+--        }
+--    },
+--    [_ "bunne"] = entity:default {
+--        health = {
+--            maximum = 5
+--        }
+--    }
+--}
 
 log.error "alpha kinda stinks"

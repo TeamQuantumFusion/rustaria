@@ -20,7 +20,10 @@ pub struct Manifest {
     #[cfg(any(feature = "client"))]
     pub client_entry: Option<String>,
     // Other plugins
+    #[serde(default)]
     pub dependencies: HashMap<PluginId, Version>,
+    #[serde(default)]
     pub incompatibilities: HashMap<PluginId, Version>,
+    #[serde(default)]
     pub recommendations: HashMap<PluginId, Version>,
 }

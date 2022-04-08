@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 rustaria = { path = "../../" }
+rustaria-util = { path = "../../libs/rustaria-util" }
 rustaria-graphics = { path = "../../libs/rustaria-graphics" }
 rustaria-wgpu = { path = "../../libs/rustaria-wgpu" }

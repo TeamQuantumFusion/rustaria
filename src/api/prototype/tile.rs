@@ -51,6 +51,10 @@ impl Prototype for TilePrototype {
 			opaque: *self.opaque.default(),
 		}
 	}
+
+	fn name() -> &'static str {
+		"tile"
+	}
 }
 impl rustaria_api::UserData for TilePrototype {}
 

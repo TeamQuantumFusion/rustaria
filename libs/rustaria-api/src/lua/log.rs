@@ -18,26 +18,26 @@ pub fn package() -> LuaResult<LuaTable<'_>> {
 
 #[mooncake(lua)]
 fn trace(msg: String) -> LuaResult<()> {
-    trace!("[{}]: {msg}", plugin_id(lua, ())?);
+    trace!(target: "plugin", "[{}] {msg}", plugin_id(lua, ())?);
     Ok(())
 }
 #[mooncake(lua)]
 fn debug(msg: String) -> LuaResult<()> {
-    debug!("[{}]: {msg}", plugin_id(lua, ())?);
+    debug!(target: "plugin", "[{}] {msg}", plugin_id(lua, ())?);
     Ok(())
 }
 #[mooncake(lua)]
 fn info(msg: String) -> LuaResult<()> {
-    info!("[{}]: {msg}", plugin_id(lua, ())?);
+    info!(target: "plugin", "[{}] {msg}", plugin_id(lua, ())?);
     Ok(())
 }
 #[mooncake(lua)]
 fn warn(msg: String) -> LuaResult<()> {
-    warn!("[{}]: {msg}", plugin_id(lua, ())?);
+    warn!(target: "plugin", "[{}] {msg}", plugin_id(lua, ())?);
     Ok(())
 }
 #[mooncake(lua)]
 fn error(msg: String) -> LuaResult<()> {
-    error!("[{}]: {}", plugin_id(lua, ())?, msg);
+    error!(target: "plugin", "[{}] {msg}", plugin_id(lua, ())?);
     Ok(())
 }
