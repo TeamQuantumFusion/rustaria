@@ -12,7 +12,6 @@ pub fn register_api(lua: &Lua) -> Result<()> {
 	let preload: LuaTable = package.get("preload")?;
 	preload.set("log", lua.create_function(log::package)?)?;
 	preload.set("meta", lua.create_function(meta::package)?)?;
-	preload.set("meta", lua.create_function(meta::package)?)?;
 	Ok(())
 }
 
