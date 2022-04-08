@@ -1,21 +1,14 @@
-use typemap::{Key, TypeMap};
-use rustaria_util::ContextCompat;
+use typemap::{Key};
 use rustaria_util::ty::{CHUNK_SIZE, ChunkSubPos};
+use serde::{Serialize, Deserialize};
+use crate::world::tile::Tile;
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Chunk {
-	layers: TypeMap
+	pub tiles: ChunkLayer<Tile>
 }
 
-impl Chunk {
-	pub fn fill<T: 'static + Copy + Clone>(&mut self, layer: ChunkLayer<T>) {
-		self.layers.insert::<ChunkLayer<T>>(layer);
-	}
-
-	pub fn layer<T: 'static + Copy + Clone>(&self) -> &ChunkLayer<T> {
-		self.layers.get::<ChunkLayer<T>>().wrap_err("Could not find layer").unwrap()
-	}
-}
-
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ChunkLayer<T: Copy + Clone> {
 	values: [T; CHUNK_SIZE]
 }

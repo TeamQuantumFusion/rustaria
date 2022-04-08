@@ -64,15 +64,15 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
 
-use mlua::prelude::{LuaResult, LuaUserData, LuaUserDataMethods};
 use mlua::{FromLua, Lua, LuaSerdeExt};
+use mlua::prelude::{LuaResult, LuaUserData, LuaUserDataMethods};
 use typemap::Key;
 
 use rustaria_util::blake3::Hasher;
 use rustaria_util::debug;
 
-use crate::tag::Tag;
 use crate::{Prototype, RawId};
+use crate::tag::Tag;
 
 /// A registry containing and managing user-added data to Rustaria.
 /// See the [module documentation](index.html) for more details.
@@ -101,6 +101,12 @@ impl<P: Prototype> Registry<P> {
     }
     pub fn get_from_tag(&self, tag: &Tag) -> Option<&P> {
         self.get_from_id(self.get_id_from_tag(tag)?)
+    }
+
+    pub fn create_from_tag(&self, tag: &Tag) -> Option<P::Item> {
+        let id = self.get_id_from_tag(tag)?;
+        let prototype = self.get_from_id(id)?;
+        Some(prototype.create(id))
     }
 
     pub fn clear(&mut self) {

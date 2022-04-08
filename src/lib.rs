@@ -2,12 +2,18 @@ pub mod network;
 pub mod api;
 pub mod world;
 
-use rustaria_world::World;
-use crate::api::Api;
 use crate::network::Networking;
+use crate::network::packet::{ClientPacket, ServerPacket};
+use crate::world::World;
 
 pub struct Server {
-	pub api: Api,
 	pub network: Networking,
 	pub world: World
+}
+
+impl Server  {
+
+	pub fn tick(&mut self) {
+		self.world.tick(&mut self.network);
+	}
 }

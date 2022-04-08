@@ -4,6 +4,7 @@ pub use eyre::*;
 use time::macros::format_description;
 pub use tracing::*;
 use tracing_error::ErrorLayer;
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -26,6 +27,7 @@ pub fn initialize() -> eyre::Result<()> {
 
     tracing_subscriber::registry()
         .with(fmt_layer)
+        .with(EnvFilter::try_new("debug,wgpu_hal=warn,wgpu_core=warn").unwrap())
         .with(ErrorLayer::default())
         .init();
 

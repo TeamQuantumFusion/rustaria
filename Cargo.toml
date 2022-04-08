@@ -11,10 +11,11 @@ rust-version = "1.57"
 [dependencies]
 serde = { version = "1.0.133", features = ["derive"] }
 typemap = "0.3.3"
+hecs = "0.7.6"
+
 
 rustaria-util = { path = "./libs/rustaria-util" }
 rustaria-api = { path = "./libs/rustaria-api" }
-rustaria-world = { path = "./libs/rustaria-world" }
 rustaria-network = { path = "./libs/rustaria-network" }
 
 [build-dependencies]
@@ -26,7 +27,6 @@ members = [
     "libs/mooncake",
     "libs/rustaria-network",
     "libs/rustaria-util",
-    "libs/rustaria-world",
     "libs/rustaria-graphics",
     "libs/rustaria-wgpu",
     "libs/rustaria-api",
