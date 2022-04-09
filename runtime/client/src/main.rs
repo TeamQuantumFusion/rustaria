@@ -18,7 +18,7 @@ use rustaria_controller::ControllerHandler;
 use rustaria_graphics::ty::{Player};
 use rustaria_graphics::RenderHandler;
 use rustaria_network::networking::{ClientNetworking, ServerNetworking};
-use rustaria_util::ty::{ChunkPos, CHUNK_SIZE};
+use rustaria_util::ty::{ChunkPos, CHUNK_SIZE, ChunkSubPos};
 use rustaria_util::{Result, warn};
 use crate::controller::PrintSubscriber;
 
@@ -43,15 +43,31 @@ fn main() {
 
     let air = api
         .get_registry::<TilePrototype>()
+        .create_from_tag(&Tag::from_str("rustaria:air").unwrap())
+        .unwrap();
+
+    let dirt = api
+        .get_registry::<TilePrototype>()
         .create_from_tag(&Tag::from_str("rustaria:dirt").unwrap())
         .unwrap();
 
-    server.world.put_chunk(
-        ChunkPos { x: 0, y: 0 },
-        Chunk {
-            tiles: ChunkLayer::new([[air; CHUNK_SIZE]; CHUNK_SIZE]),
-        },
-    );
+
+    let mut chunk = Chunk {
+        tiles: ChunkLayer::new([[air; CHUNK_SIZE]; CHUNK_SIZE]),
+    };
+
+    for y in 0..CHUNK_SIZE {
+        for x in 0..CHUNK_SIZE {
+            if (y ^ x) % 5 == 0 {
+                chunk.tiles.put(dirt, ChunkSubPos { x: x as u8, y: y as u8 });
+            }
+        }
+    }
+
+    server.world.put_chunk(ChunkPos { x: 0, y: 0 }, chunk.clone(), );
+    server.world.put_chunk(ChunkPos { x: 1, y: 0 }, chunk.clone(), );
+    server.world.put_chunk(ChunkPos { x: 0, y: 1 }, chunk.clone(), );
+    server.world.put_chunk(ChunkPos { x: 1, y: 1 }, chunk, );
 
     let mut bindings = HashMap::new();
     bindings.insert("up".to_string(), ButtonKey::Keyboard(Key::W));
