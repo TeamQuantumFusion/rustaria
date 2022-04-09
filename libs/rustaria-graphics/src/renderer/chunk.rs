@@ -77,7 +77,7 @@ impl BakedChunk {
                         builder,
                         (
                             (pos.x as f32 * CHUNK_SIZE as f32) + (x as f32),
-                            (pos.y as f32 * CHUNK_SIZE as f32) + (y as f32),
+                            (pos.y as f32 * CHUNK_SIZE as f32) - (y as f32),
                         ),
                     );
                 }
@@ -88,7 +88,7 @@ impl BakedChunk {
 
 pub const EMPTY_MATRIX: NeighborMatrix = NeighborMatrix {
     up: ConnectionType::Isolated,
-    down: ConnectionType::Connected,
+    down: ConnectionType::Isolated,
     left: ConnectionType::Isolated,
     right: ConnectionType::Isolated,
 };
@@ -105,9 +105,9 @@ pub struct NeighborMatrix {
 impl NeighborMatrix {
     pub fn set(&mut self, dir: Direction, ty: ConnectionType) {
         match dir {
-            Direction::Top => self.up = ty,
+            Direction::Up => self.up = ty,
             Direction::Left => self.left = ty,
-            Direction::Bottom => self.down = ty,
+            Direction::Down => self.down = ty,
             Direction::Right => self.right = ty,
         }
     }
