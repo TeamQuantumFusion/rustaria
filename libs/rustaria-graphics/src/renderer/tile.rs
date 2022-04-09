@@ -69,7 +69,7 @@ impl BakedTile {
                 w: 1.0,
                 h: 1.0,
             },
-            image,
+            Rectangle::from(image),
         ));
     }
 }

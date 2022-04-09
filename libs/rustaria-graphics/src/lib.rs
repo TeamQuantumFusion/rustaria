@@ -5,6 +5,7 @@ use glfw::{Context, Glfw, OpenGlProfileHint, SwapInterval, Window, WindowEvent, 
 use glfw::WindowEvent::FramebufferSize;
 
 use aloy::{ClearCommand, ClearDescriptor, OpenGlBackend, OpenGlFeature};
+use aloy::vertex::VertexBuilder;
 use renderer::pipeline::DrawPipeline;
 use rustaria::api::Api;
 use rustaria_util::{debug, ContextCompat, Result};
@@ -13,12 +14,10 @@ use ty::{Color, Pos};
 use crate::profiler::Profiler;
 use crate::renderer::WorldRenderer;
 use crate::ty::Player;
-use crate::vertex_builder::VertexBuilder;
 
 mod profiler;
 mod renderer;
 pub mod ty;
-pub mod vertex_builder;
 
 /// An identifier for which render layer we are targeting.
 #[derive(Debug)]

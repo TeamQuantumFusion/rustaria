@@ -1,9 +1,8 @@
 use std::ffi::c_void;
 
-use tracing::info;
-
 use opengl::gl;
 use opengl::gl::GLenum;
+use crate::default;
 
 use crate::raw::RawTexture;
 use crate::types::GlType;

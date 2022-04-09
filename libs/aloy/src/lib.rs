@@ -6,15 +6,16 @@ use opengl::gl::{GLbitfield, GLchar, GLenum, GLsizei, GLuint};
 
 use crate::texture::{Sampler2d, Texture};
 #[macro_use]
-mod util;
 pub mod atlas;
 pub mod attribute;
 pub mod buffer;
 pub mod program;
-mod raw;
+pub mod vertex;
 pub mod texture;
-mod types;
 pub mod uniform;
+mod raw;
+mod types;
+mod util;
 
 pub struct OpenGlBackend {
     clear_bit: GLbitfield,
