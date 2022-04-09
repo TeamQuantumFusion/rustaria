@@ -180,7 +180,7 @@ impl<I: crate::Packet, O: crate::Packet> ClientNetworking<I, O> {
         Ok(())
     }
 
-    pub fn poll<F: Fn(I)>(&mut self, consumer: F) {
+    pub fn poll<F: FnMut(I)>(&mut self, mut consumer: F) {
         match self {
             ClientNetworking::Local(_, receiver) => {
                 while let Ok(packet) = receiver.try_recv() {

@@ -162,10 +162,6 @@ impl ChunkSubPos {
             y: y_raw as u8,
         }
     }
-
-    pub fn index(self) -> usize {
-        self.x as usize + (self.y as usize * CHUNK_SIZE)
-    }
 }
 
 #[derive(

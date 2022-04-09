@@ -1,7 +1,7 @@
 use rustaria_network::networking::ServerNetworking;
 
-use crate::{ClientPacket, ServerPacket};
 use crate::network::join::PlayerJoinData;
+use crate::{ClientPacket, ServerPacket};
 
 pub mod join;
 pub mod packet;

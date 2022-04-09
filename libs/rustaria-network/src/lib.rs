@@ -1,12 +1,11 @@
-use std::fmt::Debug;
-use serde::{de::DeserializeOwned, Serialize};
 use rustaria_util::{Result, Uuid};
+use serde::{de::DeserializeOwned, Serialize};
+use std::fmt::Debug;
 
 pub mod networking;
 pub mod packet;
 
 pub type Token = Uuid;
-
 
 pub trait Packet: Serialize + DeserializeOwned + Clone + Debug {}
 

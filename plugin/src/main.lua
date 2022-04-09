@@ -9,10 +9,10 @@ log.debug(tostring(_("hey", "this_works")))
 tile:register {
     -- all default settings
     [_ "dirt"] = tile:default {
-        sprite = tostring(_("missing")),
+        sprite = tostring(_("missing.png")),
     },
     [_ "stone"] = tile:default {
-        sprite = tostring(_("stone")),
+        sprite = tostring(_("stone.png")),
     },
     [_ "air"] = tile:default {},
     -- a full example of a tile setting

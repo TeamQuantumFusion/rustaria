@@ -9,8 +9,7 @@ macro_rules! pt {
     };
 }
 
-pub fn test() {
-}
+pub fn test() {}
 
 #[macro_export]
 macro_rules! prototypes {

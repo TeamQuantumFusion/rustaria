@@ -1,14 +1,13 @@
-use std::path::{PathBuf};
+use std::path::PathBuf;
 
+use crate::plugin::archive::ArchivePath;
 use archive::Archive;
 use manifest::Manifest;
 use rustaria_util::{Context, Result};
-use crate::plugin::archive::ArchivePath;
-
 
 pub mod archive;
-pub mod manifest;
 pub mod id;
+pub mod manifest;
 
 pub struct Plugin {
     pub manifest: Manifest,

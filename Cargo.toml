@@ -25,10 +25,11 @@ walkdir = "2.3.2"
 [workspace]
 members = [
     "libs/mooncake",
+    "libs/aloy",
     "libs/rustaria-network",
     "libs/rustaria-util",
     "libs/rustaria-graphics",
-    "libs/rustaria-wgpu",
+    "libs/rustaria-controller",
     "libs/rustaria-api",
     "runtime/client",
 ]

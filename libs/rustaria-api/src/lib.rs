@@ -59,7 +59,7 @@ impl ApiHandler {
         self.hash = builder.0.finalize();
     }
 
-    pub fn get_plugin(&self, id: &PluginId) -> Option<&Plugin> {
+    pub fn get_plugin(&self, id: &str) -> Option<&Plugin> {
         self.plugins.get(id)
     }
 
@@ -79,13 +79,12 @@ impl ApiHandler {
             .wrap_err("Could not find plugin directory.")?
             .flatten()
         {
-            self.load_plugin(path.clone()).wrap_err(format!("Failed to load plugin at {:?}", path))? ;
+            self.load_plugin(path.clone())
+                .wrap_err(format!("Failed to load plugin at {:?}", path))?;
         }
-
 
         Ok(())
     }
-
 
     fn load_plugin(&mut self, path: PathBuf) -> Result<()> {
         let plugin = Plugin::new(path)?;

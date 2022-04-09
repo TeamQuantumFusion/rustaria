@@ -64,15 +64,15 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
 
-use mlua::{FromLua, Lua, LuaSerdeExt};
 use mlua::prelude::{LuaResult, LuaUserData, LuaUserDataMethods};
+use mlua::{FromLua, Lua, LuaSerdeExt};
 use typemap::Key;
 
 use rustaria_util::blake3::Hasher;
 use rustaria_util::debug;
 
-use crate::{Prototype, RawId};
 use crate::tag::Tag;
+use crate::{Prototype, RawId};
 
 /// A registry containing and managing user-added data to Rustaria.
 /// See the [module documentation](index.html) for more details.
@@ -119,7 +119,6 @@ impl<P: Prototype> Registry<P> {
 impl<P: 'static + Prototype> Key for Registry<P> {
     type Value = Registry<P>;
 }
-
 
 #[derive(Clone)]
 pub struct RegistryBuilder<P: Prototype> {

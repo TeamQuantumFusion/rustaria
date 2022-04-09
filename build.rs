@@ -17,9 +17,7 @@ use zip::{write::FileOptions, CompressionMethod, ZipWriter};
 fn main() {
     println!("cargo:rerun-if-changed=plugin/");
 
-    pack_core_plugins(&[
-        Path::new("runtime/client/run/plugins"),
-    ])
+    pack_core_plugins(&[Path::new("runtime/client/run/plugins")])
 }
 
 fn pack_core_plugins(paths: &[&Path]) {

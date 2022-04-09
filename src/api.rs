@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use rustaria_api::{ApiHandler};
+use rustaria_api::ApiHandler;
 use rustaria_util::Result;
 
 #[macro_use]
@@ -14,7 +14,7 @@ pub struct Api {
 impl Api {
     pub fn new() -> Api {
         Api {
-            instance: ApiHandler::new().unwrap()
+            instance: ApiHandler::new().unwrap(),
         }
     }
 
@@ -37,7 +37,6 @@ impl Deref for Api {
 }
 
 impl DerefMut for Api {
-
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.instance
     }
