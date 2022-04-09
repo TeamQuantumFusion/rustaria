@@ -13,35 +13,35 @@ pub trait Offset {
     Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, serde::Serialize, serde::Deserialize,
 )]
 pub enum Direction {
-    Top,
+    Up,
     Left,
-    Bottom,
+    Down,
     Right,
 }
 
 impl Direction {
     pub fn cw(self) -> Self {
         match self {
-            Direction::Top => Direction::Left,
-            Direction::Left => Direction::Bottom,
-            Direction::Bottom => Direction::Right,
-            Direction::Right => Direction::Top,
+            Direction::Up => Direction::Left,
+            Direction::Left => Direction::Down,
+            Direction::Down => Direction::Right,
+            Direction::Right => Direction::Up,
         }
     }
 
     pub fn ccw(self) -> Self {
         match self {
-            Direction::Top => Direction::Right,
-            Direction::Left => Direction::Top,
-            Direction::Bottom => Direction::Left,
-            Direction::Right => Direction::Bottom,
+            Direction::Up => Direction::Right,
+            Direction::Left => Direction::Up,
+            Direction::Down => Direction::Left,
+            Direction::Right => Direction::Down,
         }
     }
 
     pub fn flip(self) -> Self {
         match self {
-            Direction::Top => Direction::Bottom,
-            Direction::Bottom => Direction::Top,
+            Direction::Up => Direction::Down,
+            Direction::Down => Direction::Up,
             Direction::Left => Direction::Right,
             Direction::Right => Direction::Left,
         }
@@ -49,9 +49,9 @@ impl Direction {
 
     pub fn all() -> [Direction; 4] {
         [
-            Direction::Top,
+            Direction::Up,
             Direction::Left,
-            Direction::Bottom,
+            Direction::Down,
             Direction::Right,
         ]
     }
@@ -68,8 +68,8 @@ impl Offset for Direction {
 
     fn offset_y(self) -> i8 {
         match self {
-            Direction::Top => 1,
-            Direction::Bottom => -1,
+            Direction::Up => 1,
+            Direction::Down => -1,
             _ => 0,
         }
     }
