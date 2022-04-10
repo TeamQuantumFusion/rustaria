@@ -9,7 +9,7 @@ edition = "2021"
 # Base
 rustaria-util = { path = "../rustaria-util" }
 mooncake = { path = "../mooncake" }
-typemap = "0.3.3"
+type-map = "0.5.0"
 thiserror = "1.0.30"
 
 # Plugin

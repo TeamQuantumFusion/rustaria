@@ -1,6 +1,14 @@
 //! A collection of types used in Rustaria.
 
-pub const CHUNK_SIZE: usize = 24;
+use num::{FromPrimitive, PrimInt};
+
+use crate::ty::Error::OOB;
+
+pub enum Error {
+    OOB,
+}
+
+pub const CHUNK_SIZE: usize = 16;
 
 // lets later implement corner directions.
 pub trait Offset {
@@ -102,20 +110,11 @@ impl ChunkPos {
         })
     }
 
-    pub fn offset<O: Offset + Copy>(&self, offset: O) -> Option<Self> {
-        // FIXME(leocth): this is cursed
+    pub fn offset<O: Into<i64> + Copy>(&self, offset: [O; 2]) -> Option<Self> {
         Some(Self {
-            x: u32::try_from((self.x as i64).checked_add(offset.offset_x() as i64)?).ok()?,
-            y: u32::try_from((self.y as i64).checked_add(offset.offset_y() as i64)?).ok()?,
+            x: (self.x as i64).checked_add(offset[0].into())?.try_into().ok()?,
+            y: (self.y as i64).checked_add(offset[1].into())?.try_into().ok()?,
         })
-    }
-
-    pub fn get_raw_pos(&self, (world_w, world_h): (u32, u32)) -> Option<usize> {
-        if self.y >= world_w || self.x >= world_h {
-            return None;
-        }
-
-        Some(self.x as usize + (self.y as usize * world_w as usize))
     }
 }
 
@@ -123,44 +122,43 @@ impl ChunkPos {
     Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, serde::Serialize, serde::Deserialize,
 )]
 pub struct ChunkSubPos {
-    pub x: u8,
-    pub y: u8,
+    pos: u8,
 }
 
 impl ChunkSubPos {
-    pub fn offset<O: Offset + Copy>(&self, offset: O) -> Option<Self> {
-        let x_raw = u8::try_from((self.x as i16).checked_add(offset.offset_x() as i16)?).ok()?;
-        let y_raw = u8::try_from((self.y as i16).checked_add(offset.offset_y() as i16)?).ok()?;
-        if x_raw >= CHUNK_SIZE as u8 || y_raw >= CHUNK_SIZE as u8 {
-            None
-        } else {
-            Some(Self { x: x_raw, y: y_raw })
-        }
+    pub fn new(x: u8, y: u8) -> ChunkSubPos {
+        assert!(x < CHUNK_SIZE as u8);
+        assert!(y < CHUNK_SIZE as u8);
+        ChunkSubPos { pos: (x << 4) | y }
     }
 
-    pub fn overflowing_offset<O: Offset + Copy>(&self, offset: O) -> Self {
-        let mut x_raw = (self.x as i16).overflowing_add(offset.offset_x() as i16).0;
-        let mut y_raw = (self.y as i16).overflowing_add(offset.offset_y() as i16).0;
-        if x_raw >= CHUNK_SIZE as i16 {
-            x_raw = 0;
-        }
+    pub fn x(self) -> u8 {
+        (self.pos >> 4) & 0xF
+    }
 
-        if x_raw < 0 {
-            x_raw = CHUNK_SIZE as i16 - 1;
-        }
+    pub fn y(self) -> u8 {
+        (self.pos) & 0xF
+    }
 
-        if y_raw >= CHUNK_SIZE as i16 {
-            y_raw = 0;
-        }
+    pub fn offset(&self, offset: [i8; 2]) -> Option<Self> {
+        ChunkSubPos::try_from([
+            u8::try_from((self.x() as i16).checked_add(offset[0] as i16)?).ok()?,
+            u8::try_from((self.y() as i16).checked_add(offset[1] as i16)?).ok()?,
+        ])
+        .ok()
+    }
 
-        if y_raw < 0 {
-            y_raw = CHUNK_SIZE as i16 - 1;
-        }
-
-        Self {
-            x: x_raw as u8,
-            y: y_raw as u8,
-        }
+    pub fn euclid_offset(&self, offset: [i8; 2]) -> Self {
+        ChunkSubPos::new(
+            (self.x() as i16)
+                .checked_add(offset[0] as i16)
+                .unwrap_or(0)
+                .rem_euclid(CHUNK_SIZE as i16) as u8,
+            (self.y() as i16)
+                .checked_add(offset[1] as i16)
+                .unwrap_or(0)
+                .rem_euclid(CHUNK_SIZE as i16) as u8,
+        )
     }
 }
 
@@ -168,30 +166,12 @@ impl ChunkSubPos {
     Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, serde::Serialize, serde::Deserialize,
 )]
 pub struct TilePos {
-    chunk: ChunkPos,
-    sub: ChunkSubPos,
+    pub chunk: ChunkPos,
+    pub sub: ChunkSubPos,
 }
 
 impl TilePos {
-    pub fn new(x: u64, y: u64) -> Option<Self> {
-        Some(Self {
-            chunk: ChunkPos::new(x / CHUNK_SIZE as u64, y / CHUNK_SIZE as u64)?,
-            sub: ChunkSubPos {
-                x: (x % CHUNK_SIZE as u64) as u8,
-                y: (y % CHUNK_SIZE as u64) as u8,
-            },
-        })
-    }
-
-    pub fn chunk_pos(&self) -> ChunkPos {
-        self.chunk
-    }
-
-    pub fn sub_pos(&self) -> ChunkSubPos {
-        self.sub
-    }
-
-    pub fn offset<O: Offset + Copy>(&self, offset: O) -> Option<Self> {
+    pub fn offset(&self, offset: [i8; 2]) -> Option<Self> {
         Some(match self.sub.offset(offset) {
             Some(sub) => Self {
                 chunk: self.chunk,
@@ -199,8 +179,73 @@ impl TilePos {
             },
             None => Self {
                 chunk: self.chunk.offset(offset)?,
-                sub: self.sub.overflowing_offset(offset),
+                sub: self.sub.euclid_offset(offset),
             },
+        })
+    }
+}
+
+#[derive(Copy, Clone, PartialOrd, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
+
+pub struct Pos {
+    pub x: f32,
+    pub y: f32,
+}
+
+impl From<Pos> for [f32; 2] {
+    fn from(pos: Pos) -> Self {
+        [pos.x, pos.y]
+    }
+}
+
+impl From<Direction> for [i8; 2] {
+    fn from(dir: Direction) -> Self {
+        [dir.offset_x(), dir.offset_y()]
+    }
+}
+
+impl From<[f32; 2]> for Pos {
+    fn from(values: [f32; 2]) -> Self {
+        Pos {
+            x: values[0],
+            y: values[1],
+        }
+    }
+}
+
+impl TryFrom<Pos> for ChunkPos {
+    type Error = Error;
+
+    fn try_from(value: Pos) -> Result<Self, Self::Error> {
+        Ok(ChunkPos {
+            x: u32::from_f32(value.x / CHUNK_SIZE as f32).ok_or(OOB)?,
+            y: u32::from_f32(value.y / CHUNK_SIZE as f32).ok_or(OOB)?,
+        })
+    }
+}
+
+impl TryFrom<[u8; 2]> for ChunkSubPos {
+    type Error = Error;
+
+    fn try_from(value: [u8; 2]) -> Result<Self, Self::Error> {
+        if value[0] >= CHUNK_SIZE as u8 || value[1] >= CHUNK_SIZE as u8 {
+            return Err(OOB);
+        }
+
+        Ok(Self::new(value[0], value[1]))
+    }
+}
+
+impl TryFrom<Pos> for TilePos {
+    type Error = Error;
+
+    fn try_from(value: Pos) -> Result<Self, Self::Error> {
+        Ok(TilePos {
+            chunk: ChunkPos::try_from(value)?,
+            sub: ChunkSubPos::new(
+                u8::from_f32(value.x.rem_euclid(CHUNK_SIZE as f32)).ok_or(OOB)?,
+                u8::from_f32(value.y.rem_euclid(CHUNK_SIZE as f32)).ok_or(OOB)?,
+            ),
         })
     }
 }

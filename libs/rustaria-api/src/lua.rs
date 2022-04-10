@@ -2,10 +2,10 @@ mod log;
 mod meta;
 
 use crate::{info, Plugin};
-use mlua::prelude::{LuaResult, LuaTable, LuaUserData};
-use mlua::Lua;
-use rustaria_util::Result;
 
+use mlua::prelude::{LuaResult, LuaTable, LuaUserData};
+use mlua::{Function, Lua};
+use rustaria_util::Result;
 pub fn register_api(lua: &Lua) -> Result<()> {
     info!("Registering api");
     let package: LuaTable = lua.globals().get("package")?;
@@ -38,3 +38,17 @@ impl From<&Plugin> for PluginContext {
 }
 
 impl LuaUserData for PluginContext {}
+
+
+pub struct LuaRuntime {
+    lua: Lua,
+}
+
+impl LuaRuntime {
+    pub fn new() -> LuaRuntime {
+        LuaRuntime {
+            lua: Lua::new()
+        }
+    }
+
+}

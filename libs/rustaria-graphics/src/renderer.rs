@@ -15,7 +15,7 @@ use rustaria_util::ty::{ChunkPos, ChunkSubPos, Direction, Offset, CHUNK_SIZE};
 use rustaria_util::{eyre, info, warn, Result, WrapErr};
 
 use crate::renderer::chunk::BakedChunk;
-use crate::ty::{Color, Player, Pos, Rectangle, Texture};
+use crate::ty::{Color, Viewport, Pos, Rectangle, Texture};
 use crate::{DrawPipeline, Profiler, RenderLayerStability, VertexBuilder};
 
 mod chunk;
@@ -28,13 +28,13 @@ pub struct WorldRenderer {
     pub texture: DrawPipeline<(Pos, Texture)>,
     chunks: HashMap<ChunkPos, BakedChunk>,
     world_dirty: bool,
-    x_y_ratio: f32,
+    pub x_y_ratio: f32,
 }
 
 impl WorldRenderer {
     pub fn new(api: &Api) -> WorldRenderer {
         let mut atlas_builder = AtlasBuilder::new();
-        for prototype in api.get_registry::<TilePrototype>().entries() {
+        for prototype in api.instance() .get_registry::<TilePrototype>().entries() {
             if let TilePrototype {
                 sprite: Some(tag), ..
             } = prototype
@@ -74,9 +74,13 @@ impl WorldRenderer {
         };
         renderer
     }
+    pub fn dirty(&mut self) {
+        self.world_dirty = true;
+    }
 
     fn get_sprite(api: &Api, tag: &Tag) -> Result<DynamicImage> {
-        let plugin = api.get_plugin(tag.plugin_id()).ok_or_else(|| {
+        let instance = api.instance();
+        let plugin = instance.get_plugin(tag.plugin_id()).ok_or_else(|| {
             eyre!(
                 "Plugin {} does not exist or is not loaded.",
                 tag.plugin_id()
@@ -104,7 +108,7 @@ impl WorldRenderer {
 
     fn compile_borders(&mut self, pos: ChunkPos, chunk: &mut BakedChunk) {
         for offset in Direction::all() {
-            if let Some(neighbor_pos) = pos.offset(offset) {
+            if let Some(neighbor_pos) = pos.offset(offset.into()) {
                 if let Some(neighbor) = self.chunks.get_mut(&neighbor_pos) {
                     let y_offset = offset.offset_y().max(0) as usize * (CHUNK_SIZE - 1);
                     let x_offset = offset.offset_x().max(0) as usize * (CHUNK_SIZE - 1);
@@ -115,11 +119,7 @@ impl WorldRenderer {
                         // clippy having a stroke
                         #[allow(clippy::needless_range_loop)]
                         for x in x_offset..=x_length + x_offset {
-                            let neighbor_sub_pos = ChunkSubPos {
-                                x: x as u8,
-                                y: y as u8,
-                            }
-                            .overflowing_offset(offset);
+                            let neighbor_sub_pos = ChunkSubPos::new(x as u8, y as u8).euclid_offset(offset.into());
 
                             let mut ty = ConnectionType::Isolated;
                             if let Some(tile) = &row[x] {
@@ -144,8 +144,7 @@ impl WorldRenderer {
         }
     }
 
-    pub fn draw(&mut self, prof: &mut Profiler, view: &Player) {
-        self.world_dirty = true;
+    pub fn draw(&mut self, prof: &mut Profiler, view: &Viewport) {
         if self.world_dirty {
             info!("Building mesh");
             // make this off-thread
@@ -160,11 +159,10 @@ impl WorldRenderer {
                     w: CHUNK_SIZE as f32,
                     h: CHUNK_SIZE as f32,
                 };
-                info!("{:?}", chunk_rect);
 
-                if viewport.overlaps(&chunk_rect) {
-                    chunk.push(&mut builder, *pos);
-                }
+               if viewport.overlaps(&chunk_rect) {
+                 chunk.push(&mut builder, *pos);
+               }
             }
             self.texture
                 .submit(builder, RenderLayerStability::Stable)

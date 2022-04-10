@@ -1,15 +1,19 @@
-use std::any::{type_name, Any};
+use std::any::{Any, type_name};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+pub mod lua_runtime {
+    pub use mlua::*;
+}
+
 use glob::glob;
 use mlua::Lua;
-pub use mlua::UserData;
-use typemap::TypeMap;
+use mlua::{UserData};
+use type_map::concurrent::TypeMap;
 
 use plugin::id::PluginId;
+use rustaria_util::{Context, ContextCompat, debug, info, Report, Result};
 use rustaria_util::blake3::Hasher;
-use rustaria_util::{debug, info, Context, ContextCompat, Report, Result};
 
 use crate::lua::PluginContext;
 use crate::plugin::archive::ArchivePath;
@@ -27,21 +31,19 @@ pub mod tag;
 pub type RawId = u32;
 
 pub struct ApiHandler {
-    lua: Lua,
     plugins: HashMap<PluginId, Plugin>,
     registries: TypeMap,
     hash: [u8; 32],
 }
 
 impl ApiHandler {
-    pub fn new() -> Result<ApiHandler> {
+    pub fn new(lua: &Lua) -> Result<ApiHandler> {
         let mut handler = ApiHandler {
-            lua: Lua::new(),
             plugins: HashMap::new(),
             registries: TypeMap::new(),
             hash: [0u8; 32],
         };
-        lua::register_api(&handler.lua)?;
+        lua::register_api(lua)?;
         handler.load_plugins()?;
         Ok(handler)
     }
@@ -102,19 +104,19 @@ pub struct ApiReloadInstance<'a> {
 }
 
 impl ApiReloadInstance<'_> {
-    pub fn register_builder<P: 'static + Prototype>(&mut self) -> Result<()> {
+    pub fn register_builder<P: 'static + Prototype>(&mut self, lua: &Lua) -> Result<()> {
         let name = P::name();
         debug!("Registered {}", name);
-        RegistryBuilder::<P>::new(name).register(&self.api.lua)?;
+        RegistryBuilder::<P>::new(name).register(lua)?;
         Ok(())
     }
 
-    pub fn reload(&mut self) -> Result<()> {
+    pub fn reload(&mut self, lua: &Lua) -> Result<()> {
         macro_rules! entry_point {
             ($NAME:literal $FIELD:ident) => {
                 for plugin in self.api.plugins.values() {
                     if let Some(path) = &plugin.manifest.$FIELD {
-                        self.invoke_entrypoint(plugin, path, $NAME)
+                        self.invoke_entrypoint(lua, plugin, path, $NAME)
                             .wrap_err(format!(
                                 "Error while reloading plugin {}",
                                 plugin.manifest.id
@@ -136,28 +138,32 @@ impl ApiReloadInstance<'_> {
         Ok(())
     }
 
-    pub fn compile_builder<P: 'static + Prototype>(&mut self) -> Result<()> {
+    pub fn compile_builder<P: Prototype>(&mut self, lua: &Lua) -> Result<()> {
         let name = P::name();
         debug!("Compiling {}", name);
-        let builder: RegistryBuilder<P> = self.api.lua.globals().get(name)?;
+        let builder: RegistryBuilder<P> = lua.globals().get(name)?;
         self.registries
             .insert::<Registry<P>>(builder.finish(&mut self.hasher));
         Ok(())
     }
 
-    fn invoke_entrypoint(&self, plugin: &Plugin, path: &String, name: &str) -> Result<()> {
+    fn invoke_entrypoint(
+        &self,
+        lua: &Lua,
+        plugin: &Plugin,
+        path: &String,
+        name: &str,
+    ) -> Result<()> {
         debug!("Invoking {} {}", plugin.manifest.id, name);
-        PluginContext::from(plugin).set(&self.api.lua)?;
+        PluginContext::from(plugin).set(lua)?;
 
-        self.api
-            .lua
-            .load(
-                plugin
-                    .archive
-                    .get_asset(&ArchivePath::Code(path.clone()))
-                    .wrap_err(format!("Could not find entrypoint {}s file {}", name, path))?,
-            )
-            .call(())?;
+        lua.load(
+            plugin
+                .archive
+                .get_asset(&ArchivePath::Code(path.clone()))
+                .wrap_err(format!("Could not find entrypoint {}s file {}", name, path))?,
+        )
+        .call(())?;
 
         Ok(())
     }

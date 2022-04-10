@@ -7,7 +7,7 @@ use aloy::uniform::Uniform;
 use rustaria_util::{debug, info, Result};
 
 use crate::{Profiler, RenderLayerStability, VertexBuilder};
-use crate::ty::Player;
+use crate::ty::Viewport;
 
 pub struct DrawPipeline<V: Clone + Debug> {
     program: Program,
@@ -57,8 +57,8 @@ impl<V: Clone  + Debug> DrawPipeline<V> {
         self.screen_y_ratio.set_value(width as f32 / height as f32);
     }
 
-    pub fn draw(&self, prof: &mut Profiler, view: &Player) {
-        self.player_pos.set_value(view.pos);
+    pub fn draw(&self, prof: &mut Profiler, view: &Viewport) {
+        self.player_pos.set_value([view.pos.x, view.pos.y]);
         self.zoom.set_value(view.zoom);
 
         self.static_stack.draw(&self.program, prof);

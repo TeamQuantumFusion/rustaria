@@ -80,6 +80,12 @@ impl<I: crate::Packet, O: crate::Packet, J> ServerNetworking<I, O, J> {
             interface.connected(client, connection_data);
         }
 
+        for (from, (_, receiver)) in &self.local_connections {
+            while let Ok(packet) = receiver.try_recv() {
+                interface.receive(from.clone(), packet);
+            }
+        }
+
         if let Some(socket) = &mut self.socket {
             socket.manual_poll(Instant::now());
             while let Ok(event) = socket.get_event_receiver().try_recv() {

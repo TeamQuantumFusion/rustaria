@@ -14,10 +14,10 @@ use ty::{Color, Pos};
 
 use crate::profiler::Profiler;
 use crate::renderer::WorldRenderer;
-use crate::ty::Player;
+use crate::ty::Viewport;
 
-mod profiler;
-mod renderer;
+pub mod profiler;
+pub mod renderer;
 pub mod ty;
 
 /// An identifier for which render layer we are targeting.
@@ -35,17 +35,16 @@ pub enum RenderLayerStability {
 }
 
 pub struct RenderHandler {
-    profiler: Profiler,
-    window: Window,
+   profiler: Profiler,
+    pub window: Window,
     events: Receiver<(f64, WindowEvent)>,
     backend: OpenGlBackend,
-    pub world_renderer: WorldRenderer,
     // needs to be last or the context will drop
     glfw: Glfw,
 }
 
 impl RenderHandler {
-    pub fn new(api: &Api) -> Result<RenderHandler> {
+    pub fn new() -> Result<RenderHandler> {
         let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS)?;
 
         glfw.window_hint(WindowHint::OpenGlProfile(OpenGlProfileHint::Core));
@@ -69,12 +68,9 @@ impl RenderHandler {
         });
         backend.enable(OpenGlFeature::Alpha);
 
-        let mut world_renderer = WorldRenderer::new(api);
-        world_renderer.resize(size.0, size.1);
         Ok(RenderHandler {
             profiler: Profiler::new(),
             backend,
-            world_renderer,
             glfw,
             window,
             events,
@@ -92,32 +88,23 @@ impl RenderHandler {
                 let width = width as u32;
                 let height = height as u32;
                 self.backend.set_viewport_size(width, height);
-                self.world_renderer.resize(width, height);
             }
             func(event);
         }
     }
 
-    pub fn draw(&mut self, player: &Player) {
+    pub fn start_frame(&mut self) -> &mut Profiler{
         self.backend.clear_frame();
-        let start = Instant::now();
-        self.world_renderer.draw(&mut self.profiler, player);
-        self.profiler.drew_frame(start);
+        self.profiler.start_frame();
+        &mut self.profiler
+    }
+
+    pub fn stop_frame(&mut self) {
+        self.profiler.end_frame();
         self.window.swap_buffers();
     }
 }
 
 pub trait LayerSubmitter<V: Clone> {
     fn submit(&mut self, buffer: VertexBuilder<V>, stability: RenderLayerStability) -> Result<()>;
-}
-
-impl LayerSubmitter<(Pos, Color)> for RenderHandler {
-    fn submit(
-        &mut self,
-        buffer: VertexBuilder<(Pos, Color)>,
-        stability: RenderLayerStability,
-    ) -> Result<()> {
-        debug!("{:?} \n {:?}", buffer.data, buffer.indices);
-        self.world_renderer.color.submit(buffer, stability)
-    }
 }

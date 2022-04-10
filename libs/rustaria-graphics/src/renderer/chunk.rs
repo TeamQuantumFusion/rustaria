@@ -18,7 +18,8 @@ pub struct BakedChunk {
 
 impl BakedChunk {
     pub fn new(api: &Api, chunk: &Chunk, atlas: &Atlas<Tag>) -> BakedChunk {
-        let registry = api.get_registry::<TilePrototype>();
+        let instance = api.instance();
+        let registry = instance.get_registry::<TilePrototype>();
         let mut tiles = ChunkLayer::new([[None; CHUNK_SIZE]; CHUNK_SIZE]);
         let mut tile_neighbors = ChunkLayer::new([[EMPTY_MATRIX; CHUNK_SIZE]; CHUNK_SIZE]);
 
@@ -66,7 +67,6 @@ impl BakedChunk {
     }
 
     pub fn push(&self, builder: &mut VertexBuilder<(Pos, Texture)>, pos: ChunkPos) {
-        info!("Chunk {:?}", pos);
         for y in 0..CHUNK_SIZE {
             let tile_row = &self.tiles.grid[y];
             let tile_neighbor_row = &self.tile_neighbors.grid[y];

@@ -15,6 +15,15 @@ pub struct Pos {
     pub y: f32,
 }
 
+impl From<rustaria_util::ty::Pos> for Pos {
+    fn from(pos: rustaria_util::ty::Pos) -> Self {
+        Pos {
+            x: pos.x,
+            y: pos.y
+        }
+    }
+}
+
 pub type Texture = Pos;
 
 #[repr(C)]
@@ -111,16 +120,16 @@ impl Quad for Color {
     }
 }
 
-pub struct Player {
-    pub pos: [f32; 2],
+pub struct Viewport {
+    pub pos: rustaria_util::ty::Pos,
     pub zoom: f32,
 }
 
-impl Player {
+impl Viewport {
     pub fn viewport(&self, x_y_ratio: f32) -> Rectangle {
         Rectangle {
-            x: self.pos[0] - ((self.zoom / 2.0) * x_y_ratio),
-            y: self.pos[1] - (self.zoom / 2.0),
+            x: self.pos.x - ((self.zoom / 2.0) * x_y_ratio),
+            y: self.pos.y - (self.zoom / 2.0),
             w: self.zoom * x_y_ratio,
             h: self.zoom,
         }

@@ -56,4 +56,4 @@ impl Prototype for TilePrototype {
         "tile"
     }
 }
-impl rustaria_api::UserData for TilePrototype {}
+impl rustaria_api::lua_runtime::UserData for TilePrototype {}

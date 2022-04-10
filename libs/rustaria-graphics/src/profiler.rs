@@ -8,6 +8,7 @@ pub struct Profiler {
     frames: usize,
 
     last_print: Instant,
+    start_frame: Instant,
 }
 
 impl Profiler {
@@ -17,16 +18,21 @@ impl Profiler {
             frame_time: Default::default(),
             frames: 0,
             last_print: Instant::now(),
+            start_frame: Instant::now()
         }
+    }
+    
+    pub fn start_frame(&mut self) {
+        self.start_frame = Instant::now();
     }
 
     pub fn count_draw_call(&mut self) {
         self.draw_calls += 1;
     }
 
-    pub fn drew_frame(&mut self, start: Instant) {
+    pub fn end_frame(&mut self, ) {
         self.frames += 1;
-        self.frame_time += start.elapsed();
+        self.frame_time += self.start_frame.elapsed();
 
         if self.last_print.elapsed().as_millis() > 1000 {
             info!(

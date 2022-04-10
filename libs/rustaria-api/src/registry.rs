@@ -66,7 +66,6 @@ use std::sync::{Arc, RwLock};
 
 use mlua::prelude::{LuaResult, LuaUserData, LuaUserDataMethods};
 use mlua::{FromLua, Lua, LuaSerdeExt};
-use typemap::Key;
 
 use rustaria_util::blake3::Hasher;
 use rustaria_util::debug;
@@ -116,9 +115,6 @@ impl<P: Prototype> Registry<P> {
     }
 }
 
-impl<P: 'static + Prototype> Key for Registry<P> {
-    type Value = Registry<P>;
-}
 
 #[derive(Clone)]
 pub struct RegistryBuilder<P: Prototype> {
@@ -185,6 +181,3 @@ impl<P: Prototype> LuaUserData for RegistryBuilder<P> {
     }
 }
 
-impl<P: Prototype> Key for RegistryBuilder<P> {
-    type Value = (RegistryBuilder<P>, TypeId);
-}

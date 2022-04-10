@@ -10,9 +10,10 @@ rust-version = "1.60"
 
 [dependencies]
 serde = { version = "1.0.133", features = ["derive"] }
-typemap = "0.3.3"
+type-map = "0.5.0"
 hecs = "0.7.6"
-
+rayon = "1.5.1"
+crossbeam = "0.8.1"
 
 rustaria-util = { path = "./libs/rustaria-util" }
 rustaria-api = { path = "./libs/rustaria-api" }

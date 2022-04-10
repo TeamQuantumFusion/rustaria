@@ -1,44 +1,39 @@
+use std::borrow::Borrow;
 use std::ops::{Deref, DerefMut};
+use std::sync::{Arc, LockResult, RwLock, RwLockReadGuard};
 
 use rustaria_api::ApiHandler;
+use rustaria_api::lua_runtime::Lua;
 use rustaria_util::Result;
 
 #[macro_use]
 pub mod prototype;
 pub mod ty;
 
+#[derive(Clone)]
 pub struct Api {
-    instance: ApiHandler,
+    instance: Arc<RwLock<ApiHandler>>,
 }
 
 impl Api {
-    pub fn new() -> Api {
+    pub fn new(lua: &Lua) -> Api {
         Api {
-            instance: ApiHandler::new().unwrap(),
+            instance: Arc::new(RwLock::new(ApiHandler::new(lua).unwrap())),
         }
     }
 
-    pub fn reload(&mut self) -> Result<()> {
-        let mut reload = self.instance.reload();
-        prototypes!({ reload.register_builder::<P>()? });
-        reload.reload()?;
-        prototypes!({ reload.compile_builder::<P>()? });
+    pub fn reload(&mut self, lua: &Lua) -> Result<()> {
+        let mut write = self.instance.write().unwrap();
+        let mut reload = write.reload();
+        prototypes!({ reload.register_builder::<P>(lua)? });
+        reload.reload(lua)?;
+        prototypes!({ reload.compile_builder::<P>(lua)? });
         reload.apply();
         Ok(())
     }
-}
 
-impl Deref for Api {
-    type Target = ApiHandler;
-
-    fn deref(&self) -> &Self::Target {
-        &self.instance
-    }
-}
-
-impl DerefMut for Api {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.instance
+    pub fn instance(&self) -> RwLockReadGuard<'_, ApiHandler> {
+        self.instance.read().unwrap()
     }
 }
 
