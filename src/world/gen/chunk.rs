@@ -1,11 +1,12 @@
 use std::str::FromStr;
 
 use rustaria_api::tag::Tag;
+use rustaria_util::{ContextCompat, Result};
 use rustaria_util::ty::{CHUNK_SIZE, ChunkPos, ChunkSubPos};
+
 use crate::api::Api;
 use crate::api::prototype::tile::TilePrototype;
 use crate::world::chunk::{Chunk, ChunkLayer};
-use rustaria_util::{ContextCompat, Result};
 
 pub fn generate_chunk(api: &Api, pos: ChunkPos) -> Result<Chunk> {
 	let instance = api.instance();

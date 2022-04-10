@@ -1,10 +1,12 @@
-use std::ffi::{c_void, CStr, CString};
+use std::ffi::{c_void, CStr};
+
 use tracing::{debug, error, info, warn};
 
 use opengl::gl;
 use opengl::gl::{GLbitfield, GLchar, GLenum, GLsizei, GLuint};
 
 use crate::texture::{Sampler2d, Texture};
+
 #[macro_use]
 pub mod atlas;
 pub mod attribute;
@@ -91,13 +93,13 @@ impl OpenGlBackend {
 }
 
 extern "system" fn error_callback(
-    source: GLenum,
-    gltype: GLenum,
-    id: GLuint,
+    _: GLenum,
+    _: GLenum,
+    _: GLuint,
     severity: GLenum,
-    length: GLsizei,
+    _: GLsizei,
     message: *const GLchar,
-    userParam: *mut std::os::raw::c_void,
+    _: *mut std::os::raw::c_void,
 ) {
     unsafe {
         let cstr = CStr::from_ptr(message);

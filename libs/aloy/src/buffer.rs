@@ -2,13 +2,12 @@ use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::ops::Range;
 use std::rc::Rc;
-use std::time::Instant;
 
-use tracing::{debug, info};
+use eyre::{Report, Result};
+use tracing::debug;
 
 use opengl::gl;
 use opengl::gl::GLenum;
-use eyre::{Report, Result};
 
 use crate::attribute::AttributeDescriptor;
 use crate::raw::{RawBuffer, RawVertexBuffer};

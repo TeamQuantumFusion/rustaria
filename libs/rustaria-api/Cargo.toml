@@ -9,16 +9,16 @@ edition = "2021"
 # Base
 rustaria-util = { path = "../rustaria-util" }
 mooncake = { path = "../mooncake" }
-type-map = "0.5.0"
-thiserror = "1.0.30"
+type-map = "0.5"
+thiserror = "1.0"
 
 # Plugin
-mlua = { version = "0.7.1", features = ["lua54", "vendored", "serialize"] }
-serde = { version = "1.0.133", features = ["derive"] }
-semver = { version = "1.0.7", features = ["serde"] }
-serde_json = "1.0.74"
+mlua = { version = "0.7", features = ["lua54", "vendored", "serialize"] }
+serde = { version = "1.0", features = ["derive"] }
+semver = { version = "1.0", features = ["serde"] }
+serde_json = "1.0"
 
 # Files
-zip = "0.5.13"
-glob = "0.3.0"
+zip = "0.5"
+glob = "0.3"
 

@@ -1,8 +1,8 @@
-use mlua::prelude::{LuaMetaMethod, LuaUserData, LuaUserDataFields, LuaUserDataMethods};
-use serde::{Deserialize, Deserializer};
-use std::error::Error;
 use std::fmt::Display;
 use std::str::FromStr;
+
+use mlua::prelude::{LuaMetaMethod, LuaUserData, LuaUserDataFields, LuaUserDataMethods};
+use serde::{Deserialize, Deserializer};
 use thiserror::Error;
 
 // This is lua input (or rust) that gets converted to id,
@@ -79,14 +79,14 @@ impl<'de> Deserialize<'de> for Tag {
             fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                 write!(f, "a colon-separated string representing a registry tag")
             }
-            fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
                 Tag::from_str(v).map_err(de::Error::custom)
             }
 
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {

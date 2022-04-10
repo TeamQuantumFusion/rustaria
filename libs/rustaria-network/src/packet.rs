@@ -1,9 +1,11 @@
-use lz4::{Decoder, EncoderBuilder};
-use rustaria_util::Result;
-use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
 use std::io::Read;
 use std::marker::PhantomData;
+
+use lz4::{Decoder, EncoderBuilder};
+use serde::{Deserialize, Serialize};
+use serde::de::DeserializeOwned;
+
+use rustaria_util::Result;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CompressedPacket<P: Serialize + DeserializeOwned> {

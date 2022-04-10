@@ -1,5 +1,3 @@
-use crate::atlas::AtlasLocation;
-
 #[derive(Default)]
 pub struct VertexBuilder<V: Clone> {
     pub vertices: Vec<V>,
@@ -22,7 +20,7 @@ impl<V: Clone> VertexBuilder<V> {
     pub fn quad(&mut self, value: impl Quad<Item = V>) {
         let len = self.vertices.len() as u32;
         self.indices
-            .extend_from_slice(&[0 + len, 1 + len, 3 + len, 1 + len, 2 + len, 3 + len]);
+            .extend_from_slice(&[len, 1 + len, 3 + len, 1 + len, 2 + len, 3 + len]);
         self.vertices.extend_from_slice(&value.quad());
     }
 }
@@ -38,6 +36,7 @@ macro_rules! im {
 			type Item = ($($V::Item),*);
 
 			fn quad(&self) -> [Self::Item; 4] {
+				#[allow(non_snake_case)]
 				let ($($V),*) = ($(self.$N.quad()),*);
 				[
 					($($V[0]),*),

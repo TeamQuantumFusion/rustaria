@@ -7,8 +7,10 @@
     clippy::missing_safety_doc,
     clippy::too_many_arguments,
 )]
-            use std::ffi::c_void;
+
+use std::ffi::c_void;
 use std::mem::transmute;
+
 // Common types from OpenGL 1.1
 pub type GLenum = std::os::raw::c_uint;
 pub type GLboolean = std::os::raw::c_uchar;

@@ -1,16 +1,13 @@
-use std::any::type_name;
 use std::fmt::Debug;
-use std::sync::{Arc, RwLock, Weak};
+use std::sync::{Arc, RwLock};
 
 use aloy::attribute::AttributeDescriptor;
-use aloy::buffer::{Buffer, BufferAccess, BufferType, BufferUsage, DrawMode, VertexPipeline};
+
 use aloy::program::Program;
 use aloy::uniform::Uniform;
-use rustaria_util::{debug, info, Result};
 
 use crate::renderer::layer::{RenderLayer, RenderLayerData, RenderLayerDrawer};
 use crate::ty::Viewport;
-use crate::{RenderLayerStability, VertexBuilder};
 
 /// A RenderingPipeline holds a specific OpenGL shader and manages the layers that are bound to that type.
 pub struct RenderPipeline<V: Clone + Debug> {

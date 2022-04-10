@@ -1,6 +1,6 @@
 //! A collection of types used in Rustaria.
 
-use num::{FromPrimitive, PrimInt};
+use num::FromPrimitive;
 
 use crate::ty::Error::OOB;
 

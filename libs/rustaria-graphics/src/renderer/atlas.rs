@@ -1,6 +1,7 @@
 use std::collections::HashSet;
-use std::sync::{Arc, RwLock};
+
 use image::{DynamicImage, ImageFormat};
+
 use aloy::atlas::{Atlas, AtlasBuilder, AtlasLocation};
 use rustaria::api::Api;
 use rustaria_api::plugin::archive::ArchivePath;

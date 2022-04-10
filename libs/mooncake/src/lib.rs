@@ -83,10 +83,11 @@
 //! Methods are **not supported**.
 
 use proc_macro::TokenStream;
+
 use quote::quote;
 use syn::{
-    parse::{Parse, ParseStream},
-    parse_macro_input, parse_quote, FnArg, ItemFn, Meta, NestedMeta, PatType,
+	FnArg,
+	ItemFn, Meta, NestedMeta, parse::{Parse, ParseStream}, parse_macro_input, parse_quote, PatType,
 };
 
 /// The macro itself!

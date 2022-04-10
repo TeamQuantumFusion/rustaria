@@ -1,14 +1,13 @@
 use std::collections::{HashMap, HashSet};
-use std::fmt::Debug;
 use std::net::SocketAddr;
 use std::sync::RwLock;
 use std::time::Instant;
 
 use bimap::BiMap;
-use crossbeam::channel::{unbounded, Receiver, Sender};
+use crossbeam::channel::{Receiver, Sender, unbounded};
 use laminar::{Packet, Socket, SocketEvent};
 
-use rustaria_util::{debug, error, warn, Result};
+use rustaria_util::{debug, error, Result, warn};
 
 use crate::{EstablishingInstance, EstablishingStatus, NetworkInterface, Token};
 

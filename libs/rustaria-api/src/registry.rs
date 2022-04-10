@@ -59,19 +59,17 @@
 //! in save files, data files, etc, as the tag will always be the same if the
 //! registry stayed persistent, regardless of its inner layout details.
 
-use std::any::TypeId;
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::sync::{Arc, RwLock};
 
-use mlua::prelude::{LuaResult, LuaUserData, LuaUserDataMethods};
 use mlua::{FromLua, Lua, LuaSerdeExt};
+use mlua::prelude::{LuaResult, LuaUserData, LuaUserDataMethods};
 
 use rustaria_util::blake3::Hasher;
 use rustaria_util::debug;
 
-use crate::tag::Tag;
 use crate::{Prototype, RawId};
+use crate::tag::Tag;
 
 /// A registry containing and managing user-added data to Rustaria.
 /// See the [module documentation](index.html) for more details.
@@ -114,7 +112,6 @@ impl<P: Prototype> Registry<P> {
         self.entries.clear();
     }
 }
-
 
 #[derive(Clone)]
 pub struct RegistryBuilder<P: Prototype> {
@@ -180,4 +177,3 @@ impl<P: Prototype> LuaUserData for RegistryBuilder<P> {
         m.add_method("default", |lua, _this, t| lua.from_value::<P>(t));
     }
 }
-

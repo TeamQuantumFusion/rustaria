@@ -4,7 +4,7 @@ use rustaria_util::Result;
 pub struct PlayerJoinInstance {}
 
 impl EstablishingInstance<PlayerJoinData> for PlayerJoinInstance {
-    fn receive(&mut self, data: &[u8]) -> Result<EstablishingStatus<PlayerJoinData>> {
+    fn receive(&mut self, _data: &[u8]) -> Result<EstablishingStatus<PlayerJoinData>> {
         todo!()
     }
 }

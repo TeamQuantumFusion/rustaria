@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::collections::hash_map::Entry;
 use std::ops::AddAssign;
 use std::time::{Duration, Instant};
 
@@ -135,7 +136,7 @@ impl Client {
                     WindowEvent::Size(width, height) => {
                         self.renderer.resize(width as u32, height as u32);
                     }
-                    WindowEvent::Scroll(x, y) => {
+                    WindowEvent::Scroll(_, y) => {
                         self.view.zoom += y as f32;
                     }
                     _ => {}
@@ -213,8 +214,8 @@ impl ClientWorld {
                 for x in -width..width {
                     for y in -height..height {
                         if let Some(pos) = chunk.offset([x, y]) {
-                            if !self.chunks.contains_key(&pos) {
-                                self.chunks.insert(pos, ChunkHolder::Requested);
+                            if let Entry::Vacant(e) = self.chunks.entry(pos) {
+                                e.insert(ChunkHolder::Requested);
                                 requested.push(pos);
                             }
                         }
@@ -233,7 +234,7 @@ impl ClientWorld {
         }
 
         if let Some(integrated) = &mut self.integrated {
-            integrated.tick();
+            integrated.tick().unwrap();
         }
 
         self.networking.poll(|packet| match packet {

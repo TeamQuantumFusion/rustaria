@@ -1,9 +1,11 @@
+use serde::Deserialize;
+
+use rustaria_api::prototype::Prototype;
+use rustaria_api::RawId;
+use rustaria_api::tag::Tag;
+
 use crate::api::ty::{BlastResistance, BreakResistance, ConnectionType, LockableValue, TileType};
 use crate::world::tile::Tile;
-use rustaria_api::prototype::Prototype;
-use rustaria_api::tag::Tag;
-use rustaria_api::RawId;
-use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct TilePrototype {

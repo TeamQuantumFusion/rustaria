@@ -1,12 +1,12 @@
 use std::sync::mpsc::Receiver;
 
-use glfw::WindowEvent::FramebufferSize;
 use glfw::{
     Context, Glfw, OpenGlProfileHint, SwapInterval, Window, WindowEvent, WindowHint, WindowMode,
 };
+use glfw::WindowEvent::FramebufferSize;
 
-use aloy::vertex::VertexBuilder;
 use aloy::{ClearCommand, ClearDescriptor, OpenGlBackend};
+use aloy::vertex::VertexBuilder;
 use renderer::pipeline::RenderPipeline;
 use rustaria_util::{ContextCompat, Result};
 use ty::Pos;

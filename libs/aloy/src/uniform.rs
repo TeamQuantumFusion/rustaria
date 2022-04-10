@@ -2,10 +2,10 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 use std::sync::RwLock;
 
-use crate::texture::{Sampler2d, USampler2d};
 use opengl::gl;
 use opengl::gl::GLenum;
 
+use crate::texture::{Sampler2d, USampler2d};
 use crate::types::GlType;
 
 #[derive(Debug)]
@@ -16,15 +16,13 @@ pub enum UniformError {
 
 pub struct Uniform<T: UniformType> {
     uniform_value: Rc<RwLock<UniformValueBinder>>,
-    uniform_location: i32,
     uniform_type: PhantomData<T>,
 }
 
 impl<T: UniformType> Uniform<T> {
-    pub(crate) fn new(index: i32, value: Rc<RwLock<UniformValueBinder>>) -> Uniform<T> {
+    pub(crate) fn new(value: Rc<RwLock<UniformValueBinder>>) -> Uniform<T> {
         Uniform {
             uniform_value: value,
-            uniform_location: index,
             uniform_type: Default::default(),
         }
     }

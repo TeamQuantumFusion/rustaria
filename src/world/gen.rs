@@ -1,13 +1,16 @@
-mod chunk;
+use std::collections::HashSet;
 
-use std::collections::{HashSet};
 use crossbeam::channel::{Receiver, Sender, unbounded};
 use rayon::{ThreadPool, ThreadPoolBuilder};
+
 use rustaria_util::{error, Result};
 use rustaria_util::ty::ChunkPos;
+
 use crate::api::Api;
 use crate::world::chunk::Chunk;
 use crate::world::gen::chunk::generate_chunk;
+
+mod chunk;
 
 pub struct WorldGenerator {
 	api: Api,

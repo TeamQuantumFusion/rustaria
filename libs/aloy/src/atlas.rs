@@ -1,11 +1,11 @@
 use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 
-use image::imageops::FilterType;
 use image::{DynamicImage, GenericImage, GenericImageView};
+use image::imageops::FilterType;
 use rectangle_pack::{
-    contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert,
-    RectanglePackError, TargetBin,
+    contains_smallest_box, GroupedRectsToPlace, pack_rects, RectanglePackError, RectToInsert,
+    TargetBin, volume_heuristic,
 };
 use tracing::info;
 
@@ -85,7 +85,7 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
         }
 
         // FIXME(leocth) save it in the run dir
-        image.save("./atlas.png");
+       // image.save("./atlas.png").unwrap();
 
         info!(target: "opengl", "Mipmapping atlas");
         // Generate Mipmaps

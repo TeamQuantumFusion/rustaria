@@ -4,10 +4,10 @@ pub use eyre::*;
 use time::macros::format_description;
 pub use tracing::*;
 use tracing_error::ErrorLayer;
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::EnvFilter;
 pub use uuid::Uuid;
 
 pub mod blake3;

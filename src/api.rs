@@ -1,10 +1,7 @@
-use std::borrow::Borrow;
-use std::ops::{Deref, DerefMut};
-use std::sync::{Arc, LockResult, RwLock, RwLockReadGuard};
+use std::sync::{Arc, RwLock, RwLockReadGuard};
 
 use rustaria_api::ApiHandler;
 use rustaria_api::lua_runtime::Lua;
-use rustaria_api::tag::Tag;
 use rustaria_util::Result;
 
 #[macro_use]

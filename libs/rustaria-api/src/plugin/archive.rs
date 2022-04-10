@@ -1,11 +1,12 @@
-use rustaria_util::{bail, eyre, Result};
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
+
+use serde::Deserialize;
 use zip::ZipArchive;
-use crate::info;
+
+use rustaria_util::{bail, eyre, Result};
 
 #[derive(Debug, Clone)]
 pub struct Archive {

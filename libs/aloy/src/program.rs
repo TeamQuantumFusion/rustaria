@@ -1,14 +1,12 @@
 use std::collections::HashMap;
-use std::ffi::{CStr, CString};
+use std::ffi::CString;
 use std::ops::Range;
 use std::os::raw::c_char;
 use std::rc::Rc;
 use std::sync::RwLock;
-use eyre::ContextCompat;
-use tracing::{debug, info, warn};
 
 use opengl::gl;
-use opengl::gl::{GLchar, GLenum, GLint, GLuint};
+use opengl::gl::{GLenum, GLint, GLuint};
 
 use crate::attribute::FormatDescriptor;
 use crate::buffer::{DrawMode, VertexPipeline};
@@ -59,19 +57,26 @@ impl Program {
             id
         };
 
-
         // get uniforms
         let mut program_uniforms = HashMap::new();
         unsafe {
             let mut active_uniforms = 0;
             gl::GetProgramiv(id, gl::ACTIVE_UNIFORMS, &mut active_uniforms);
 
-            let name_data = CString::from_vec_unchecked(vec![b' '; 128 as usize]);
+            let name_data = CString::from_vec_unchecked(vec![b' '; 128]);
             for index in 0..active_uniforms {
                 let mut size = 0;
                 let mut ty = 0;
                 let mut name_length = 0;
-                gl::GetActiveUniform(id, index as u32, 128, &mut name_length, &mut size, &mut ty, name_data.as_ptr() as *mut c_char);
+                gl::GetActiveUniform(
+                    id,
+                    index as u32,
+                    128,
+                    &mut name_length,
+                    &mut size,
+                    &mut ty,
+                    name_data.as_ptr() as *mut c_char,
+                );
                 let bytes = name_data.to_bytes();
                 let name = String::from_utf8_lossy(&bytes[0..name_length as usize]);
                 program_uniforms.insert(name.to_string(), (ty, index));
@@ -86,7 +91,10 @@ impl Program {
     }
 
     pub fn get_uniform<T: UniformType>(&mut self, name: &str) -> Result<Uniform<T>, UniformError> {
-        let (uniform_type, index) = self.program_uniforms.get(name).ok_or(UniformError::UniformDoesNotExist)?;
+        let (uniform_type, index) = self
+            .program_uniforms
+            .get(name)
+            .ok_or(UniformError::UniformDoesNotExist)?;
         if T::gl_enum() != *uniform_type {
             return Err(UniformError::UniformTypeMismatch(*uniform_type));
         }
@@ -103,7 +111,7 @@ impl Program {
                 value
             });
 
-        Ok(Uniform::new(*index, value))
+        Ok(Uniform::new(value))
     }
 
     pub(crate) unsafe fn create_shader(code: String, shader_type: ShaderType) -> GLuint {

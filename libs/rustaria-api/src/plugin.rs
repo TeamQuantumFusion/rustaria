@@ -1,9 +1,10 @@
 use std::path::PathBuf;
 
-use crate::plugin::archive::ArchivePath;
 use archive::Archive;
 use manifest::Manifest;
 use rustaria_util::{Context, Result};
+
+use crate::plugin::archive::ArchivePath;
 
 pub mod archive;
 pub mod id;

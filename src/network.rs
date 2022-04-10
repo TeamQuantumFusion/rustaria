@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use rustaria_network::networking::ServerNetworking;
 use rustaria_network::packet::CompressedPacket;
 use rustaria_network::Token;
-use rustaria_util::ty::ChunkPos;
 use rustaria_util::Result;
+use rustaria_util::ty::ChunkPos;
 
+use crate::{ClientPacket, ServerPacket};
 use crate::network::join::PlayerJoinData;
 use crate::network::packet::ChunkBundlePacket;
 use crate::world::chunk::Chunk;
-use crate::{ClientPacket, ServerPacket};
 
 pub mod join;
 pub mod packet;

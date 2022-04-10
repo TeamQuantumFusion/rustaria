@@ -1,14 +1,12 @@
-use aloy::atlas::{Atlas, AtlasLocation};
+use aloy::atlas::AtlasLocation;
 use rustaria::api::prototype::tile::TilePrototype;
 use rustaria::api::ty::ConnectionType;
 use rustaria::world::tile::Tile;
 use rustaria_api::registry::Registry;
-use rustaria_api::tag::Tag;
-use rustaria_util::ty::ChunkSubPos;
 
-use crate::ty::{Rectangle, Texture};
 use crate::{Pos, VertexBuilder};
 use crate::renderer::atlas::TextureAtlas;
+use crate::ty::{Rectangle, Texture};
 use crate::world_drawer::chunk::NeighborMatrix;
 
 #[derive(Copy, Clone)]
@@ -25,7 +23,9 @@ impl BakedTile {
         atlas: &TextureAtlas,
     ) -> Option<BakedTile> {
         if let Some(TilePrototype {
-            sprite: Some(tag), connection, ..
+            sprite: Some(tag),
+            connection,
+            ..
         }) = registry.get_from_id(tile.id)
         {
             if let Some(location) = atlas.get(tag) {
@@ -40,8 +40,14 @@ impl BakedTile {
         None
     }
 
-    pub fn push(&self, neighbor: &NeighborMatrix, builder: &mut VertexBuilder<(Pos, Texture)>, pos: (f32, f32)) {
-        let (x, y) = TileImagePos::new(neighbor.up, neighbor.down, neighbor.left, neighbor.right).get_tex_pos();
+    pub fn push(
+        &self,
+        neighbor: &NeighborMatrix,
+        builder: &mut VertexBuilder<(Pos, Texture)>,
+        pos: (f32, f32),
+    ) {
+        let (x, y) = TileImagePos::new(neighbor.up, neighbor.down, neighbor.left, neighbor.right)
+            .get_tex_pos();
         let tile_height = self.image.height / 4.0;
         let tile_width = self.image.width / (4.0 * self.variations as f32);
         let image = AtlasLocation {

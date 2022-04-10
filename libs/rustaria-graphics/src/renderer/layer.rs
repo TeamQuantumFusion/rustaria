@@ -1,9 +1,9 @@
-use aloy::vertex::VertexBuilder;
 use std::sync::{Arc, RwLock, Weak};
+
 use aloy::attribute::AttributeDescriptor;
 use aloy::buffer::{Buffer, BufferAccess, BufferType, BufferUsage, DrawMode, VertexPipeline};
 use aloy::program::Program;
-
+use aloy::vertex::VertexBuilder;
 
 #[derive(Clone)]
 /// A RenderLayer is a cheaply copyable object for rendering vertexes.
@@ -27,11 +27,6 @@ impl<V: Clone> RenderLayer<V> {
         let mut data = self.0.write().unwrap();
         data.new_data = Some(builder);
         data.dirty = false;
-    }
-
-    /// Internal function for consuming a new mesh if one exists.
-    pub(crate) fn consume(&mut self) -> Option<VertexBuilder<V>> {
-        self.0.write().unwrap().new_data.take()
     }
 }
 

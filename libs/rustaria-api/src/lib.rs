@@ -1,18 +1,12 @@
-use std::any::{Any, type_name};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-pub mod lua_runtime {
-    pub use mlua::*;
-}
-
 use glob::glob;
 use mlua::Lua;
-use mlua::{UserData};
 use type_map::concurrent::TypeMap;
 
 use plugin::id::PluginId;
-use rustaria_util::{Context, ContextCompat, debug, info, Report, Result};
+use rustaria_util::{Context, ContextCompat, debug, info, Result};
 use rustaria_util::blake3::Hasher;
 
 use crate::lua::PluginContext;
@@ -20,6 +14,10 @@ use crate::plugin::archive::ArchivePath;
 use crate::plugin::Plugin;
 use crate::prototype::Prototype;
 use crate::registry::{Registry, RegistryBuilder};
+
+pub mod lua_runtime {
+    pub use mlua::*;
+}
 
 pub mod lua;
 pub mod plugin;
@@ -111,6 +109,7 @@ impl ApiReloadInstance<'_> {
         Ok(())
     }
 
+    //noinspection ALL
     pub fn reload(&mut self, lua: &Lua) -> Result<()> {
         macro_rules! entry_point {
             ($NAME:literal $FIELD:ident) => {

@@ -1,10 +1,9 @@
 use std::collections::HashMap;
-use aloy::atlas::Atlas;
+
 use rustaria::api::Api;
 use rustaria::api::prototype::tile::TilePrototype;
 use rustaria::api::ty::ConnectionType;
 use rustaria::world::chunk::{Chunk, ChunkLayer};
-use rustaria_api::tag::Tag;
 use rustaria_util::ty::{CHUNK_SIZE, ChunkPos, ChunkSubPos, Direction, Offset};
 
 use crate::{Pos, VertexBuilder};
@@ -22,7 +21,7 @@ impl BakedChunk {
         let instance = api.instance();
         let registry = instance.get_registry::<TilePrototype>();
         let mut tiles = ChunkLayer::new([[None; CHUNK_SIZE]; CHUNK_SIZE]);
-        let mut tile_neighbors = ChunkLayer::new([[EMPTY_MATRIX; CHUNK_SIZE]; CHUNK_SIZE]);
+        let tile_neighbors = ChunkLayer::new([[EMPTY_MATRIX; CHUNK_SIZE]; CHUNK_SIZE]);
 
         for y in 0..CHUNK_SIZE {
             let baked_row = &mut tiles.grid[y];

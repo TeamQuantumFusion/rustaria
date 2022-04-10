@@ -7,19 +7,18 @@ edition = "2021"
 
 [dependencies]
 # Logging
-tracing = "0.1.29"
-tracing-futures = "0.2.5"
-tracing-error = "0.2.0"
-tracing-subscriber = { version = "0.3.7", features = ["time", "env-filter"] }
-time = { version = "0.3.5", features = ["macros"] }
+tracing = "0.1"
+tracing-error = "0.2"
+tracing-subscriber = { version = "0.3", features = ["time", "env-filter"] }
+time = { version = "0.3", features = ["macros"] }
 
 # Errors
-eyre = "0.6.5"
-color-eyre = "0.6.0"
+eyre = "0.6"
+color-eyre = "0.6"
 
 # Tags
-uuid = { version = "0.8.2", features = ["v4"] }
+uuid = { version = "0.8", features = ["v4"] }
 
 # Types
-serde = { version = "1.0.133", features = ["derive"] }
-num = "0.4.0"
+serde = { version = "1.0", features = ["derive"] }
+num = "0.4"

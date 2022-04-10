@@ -1,6 +1,9 @@
 use std::collections::{HashMap, HashSet};
+
 use glfw::WindowEvent;
+
 use rustaria_util::warn;
+
 use crate::button::{ButtonKey, ButtonSubscriber};
 
 pub mod button;

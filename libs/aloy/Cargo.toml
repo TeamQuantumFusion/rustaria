@@ -7,8 +7,7 @@ edition = "2021"
 
 [dependencies]
 opengl = { path = "opengl-raw" }
-glfw = "0.43.0"
-tracing = "0.1.29"
-image = { version = "0.24.0", default-features = false, features = ["png"] }
-rectangle-pack = "0.4.2"
-eyre = "0.6.5"
+tracing = "0.1"
+image = { version = "0.24", default-features = false, features = ["png"] }
+rectangle-pack = "0.4"
+eyre = "0.6"

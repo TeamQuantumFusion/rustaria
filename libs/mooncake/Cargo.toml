@@ -14,9 +14,9 @@ edition = "2021"
 rust-version = "1.57"
 
 [dependencies]
-syn = { version = "1.0.82", features = ["full", "extra-traits"] }
-quote = "1.0.10"
-proc-macro2 = "1.0.36"
+syn = { version = "1.0", features = ["full", "extra-traits"] }
+quote = "1.0"
+proc-macro2 = "1.0"
 
 [dev-dependencies]
 trybuild = "1.0"

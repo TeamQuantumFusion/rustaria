@@ -1,6 +1,8 @@
-use crate::world::tile::Tile;
-use rustaria_util::ty::{ChunkSubPos, CHUNK_SIZE};
 use serde::{Deserialize, Serialize};
+
+use rustaria_util::ty::{CHUNK_SIZE, ChunkSubPos};
+
+use crate::world::tile::Tile;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Chunk {

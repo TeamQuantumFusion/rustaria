@@ -1,6 +1,8 @@
-use rustaria_util::{Result, Uuid};
-use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::Debug;
+
+use serde::{de::DeserializeOwned, Serialize};
+
+use rustaria_util::{Result, Uuid};
 
 pub mod networking;
 pub mod packet;

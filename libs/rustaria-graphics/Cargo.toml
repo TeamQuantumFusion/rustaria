@@ -10,5 +10,5 @@ rustaria-util = { path = "../rustaria-util" }
 rustaria-api = { path = "../rustaria-api" }
 rustaria = { path = "../../" }
 aloy = { path = "../aloy" }
-glfw = "0.44.0"
-image = { version = "0.24.0", default-features = false, features = ["png"] }
+glfw = "0.44"
+image = { version = "0.24", default-features = false, features = ["png"] }

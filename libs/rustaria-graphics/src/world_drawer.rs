@@ -8,7 +8,6 @@ use rustaria_util::ty::{CHUNK_SIZE, ChunkPos};
 
 use crate::Pos;
 use crate::renderer::{RenderingHandler, RenderingInstance, RenderLayerConsumer};
-
 use crate::renderer::layer::RenderLayer;
 use crate::ty::{Rectangle, Texture, Viewport};
 use crate::world_drawer::chunk::BakedChunk;
