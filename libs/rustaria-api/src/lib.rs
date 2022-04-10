@@ -6,7 +6,7 @@ use mlua::Lua;
 use type_map::concurrent::TypeMap;
 
 use plugin::id::PluginId;
-use rustaria_util::{Context, ContextCompat, debug, info, Result};
+use rustaria_util::{Context, ContextCompat, debug, info, Result, trace};
 use rustaria_util::blake3::Hasher;
 
 use crate::lua::PluginContext;
@@ -138,9 +138,7 @@ impl ApiReloadInstance<'_> {
     }
 
     pub fn compile_builder<P: Prototype>(&mut self, lua: &Lua) -> Result<()> {
-        let name = P::name();
-        debug!("Compiling {}", name);
-        let builder: RegistryBuilder<P> = lua.globals().get(name)?;
+        let builder: RegistryBuilder<P> = lua.globals().get(P::name())?;
         self.registries
             .insert::<Registry<P>>(builder.finish(&mut self.hasher));
         Ok(())
@@ -153,7 +151,7 @@ impl ApiReloadInstance<'_> {
         path: &String,
         name: &str,
     ) -> Result<()> {
-        debug!("Invoking {} {}", plugin.manifest.id, name);
+        trace!("Invoking {} {}", plugin.manifest.id, name);
         PluginContext::from(plugin).set(lua)?;
 
         lua.load(

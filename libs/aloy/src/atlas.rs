@@ -7,7 +7,7 @@ use rectangle_pack::{
     contains_smallest_box, GroupedRectsToPlace, pack_rects, RectanglePackError, RectToInsert,
     TargetBin, volume_heuristic,
 };
-use rustaria_util::info;
+use rustaria_util::{info, trace};
 
 use crate::texture::{
     InternalFormat, TextureData, TextureDataFormat, TextureDescriptor, TextureLod,
@@ -30,7 +30,7 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
 
     pub fn export(self, levels: u8) -> Atlas<T> {
         // Pack everything
-        info!(target: "opengl", "Packing atlas.");
+        trace!(target: "opengl", "Packing atlas.");
         let mut rects_to_place = GroupedRectsToPlace::new();
 
         for (id, (_, image)) in self.images.iter().enumerate() {
@@ -58,7 +58,7 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
             );
         }
 
-        info!(target: "opengl", "Creating atlas");
+        trace!(target: "opengl", "Creating atlas");
         // Create image and lookup
         let pack = rectangle_placements.unwrap();
         let locations = pack.packed_locations();
@@ -87,7 +87,7 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
         // FIXME(leocth) save it in the run dir
        // image.save("./atlas.png").unwrap();
 
-        info!(target: "opengl", "Mipmapping atlas");
+        trace!(target: "opengl", "Mipmapping atlas");
         // Generate Mipmaps
         let mut images = Vec::new();
         for level in 0..levels {
@@ -102,7 +102,7 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
             });
         }
 
-        info!(target: "opengl", "Uploading atlas");
+        trace!(target: "opengl", "Uploading atlas");
         // upload
         let texture = Texture::new(
             TextureType::Texture2d {

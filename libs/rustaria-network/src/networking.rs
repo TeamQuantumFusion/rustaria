@@ -7,7 +7,7 @@ use bimap::BiMap;
 use crossbeam::channel::{Receiver, Sender, unbounded};
 use laminar::{Packet, Socket, SocketEvent};
 
-use rustaria_util::{debug, error, Result, warn};
+use rustaria_util::{debug, error, Result, trace, warn};
 
 use crate::{EstablishingInstance, EstablishingStatus, NetworkInterface, Token};
 
@@ -41,7 +41,7 @@ impl<I: crate::Packet, O: crate::Packet, J> ServerNetworking<I, O, J> {
     }
 
     pub fn send(&self, to: Token, packet: O) -> Result<()> {
-        debug!(target: "server_network", "Sending packet to {to}");
+        trace!(target: "server_network", "Sending packet {packet:?} to {to}");
         if let Some(socket) = &self.socket {
             if let Some(remote) = self.remote_clients.get_by_left(&to) {
                 socket.get_packet_sender().send(Packet::reliable_unordered(
@@ -169,7 +169,7 @@ impl<I: crate::Packet, O: crate::Packet> ClientNetworking<I, O> {
     }
 
     pub fn send(&self, packet: O) -> Result<()> {
-        debug!(target: "client_network", "Sending packet");
+        trace!(target: "client_network", "Sending packet: {packet:?}");
         match self {
             ClientNetworking::Local(sender, _) => {
                 sender.send(packet).unwrap();
@@ -189,7 +189,7 @@ impl<I: crate::Packet, O: crate::Packet> ClientNetworking<I, O> {
         match self {
             ClientNetworking::Local(_, receiver) => {
                 while let Ok(packet) = receiver.try_recv() {
-                    debug!(target: "client_network", "Received packet");
+                    trace!(target: "client_network", "Received packet: {packet:?}");
                     consumer(packet);
                 }
             }

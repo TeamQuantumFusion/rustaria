@@ -66,7 +66,7 @@ use mlua::{FromLua, Lua, LuaSerdeExt};
 use mlua::prelude::{LuaResult, LuaUserData, LuaUserDataMethods};
 
 use rustaria_util::blake3::Hasher;
-use rustaria_util::debug;
+use rustaria_util::{debug, trace};
 
 use crate::{Prototype, RawId};
 use crate::tag::Tag;
@@ -167,9 +167,9 @@ impl<P: Prototype> LuaUserData for RegistryBuilder<P> {
         P: FromLua<'lua>,
     {
         m.add_method_mut("register", |_lua, this, t: HashMap<Tag, P>| {
-            debug!(target: this.name, "Registered entries to registry");
+            trace!(target: this.name, "Registered entries to registry");
             for k in t.keys() {
-                debug!("{k}")
+                trace!(target: this.name, "Registered: {k}")
             }
             this.entries.extend(t);
             Ok(())

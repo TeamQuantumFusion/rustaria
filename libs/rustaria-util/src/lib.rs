@@ -4,7 +4,7 @@ use std::fs::File;
 pub use eyre::*;
 // Imports
 pub use log::*;
-use simplelog::{ColorChoice, CombinedLogger, Config, ConfigBuilder, LevelPadding, TermLogger, TerminalMode, WriteLogger, Color};
+use simplelog::{ColorChoice, CombinedLogger, Config, ConfigBuilder, LevelPadding, TermLogger, TerminalMode, WriteLogger, Color, TargetPadding};
 pub use uuid::Uuid;
 
 pub mod blake3;
@@ -19,6 +19,8 @@ pub fn initialize() -> eyre::Result<()> {
             LevelFilter::Debug,
             ConfigBuilder::new()
                 .set_level_padding(LevelPadding::Off)
+                .set_target_level(LevelFilter::Error)
+                .set_target_padding(TargetPadding::Left(2))
                 .set_level_color(Level::Trace, Some(Color::Magenta))
                 .set_level_color(Level::Debug, Some(Color::Blue))
                 .set_level_color(Level::Info, Some(Color::Green))

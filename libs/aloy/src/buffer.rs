@@ -4,7 +4,7 @@ use std::ops::Range;
 use std::rc::Rc;
 
 use eyre::{Report, Result};
-use rustaria_util::debug;
+use rustaria_util::{trace};
 
 use opengl::gl;
 use opengl::gl::GLenum;
@@ -43,7 +43,7 @@ impl VertexPipeline {
                 let mut offset = 0;
                 unsafe {
                     for x in attributes {
-                        debug!("{:?} offset {} stride {}", x, offset, stride);
+                        trace!("{:?} offset {} stride {}", x, offset, stride);
                         let attr_size = x.attribute_type.get_size();
                         self.bind();
                         x.attribute_type

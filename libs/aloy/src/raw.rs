@@ -1,4 +1,4 @@
-use rustaria_util::debug;
+use rustaria_util::trace;
 
 use opengl::gl;
 use opengl::gl::GLuint;
@@ -7,7 +7,7 @@ macro_rules! new {
     ($TYPE:ty : $NAME:literal => $DEL_METHOD:ident) => {
         impl $TYPE {
             pub fn new(gl_id: GLuint) -> Self {
-                debug!(target: "opengl", "Created {} {}", $NAME, gl_id);
+                trace!(target: "opengl", "Created {} {}", $NAME, gl_id);
                 Self {
                     gl_id
                 }
@@ -21,7 +21,7 @@ macro_rules! new {
         impl Drop for $TYPE {
             fn drop(&mut self) {
                 unsafe {
-                    debug!(target: "opengl", "Dropped {} {}", $NAME, self.gl_id);
+                    trace!(target: "opengl", "Dropped {} {}", $NAME, self.gl_id);
                     $DEL_METHOD(self.gl_id);
                 }
             }

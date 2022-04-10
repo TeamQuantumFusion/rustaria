@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use chunk::Chunk;
 use rustaria_network::{EstablishingInstance, NetworkInterface, Token};
-use rustaria_util::{info, Result};
+use rustaria_util::{Result};
 use rustaria_util::ty::ChunkPos;
 
 use crate::{ClientPacket, Networking, ServerPacket};
@@ -93,7 +93,6 @@ impl NetworkInterface<ClientPacket, ServerPacket, PlayerJoinData> for World {
         match packet {
             ClientPacket::RequestChunks(chunks) => {
                 for pos in chunks {
-                    info!("got {:?}", pos);
                     self.chunk_queue.push_back((pos, from));
                 }
             }
