@@ -128,6 +128,8 @@ impl<T: Hash + Ord + Clone> AtlasBuilder<T> {
             },
         );
 
+
+
         info!("Created atlas {}x{}", max_width, max_height);
         Atlas { texture, lookup }
     }

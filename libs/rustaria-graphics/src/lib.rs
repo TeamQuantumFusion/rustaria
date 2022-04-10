@@ -1,24 +1,22 @@
 use std::sync::mpsc::Receiver;
-use std::time::Instant;
 
-use glfw::{Context, Glfw, OpenGlProfileHint, SwapInterval, Window, WindowEvent, WindowHint, WindowMode};
 use glfw::WindowEvent::FramebufferSize;
+use glfw::{
+    Context, Glfw, OpenGlProfileHint, SwapInterval, Window, WindowEvent, WindowHint, WindowMode,
+};
 
-use aloy::{ClearCommand, ClearDescriptor, OpenGlBackend, OpenGlFeature};
 use aloy::vertex::VertexBuilder;
-use renderer::pipeline::DrawPipeline;
-use rustaria::api::Api;
-use rustaria::network::packet::{ClientPacket, ServerPacket};
-use rustaria_util::{debug, ContextCompat, Result};
-use ty::{Color, Pos};
+use aloy::{ClearCommand, ClearDescriptor, OpenGlBackend};
+use renderer::pipeline::RenderPipeline;
+use rustaria_util::{ContextCompat, Result};
+use ty::Pos;
 
-use crate::profiler::Profiler;
-use crate::renderer::WorldRenderer;
+use crate::renderer::RenderingHandler;
 use crate::ty::Viewport;
 
-pub mod profiler;
 pub mod renderer;
 pub mod ty;
+pub mod world_drawer;
 
 /// An identifier for which render layer we are targeting.
 #[derive(Debug)]
@@ -34,22 +32,37 @@ pub enum RenderLayerStability {
     Erratic,
 }
 
-pub struct RenderHandler {
-   profiler: Profiler,
-    pub window: Window,
+/// Ok so. I did not want to make a crate for glfw, window, backend and event receiver
+/// because it would become too concerning with depenencies.
+/// and because i could not come up with a name for it.
+///
+/// # Why is this a Battlecruiser that is probably operational.
+/// Well i could not think of a name for this either so i named it after a StarCraft carrier ship.
+/// It was a choice between the battlecruiser and the carrier (zerg cringe).
+/// The reason i chose the Battle Cruiser is because my dad joked about the "Battlecruiser operational!"
+/// quote that the captain does when it spawns.
+/// But yes. Battlecruiser operational!
+///
+/// # What is a battlecruiser?
+/// If you are not a boomer like me, go here https://starcraft.fandom.com/wiki/Battlecruiser_(StarCraft)
+///
+/// # I'm leo and I want to rename this.
+/// If you do that im renaming `mooncake` to `lua_runtime_reference_method_wrapper_macro_crate`
+pub struct BattleCruiser {
+    window: Window,
     events: Receiver<(f64, WindowEvent)>,
     backend: OpenGlBackend,
-    // needs to be last or the context will drop
     glfw: Glfw,
 }
 
-impl RenderHandler {
-    pub fn new() -> Result<RenderHandler> {
+impl BattleCruiser {
+    // If you ask me why this is not called new. Just go to its usages and check how it looks.
+    pub fn operational() -> Result<BattleCruiser> {
         let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS)?;
-
         glfw.window_hint(WindowHint::OpenGlProfile(OpenGlProfileHint::Core));
         glfw.window_hint(WindowHint::OpenGlDebugContext(false));
         glfw.window_hint(WindowHint::ContextVersion(4, 5));
+
         let size = (1920 / 2, 1080 / 2);
         let (mut window, events) = glfw
             .create_window(size.0, size.1, "Rustaria", WindowMode::Windowed)
@@ -58,22 +71,21 @@ impl RenderHandler {
         window.make_current();
         window.set_key_polling(true);
         window.set_mouse_button_polling(true);
+        window.set_scroll_polling(true);
         window.set_size_polling(true);
         window.set_framebuffer_size_polling(true);
         glfw.set_swap_interval(SwapInterval::Sync(1));
 
         let mut backend = OpenGlBackend::new(size, |procname| glfw.get_proc_address_raw(procname));
+        window.set_size(900, 600);
         backend.set_clear_command(ClearCommand {
-            commands: vec![ClearDescriptor::Color(0.1, 0.1, 0.1, 1.0)],
+            commands: vec![ClearDescriptor::Color(0.15, 0.15, 0.15, 1.0)],
         });
-        backend.enable(OpenGlFeature::Alpha);
-
-        Ok(RenderHandler {
-            profiler: Profiler::new(),
-            backend,
-            glfw,
+        Ok(BattleCruiser {
             window,
             events,
+            backend,
+            glfw,
         })
     }
 
@@ -93,18 +105,9 @@ impl RenderHandler {
         }
     }
 
-    pub fn start_frame(&mut self) -> &mut Profiler{
+    pub fn draw(&mut self, renderer: &mut RenderingHandler, view: &Viewport) {
         self.backend.clear_frame();
-        self.profiler.start_frame();
-        &mut self.profiler
-    }
-
-    pub fn stop_frame(&mut self) {
-        self.profiler.end_frame();
+        renderer.draw(view);
         self.window.swap_buffers();
     }
-}
-
-pub trait LayerSubmitter<V: Clone> {
-    fn submit(&mut self, buffer: VertexBuilder<V>, stability: RenderLayerStability) -> Result<()>;
 }

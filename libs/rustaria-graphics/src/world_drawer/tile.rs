@@ -8,19 +8,8 @@ use rustaria_util::ty::ChunkSubPos;
 
 use crate::ty::{Rectangle, Texture};
 use crate::{Pos, VertexBuilder};
-use crate::renderer::chunk::NeighborMatrix;
-
-pub const EMPTY: BakedTile = BakedTile {
-    image: AtlasLocation {
-        x: 0.0,
-        y: 0.0,
-        width: 0.0,
-        height: 0.0
-    },
-    ty: ConnectionType::Isolated,
-
-    variations: 0
-};
+use crate::renderer::atlas::TextureAtlas;
+use crate::world_drawer::chunk::NeighborMatrix;
 
 #[derive(Copy, Clone)]
 pub struct BakedTile {
@@ -33,15 +22,15 @@ impl BakedTile {
     pub fn new(
         registry: &Registry<TilePrototype>,
         tile: &Tile,
-        atlas: &Atlas<Tag>,
+        atlas: &TextureAtlas,
     ) -> Option<BakedTile> {
         if let Some(TilePrototype {
             sprite: Some(tag), connection, ..
         }) = registry.get_from_id(tile.id)
         {
-            if let Some(location) = atlas.lookup.get(tag) {
+            if let Some(location) = atlas.get(tag) {
                 return Some(BakedTile {
-                    image: *location,
+                    image: location,
                     ty: *connection,
                     variations: 3,
                 });

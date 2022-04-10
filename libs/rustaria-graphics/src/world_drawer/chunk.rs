@@ -1,15 +1,16 @@
+use std::collections::HashMap;
 use aloy::atlas::Atlas;
 use rustaria::api::Api;
 use rustaria::api::prototype::tile::TilePrototype;
 use rustaria::api::ty::ConnectionType;
 use rustaria::world::chunk::{Chunk, ChunkLayer};
 use rustaria_api::tag::Tag;
-use rustaria_util::info;
-use rustaria_util::ty::{CHUNK_SIZE, ChunkPos, Direction};
+use rustaria_util::ty::{CHUNK_SIZE, ChunkPos, ChunkSubPos, Direction, Offset};
 
 use crate::{Pos, VertexBuilder};
+use crate::renderer::atlas::TextureAtlas;
 use crate::ty::Texture;
-use crate::renderer::tile::BakedTile;
+use crate::world_drawer::tile::BakedTile;
 
 pub struct BakedChunk {
     pub tiles: ChunkLayer<Option<BakedTile>>,
@@ -17,7 +18,7 @@ pub struct BakedChunk {
 }
 
 impl BakedChunk {
-    pub fn new(api: &Api, chunk: &Chunk, atlas: &Atlas<Tag>) -> BakedChunk {
+    pub fn new(api: &Api, chunk: &Chunk, atlas: &TextureAtlas) -> BakedChunk {
         let instance = api.instance();
         let registry = instance.get_registry::<TilePrototype>();
         let mut tiles = ChunkLayer::new([[None; CHUNK_SIZE]; CHUNK_SIZE]);
@@ -33,16 +34,23 @@ impl BakedChunk {
             }
         }
 
+        BakedChunk {
+            tiles,
+            tile_neighbors,
+        }
+    }
+
+    pub fn compile_internal(&mut self) {
         for y in 0..CHUNK_SIZE {
-            let row = &tiles.grid[y];
+            let row = &self.tiles.grid[y];
             for x in 0..CHUNK_SIZE {
                 if let Some(tile) = &row[x] {
                     if tile.ty == ConnectionType::Connected {
                         if y != CHUNK_SIZE - 1 {
-                            if let Some(top_tile) = &tiles.grid[y + 1][x] {
+                            if let Some(top_tile) = &self.tiles.grid[y + 1][x] {
                                 if let ConnectionType::Connected = top_tile.ty {
-                                    tile_neighbors.grid[y][x].up = ConnectionType::Connected;
-                                    tile_neighbors.grid[y + 1][x].down = ConnectionType::Connected;
+                                    self.tile_neighbors.grid[y][x].up = ConnectionType::Connected;
+                                    self.tile_neighbors.grid[y + 1][x].down = ConnectionType::Connected;
                                 }
                             }
                         }
@@ -50,8 +58,8 @@ impl BakedChunk {
                         if x != CHUNK_SIZE - 1 {
                             if let Some(right_tile) = &row[x + 1] {
                                 if let ConnectionType::Connected = right_tile.ty {
-                                    tile_neighbors.grid[y][x].right = ConnectionType::Connected;
-                                    tile_neighbors.grid[y][x + 1].left = ConnectionType::Connected;
+                                    self.tile_neighbors.grid[y][x].right = ConnectionType::Connected;
+                                    self.tile_neighbors.grid[y][x + 1].left = ConnectionType::Connected;
                                 }
                             }
                         }
@@ -59,10 +67,44 @@ impl BakedChunk {
                 }
             }
         }
+    }
 
-        BakedChunk {
-            tiles,
-            tile_neighbors,
+    pub fn compile_chunk_borders(&mut self, chunks: &mut HashMap<ChunkPos, BakedChunk>, pos: ChunkPos) {
+        for offset in Direction::all() {
+            if let Some(neighbor_pos) = pos.offset(offset.into()) {
+                if let Some(neighbor) = chunks.get_mut(&neighbor_pos) {
+                    let y_offset = offset.offset_y().max(0) as usize * (CHUNK_SIZE - 1);
+                    let x_offset = offset.offset_x().max(0) as usize * (CHUNK_SIZE - 1);
+                    let y_length = (CHUNK_SIZE - 1) * (offset.offset_x().abs() as usize);
+                    let x_length = (CHUNK_SIZE - 1) * (offset.offset_y().abs() as usize);
+                    for y in y_offset..=y_length + y_offset {
+                        let row = &self.tiles.grid[y];
+                        // clippy having a stroke
+                        #[allow(clippy::needless_range_loop)]
+                        for x in x_offset..=x_length + x_offset {
+                            let neighbor_sub_pos =
+                                ChunkSubPos::new(x as u8, y as u8).euclid_offset(offset.into());
+
+                            let mut ty = ConnectionType::Isolated;
+                            if let Some(tile) = &row[x] {
+                                if let Some(neighbor_tile) = neighbor.tiles.get(neighbor_sub_pos) {
+                                    if let (ConnectionType::Connected, ConnectionType::Connected) =
+                                    (tile.ty, neighbor_tile.ty)
+                                    {
+                                        ty = ConnectionType::Connected;
+                                    }
+                                }
+                            }
+
+                            self.tile_neighbors.grid[y][x].set(offset, ty);
+                            neighbor
+                                .tile_neighbors
+                                .get_mut(neighbor_sub_pos)
+                                .set(offset.flip(), ty);
+                        }
+                    }
+                }
+            }
         }
     }
 

@@ -30,6 +30,7 @@ members = [
     "libs/rustaria-network",
     "libs/rustaria-util",
     "libs/rustaria-graphics",
+    "libs/rustaria-rendering",
     "libs/rustaria-controller",
     "libs/rustaria-api",
     "runtime/client",

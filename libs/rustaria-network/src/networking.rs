@@ -42,7 +42,7 @@ impl<I: crate::Packet, O: crate::Packet, J> ServerNetworking<I, O, J> {
     }
 
     pub fn send(&self, to: Token, packet: O) -> Result<()> {
-        debug!(target: "server_network", "Sending {packet:?} to {to}");
+        debug!(target: "server_network", "Sending packet to {to}");
         if let Some(socket) = &self.socket {
             if let Some(remote) = self.remote_clients.get_by_left(&to) {
                 socket.get_packet_sender().send(Packet::reliable_unordered(
@@ -82,7 +82,7 @@ impl<I: crate::Packet, O: crate::Packet, J> ServerNetworking<I, O, J> {
 
         for (from, (_, receiver)) in &self.local_connections {
             while let Ok(packet) = receiver.try_recv() {
-                interface.receive(from.clone(), packet);
+                interface.receive(*from, packet);
             }
         }
 
@@ -170,7 +170,7 @@ impl<I: crate::Packet, O: crate::Packet> ClientNetworking<I, O> {
     }
 
     pub fn send(&self, packet: O) -> Result<()> {
-        debug!(target: "client_network", "Sending {:?}", packet);
+        debug!(target: "client_network", "Sending packet");
         match self {
             ClientNetworking::Local(sender, _) => {
                 sender.send(packet).unwrap();
@@ -190,7 +190,7 @@ impl<I: crate::Packet, O: crate::Packet> ClientNetworking<I, O> {
         match self {
             ClientNetworking::Local(_, receiver) => {
                 while let Ok(packet) = receiver.try_recv() {
-                    debug!(target: "client_network", "Received {:?}", packet);
+                    debug!(target: "client_network", "Received packet");
                     consumer(packet);
                 }
             }

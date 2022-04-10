@@ -1,58 +1,44 @@
-use std::collections::HashMap;
-use std::str::FromStr;
+use std::collections::HashSet;
+use std::sync::{Arc, RwLock};
 
-use image::{DynamicImage, ImageFormat, ImageResult};
+use glfw::Glfw;
 
-use aloy::atlas::{Atlas, AtlasBuilder};
 use aloy::attribute::{AttributeDescriptor, AttributeType};
-use rustaria::api::prototype::tile::TilePrototype;
-use rustaria::api::ty::ConnectionType;
+use aloy::OpenGlBackend;
+use atlas::TextureAtlas;
 use rustaria::api::Api;
-use rustaria::world::chunk::Chunk;
-use rustaria_api::plugin::archive::ArchivePath;
 use rustaria_api::tag::Tag;
-use rustaria_util::ty::{ChunkPos, ChunkSubPos, Direction, Offset, CHUNK_SIZE};
-use rustaria_util::{eyre, info, warn, Result, WrapErr};
 
-use crate::renderer::chunk::BakedChunk;
-use crate::ty::{Color, Viewport, Pos, Rectangle, Texture};
-use crate::{DrawPipeline, Profiler, RenderLayerStability, VertexBuilder};
+use crate::{Pos, RenderPipeline};
+use crate::renderer::layer::RenderLayer;
+use crate::ty::{Color, Texture, Viewport};
 
-mod chunk;
+pub mod atlas;
+pub mod layer;
 pub mod pipeline;
-mod tile;
 
-pub struct WorldRenderer {
-    pub atlas: Atlas<Tag>,
-    pub color: DrawPipeline<(Pos, Color)>,
-    pub texture: DrawPipeline<(Pos, Texture)>,
-    chunks: HashMap<ChunkPos, BakedChunk>,
-    world_dirty: bool,
-    pub x_y_ratio: f32,
+pub struct RenderingHandler {
+    instance: Arc<RwLock<RenderingInstance>>,
+    pos_color_pipeline: RenderPipeline<(Pos, Color)>,
+    pos_texture_pipeline: RenderPipeline<(Pos, Texture)>,
 }
 
-impl WorldRenderer {
-    pub fn new(api: &Api) -> WorldRenderer {
-        let mut atlas_builder = AtlasBuilder::new();
-        for prototype in api.instance() .get_registry::<TilePrototype>().entries() {
-            if let TilePrototype {
-                sprite: Some(tag), ..
-            } = prototype
-            {
-                match Self::get_sprite(api, tag) {
-                    Ok(image) => {
-                        atlas_builder.push(tag.clone(), image);
-                    }
-                    Err(report) => {
-                        warn!("Could not load sprite {}. {}", tag, report);
-                    }
-                }
-            }
-        }
+pub struct RenderingInstance {
+    pub atlas: TextureAtlas,
+    pub screen_y_ratio: f32
+}
 
-        let renderer = WorldRenderer {
-            atlas: atlas_builder.export(3),
-            color: DrawPipeline::new(
+impl RenderingHandler {
+    pub fn new(
+        api: &Api,
+        sprites: HashSet<Tag>,
+    ) -> RenderingHandler {
+        RenderingHandler {
+            instance: Arc::new(RwLock::new(RenderingInstance {
+                atlas: TextureAtlas::new(api, sprites),
+                screen_y_ratio: 0.0
+            })),
+            pos_color_pipeline: RenderPipeline::new(
                 include_str!("./gl/color.frag.glsl"),
                 include_str!("./gl/color.vert.glsl"),
                 vec![
@@ -60,7 +46,7 @@ impl WorldRenderer {
                     AttributeDescriptor::new(1, AttributeType::Float(3)),
                 ],
             ),
-            texture: DrawPipeline::new(
+            pos_texture_pipeline: RenderPipeline::new(
                 include_str!("./gl/texture.frag.glsl"),
                 include_str!("./gl/texture.vert.glsl"),
                 vec![
@@ -68,109 +54,43 @@ impl WorldRenderer {
                     AttributeDescriptor::new(1, AttributeType::Float(2)),
                 ],
             ),
-            chunks: Default::default(),
-            world_dirty: false,
-            x_y_ratio: 0.0,
-        };
-        renderer
-    }
-    pub fn dirty(&mut self) {
-        self.world_dirty = true;
-    }
-
-    fn get_sprite(api: &Api, tag: &Tag) -> Result<DynamicImage> {
-        let instance = api.instance();
-        let plugin = instance.get_plugin(tag.plugin_id()).ok_or_else(|| {
-            eyre!(
-                "Plugin {} does not exist or is not loaded.",
-                tag.plugin_id()
-            )
-        })?;
-        let data = plugin
-            .archive
-            .get_asset(&ArchivePath::Asset(tag.name().to_string()))
-            .wrap_err(format!("Sprite does not exist {}", tag))?;
-        Ok(image::load_from_memory_with_format(data, ImageFormat::Png)?)
+        }
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {
-        self.color.resize(width, height);
-        self.texture.resize(width, height);
-        self.x_y_ratio = width as f32 / height as f32;
+        self.pos_texture_pipeline.resize(width, height);
+        self.pos_color_pipeline.resize(width, height);
+        self.instance.write().unwrap().screen_y_ratio = width as f32 / height as f32;
     }
 
-    pub fn submit_chunk(&mut self, api: &Api, pos: ChunkPos, chunk: &Chunk) {
-        let mut baked_chunk = BakedChunk::new(api, chunk, &self.atlas);
-        self.compile_borders(pos, &mut baked_chunk);
-        self.chunks.insert(pos, baked_chunk);
-        self.world_dirty = true;
+    pub fn mark_dirty(&mut self) {
+        self.pos_texture_pipeline.mark_dirty();
+        self.pos_color_pipeline.mark_dirty();
     }
 
-    fn compile_borders(&mut self, pos: ChunkPos, chunk: &mut BakedChunk) {
-        for offset in Direction::all() {
-            if let Some(neighbor_pos) = pos.offset(offset.into()) {
-                if let Some(neighbor) = self.chunks.get_mut(&neighbor_pos) {
-                    let y_offset = offset.offset_y().max(0) as usize * (CHUNK_SIZE - 1);
-                    let x_offset = offset.offset_x().max(0) as usize * (CHUNK_SIZE - 1);
-                    let y_length = (CHUNK_SIZE - 1) * (offset.offset_x().abs() as usize);
-                    let x_length = (CHUNK_SIZE - 1) * (offset.offset_y().abs() as usize);
-                    for y in y_offset..=y_length + y_offset {
-                        let row = &chunk.tiles.grid[y];
-                        // clippy having a stroke
-                        #[allow(clippy::needless_range_loop)]
-                        for x in x_offset..=x_length + x_offset {
-                            let neighbor_sub_pos = ChunkSubPos::new(x as u8, y as u8).euclid_offset(offset.into());
+    pub fn instance(&self) ->  Arc<RwLock<RenderingInstance>> {
+        self.instance.clone()
+    }
 
-                            let mut ty = ConnectionType::Isolated;
-                            if let Some(tile) = &row[x] {
-                                if let Some(neighbor_tile) = neighbor.tiles.get(neighbor_sub_pos) {
-                                    if let (ConnectionType::Connected, ConnectionType::Connected) =
-                                        (tile.ty, neighbor_tile.ty)
-                                    {
-                                        ty = ConnectionType::Connected;
-                                    }
-                                }
-                            }
+    pub fn draw(&mut self, view: &Viewport) {
+        self.pos_texture_pipeline.draw(view);
+        self.pos_color_pipeline.draw(view);
+    }
+}
 
-                            chunk.tile_neighbors.grid[y][x].set(offset, ty);
-                            neighbor
-                                .tile_neighbors
-                                .get_mut(neighbor_sub_pos)
-                                .set(offset.flip(), ty);
-                        }
-                    }
-                }
+macro_rules! impl_consumer {
+    ($TY:ty, $NAME:ident) => {
+        impl RenderLayerConsumer<$TY> for RenderingHandler {
+            fn create_layer(&mut self) -> RenderLayer<$TY> {
+                self.$NAME.create_layer()
             }
         }
-    }
+    };
+}
 
-    pub fn draw(&mut self, prof: &mut Profiler, view: &Viewport) {
-        if self.world_dirty {
-            info!("Building mesh");
-            // make this off-thread
+impl_consumer!((Pos, Color), pos_color_pipeline);
+impl_consumer!((Pos, Texture), pos_texture_pipeline);
 
-            let viewport = view.viewport(self.x_y_ratio);
-
-            let mut builder = VertexBuilder::new();
-            for (pos, chunk) in &self.chunks {
-                let chunk_rect = Rectangle {
-                    x: pos.x as f32 * CHUNK_SIZE as f32,
-                    y: pos.y as f32 * CHUNK_SIZE as f32,
-                    w: CHUNK_SIZE as f32,
-                    h: CHUNK_SIZE as f32,
-                };
-
-               if viewport.overlaps(&chunk_rect) {
-                 chunk.push(&mut builder, *pos);
-               }
-            }
-            self.texture
-                .submit(builder, RenderLayerStability::Stable)
-                .unwrap();
-            self.world_dirty = false;
-        }
-
-        self.color.draw(prof, view);
-        self.texture.draw(prof, view);
-    }
+pub trait RenderLayerConsumer<V: Clone> {
+    fn create_layer(&mut self) -> RenderLayer<V>;
 }

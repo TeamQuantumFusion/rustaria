@@ -151,7 +151,7 @@ impl<T> Buffer<T> {
         Ok(())
     }
 
-    pub fn set(&mut self, data: &[T]) -> Result<()> {
+    pub fn set(&mut self, data: &[T]) {
         self.elements = data.len();
         let target = self.buffer_type.get_gl();
         let size = data.len() * std::mem::size_of::<T>();
@@ -161,14 +161,12 @@ impl<T> Buffer<T> {
             gl::BindBuffer(target, self.raw.id());
             if size > self.size {
                 gl::BufferData(target, size as isize, data, self.buffer_usage);
-                info!("EXPAND {}", size);
                 self.size = size;
             } else {
                 gl::BufferSubData(target, 0, size as isize, data)
             }
         }
 
-        Ok(())
     }
 
     fn get_usage_enum(buffer_usage: BufferUsage, buffer_access: BufferAccess) -> GLenum {

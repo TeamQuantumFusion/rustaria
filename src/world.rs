@@ -31,7 +31,7 @@ impl World {
         Ok(World {
             api: api.clone(),
             chunks: Default::default(),
-            generator: WorldGenerator::new(api, 4)?,
+            generator: WorldGenerator::new(api, 8)?,
             changed_chunks: Default::default(),
             chunk_queue: Default::default(),
             chunk_gen_queue: Default::default(),

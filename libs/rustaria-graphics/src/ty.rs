@@ -126,11 +126,11 @@ pub struct Viewport {
 }
 
 impl Viewport {
-    pub fn viewport(&self, x_y_ratio: f32) -> Rectangle {
+    pub fn viewport(&self, screen_y_ratio: f32) -> Rectangle {
         Rectangle {
-            x: self.pos.x - ((self.zoom / 2.0) * x_y_ratio),
+            x: self.pos.x - ((self.zoom / 2.0) * screen_y_ratio),
             y: self.pos.y - (self.zoom / 2.0),
-            w: self.zoom * x_y_ratio,
+            w: self.zoom * screen_y_ratio,
             h: self.zoom,
         }
     }

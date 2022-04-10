@@ -4,6 +4,7 @@ use std::sync::{Arc, LockResult, RwLock, RwLockReadGuard};
 
 use rustaria_api::ApiHandler;
 use rustaria_api::lua_runtime::Lua;
+use rustaria_api::tag::Tag;
 use rustaria_util::Result;
 
 #[macro_use]
