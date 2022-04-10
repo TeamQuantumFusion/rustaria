@@ -167,7 +167,7 @@ impl<P: Prototype> LuaUserData for RegistryBuilder<P> {
         P: FromLua<'lua>,
     {
         m.add_method_mut("register", |_lua, this, t: HashMap<Tag, P>| {
-            debug!(name = ?this.name, "Registered entries to registry");
+            debug!(target: this.name, "Registered entries to registry");
             for k in t.keys() {
                 debug!("{k}")
             }

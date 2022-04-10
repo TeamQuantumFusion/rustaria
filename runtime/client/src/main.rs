@@ -26,7 +26,6 @@ use rustaria_util::ty::ChunkPos;
 use rustaria_util::ty::Pos;
 
 mod controller;
-mod network;
 
 const UPDATE_TIME: Duration = Duration::from_micros(1000000 / UPS as u64);
 

@@ -1,13 +1,10 @@
+use std::fs::File;
+
 // Re-exports
 pub use eyre::*;
 // Imports
-use time::macros::format_description;
-pub use tracing::*;
-use tracing_error::ErrorLayer;
-use tracing_subscriber::EnvFilter;
-use tracing_subscriber::fmt::time::UtcTime;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
+pub use log::*;
+use simplelog::{ColorChoice, CombinedLogger, Config, ConfigBuilder, LevelPadding, TermLogger, TerminalMode, WriteLogger, Color};
 pub use uuid::Uuid;
 
 pub mod blake3;
@@ -17,19 +14,26 @@ pub fn initialize() -> eyre::Result<()> {
     std::env::set_var("RUST_BACKTRACE", "1");
     color_eyre::install()?;
 
-    let timer = UtcTime::new(format_description!(
-        "[hour]:[minute]:[second].[subsecond digits:3]"
-    ));
-    let format = tracing_subscriber::fmt::format()
-        .with_timer(timer)
-        .compact();
-    let fmt_layer = tracing_subscriber::fmt::layer().event_format(format);
-
-    tracing_subscriber::registry()
-        .with(fmt_layer)
-        .with(EnvFilter::try_new("debug,wgpu_hal=warn,wgpu_core=warn").unwrap())
-        .with(ErrorLayer::default())
-        .init();
+    CombinedLogger::init(vec![
+        TermLogger::new(
+            LevelFilter::Debug,
+            ConfigBuilder::new()
+                .set_level_padding(LevelPadding::Off)
+                .set_level_color(Level::Trace, Some(Color::Magenta))
+                .set_level_color(Level::Debug, Some(Color::Blue))
+                .set_level_color(Level::Info, Some(Color::Green))
+                .set_level_color(Level::Warn, Some(Color::Yellow))
+                .set_level_color(Level::Error, Some(Color::Red))
+                .build(),
+            TerminalMode::Mixed,
+            ColorChoice::Auto,
+        ),
+        WriteLogger::new(
+            LevelFilter::Info,
+            Config::default(),
+            File::create("my_rust_binary.log").unwrap(),
+        ),
+    ])?;
 
     Ok(())
 }

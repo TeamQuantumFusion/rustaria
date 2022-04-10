@@ -1,11 +1,9 @@
-use std::io::Read;
 use std::marker::PhantomData;
 
-use lz4::{Decoder, EncoderBuilder};
 use serde::{Deserialize, Serialize};
 use serde::de::DeserializeOwned;
 
-use rustaria_util::Result;
+use rustaria_util::{ContextCompat, Result};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CompressedPacket<P: Serialize + DeserializeOwned> {
@@ -15,26 +13,16 @@ pub struct CompressedPacket<P: Serialize + DeserializeOwned> {
 
 impl<P: Serialize + DeserializeOwned> CompressedPacket<P> {
     pub fn new(packet: &P) -> Result<CompressedPacket<P>> {
-        let data = Vec::new();
-
-        let mut encoder = EncoderBuilder::new().level(4).build(data)?;
-        bincode::serialize_into(&mut encoder, packet)?;
-        let (data, result) = encoder.finish();
-        result?;
 
         Ok(CompressedPacket {
-            data,
+            data: lz4_flex::compress_prepend_size(& bincode::serialize(packet)?),
             packet: Default::default(),
         })
     }
 
     pub fn export(self) -> Result<P> {
-        let mut data = Vec::new();
-
-        let mut decoder = Decoder::new(self.data.as_slice())?;
-        decoder.read_to_end(&mut data)?;
-        decoder.finish().1?;
-
-        Ok(bincode::deserialize(data.as_slice())?)
+        let result = lz4_flex::decompress_size_prepended(self.data.as_slice());
+        let decompressed = result.ok().wrap_err("Could not deserialize")?;
+        Ok(bincode::deserialize(decompressed.as_slice())?)
     }
 }

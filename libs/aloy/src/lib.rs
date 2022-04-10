@@ -1,6 +1,6 @@
 use std::ffi::{c_void, CStr};
 
-use tracing::{debug, error, info, warn};
+use rustaria_util::{debug, error, info, warn};
 
 use opengl::gl;
 use opengl::gl::{GLbitfield, GLchar, GLenum, GLsizei, GLuint};

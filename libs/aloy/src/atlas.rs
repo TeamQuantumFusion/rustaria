@@ -7,7 +7,7 @@ use rectangle_pack::{
     contains_smallest_box, GroupedRectsToPlace, pack_rects, RectanglePackError, RectToInsert,
     TargetBin, volume_heuristic,
 };
-use tracing::info;
+use rustaria_util::info;
 
 use crate::texture::{
     InternalFormat, TextureData, TextureDataFormat, TextureDescriptor, TextureLod,

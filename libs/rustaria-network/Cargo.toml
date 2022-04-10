@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 rustaria-util = { path = "../rustaria-util" }
 serde = { version = "1.0", features = ["derive"] }
-lz4 = "1.23"
+lz4_flex = { version = "0.9.0", default-features = false, features = ["checked-decode"] }
 
 # Local
 crossbeam = "0.8"

@@ -4,7 +4,7 @@ use std::ops::Range;
 use std::rc::Rc;
 
 use eyre::{Report, Result};
-use tracing::debug;
+use rustaria_util::debug;
 
 use opengl::gl;
 use opengl::gl::GLenum;
