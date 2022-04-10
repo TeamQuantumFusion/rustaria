@@ -6,7 +6,7 @@ description = "A Terraria rework in Rust"
 repository = "https://github.com/rustaria/rustaria/"
 license = "GPL-3.0-or-later"
 edition = "2021"
-rust-version = "1.57"
+rust-version = "1.60"
 
 [dependencies]
 serde = { version = "1.0.133", features = ["derive"] }

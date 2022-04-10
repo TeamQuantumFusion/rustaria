@@ -12,7 +12,7 @@ pub struct Light {
 #[derive(Copy, Clone, Debug)]
 pub struct Pos {
     pub x: f32,
-    pub y: f32
+    pub y: f32,
 }
 
 pub type Texture = Pos;
@@ -25,11 +25,35 @@ pub struct Color {
     pub b: f32,
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct Rectangle {
     pub x: f32,
     pub y: f32,
     pub w: f32,
     pub h: f32,
+}
+
+impl Rectangle {
+    pub fn left(&self) -> f32 {
+        self.x
+    }
+
+    pub fn right(&self) -> f32 {
+        self.x + self.w
+    }
+
+    pub fn top(&self) -> f32 {
+        self.y + self.h
+    }
+
+    pub fn bottom(&self) -> f32 {
+        self.y
+    }
+
+    pub fn overlaps(&self, rect: &Rectangle) -> bool {
+        self.left().max(rect.left()) < self.right().min(rect.right())
+            && self.bottom().max(rect.bottom()) < self.top().min(rect.top())
+    }
 }
 
 impl From<[u8; 3]> for Color {
@@ -42,14 +66,13 @@ impl From<[u8; 3]> for Color {
     }
 }
 
-
 impl From<AtlasLocation> for Rectangle {
     fn from(value: AtlasLocation) -> Self {
-        Rectangle  {
+        Rectangle {
             x: value.x,
             y: value.y,
             w: value.width,
-            h: value.height
+            h: value.height,
         }
     }
 }
@@ -58,11 +81,10 @@ impl From<(f32, f32)> for Texture {
     fn from(value: (f32, f32)) -> Self {
         Texture {
             x: value.0,
-            y: value.1
+            y: value.1,
         }
     }
 }
-
 
 impl Quad for Rectangle {
     type Item = Pos;
@@ -91,5 +113,16 @@ impl Quad for Color {
 
 pub struct Player {
     pub pos: [f32; 2],
-    pub zoom: f32
+    pub zoom: f32,
+}
+
+impl Player {
+    pub fn viewport(&self, x_y_ratio: f32) -> Rectangle {
+        Rectangle {
+            x: self.pos[0] - ((self.zoom / 2.0) * x_y_ratio),
+            y: self.pos[1] - (self.zoom / 2.0),
+            w: self.zoom * x_y_ratio,
+            h: self.zoom,
+        }
+    }
 }

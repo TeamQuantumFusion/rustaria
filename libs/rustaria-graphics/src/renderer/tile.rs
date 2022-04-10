@@ -57,9 +57,9 @@ impl BakedTile {
         let tile_width = self.image.width / (4.0 * self.variations as f32);
         let image = AtlasLocation {
             x: self.image.x + (x * tile_width),
-            y: self.image.y + (y * tile_height),
+            y: (self.image.y + (y * tile_height)) + tile_height,
             width: tile_width,
-            height: tile_height,
+            height: -tile_height,
         };
 
         builder.quad((

@@ -6,28 +6,29 @@ use image::{DynamicImage, ImageFormat, ImageResult};
 use aloy::atlas::{Atlas, AtlasBuilder};
 use aloy::attribute::{AttributeDescriptor, AttributeType};
 use rustaria::api::prototype::tile::TilePrototype;
-use rustaria::api::Api;
 use rustaria::api::ty::ConnectionType;
+use rustaria::api::Api;
 use rustaria::world::chunk::Chunk;
 use rustaria_api::plugin::archive::ArchivePath;
 use rustaria_api::tag::Tag;
-use rustaria_util::ty::{CHUNK_SIZE, ChunkPos, ChunkSubPos, Direction, Offset};
-use rustaria_util::{eyre, info, Result, warn, WrapErr};
+use rustaria_util::ty::{ChunkPos, ChunkSubPos, Direction, Offset, CHUNK_SIZE};
+use rustaria_util::{eyre, info, warn, Result, WrapErr};
 
 use crate::renderer::chunk::BakedChunk;
-use crate::ty::{Color, Pos, Texture, Player};
+use crate::ty::{Color, Player, Pos, Rectangle, Texture};
 use crate::{DrawPipeline, Profiler, RenderLayerStability, VertexBuilder};
 
 mod chunk;
-mod tile;
 pub mod pipeline;
+mod tile;
 
 pub struct WorldRenderer {
-   pub atlas: Atlas<Tag>,
-   pub color: DrawPipeline<(Pos, Color)>,
-   pub texture: DrawPipeline<(Pos, Texture)>,
+    pub atlas: Atlas<Tag>,
+    pub color: DrawPipeline<(Pos, Color)>,
+    pub texture: DrawPipeline<(Pos, Texture)>,
     chunks: HashMap<ChunkPos, BakedChunk>,
     world_dirty: bool,
+    x_y_ratio: f32,
 }
 
 impl WorldRenderer {
@@ -49,7 +50,7 @@ impl WorldRenderer {
             }
         }
 
-        WorldRenderer {
+        let renderer = WorldRenderer {
             atlas: atlas_builder.export(3),
             color: DrawPipeline::new(
                 include_str!("./gl/color.frag.glsl"),
@@ -68,15 +69,19 @@ impl WorldRenderer {
                 ],
             ),
             chunks: Default::default(),
-            world_dirty: false
-        }
+            world_dirty: false,
+            x_y_ratio: 0.0,
+        };
+        renderer
     }
 
     fn get_sprite(api: &Api, tag: &Tag) -> Result<DynamicImage> {
-        let plugin = api.get_plugin(tag.plugin_id()).ok_or_else(|| eyre!(
-            "Plugin {} does not exist or is not loaded.",
-            tag.plugin_id()
-        ))?;
+        let plugin = api.get_plugin(tag.plugin_id()).ok_or_else(|| {
+            eyre!(
+                "Plugin {} does not exist or is not loaded.",
+                tag.plugin_id()
+            )
+        })?;
         let data = plugin
             .archive
             .get_asset(&ArchivePath::Asset(tag.name().to_string()))
@@ -87,6 +92,7 @@ impl WorldRenderer {
     pub fn resize(&mut self, width: u32, height: u32) {
         self.color.resize(width, height);
         self.texture.resize(width, height);
+        self.x_y_ratio = width as f32 / height as f32;
     }
 
     pub fn submit_chunk(&mut self, api: &Api, pos: ChunkPos, chunk: &Chunk) {
@@ -96,11 +102,7 @@ impl WorldRenderer {
         self.world_dirty = true;
     }
 
-    fn compile_borders(
-        &mut self,
-        pos: ChunkPos,
-        chunk: &mut BakedChunk,
-    ) {
+    fn compile_borders(&mut self, pos: ChunkPos, chunk: &mut BakedChunk) {
         for offset in Direction::all() {
             if let Some(neighbor_pos) = pos.offset(offset) {
                 if let Some(neighbor) = self.chunks.get_mut(&neighbor_pos) {
@@ -116,13 +118,14 @@ impl WorldRenderer {
                             let neighbor_sub_pos = ChunkSubPos {
                                 x: x as u8,
                                 y: y as u8,
-                            }.overflowing_offset(offset);
+                            }
+                            .overflowing_offset(offset);
 
                             let mut ty = ConnectionType::Isolated;
                             if let Some(tile) = &row[x] {
                                 if let Some(neighbor_tile) = neighbor.tiles.get(neighbor_sub_pos) {
                                     if let (ConnectionType::Connected, ConnectionType::Connected) =
-                                    (tile.ty, neighbor_tile.ty)
+                                        (tile.ty, neighbor_tile.ty)
                                     {
                                         ty = ConnectionType::Connected;
                                     }
@@ -140,15 +143,32 @@ impl WorldRenderer {
             }
         }
     }
+
     pub fn draw(&mut self, prof: &mut Profiler, view: &Player) {
+        self.world_dirty = true;
         if self.world_dirty {
             info!("Building mesh");
             // make this off-thread
+
+            let viewport = view.viewport(self.x_y_ratio);
+
             let mut builder = VertexBuilder::new();
             for (pos, chunk) in &self.chunks {
-                chunk.push(&mut builder, *pos);
+                let chunk_rect = Rectangle {
+                    x: pos.x as f32 * CHUNK_SIZE as f32,
+                    y: pos.y as f32 * CHUNK_SIZE as f32,
+                    w: CHUNK_SIZE as f32,
+                    h: CHUNK_SIZE as f32,
+                };
+                info!("{:?}", chunk_rect);
+
+                if viewport.overlaps(&chunk_rect) {
+                    chunk.push(&mut builder, *pos);
+                }
             }
-            self.texture.submit(builder, RenderLayerStability::Stable).unwrap();
+            self.texture
+                .submit(builder, RenderLayerStability::Stable)
+                .unwrap();
             self.world_dirty = false;
         }
 

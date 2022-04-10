@@ -19,7 +19,7 @@ use rustaria_graphics::ty::{Player};
 use rustaria_graphics::RenderHandler;
 use rustaria_network::networking::{ClientNetworking, ServerNetworking};
 use rustaria_util::ty::{ChunkPos, CHUNK_SIZE, ChunkSubPos};
-use rustaria_util::{Result, warn};
+use rustaria_util::{info, Result, warn};
 use crate::controller::PrintSubscriber;
 
 mod network;
@@ -149,10 +149,10 @@ impl Client {
                 lag -= UPDATE_TIME;
             }
 
-            if self.up.held() { view.pos[1] += 0.5; }
-            if self.down.held() { view.pos[1] -= 0.5; }
-            if self.left.held() { view.pos[0] -= 0.5; }
-            if self.right.held() { view.pos[0] += 0.5; }
+            if self.up.held() { view.pos[1] += 0.1; }
+            if self.down.held() { view.pos[1] -= 0.1; }
+            if self.left.held() { view.pos[0] -= 0.1; }
+            if self.right.held() { view.pos[0] += 0.1; }
             if self.zoom_in.triggered() {
                 view.zoom += 5.0;
             }
@@ -160,6 +160,8 @@ impl Client {
                 view.zoom -= 5.0;
             }
 
+
+            info!("{:?}", view.pos);
             self.render.draw(&view);
         }
     }

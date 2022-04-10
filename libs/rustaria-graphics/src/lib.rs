@@ -8,6 +8,7 @@ use aloy::{ClearCommand, ClearDescriptor, OpenGlBackend, OpenGlFeature};
 use aloy::vertex::VertexBuilder;
 use renderer::pipeline::DrawPipeline;
 use rustaria::api::Api;
+use rustaria::network::packet::{ClientPacket, ServerPacket};
 use rustaria_util::{debug, ContextCompat, Result};
 use ty::{Color, Pos};
 
@@ -97,10 +98,10 @@ impl RenderHandler {
         }
     }
 
-    pub fn draw(&mut self, view: &Player) {
+    pub fn draw(&mut self, player: &Player) {
         self.backend.clear_frame();
         let start = Instant::now();
-        self.world_renderer.draw(&mut self.profiler, view);
+        self.world_renderer.draw(&mut self.profiler, player);
         self.profiler.drew_frame(start);
         self.window.swap_buffers();
     }

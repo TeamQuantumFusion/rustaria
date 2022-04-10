@@ -77,7 +77,7 @@ impl BakedChunk {
                         builder,
                         (
                             (pos.x as f32 * CHUNK_SIZE as f32) + (x as f32),
-                            (pos.y as f32 * CHUNK_SIZE as f32) - (y as f32),
+                            (pos.y as f32 * CHUNK_SIZE as f32) + (y as f32),
                         ),
                     );
                 }
