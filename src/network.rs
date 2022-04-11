@@ -28,10 +28,7 @@ impl Networking {
     }
 
     pub fn send_chunk(&mut self, to: Option<Token>, pos: ChunkPos, chunk: Chunk) {
-        if !self.chunk_buffer.contains_key(&to) {
-            self.chunk_buffer.insert(to, HashMap::new());
-        }
-
+        self.chunk_buffer.entry(to).or_insert_with(HashMap::new);
         self.chunk_buffer.get_mut(&to).unwrap().insert(pos, chunk);
     }
 

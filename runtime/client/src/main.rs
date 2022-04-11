@@ -111,7 +111,6 @@ fn main() {
 
 pub struct Client {
     pub api: Api,
-    pub battle_cruiser: BattleCruiser,
     pub renderer: RenderingHandler,
     pub up: HoldSubscriber,
     pub down: HoldSubscriber,
@@ -120,9 +119,10 @@ pub struct Client {
     pub zoom_in: TriggerSubscriber,
     pub zoom_out: TriggerSubscriber,
     pub controller: ControllerHandler,
-
     pub view: Viewport,
+
     pub world: Option<ClientWorld>,
+    pub battle_cruiser: BattleCruiser,
 }
 
 impl Client {
@@ -152,7 +152,7 @@ impl Client {
             let delta = ((last_tick.elapsed().as_secs_f32() / UPDATE_TIME.as_secs_f32())
                 - last_delta)
                 .abs();
-            self.draw(1.0);
+            self.draw(delta);
             last_delta = delta;
         }
     }
@@ -166,17 +166,18 @@ impl Client {
     }
 
     fn draw(&mut self, delta: f32) {
+        let x = (self.view.zoom / 30.0);
         if self.up.held() {
-            self.view.pos.y += 1.6 * delta;
+            self.view.pos.y += 1.6 * delta * x;
         }
         if self.down.held() {
-            self.view.pos.y -= 1.6 * delta;
+            self.view.pos.y -= 1.6 * delta * x;
         }
         if self.left.held() {
-            self.view.pos.x -= 1.6 * delta;
+            self.view.pos.x -= 1.6 * delta * x;
         }
         if self.right.held() {
-            self.view.pos.x += 1.6 * delta;
+            self.view.pos.x += 1.6 * delta * x;
         }
         if self.zoom_in.triggered() {
             self.view.zoom += 5.0;
