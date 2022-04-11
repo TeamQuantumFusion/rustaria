@@ -36,17 +36,27 @@ tile:register {
 --    [_ "another"] = wall:default {}
 --}
 --
---entity:register {
---    [_ "player"] = entity:default {
---        health = {
---            maximum = 100
---        }
---    },
---    [_ "bunne"] = entity:default {
---        health = {
---            maximum = 5
---        }
---    }
---}
+entity:register {
+    [_ "player"] = entity:default {
+        health = {
+            maximum = 100
+        }
+    },
+    [_ "bunne"] = entity:default {
+        velocity = {
+            x = 0,
+            y = 0,
+        },
+        rendering = {
+            Static = {
+                x_offset = 0,
+                y_offset = 0,
+                width = 10,
+                height = 10,
+                sprite = tostring(_("missing.png"))
+            }
+        }
+    }
+}
 
 log.error "alpha kinda stinks"

@@ -11,7 +11,7 @@ rust-version = "1.60"
 [dependencies]
 serde = { version = "1.0.133", features = ["derive"] }
 type-map = "0.5.0"
-hecs = "0.7.6"
+legion = "0.4.0"
 rayon = "1.5.1"
 crossbeam = "0.8.1"
 image = "*"
@@ -36,6 +36,9 @@ members = [
     "libs/rustaria-api",
     "runtime/client",
 ]
+
+[features]
+client = []
 
 [profile.release]
 panic = "abort"

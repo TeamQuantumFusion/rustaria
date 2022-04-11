@@ -60,8 +60,7 @@ impl BattleCruiser {
     pub fn operational() -> Result<BattleCruiser> {
         let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS)?;
         glfw.window_hint(WindowHint::OpenGlProfile(OpenGlProfileHint::Core));
-        glfw.window_hint(WindowHint::OpenGlDebugContext(false));
-        glfw.window_hint(WindowHint::ContextVersion(4, 5));
+        glfw.window_hint(WindowHint::ContextVersion(4, 6));
 
         let size = (1920 / 2, 1080 / 2);
         let (mut window, events) = glfw
@@ -69,6 +68,7 @@ impl BattleCruiser {
             .wrap_err("Could not create window")?;
 
         window.make_current();
+        let mut backend = OpenGlBackend::new(size, |procname| window.get_proc_address(procname));
         window.set_key_polling(true);
         window.set_mouse_button_polling(true);
         window.set_scroll_polling(true);
@@ -76,7 +76,7 @@ impl BattleCruiser {
         window.set_framebuffer_size_polling(true);
         glfw.set_swap_interval(SwapInterval::Sync(1));
 
-        let mut backend = OpenGlBackend::new(size, |procname| glfw.get_proc_address_raw(procname));
+
         window.set_size(900, 600);
         backend.set_clear_command(ClearCommand {
             commands: vec![ClearDescriptor::Color(0.15, 0.15, 0.15, 1.0)],
@@ -106,8 +106,8 @@ impl BattleCruiser {
     }
 
     pub fn draw(&mut self, renderer: &mut RenderingHandler, view: &Viewport) {
+        self.window.swap_buffers();
         self.backend.clear_frame();
         renderer.draw(view);
-        self.window.swap_buffers();
     }
 }

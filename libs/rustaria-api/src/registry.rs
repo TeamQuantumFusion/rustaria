@@ -61,11 +61,13 @@
 
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::iter::Enumerate;
+use std::slice::Iter;
 
 use mlua::{FromLua, Lua, LuaSerdeExt};
 use mlua::prelude::{LuaResult, LuaUserData, LuaUserDataMethods};
 
-use rustaria_util::blake3::Hasher;
+use rustaria_util::blake3::{Hasher};
 use rustaria_util::{debug, trace};
 
 use crate::{Prototype, RawId};
@@ -83,6 +85,9 @@ pub struct Registry<P: Prototype> {
 impl<P: Prototype> Registry<P> {
     pub fn entries(&self) -> &[P] {
         &self.entries
+    }
+    pub fn id_entries(&self) -> Enumerate<Iter<P>> {
+        self.entries.iter().enumerate()
     }
     pub fn get_tag_from_id(&self, id: RawId) -> Option<&Tag> {
         self.id_to_tag.get(id as usize)
@@ -168,8 +173,8 @@ impl<P: Prototype> LuaUserData for RegistryBuilder<P> {
     {
         m.add_method_mut("register", |_lua, this, t: HashMap<Tag, P>| {
             trace!(target: this.name, "Registered entries to registry");
-            for k in t.keys() {
-                trace!(target: this.name, "Registered: {k}")
+            for (tag, p) in &t {
+                trace!(target: this.name, "Registered: {tag} {p:?}")
             }
             this.entries.extend(t);
             Ok(())

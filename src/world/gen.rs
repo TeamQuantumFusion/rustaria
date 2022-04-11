@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::sync::Arc;
 
 use crossbeam::channel::{Receiver, Sender, unbounded};
 use rayon::{ThreadPool, ThreadPoolBuilder};
@@ -12,18 +13,18 @@ use crate::world::gen::chunk::generate_chunk;
 
 mod chunk;
 
-pub struct WorldGenerator {
+pub struct ChunkGenerator {
 	api: Api,
-	thread_pool: ThreadPool,
+	thread_pool: Arc<ThreadPool>,
 	submitted_chunks: HashSet<ChunkPos>,
 	channel: (Sender<(Chunk, ChunkPos)>, Receiver<(Chunk, ChunkPos)>),
 }
 
-impl WorldGenerator {
-	pub fn new(api: Api, threads: usize) -> Result<WorldGenerator> {
-		Ok(WorldGenerator {
+impl ChunkGenerator {
+	pub fn new(api: Api, thread_pool: Arc<ThreadPool>) -> Result<ChunkGenerator> {
+		Ok(ChunkGenerator {
 			api,
-			thread_pool: ThreadPoolBuilder::new().num_threads(threads).build()?,
+			thread_pool,
 			submitted_chunks: Default::default(),
 			channel: unbounded()
 		})

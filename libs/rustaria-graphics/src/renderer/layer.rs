@@ -4,6 +4,7 @@ use aloy::attribute::AttributeDescriptor;
 use aloy::buffer::{Buffer, BufferAccess, BufferType, BufferUsage, DrawMode, VertexPipeline};
 use aloy::program::Program;
 use aloy::vertex::VertexBuilder;
+use rustaria_util::info;
 
 #[derive(Clone)]
 /// A RenderLayer is a cheaply copyable object for rendering vertexes.
@@ -24,9 +25,11 @@ impl<V: Clone> RenderLayer<V> {
 
     /// Supply the layer with a mesh. Should only be called if the layer is marked dirty.
     pub fn supply(&mut self, builder: VertexBuilder<V>) {
-        let mut data = self.0.write().unwrap();
-        data.new_data = Some(builder);
-        data.dirty = false;
+        if !builder.indices.is_empty() {
+            let mut data = self.0.write().unwrap();
+            data.new_data = Some(builder);
+            data.dirty = false;
+        }
     }
 }
 

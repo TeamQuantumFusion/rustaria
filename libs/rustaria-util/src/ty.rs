@@ -1,8 +1,12 @@
 //! A collection of types used in Rustaria.
 
 use num::FromPrimitive;
+use std::ops::{Add, Deref};
+use pos::Pos;
 
 use crate::ty::Error::OOB;
+
+pub mod pos;
 
 pub enum Error {
     OOB,
@@ -112,8 +116,14 @@ impl ChunkPos {
 
     pub fn offset<O: Into<i64> + Copy>(&self, offset: [O; 2]) -> Option<Self> {
         Some(Self {
-            x: (self.x as i64).checked_add(offset[0].into())?.try_into().ok()?,
-            y: (self.y as i64).checked_add(offset[1].into())?.try_into().ok()?,
+            x: (self.x as i64)
+                .checked_add(offset[0].into())?
+                .try_into()
+                .ok()?,
+            y: (self.y as i64)
+                .checked_add(offset[1].into())?
+                .try_into()
+                .ok()?,
         })
     }
 }
@@ -185,31 +195,9 @@ impl TilePos {
     }
 }
 
-#[derive(Copy, Clone, PartialOrd, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
-
-pub struct Pos {
-    pub x: f32,
-    pub y: f32,
-}
-
-impl From<Pos> for [f32; 2] {
-    fn from(pos: Pos) -> Self {
-        [pos.x, pos.y]
-    }
-}
-
 impl From<Direction> for [i8; 2] {
     fn from(dir: Direction) -> Self {
         [dir.offset_x(), dir.offset_y()]
-    }
-}
-
-impl From<[f32; 2]> for Pos {
-    fn from(values: [f32; 2]) -> Self {
-        Pos {
-            x: values[0],
-            y: values[1],
-        }
     }
 }
 
@@ -249,3 +237,23 @@ impl TryFrom<Pos> for TilePos {
         })
     }
 }
+
+/// A boostable value has a base value that is basically static and a boost value which gets filled every tick.
+pub struct BoostableValue<T: Add<Output =  T> + Default + Copy> {
+    base_value: T,
+    boost_value: T,
+}
+
+impl<T: Add<Output =  T> + Default + Copy> BoostableValue<T> {
+    pub fn new(value: T) -> BoostableValue<T> {
+        BoostableValue {
+            base_value: value,
+            boost_value: T::default(),
+        }
+    }
+
+    pub fn val(&self) -> T {
+        self.base_value + self.boost_value
+    }
+}
+

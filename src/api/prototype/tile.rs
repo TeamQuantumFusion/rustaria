@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use rustaria_api::lua_runtime::UserData;
 
 use rustaria_api::prototype::Prototype;
 use rustaria_api::RawId;
@@ -11,6 +12,7 @@ use crate::world::tile::Tile;
 pub struct TilePrototype {
     // name: LanguageKey,
     #[serde(default)]
+    #[cfg(feature = "client")]
     pub sprite: Option<Tag>,
     #[serde(default = "TilePrototype::default_connection")]
     pub connection: ConnectionType,
@@ -58,4 +60,4 @@ impl Prototype for TilePrototype {
         "tile"
     }
 }
-impl rustaria_api::lua_runtime::UserData for TilePrototype {}
+impl UserData for TilePrototype {}

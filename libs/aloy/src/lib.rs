@@ -31,7 +31,7 @@ impl OpenGlBackend {
     ) -> OpenGlBackend {
         unsafe {
             gl::load_gl(&mut loader_func);
-            gl::DebugMessageCallback(error_callback, std::ptr::null());
+            gl::DebugMessageCallback(Some(error_callback), std::ptr::null());
         }
 
         OpenGlBackend {

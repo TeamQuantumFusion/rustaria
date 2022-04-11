@@ -15,8 +15,8 @@ pub struct Pos {
     pub y: f32,
 }
 
-impl From<rustaria_util::ty::Pos> for Pos {
-    fn from(pos: rustaria_util::ty::Pos) -> Self {
+impl From<rustaria_util::ty::pos::Pos> for Pos {
+    fn from(pos: rustaria_util::ty::pos::Pos) -> Self {
         Pos {
             x: pos.x,
             y: pos.y
@@ -121,7 +121,7 @@ impl Quad for Color {
 }
 
 pub struct Viewport {
-    pub pos: rustaria_util::ty::Pos,
+    pub pos: rustaria_util::ty::pos::Pos,
     pub zoom: f32,
 }
 

@@ -16,7 +16,7 @@ pub fn initialize() -> eyre::Result<()> {
 
     CombinedLogger::init(vec![
         TermLogger::new(
-            LevelFilter::Debug,
+            LevelFilter::Trace,
             ConfigBuilder::new()
                 .set_level_padding(LevelPadding::Off)
                 .set_target_level(LevelFilter::Error)

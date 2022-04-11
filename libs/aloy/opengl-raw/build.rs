@@ -44,6 +44,7 @@ impl Generator for NiceGenerator {
         )?;
         dest.write_all("use std::ffi::c_void;\n".as_ref())?;
         dest.write_all("use std::mem::transmute;\n".as_ref())?;
+        dest.write_all("use log::{trace, error};\n".as_ref())?;
 
         // Types
         let mut write = Vec::new();
@@ -93,10 +94,17 @@ unsafe fn load(
     if ptr.is_null() {
         for &sym in fallbacks {
             ptr = func(sym);
-            if !ptr.is_null() { break; }
+            if !ptr.is_null() {
+                trace!("Loaded {} fallback.", sym);
+                break;
+            }
         }
+    } else {
+        trace!("Loaded {}", symbol);
     }
+
     if ptr.is_null() {
+        error!("Could not load {}", symbol);
         ptr = transmute(ERR as *const std::ffi::c_void);
     }
     ptr
@@ -114,14 +122,14 @@ unsafe fn load(
                 Some(v) => {
                     let names = v
                         .iter()
-                        .map(|name| format!("\"{name}\""))
+                        .map(|name| format!("\"gl{name}\""))
                         .collect::<Vec<_>>();
                     format!("&[{}]", names.join(", "))
                 }
                 None => "&[]".to_string(),
             };
             dest.write_all(
-                format!("_{indent} = transmute(load(func, \"{indent}\", {fallbacks}));\n").as_ref(),
+                format!("_{indent} = transmute(load(func, \"gl{indent}\", {fallbacks}));\n").as_ref(),
             )?;
         }
         dest.write_all(b"}")?;

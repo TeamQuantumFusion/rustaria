@@ -7,6 +7,8 @@ use rustaria_util::Result;
 #[macro_use]
 pub mod prototype;
 pub mod ty;
+#[cfg(feature = "client")]
+pub mod rendering;
 
 #[derive(Clone)]
 pub struct Api {

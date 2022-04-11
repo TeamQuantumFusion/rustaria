@@ -6,10 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rustaria = { path = "../../" }
+rustaria = { path = "../../", features = ["client"] }
 rustaria-util = { path = "../../libs/rustaria-util" }
 rustaria-api = { path = "../../libs/rustaria-api" }
 rustaria-network = { path = "../../libs/rustaria-network" }
 rustaria-graphics = { path = "../../libs/rustaria-graphics" }
 rustaria-controller = { path = "../../libs/rustaria-controller" }
+rayon = "1.5.1"
 glfw = "0.44.0"

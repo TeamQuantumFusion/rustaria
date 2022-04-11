@@ -46,6 +46,7 @@ impl VertexPipeline {
                         trace!("{:?} offset {} stride {}", x, offset, stride);
                         let attr_size = x.attribute_type.get_size();
                         self.bind();
+                        buffer.bind();
                         x.attribute_type
                             .attrib(x.index, stride as i32, offset as *const c_void);
                         gl::EnableVertexAttribArray(x.index);
@@ -65,20 +66,21 @@ impl VertexPipeline {
     }
 
     pub(crate) unsafe fn bind(&self) {
-        if let Some((buffer, _)) = &self.index_buffer {
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, buffer.id());
-        }
         gl::BindVertexArray(self.raw.id());
     }
 
     pub(crate) unsafe fn draw(&self, range: Range<usize>, mode: DrawMode) {
+        self.bind();
         match &self.index_buffer {
-            Some((_, index_type)) => gl::DrawElements(
-                mode.get_gl(),
-                range.end as i32,
-                *index_type,
-                (range.start as i32) as *const c_void,
-            ),
+            Some((id, index_type)) => {
+                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, id.id());
+                gl::DrawElements(
+                    mode.get_gl(),
+                    range.end as i32,
+                    *index_type,
+                    std::ptr::null(),
+                );
+            },
             None => {
                 gl::DrawArrays(mode.get_gl(), range.start as i32, range.end as i32);
             }
@@ -131,7 +133,12 @@ impl<T> Buffer<T> {
         self.elements
     }
 
+    pub(crate) unsafe fn bind(&self) {
+        gl::BindBuffer(self.buffer_type.get_gl(), self.raw.id());
+    }
+
     pub fn update(&mut self, offset: usize, data: &[T]) -> Result<()>{
+        self.elements = data.len();
         let target = self.buffer_type.get_gl();
         let offset = offset * std::mem::size_of::<T>();
         let size = data.len() * std::mem::size_of::<T>();
@@ -143,7 +150,7 @@ impl<T> Buffer<T> {
                 return Err(Report::msg("Buffer is too small."));
             }
 
-            gl::BindBuffer(target, self.raw.id());
+            self.bind();
             gl::BufferSubData(target, offset as isize, size as isize, data)
         }
 
@@ -157,7 +164,7 @@ impl<T> Buffer<T> {
         let data = data.as_ptr() as *const c_void;
 
         unsafe {
-            gl::BindBuffer(target, self.raw.id());
+            self.bind();
             if size > self.size {
                 gl::BufferData(target, size as isize, data, self.buffer_usage);
                 self.size = size;

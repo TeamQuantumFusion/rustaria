@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 use std::sync::{Arc, RwLock};
 
-
 use aloy::attribute::{AttributeDescriptor, AttributeType};
 use atlas::TextureAtlas;
 use rustaria::api::Api;

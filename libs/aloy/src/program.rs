@@ -149,7 +149,6 @@ impl Program {
                 for (index, uniform) in &self.uniforms {
                     uniform.read().unwrap().bind(*index)
                 }
-                layout.bind();
                 layout.draw(range, mode);
             }
         }

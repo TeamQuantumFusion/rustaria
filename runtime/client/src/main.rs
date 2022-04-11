@@ -1,29 +1,38 @@
-use std::collections::{HashMap, HashSet};
 use std::collections::hash_map::Entry;
+use std::collections::{HashMap, HashSet};
 use std::ops::AddAssign;
+use std::str::FromStr;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use glfw::{Key, WindowEvent};
+use rayon::ThreadPoolBuilder;
 
-use rustaria::{Server, UPS};
-use rustaria::api::Api;
+use rustaria::api::prototype::entity::EntityPrototype;
 use rustaria::api::prototype::tile::TilePrototype;
-use rustaria::network::Networking;
+use rustaria::api::Api;
 use rustaria::network::packet::{ClientPacket, ServerPacket};
+use rustaria::network::Networking;
 use rustaria::world::chunk::Chunk;
+use rustaria::world::entity::query::IntoQuery;
+use rustaria::world::entity::{EntityHandler, Read};
 use rustaria::world::World;
+use rustaria::{Server, UPS};
+use rustaria::api::rendering::RenderingSystem;
 use rustaria_api::lua_runtime::Lua;
+use rustaria_api::RawId;
+use rustaria_api::tag::Tag;
 use rustaria_controller::button::{ButtonKey, HoldSubscriber, TriggerSubscriber};
 use rustaria_controller::ControllerHandler;
-use rustaria_graphics::BattleCruiser;
 use rustaria_graphics::renderer::RenderingHandler;
 use rustaria_graphics::ty::Viewport;
 use rustaria_graphics::world_drawer::WorldDrawer;
+use rustaria_graphics::BattleCruiser;
 use rustaria_network::networking::{ClientNetworking, ServerNetworking};
-use rustaria_util::{Result, warn};
-use rustaria_util::ty::CHUNK_SIZE;
+use rustaria_util::ty::pos::Pos;
 use rustaria_util::ty::ChunkPos;
-use rustaria_util::ty::Pos;
+use rustaria_util::ty::CHUNK_SIZE;
+use rustaria_util::{warn, Result, info};
 
 mod controller;
 
@@ -39,8 +48,10 @@ fn main() {
     let mut server = Server {
         api: api.clone(),
         network: Networking::new(ServerNetworking::new(None).unwrap()),
-        world: World::new(api.clone()).unwrap(),
+        world: World::new(api.clone(), 12).unwrap(),
     };
+
+
 
     let mut bindings = HashMap::new();
     bindings.insert("up".to_string(), ButtonKey::Keyboard(Key::W));
@@ -77,6 +88,26 @@ fn main() {
         sprites.insert(tag.clone());
     }
 
+    for tag in instance
+        .get_registry::<EntityPrototype>()
+        .entries()
+        .iter()
+        .filter_map(|prototype| prototype.rendering.as_ref())
+    {
+        match tag {
+            RenderingSystem::Static(pane) => {
+                sprites.insert(pane.sprite.clone());
+            }
+            RenderingSystem::State(_) => {}
+        }
+    }
+    server.world.entities.spawn(instance.get_registry::<EntityPrototype>().get_id_from_tag(&Tag::from_str("rustaria:bunne").unwrap()).unwrap(), Pos {
+        x: 0.0,
+        y: 0.0,
+    });
+
+
+
     let battle_cruiser = BattleCruiser::operational().unwrap();
     let mut renderer = RenderingHandler::new(&api, sprites);
 
@@ -94,6 +125,7 @@ fn main() {
             api: api.clone(),
             networking: ClientNetworking::join_local(&mut server.network.internal),
             chunks: Default::default(),
+            entities: EntityHandler::new(&api, Arc::new(ThreadPoolBuilder::new().build().unwrap())),
             drawer,
             old_chunk: ChunkPos { x: 0, y: 0 },
             old_zoom: 0.0,
@@ -129,6 +161,8 @@ impl Client {
     pub fn run(&mut self) {
         let mut last_tick = Instant::now();
         let mut last_delta = 0f32;
+
+
         while self.battle_cruiser.alive() {
             self.battle_cruiser.poll(|event| {
                 match event {
@@ -197,6 +231,7 @@ pub struct ClientWorld {
     pub api: Api,
     pub networking: ClientNetworking<ServerPacket, ClientPacket>,
     pub chunks: HashMap<ChunkPos, ChunkHolder>,
+    pub entities: EntityHandler,
     pub drawer: WorldDrawer,
     pub old_chunk: ChunkPos,
     pub old_zoom: f32,
@@ -241,7 +276,7 @@ impl ClientWorld {
             ServerPacket::Chunks(chunks) => match chunks.export() {
                 Ok(chunks) => {
                     for (pos, chunk) in chunks.chunks {
-                        self.drawer.submit(pos, &chunk);
+                        self.drawer.submit_chunk(pos, &chunk);
                         self.chunks.insert(pos, ChunkHolder::Active(chunk));
                     }
                 }
@@ -249,11 +284,15 @@ impl ClientWorld {
                     warn!("Could not deserialize chunk packet. {}", chunks)
                 }
             },
+            ServerPacket::NewEntity(id, pos) => {
+                self.entities.spawn(id, pos);
+                info!("{id}");
+            }
         })
     }
 
     pub fn draw(&mut self, view: &Viewport) {
-        self.drawer.draw(view);
+        self.drawer.draw(view, &self.entities);
     }
 }
 

@@ -1,4 +1,4 @@
-#version 450
+#version 410
 
 layout(location = 0) in vec2 v_texture;
 
