@@ -1,39 +1,46 @@
-# rustaria
-
+# Rustaria
 A Terraria rework in Rust.
 
-## Build Instructions
+## Features
+### Lua Modding API
+Rustaria has been designed from the ground up to be modular and easily support mods with unique experiences. For docs you can find them not here as they are not done yet. lol
+### Made in Rust
+The core is written in Rust which brings very lightweight servers and super high performance clients.
 
-(TODO for other OSes)
-
-### Windows
-
-Should compile out of the box with no extra dependencies required.
-
-### Linux
-
-You will need to install the [dependencies](https://www.glfw.org/docs/latest/compile.html) to compile GLFW.
 
 ## Contributing
+Contributions are always welcome!
 
-Contributions are always welcome.
-Simply clone this repository, enter the cloned folder, and finally build and run the server and client binaries.
+## Building rustatia
+To build rustaria you need to have the rust toolchain installed on your OS. Please do so using `rustup`.
+### Prerequisite
+- Rust Toolchain (use `rustup` please)
+- An internet connection.
+- A PC with a keyboard, mouse and monitor.
 
-```sh
-git clone https://github.com/TeamQuantumFusion/rustaria
-cd rustaria
+### Assets
+Clone both `rustaria` and `oxidizer`, then build oxidizer and move the binary (./target/release) to your Terraria Content directory. 
+```bash
+# Windows
+C:/Program Files (x86)/steam/steamapps/common/Terraria/Content/oxidizer.exe
+# Linux
+~/.steam/steam/steamapps/common/Terraria/Content/oxidizer
+```
+Now run oxidizer in the terminal and then move the generated files to your development enviorment.
+```bash
+# We are in ./Terraria/Content/
+# this is a generated folder by oxidiser.
+cd ./rustaria
+mv -r ./sprite $RUSTARIA_DEV/plugin/asset
+```
+Now you have the Terraria assets in the plugin directory.
 
-# For the server:
-cd rustaria-server
+### Compiling
+To compile rustaria you will need to be able to build GLFW if you are compiling the Client as we use that for our windowing. You can find compile instructions for you system [here](https://www.glfw.org/docs/3.3/compile.html).
 
-# For the client:
-cd rustaria-client
-
-# Run
-cargo test && cargo run -- -vv --run_dir run
-
-# Note that the tests should *always* pass.
-# We could not have builds that have tests fail, since that directly
-# undermines our capability to catch and fix bugs that were introduced
-# in development.
+```bash
+# We are in ./rustaria. the (type) is either "client" or "server". 
+cd ./runtime/(type)/run/
+# If you are planning to rapidly develop rustaria remove the --release tag as that heavily increases build times. 
+cargo build --release
 ```
