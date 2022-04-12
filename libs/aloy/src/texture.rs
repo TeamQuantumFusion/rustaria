@@ -32,7 +32,13 @@ impl Texture {
         }
     }
 
-    pub(crate) unsafe fn bind(&self) {
+
+    pub unsafe fn activate(&self) {
+        gl::ActiveTexture(gl::TEXTURE0);
+    }
+
+    pub unsafe fn bind(&self) {
+
         gl::BindTexture(self.target, self.raw.id());
     }
 }

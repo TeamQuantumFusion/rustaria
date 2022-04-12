@@ -1,41 +1,45 @@
 use std::collections::HashMap;
 
-use rustaria::api::Api;
-use rustaria::api::prototype::tile::TilePrototype;
-use rustaria::api::ty::ConnectionType;
-use rustaria::world::chunk::{Chunk, ChunkLayer};
-use rustaria_util::ty::{CHUNK_SIZE, ChunkPos, ChunkSubPos, Direction, Offset};
+use rustaria::{
+    api::{prototype::tile::TilePrototype, ty::ConnectionType, Api},
+    world::chunk::{Chunk, ChunkLayer},
+};
+use rustaria_util::ty::{ChunkPos, ChunkSubPos, Direction, Offset, CHUNK_SIZE};
+use rustariac_backend::{builder::VertexBuilder, ty::PosTexture, ClientBackend};
 
-use crate::{Pos, VertexBuilder};
-use crate::renderer::atlas::TextureAtlas;
-use crate::ty::Texture;
-use crate::world_drawer::tile::BakedTile;
+use super::tile::{BakedTile, TileDrawer};
 
 pub struct BakedChunk {
+    pub tile_drawers: Vec<Option<TileDrawer>>,
     pub tiles: ChunkLayer<Option<BakedTile>>,
     pub tile_neighbors: ChunkLayer<NeighborMatrix>,
 }
 
 impl BakedChunk {
-    pub fn new(api: &Api, chunk: &Chunk, atlas: &TextureAtlas) -> BakedChunk {
+    pub fn new(api: &Api, chunk: &Chunk, backend: &ClientBackend) -> BakedChunk {
         let instance = api.instance();
         let registry = instance.get_registry::<TilePrototype>();
         let mut tiles = ChunkLayer::new([[None; CHUNK_SIZE]; CHUNK_SIZE]);
         let tile_neighbors = ChunkLayer::new([[EMPTY_MATRIX; CHUNK_SIZE]; CHUNK_SIZE]);
-
         for y in 0..CHUNK_SIZE {
             let baked_row = &mut tiles.grid[y];
             let row = &chunk.tiles.grid[y];
             for x in 0..CHUNK_SIZE {
-                if let Some(tile) = BakedTile::new(registry, &row[x], atlas) {
+                if let Some(tile) = BakedTile::new(registry, &row[x]) {
                     baked_row[x] = Some(tile);
                 }
             }
         }
 
+        let mut tile_drawers = Vec::new();
+        for prototype in registry.entries() {
+            tile_drawers.push(TileDrawer::new(prototype, backend));
+        }
+
         BakedChunk {
             tiles,
             tile_neighbors,
+            tile_drawers,
         }
     }
 
@@ -44,21 +48,24 @@ impl BakedChunk {
             let row = &self.tiles.grid[y];
             for x in 0..CHUNK_SIZE {
                 if let Some(tile) = &row[x] {
-                    if tile.ty == ConnectionType::Connected {
+                    if tile.connection == ConnectionType::Connected {
                         if y != CHUNK_SIZE - 1 {
                             if let Some(top_tile) = &self.tiles.grid[y + 1][x] {
-                                if let ConnectionType::Connected = top_tile.ty {
+                                if let ConnectionType::Connected = top_tile.connection {
                                     self.tile_neighbors.grid[y][x].up = ConnectionType::Connected;
-                                    self.tile_neighbors.grid[y + 1][x].down = ConnectionType::Connected;
+                                    self.tile_neighbors.grid[y + 1][x].down =
+                                        ConnectionType::Connected;
                                 }
                             }
                         }
 
                         if x != CHUNK_SIZE - 1 {
                             if let Some(right_tile) = &row[x + 1] {
-                                if let ConnectionType::Connected = right_tile.ty {
-                                    self.tile_neighbors.grid[y][x].right = ConnectionType::Connected;
-                                    self.tile_neighbors.grid[y][x + 1].left = ConnectionType::Connected;
+                                if let ConnectionType::Connected = right_tile.connection {
+                                    self.tile_neighbors.grid[y][x].right =
+                                        ConnectionType::Connected;
+                                    self.tile_neighbors.grid[y][x + 1].left =
+                                        ConnectionType::Connected;
                                 }
                             }
                         }
@@ -68,7 +75,11 @@ impl BakedChunk {
         }
     }
 
-    pub fn compile_chunk_borders(&mut self, chunks: &mut HashMap<ChunkPos, BakedChunk>, pos: ChunkPos) {
+    pub fn compile_chunk_borders(
+        &mut self,
+        chunks: &mut HashMap<ChunkPos, BakedChunk>,
+        pos: ChunkPos,
+    ) {
         for offset in Direction::all() {
             if let Some(neighbor_pos) = pos.offset(offset.into()) {
                 if let Some(neighbor) = chunks.get_mut(&neighbor_pos) {
@@ -88,7 +99,7 @@ impl BakedChunk {
                             if let Some(tile) = &row[x] {
                                 if let Some(neighbor_tile) = neighbor.tiles.get(neighbor_sub_pos) {
                                     if let (ConnectionType::Connected, ConnectionType::Connected) =
-                                    (tile.ty, neighbor_tile.ty)
+                                        (tile.connection, neighbor_tile.connection)
                                     {
                                         ty = ConnectionType::Connected;
                                     }
@@ -107,20 +118,26 @@ impl BakedChunk {
         }
     }
 
-    pub fn push(&self, builder: &mut VertexBuilder<(Pos, Texture)>, pos: ChunkPos) {
+    pub fn push(&self, builder: &mut VertexBuilder<PosTexture>, tile_drawers: &Vec<Option<TileDrawer>>, pos: &ChunkPos) {
         for y in 0..CHUNK_SIZE {
             let tile_row = &self.tiles.grid[y];
             let tile_neighbor_row = &self.tile_neighbors.grid[y];
             for x in 0..CHUNK_SIZE {
                 if let Some(tile) = &tile_row[x] {
-                    tile.push(
-                        &tile_neighbor_row[x],
-                        builder,
-                        (
+                    if let Some(drawer) = &tile_drawers[tile.id as usize] {
+                        let matrix = &tile_neighbor_row[x];
+                        drawer.push(
+                            builder,
                             (pos.x as f32 * CHUNK_SIZE as f32) + (x as f32),
                             (pos.y as f32 * CHUNK_SIZE as f32) + (y as f32),
-                        ),
-                    );
+                            super::tile::TileConnectionKind::new(
+                                matrix.up,
+                                matrix.down,
+                                matrix.left,
+                                matrix.right,
+                            ),
+                        );
+                    }
                 }
             }
         }
@@ -141,7 +158,6 @@ pub struct NeighborMatrix {
     pub left: ConnectionType,
     pub right: ConnectionType,
 }
-
 
 impl NeighborMatrix {
     pub fn set(&mut self, dir: Direction, ty: ConnectionType) {

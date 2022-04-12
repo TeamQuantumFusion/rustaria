@@ -1,5 +1,5 @@
 [package]
-name = "rustaria-graphics"
+name = "rustariac-backend"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,6 +9,6 @@ edition = "2021"
 rustaria-util = { path = "../rustaria-util" }
 rustaria-api = { path = "../rustaria-api" }
 rustaria = { path = "../../" }
-aloy = { path = "../aloy" }
+rectangle-pack = "0.4"
 glfw = "0.44"
-image = { version = "0.24", default-features = false, features = ["png"] }
+image = { version = "0.24", default-features = false }

@@ -6,6 +6,7 @@ use rustaria_util::Result;
 
 #[macro_use]
 pub mod prototype;
+
 pub mod ty;
 #[cfg(feature = "client")]
 pub mod rendering;
@@ -27,7 +28,7 @@ impl Api {
         let mut reload = write.reload();
         prototypes!({ reload.register_builder::<P>(lua)? });
         reload.reload(lua)?;
-        prototypes!({ reload.compile_builder::<P>(lua)? });
+       prototypes!({ reload.compile_builder::<P>(lua)? });
         reload.apply();
         Ok(())
     }
@@ -43,6 +44,5 @@ mod tests {
 
     #[test]
     fn test() {
-        prototypes!({ println!("{}", type_name::<P>()) });
     }
 }

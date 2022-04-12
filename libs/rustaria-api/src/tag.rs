@@ -7,7 +7,7 @@ use thiserror::Error;
 
 // This is lua input (or rust) that gets converted to id,
 // by the registry map.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd, Default)]
 pub struct Tag {
     inner: String,
     colon_index: usize,

@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use serde::Deserialize;
 use rustaria_api::lua_runtime::UserData;
 
@@ -55,7 +57,13 @@ impl Prototype for TilePrototype {
             opaque: *self.opaque.default(),
         }
     }
-
+ 
+    fn get_sprites(&self, sprites: &mut HashSet<Tag>) {
+        if let Some(sprite) = &self.sprite {
+            sprites.insert(sprite.clone());
+        }
+    }
+    
     fn name() -> &'static str {
         "tile"
     }

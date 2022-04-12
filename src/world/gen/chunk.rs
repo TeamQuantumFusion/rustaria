@@ -25,7 +25,7 @@ pub fn generate_chunk(api: &Api, pos: ChunkPos) -> Result<Chunk> {
 
 	for y in 0..CHUNK_SIZE {
 		for x in 0..CHUNK_SIZE {
-			if ((y + pos.y as usize) ^ (x + pos.x as usize)) % 4 == 0 {
+			if ((y + (pos.y as usize * CHUNK_SIZE)) ^ (x + (pos.x as usize * CHUNK_SIZE))) % 5 == 0 {
 				chunk.tiles.put(dirt, ChunkSubPos::new(x as u8, y as u8));
 			}
 		}

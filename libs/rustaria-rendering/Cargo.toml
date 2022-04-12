@@ -8,7 +8,5 @@ edition = "2021"
 [dependencies]
 rustaria-util = { path = "../rustaria-util" }
 rustaria-api = { path = "../rustaria-api" }
-rustaria = { path = "../../" }
-aloy = { path = "../aloy" }
-glfw = "0.44"
-image = { version = "0.24", default-features = false, features = ["png"] }
+rustariac-backend = { path = "../../libs/rustariac-backend" }
+rustaria = { path = "../../", features  = ["client"] }

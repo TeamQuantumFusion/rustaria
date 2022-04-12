@@ -12,7 +12,6 @@ pub mod atlas;
 pub mod attribute;
 pub mod buffer;
 pub mod program;
-pub mod vertex;
 pub mod texture;
 pub mod uniform;
 mod raw;
