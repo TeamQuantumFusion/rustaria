@@ -44,3 +44,6 @@ cd ./runtime/(type)/run/
 # If you are planning to rapidly develop rustaria remove the --release tag as that heavily increases build times. 
 cargo build --release
 ```
+
+# Notice
+All of the assets and all of the gameplay mechanics are property of Re-Logic (https://re-logic.com/). While i have made a couple attempts of getting in contact with them about explicit permission to remake their game, none of them have been successful. While we don't bundle any of the assets and require you to own a copy of Terraria to play rustaria, we are technically making a clone/ripoff. If you work at Re-Logic or is one of their lawyers please contact me directly at (yan.gyunashyan@gmail.com).
