@@ -68,7 +68,7 @@ use mlua::{FromLua, Lua, LuaSerdeExt};
 use mlua::prelude::{LuaResult, LuaUserData, LuaUserDataMethods};
 
 use rustaria_util::blake3::{Hasher};
-use rustaria_util::{debug, trace};
+use rustaria_util::{trace};
 
 use crate::{Prototype, RawId};
 use crate::tag::Tag;

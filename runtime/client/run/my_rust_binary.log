@@ -1,0 +1,27 @@
+13:10:51 [INFO] Registering api
+13:10:51 [INFO] Loaded Rustaria (rustaria)
+13:10:51 [WARN] IDK what alpha's on, one entrypoint is good enough
+13:10:51 [ERROR] alpha kinda stinks
+13:10:53 [WARN] Could not load sprite rustaria:stone.png Sprite does not exist rustaria:stone.png
+13:10:53 [INFO] Viewport { position: [0.0, 0.0], zoom: 30.0 }
+13:10:53 [INFO] 0
+13:10:53 [INFO] Viewport { position: [16.19344, 6.037161], zoom: 29.0 }
+13:10:53 [INFO] Viewport { position: [19.428774, 13.620052], zoom: 27.0 }
+13:10:54 [INFO] Viewport { position: [19.428774, 15.613536], zoom: 25.0 }
+13:10:54 [INFO] Viewport { position: [19.428774, 15.613536], zoom: 24.0 }
+13:10:54 [INFO] Viewport { position: [19.428774, 15.613536], zoom: 23.0 }
+13:10:54 [INFO] Viewport { position: [19.428774, 15.613536], zoom: 24.0 }
+13:10:54 [INFO] Viewport { position: [19.428774, 15.613536], zoom: 29.0 }
+13:10:54 [INFO] Viewport { position: [19.428774, 15.613536], zoom: 31.0 }
+13:10:54 [INFO] Viewport { position: [19.428774, 15.613536], zoom: 32.0 }
+13:10:54 [INFO] Viewport { position: [30.517307, 15.613536], zoom: 33.0 }
+13:10:54 [INFO] Viewport { position: [31.983366, 15.613536], zoom: 37.0 }
+13:10:54 [INFO] Viewport { position: [31.983366, 15.613536], zoom: 42.0 }
+13:10:55 [INFO] Viewport { position: [31.983366, 15.613536], zoom: 46.0 }
+13:10:55 [INFO] Viewport { position: [31.983366, 15.613536], zoom: 50.0 }
+13:10:55 [INFO] Viewport { position: [31.983366, 15.613536], zoom: 54.0 }
+13:10:55 [INFO] Viewport { position: [31.983366, 15.613536], zoom: 57.0 }
+13:10:55 [INFO] Viewport { position: [31.983366, 15.613536], zoom: 59.0 }
+13:10:55 [INFO] Viewport { position: [31.983366, 21.522089], zoom: 58.0 }
+13:10:55 [INFO] Viewport { position: [31.983366, 31.44687], zoom: 57.0 }
+13:10:57 [INFO] Viewport { position: [31.983366, 14.263137], zoom: 57.0 }

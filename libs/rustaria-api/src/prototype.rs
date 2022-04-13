@@ -8,6 +8,6 @@ pub trait Prototype: Clone + Send + Sync + 'static + UserData + DeserializeOwned
     type Item;
 
     fn create(&self, id: RawId) -> Self::Item;
-    fn get_sprites(&self, sprites: &mut HashSet<Tag>) {}
+    fn get_sprites(&self, _sprites: &mut HashSet<Tag>) {}
     fn name() -> &'static str;
 }

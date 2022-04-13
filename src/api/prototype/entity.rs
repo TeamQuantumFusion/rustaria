@@ -1,12 +1,11 @@
-use legion::Entity;
-use legion::storage::{ArchetypeSource, ArchetypeWriter, ComponentSource, EntityLayout};
-use crate::world::entity::{EntityHandler, PositionComp, VelocityComp};
 use serde::Deserialize;
 use rustaria_api::lua_runtime::UserData;
 use rustaria_api::prototype::Prototype;
 use rustaria_api::RawId;
 
 use rustaria_util::ty::pos::Pos;
+
+use crate::world::entity::VelocityComp;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct EntityPrototype {

@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "rust: cargo run",
+			"type": "shell",
+			"command": "cd /home/alphasucks/CLionProjects/rustaria-main/runtime/client/run && /home/alphasucks/.cargo/bin/cargo +stable run --color=always --bin client --manifest-path /home/alphasucks/CLionProjects/rustaria-main/runtime/client/Cargo.toml",
+			"problemMatcher": [
+				"$rustc"
+			]
+		}
+	]
+}

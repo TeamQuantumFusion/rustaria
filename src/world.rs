@@ -1,7 +1,5 @@
-use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
 
-use legion::Schedule;
 use rayon::{ThreadPool, ThreadPoolBuilder};
 
 
@@ -20,12 +18,11 @@ pub mod chunk;
 pub mod entity;
 pub mod gen;
 pub mod tile;
-mod executor;
 
 pub struct World {
     pub chunks: ChunkHandler,
     pub entities: EntityHandler,
-    thread_pool: Arc<ThreadPool>,
+    _thread_pool: Arc<ThreadPool>,
 }
 
 impl World {
@@ -35,7 +32,7 @@ impl World {
         Ok(World {
             chunks: ChunkHandler::new(&api, thread_pool.clone()),
             entities: EntityHandler::new(&api,thread_pool.clone()),
-            thread_pool,
+            _thread_pool: thread_pool
         })
     }
 

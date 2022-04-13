@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use legion::{Entity, IntoQuery, Resources, Schedule};
+use legion::{Entity, Resources, Schedule};
 use rayon::ThreadPool;
 use serde::Deserialize;
 use rustaria_api::prototype::Prototype;

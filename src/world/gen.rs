@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use crossbeam::channel::{Receiver, Sender, unbounded};
-use rayon::{ThreadPool, ThreadPoolBuilder};
+use rayon::{ThreadPool};
 
 use rustaria_util::{error, Result};
 use rustaria_util::ty::ChunkPos;

@@ -9,22 +9,19 @@ use glfw::{Key, WindowEvent};
 use rayon::ThreadPoolBuilder;
 
 use rustaria::api::prototype::entity::EntityPrototype;
-use rustaria::api::prototype::tile::TilePrototype;
 use rustaria_api::prototype::Prototype;
-use rustaria::api::rendering::RenderingSystem;
 use rustaria::api::{Api};
 use rustaria::network::packet::{ClientPacket, ServerPacket};
 use rustaria::network::Networking;
 use rustaria::world::chunk::Chunk;
-use rustaria::world::entity::query::IntoQuery;
-use rustaria::world::entity::{EntityHandler, Read};
+use rustaria::world::entity::{EntityHandler};
 use rustaria::world::World;
 use rustaria::{ Server, UPS};
 pub use rustaria::prototypes;
 pub use rustaria::pt;
 use rustaria_api::lua_runtime::Lua;
 use rustaria_api::tag::Tag;
-use rustaria_api::RawId;
+
 use rustaria_controller::button::{ButtonKey, HoldSubscriber, TriggerSubscriber};
 use rustaria_controller::ControllerHandler;
 use rustaria_network::networking::{ClientNetworking, ServerNetworking};
@@ -34,7 +31,7 @@ use rustaria_util::ty::ChunkPos;
 use rustaria_util::ty::CHUNK_SIZE;
 use rustaria_util::{info, warn, Result};
 use rustariac_backend::ty::Viewport;
-use rustariac_backend::{ClientBackend, Internals};
+use rustariac_backend::{ClientBackend};
 use rustariac_glium_backend::GliumBackend;
 
 mod controller;
@@ -182,7 +179,7 @@ impl Client {
     }
 
     fn draw(&mut self, delta: f32) {
-        let x = (self.view.zoom / 30.0);
+        let x = self.view.zoom / 30.0;
         if self.up.held() {
             self.view.position[1] += 1.6 * delta * x;
         }

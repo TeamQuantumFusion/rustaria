@@ -1,7 +1,7 @@
 //! A collection of types used in Rustaria.
 
 use num::FromPrimitive;
-use std::ops::{Add, Deref};
+use std::ops::{Add};
 use pos::Pos;
 
 use crate::ty::Error::OOB;

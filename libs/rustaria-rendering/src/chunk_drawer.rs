@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use rustaria::{api::{Api, prototype::tile::TilePrototype}, world::chunk::Chunk};
 use rustaria_util::ty::{ChunkPos, CHUNK_SIZE};
-use rustariac_backend::{layer::LayerChannel, ty::{PosTexture, Viewport, Rectangle}, ClientBackend, Backend, builder::VertexBuilder};
+use rustariac_backend::{layer::LayerChannel, ty::{PosTexture, Viewport, Rectangle}, ClientBackend, builder::VertexBuilder};
 
 use self::{chunk::BakedChunk, tile::TileDrawer};
 

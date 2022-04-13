@@ -1,5 +1,4 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::str::FromStr;
 use std::sync::RwLockReadGuard;
 
 use image::{DynamicImage, GenericImage, GenericImageView, ImageFormat};

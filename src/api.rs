@@ -40,7 +40,6 @@ impl Api {
 
 #[cfg(test)]
 mod tests {
-    use std::any::type_name;
 
     #[test]
     fn test() {

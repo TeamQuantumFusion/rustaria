@@ -3,7 +3,7 @@ use std::{rc::Rc, sync::mpsc::Receiver};
 use engine::{GlfwBackendEngine, GliumBackendEngine};
 use glfw::{Glfw, Window, WindowEvent};
 
-use glium::{texture::{self, RawImage2d, SrgbTexture2d}, uniform, DrawParameters, Frame, Rect, Surface};
+use glium::{texture::{self, RawImage2d, SrgbTexture2d}, uniform, Frame, Rect, Surface};
 use image::{imageops::FilterType, DynamicImage};
 use pipeline::LayerPipeline;
 use rustaria_util::{trace, Result};
