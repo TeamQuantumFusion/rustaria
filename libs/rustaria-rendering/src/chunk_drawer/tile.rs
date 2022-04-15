@@ -1,22 +1,19 @@
-use rustaria::{api::{prototype::tile::TilePrototype, ty::ConnectionType}};
+use rustaria::api::{prototype::tile::TilePrototype, ty::ConnectionType};
 use rustaria::chunk::Tile;
 use rustaria_api::{registry::Registry, ty::RawId};
 use rustariac_backend::{
-	builder::VertexBuilder,
-	ClientBackend, ty::{AtlasLocation, PosTexture, Rectangle},};
+    builder::VertexBuilder,
+    ty::{AtlasLocation, PosTexture, Rectangle},
+    ClientBackend,
+};
 
-// todo dynamic this.
-const VARIATIONS: u8 = 3;
 
 pub struct TileDrawer {
     image: AtlasLocation,
 }
 
 impl TileDrawer {
-    pub fn new(
-        prototype: &TilePrototype,
-        backend: &ClientBackend,
-    ) -> Option<TileDrawer> {
+    pub fn new(prototype: &TilePrototype, backend: &ClientBackend) -> Option<TileDrawer> {
         let instance = backend.instance();
         let tag = prototype.sprite.as_ref()?;
         let location = instance.atlas.get(tag);
@@ -26,23 +23,37 @@ impl TileDrawer {
     pub fn push(
         &self,
         builder: &mut VertexBuilder<PosTexture>,
-        x: f32,
-        y: f32,
+        x: u32,
+        y: u32,
         kind: TileConnectionKind,
     ) {
         let (kind_x, kind_y) = kind.get_tex_pos();
+
         let tile_height = self.image.height / 4.0;
-        let tile_width = self.image.width / (4.0 * VARIATIONS as f32);
+        let variations = (self.image.width / self.image.height).round();
+        let variation_width = self.image.width / variations;
+        let tile_width = self.image.width / (4.0 * variations);
+        let variation = next2(
+            ((x.overflowing_add(69420).0).overflowing_mul(69).0)
+                .overflowing_mul(y + 420)
+                .0,
+        ) % 3;
+        pub fn next2(mut x: u32) -> u32 {
+            x ^= x.overflowing_shl(13).0;
+            x ^= x.overflowing_shr(7).0;
+            x ^= x.overflowing_shl(17).0;
+            x
+        }
 
         builder.quad((
             Rectangle {
-                x,
-                y,
+                x: x as f32,
+                y: y as f32,
                 width: 1.0,
                 height: 1.0,
             },
             AtlasLocation {
-                x: self.image.x + (kind_x * tile_width),
+                x: (self.image.x + (kind_x * tile_width)) + (variation as f32 * variation_width),
                 y: (self.image.y + (kind_y * tile_height)) + tile_height,
                 width: tile_width,
                 height: -tile_height,
@@ -58,10 +69,7 @@ pub struct BakedTile {
 }
 
 impl BakedTile {
-    pub fn new(
-        registry: &Registry<TilePrototype>,
-        tile: &Tile,
-    ) -> Option<BakedTile> {
+    pub fn new(registry: &Registry<TilePrototype>, tile: &Tile) -> Option<BakedTile> {
         if let Some(TilePrototype {
             sprite: Some(_),
             connection,
@@ -70,16 +78,13 @@ impl BakedTile {
         {
             Some(BakedTile {
                 id: tile.id,
-                connection: *connection
+                connection: *connection,
             })
         } else {
             None
         }
-
     }
-
 }
-
 
 #[derive(Copy, Clone)]
 pub enum TileConnectionKind {

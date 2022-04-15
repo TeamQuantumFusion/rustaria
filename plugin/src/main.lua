@@ -6,7 +6,7 @@ log.debug "use dash, not froge"
 
 Tiles:register {
     ["dirt"] = {
-        sprite = "glisco.png",
+        sprite = "lab.png",
         connection = "connected"
     },
     ["air"] = {},
