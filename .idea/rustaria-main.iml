@@ -61,6 +61,8 @@
       <excludeFolder url="file://$MODULE_DIR$/libs/rsa-world/target" />
       <excludeFolder url="file://$MODULE_DIR$/libs/rsa-comps/target" />
       <excludeFolder url="file://$MODULE_DIR$/libs/rsa-todo/target" />
+      <excludeFolder url="file://$MODULE_DIR$/runtime/client/run/plugins" />
+      <excludeFolder url="file://$MODULE_DIR$/runtime/client/run" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
