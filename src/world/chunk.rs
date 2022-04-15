@@ -1,4 +1,5 @@
-use rustaria_api::Carrier;
+use eyre::Result;
+use rustaria_api::{Carrier, Reloadable};
 use serde::{Deserialize, Serialize};
 
 use rustaria_util::ty::{CHUNK_SIZE, ChunkPos, ChunkSubPos};
@@ -6,6 +7,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
 use rayon::ThreadPool;
 use rustaria_network::Token;
+use rustaria_util::debug;
 use crate::{Networking};
 use crate::world::gen::ChunkGenerator;
 
@@ -53,9 +55,9 @@ pub struct ChunkHandler {
 }
 
 impl ChunkHandler {
-	pub fn new(carrier: &Carrier, thread_pool: Arc<ThreadPool>) -> ChunkHandler {
+	pub fn new(thread_pool: Arc<ThreadPool>) -> ChunkHandler {
 		ChunkHandler  {
-			generator: ChunkGenerator::new(carrier.clone(), thread_pool).unwrap(),
+			generator: ChunkGenerator::new(thread_pool).unwrap(),
 			chunks: Default::default(),
 			chunk_queue: Default::default(),
 			chunk_gen_queue: Default::default(),
@@ -85,12 +87,12 @@ impl ChunkHandler {
 		}
 	}
 
-	pub fn tick(&mut self, network: &mut Networking) {
+	pub fn tick(&mut self, network: &mut Networking) -> Result<()>{
 		for (pos, from) in self.chunk_queue.drain(..) {
 			if let Some(chunk) = self.chunks.get(&pos) {
 				network.send_chunk(Some(from), pos, chunk.clone());
 			} else {
-				self.generator.request_chunk(pos);
+				self.generator.request_chunk(pos)?;
 				self.chunk_gen_queue.entry(pos).or_insert_with(HashSet::new);
 				self.chunk_gen_queue.get_mut(&pos).unwrap().insert(from);
 			}
@@ -111,6 +113,13 @@ impl ChunkHandler {
 				network.send_chunk(None, pos, chunk.clone());
 			}
 		}
+
+		Ok(())
 	}
 }
-
+impl Reloadable for ChunkHandler {
+    fn reload(&mut self, api: &rustaria_api::Api, carrier: &Carrier) {
+	    debug!("Reloaded ChunkHandler");
+	    self.generator.reload(api, carrier);
+    }
+}

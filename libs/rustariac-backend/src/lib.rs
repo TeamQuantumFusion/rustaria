@@ -2,13 +2,13 @@ use std::collections::HashSet;
 use std::sync::{mpsc::Receiver, Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use atlas::Atlas;
+use eyre::{Result, ContextCompat};
 use glfw::{
     Context, Glfw, OpenGlProfileHint, SwapInterval, Window, WindowEvent, WindowHint, WindowMode,
 };
 use image::DynamicImage;
 use layer::LayerChannel;
 use rustaria_api::{ty::Tag, Api};
-use rustaria_util::{ContextCompat, Result};
 use ty::{PosTexture, Viewport};
 
 pub mod atlas;

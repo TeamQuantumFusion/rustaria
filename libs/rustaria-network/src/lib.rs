@@ -1,8 +1,10 @@
 use std::fmt::Debug;
 
+use crossbeam::channel::SendError;
 use serde::{de::DeserializeOwned, Serialize};
 
-use rustaria_util::{Result, Uuid};
+use rustaria_util::{Uuid};
+use thiserror::Error;
 
 pub mod networking;
 pub mod packet;
@@ -31,4 +33,31 @@ pub trait EstablishingInstance<C> {
 pub enum EstablishingStatus<C> {
     Respond(Vec<u8>),
     Connect(C),
+}
+
+
+pub type Result<T> = core::result::Result<T, Error>;
+
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("Bincode serialization error")]
+    Serialization(#[from] bincode::Error),
+
+    #[error("Compression error")]
+    Compression(#[from] lz4_flex::block::CompressError),
+
+    #[error("Decompression error")]
+    Decompression(#[from] lz4_flex::block::DecompressError),
+    
+    #[error("Remote Networking error")]
+    Remote(#[from] laminar::ErrorKind),
+    
+    #[error("Local channel error")]
+    Channel
+}
+
+impl<T> From<SendError<T>> for Error {
+    fn from(_: SendError<T>) -> Self {
+        Error::Channel
+    }
 }

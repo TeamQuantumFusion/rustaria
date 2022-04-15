@@ -12,3 +12,4 @@ rustaria = { path = "../../" }
 rectangle-pack = "0.4"
 glfw = "0.44"
 image = { version = "0.24", default-features = false }
+eyre = "0.6"

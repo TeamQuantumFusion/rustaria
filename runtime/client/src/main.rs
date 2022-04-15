@@ -4,9 +4,11 @@ use std::ops::AddAssign;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use glfw::{Key, WindowEvent};
+use eyre::{Report, Result};
+use glfw::{Action, ffi, Key, Modifiers, WindowEvent};
 use rayon::ThreadPoolBuilder;
 
+use rustaria::err::SmartError;
 use rustaria::network::packet::{ClientPacket, ServerPacket};
 use rustaria::network::Networking;
 pub use rustaria::prototypes;
@@ -16,7 +18,7 @@ use rustaria::world::entity::EntityHandler;
 use rustaria::world::World;
 use rustaria::{Server, UPS};
 use rustaria_api::ty::Prototype;
-use rustaria_api::{Api, Carrier};
+use rustaria_api::{Api, Carrier, Reloadable};
 
 use rustaria_controller::button::{ButtonKey, HoldSubscriber, TriggerSubscriber};
 use rustaria_controller::ControllerHandler;
@@ -25,13 +27,14 @@ use rustaria_rendering::chunk_drawer::ChunkDrawer;
 use rustaria_util::ty::pos::Pos;
 use rustaria_util::ty::ChunkPos;
 use rustaria_util::ty::CHUNK_SIZE;
-use rustaria_util::{info, warn, Result};
+use rustaria_util::{debug, info, warn};
 use rustariac_backend::ty::Viewport;
 use rustariac_backend::ClientBackend;
 use rustariac_glium_backend::GliumBackend;
 
 mod controller;
 
+const DEBUG_MOD: Modifiers =  Modifiers::from_bits_truncate(ffi::MOD_ALT + ffi::MOD_CONTROL + ffi::MOD_SHIFT);
 const UPDATE_TIME: Duration = Duration::from_micros(1000000 / UPS as u64);
 
 fn main() {
@@ -39,23 +42,10 @@ fn main() {
 
     let backend = ClientBackend::new(GliumBackend::new).unwrap();
 
-    let mut carrier = Carrier::new();
+    let carrier = Carrier::new();
     let mut dir = std::env::current_dir().unwrap();
     dir.push("plugins");
-    let mut api = Api::new(dir).unwrap();
-
-    // Reload your mom
-    let mut reload = api.reload(&mut carrier);
-    prototypes!({ reload.add_reload_registry::<P>() });
-    reload.reload();
-    prototypes!({ reload.add_apply_registry::<P>() });
-    reload.apply();
-
-    let mut server = Server {
-        carrier: carrier.clone(),
-        network: Networking::new(ServerNetworking::new(None).unwrap()),
-        world: World::new(carrier.clone(), 12).unwrap(),
-    };
+    let api = Api::new(dir, vec!["../../../plugin".into()]).unwrap();
 
     let mut bindings = HashMap::new();
     bindings.insert("up".to_string(), ButtonKey::Keyboard(Key::W));
@@ -81,17 +71,6 @@ fn main() {
     controller.subscribe(Box::new(zoom_out.clone()), "zoom_out".to_string());
     controller.apply();
 
-    let mut sprites = HashSet::new();
-    let instance = carrier.lock();
-
-    prototypes!({
-        for prototype in instance.get_registry::<P>().iter() {
-            prototype.get_sprites(&mut sprites);
-        }
-    });
-
-    backend.instance_mut().supply_atlas(&api, sprites);
-
     // server.world.entities.spawn(
     //     instance
     //         .get_registry::<EntityPrototype>()
@@ -100,22 +79,24 @@ fn main() {
     //     Pos { x: 0.0, y: 0.0 },
     // );
 
-    let drawer = ChunkDrawer::new(&carrier, &backend);
+    let mut server = Server {
+        network: Networking::new(ServerNetworking::new(None).unwrap()),
+        world: World::new(12).unwrap(),
+    };
+
+    let drawer = ChunkDrawer::new( &backend);
     Client {
+        api,
+        carrier,
         up,
         down,
         left,
         right,
         zoom_in,
-        carrier: carrier.clone(),
         world: Some(ClientWorld {
-            carrier: carrier.clone(),
             networking: ClientNetworking::join_local(&mut server.network.internal),
             chunks: Default::default(),
-            entities: EntityHandler::new(
-                &carrier,
-                Arc::new(ThreadPoolBuilder::new().build().unwrap()),
-            ),
+            entities: EntityHandler::new(Arc::new(ThreadPoolBuilder::new().build().unwrap())),
             chunk_drawer: drawer,
             old_chunk: ChunkPos { x: 0, y: 0 },
             old_zoom: 0.0,
@@ -133,6 +114,7 @@ fn main() {
 }
 
 pub struct Client {
+    pub api: Api,
     pub carrier: Carrier,
     pub up: HoldSubscriber,
     pub down: HoldSubscriber,
@@ -152,11 +134,15 @@ impl Client {
         let mut last_tick = Instant::now();
         let mut last_delta = 0f32;
 
+        let mut reload = false;
         while !self.backend.instance().backend.window().should_close() {
             for event in self.backend.instance_mut().backend.poll_events() {
                 match event {
                     WindowEvent::Scroll(_, y) => {
                         self.view.zoom += y as f32;
+                    }
+                    WindowEvent::Key(Key::R, _, Action::Release, DEBUG_MOD) => {
+                        reload = true;
                     }
                     _ => {}
                 }
@@ -165,8 +151,21 @@ impl Client {
             }
 
             while last_tick.elapsed() >= UPDATE_TIME {
-                self.tick().unwrap();
+                if let Err(error) = self.tick() {
+                    match error.downcast_ref::<SmartError>() {
+                        Some(err @ SmartError::CarrierUnavailable) => {
+                            info!("{}", err);
+                            reload = true;
+                        }
+                        _ => Err(error).unwrap(),
+                    }
+                }
                 last_tick.add_assign(UPDATE_TIME);
+            }
+
+            if reload {
+                self.reload();
+                reload = false;
             }
 
             let delta = ((last_tick.elapsed().as_secs_f32() / UPDATE_TIME.as_secs_f32())
@@ -177,9 +176,32 @@ impl Client {
         }
     }
 
+    fn reload(&mut self) -> Result<()> {
+        debug!("Reloading Client");
+        rustaria::api::reload(&mut self.api, &mut self.carrier)?;
+
+        debug!("Getting sprites");
+        let carrier = self.carrier.lock();
+        let mut sprites = HashSet::new();
+        prototypes!({
+            for prototype in carrier.get_registry::<P>().iter() {
+                prototype.get_sprites(&mut sprites);
+            }
+        });
+        self.backend.instance_mut().supply_atlas(&self.api, sprites);
+
+        debug!("Reloading World");
+        if let Some(world) = &mut  self.world {
+            world.reload(&self.api, &self.carrier);
+        }
+
+        info!("Reload complete");
+        Ok(())
+    }
+
     fn tick(&mut self) -> Result<()> {
         if let Some(world) = &mut self.world {
-            world.tick(&self.view, &self.backend);
+            world.tick(&self.view, &self.backend)?;
         }
 
         Ok(())
@@ -215,7 +237,6 @@ impl Client {
 }
 
 pub struct ClientWorld {
-    pub carrier: Carrier,
     pub networking: ClientNetworking<ServerPacket, ClientPacket>,
     pub chunks: HashMap<ChunkPos, ChunkHolder>,
     pub entities: EntityHandler,
@@ -226,7 +247,7 @@ pub struct ClientWorld {
 }
 
 impl ClientWorld {
-    pub fn tick(&mut self, view: &Viewport, backend: &ClientBackend) {
+    pub fn tick(&mut self, view: &Viewport, backend: &ClientBackend) -> Result<()> {
         if let Ok(chunk) = ChunkPos::try_from(Pos {
             x: view.position[0],
             y: view.position[1],
@@ -250,8 +271,7 @@ impl ClientWorld {
                 self.chunk_drawer.mark_dirty();
                 if !requested.is_empty() {
                     self.networking
-                        .send(ClientPacket::RequestChunks(requested))
-                        .unwrap();
+                        .send(ClientPacket::RequestChunks(requested))?;
                 }
                 self.old_chunk = chunk;
                 self.old_zoom = view.zoom;
@@ -259,30 +279,47 @@ impl ClientWorld {
         }
 
         if let Some(integrated) = &mut self.integrated {
-            integrated.tick().unwrap();
+            integrated.tick()?;
         }
 
-        self.networking.poll(|packet| match packet {
-            ServerPacket::Chunks(chunks) => match chunks.export() {
-                Ok(chunks) => {
-                    for (pos, chunk) in chunks.chunks {
-                        self.chunk_drawer.submit(pos, &chunk);
-                        self.chunks.insert(pos, ChunkHolder::Active(chunk));
+        self.networking.poll::<Report, _>(|packet| {
+            match packet {
+                ServerPacket::Chunks(chunks) => match chunks.export() {
+                    Ok(chunks) => {
+                        for (pos, chunk) in chunks.chunks {
+                            self.chunk_drawer.submit(pos, &chunk)?;
+                            self.chunks.insert(pos, ChunkHolder::Active(chunk));
+                        }
                     }
+                    Err(chunks) => {
+                        warn!("Could not deserialize chunk packet. {}", chunks)
+                    }
+                },
+                ServerPacket::NewEntity(id, pos) => {
+                    self.entities.spawn(id, pos).unwrap();
+                    info!("{id:?}");
                 }
-                Err(chunks) => {
-                    warn!("Could not deserialize chunk packet. {}", chunks)
-                }
-            },
-            ServerPacket::NewEntity(id, pos) => {
-                self.entities.spawn(id, pos);
-                info!("{id:?}");
-            }
-        })
+            };
+            Ok(())
+        })?;
+
+        Ok(())
     }
 
     pub fn draw(&mut self, view: &Viewport) {
         self.chunk_drawer.draw(view);
+    }
+}
+
+impl Reloadable for ClientWorld {
+    fn reload(&mut self, api: &Api, carrier: &Carrier) {
+        debug!("Reloading ClientWorld");
+        self.chunks.clear();
+        self.chunk_drawer.reload(api, carrier);
+        self.entities.reload(api, carrier);
+        if let Some(server) = &mut self.integrated {
+           server.reload(api, carrier);
+       }
     }
 }
 

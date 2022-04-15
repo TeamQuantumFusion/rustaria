@@ -6,10 +6,10 @@ use std::{
 };
 
 use lua::reload::{RegistryBuilder};
-use mlua::UserData;
+use mlua::{UserData, Value};
 use plugin::Plugin;
 use registry::Registry;
-use rustaria_util::{blake3::Hasher, info, trace, warn};
+use rustaria_util::{blake3::Hasher, info, trace, warn, debug};
 use ty::{PluginId, Prototype, Tag, LuaConvertableCar};
 use type_map::concurrent::TypeMap;
 
@@ -25,28 +25,34 @@ pub struct Api {
 }
 
 impl Api {
-    pub fn new(plugins_dir: PathBuf) -> io::Result<Api> {
+    pub fn new(plugins_dir: PathBuf, extra_locations: Vec<PathBuf>) -> io::Result<Api> {
         let mut plugins = HashMap::new();
         for entry in std::fs::read_dir(plugins_dir)?.flatten() {
-            let path = entry.path();
+            Self::load_plugin(entry.path(), &mut plugins);
+        }
 
-            if match path.extension() {
-                Some(extention) if extention == "zip" => true,
-                _ => path.is_dir(),
-            } {
-                match Plugin::new(&path) {
-                    Ok(plugin) => {
-                        trace!("Loaded plugin {}.", plugin.manifest.id);
-                        plugins.insert(plugin.manifest.id.clone(), plugin);
-                    }
-                    Err(error) => {
-                        warn!("Could not load plugin at {:?}. Reason: {:?}", path, error);
-                    }
-                }
-            }
+        for path in extra_locations {
+            Self::load_plugin(path, &mut plugins);
         }
 
         Ok(Api { plugins })
+    }
+
+    fn load_plugin(path: PathBuf, plugins: &mut HashMap<String, Plugin>) {
+        if match path.extension() {
+            Some(extention) if extention == "zip" => true,
+            _ => path.is_dir(),
+        } {
+            match Plugin::new(&path) {
+                Ok(plugin) => {
+                    trace!("Loaded plugin {}.", plugin.manifest.id);
+                    plugins.insert(plugin.manifest.id.clone(), plugin);
+                }
+                Err(error) => {
+                    warn!("Could not load plugin at {:?}. Reason: {:?}", path, error);
+                }
+            }
+        }
     }
 
     pub fn get_asset(&self, location: &Tag) -> io::Result<Vec<u8>> {
@@ -58,7 +64,7 @@ impl Api {
     }
 
     pub fn reload<'a>(&'a mut self, stack: &'a mut Carrier) -> ApiReload<'a> {
-        info!("Reloading {} plugins", self.plugins.len());
+        info!("preparing aquire");
         ApiReload {
             api: self,
             stack: stack
@@ -91,6 +97,7 @@ pub struct ApiReload<'a> {
 
 impl<'a> ApiReload<'a> {
     pub fn add_reload_registry<P: Prototype + LuaConvertableCar>(&mut self) -> mlua::Result<()> {
+        debug!("Registered \"{}\" registry. (reload)", P::lua_registry_name());
         let mut builder = RegistryBuilder::<P>::new();
         for (_, plugin) in &mut self.api.plugins {
             builder.register(&plugin.lua)?;
@@ -101,12 +108,14 @@ impl<'a> ApiReload<'a> {
     }
 
     pub fn reload(&mut self) {
+        info!("Reloading {} plugins.", self.api.plugins.len());
         // Reset registry stack
         self.stack.0.clear();
         self.stack.1 = [0u8; 32];
 
         // Reload plugins
         for (id, plugin) in &mut self.api.plugins {
+            debug!("Reloading {id}");
             if let Some(entry) = &plugin.manifest.common_entry {
                 match plugin.archive.get_asset(&("src/".to_owned() + entry)) {
                     Ok(code) => {
@@ -123,9 +132,10 @@ impl<'a> ApiReload<'a> {
     }
 
     pub fn add_apply_registry<P: Prototype + LuaConvertableCar>(&mut self) -> mlua::Result<()> {
+        debug!("Registered \"{}\" registry. (apply)", P::lua_registry_name());
         // Clear references
         for (_, plugin) in &mut self.api.plugins {
-            plugin.lua.globals().raw_remove(P::lua_registry_name())?;
+            plugin.lua.globals().set(P::lua_registry_name(), Value::Nil)?;
         }
 
         // Aquire builder
@@ -142,6 +152,7 @@ impl<'a> ApiReload<'a> {
     }
 
     pub fn apply(self) {
+        info!("applying");
         // Set the hash
         let mut stack = self.stack;
         stack.1 = self.hasher.finalize();
@@ -183,4 +194,9 @@ impl<'a> RegistryStackAccess<'a> {
     pub fn get_registry<P: Prototype>(&self) -> &Registry<P> {
         self.lock.0.get::<Registry<P>>().expect("Could not find registry")
     }
+}
+
+
+pub trait Reloadable {
+    fn reload(&mut self, api: &Api, carrier: &Carrier);
 }

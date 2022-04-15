@@ -18,7 +18,7 @@ impl TileDrawer {
     ) -> Option<TileDrawer> {
         let instance = backend.instance();
         let tag = prototype.sprite.as_ref()?;
-        let location = instance.atlas.get(&tag);
+        let location = instance.atlas.get(tag);
         Some(TileDrawer { image: location })
     }
 

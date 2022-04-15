@@ -1,7 +1,5 @@
 use std::fs::File;
 
-// Re-exports
-pub use eyre::*;
 // Imports
 pub use log::*;
 use simplelog::{ColorChoice, CombinedLogger, Config, ConfigBuilder, LevelPadding, TermLogger, TerminalMode, WriteLogger, Color, TargetPadding};

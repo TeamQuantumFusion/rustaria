@@ -6,13 +6,13 @@ log.debug "use dash, not froge"
 
 Tiles:register {
     ["dirt"] = {
-        sprite = "lab.png",
-        connection = "isolated"
+        sprite = "glisco.png",
+        connection = "connected"
     },
     ["air"] = {},
 }
 
--- wall:register {
+-- wall:register {wd
 --    [_ "air"] = wall:default {},
 --    [_ "another"] = wall:default {}
 --}

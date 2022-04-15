@@ -1,5 +1,4 @@
-use rustaria_network::{EstablishingInstance, EstablishingStatus};
-use rustaria_util::Result;
+use rustaria_network::{EstablishingInstance, EstablishingStatus, Result};
 
 pub struct PlayerJoinInstance {}
 

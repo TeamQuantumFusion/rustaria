@@ -1,12 +1,13 @@
 use std::{rc::Rc, sync::mpsc::Receiver};
 
 use engine::{GlfwBackendEngine, GliumBackendEngine};
+use eyre::Result;
 use glfw::{Glfw, Window, WindowEvent};
 
 use glium::{texture::{self, RawImage2d, SrgbTexture2d}, uniform, Frame, Rect, Surface};
 use image::{imageops::FilterType, DynamicImage};
 use pipeline::LayerPipeline;
-use rustaria_util::{trace, Result};
+use rustaria_util::trace;
 use rustariac_backend::{
     layer::LayerChannel,
     ty::{PosTexture, Viewport},
@@ -84,7 +85,7 @@ impl rustariac_backend::Backend for GliumBackend {
         )
         .unwrap();
 
-        for level in 0..level {
+        for level in 0..=level {
             if let Some(mipmap) = atlas.mipmap(level) {
                 let width = width >> level as u32;
                 let height = height >> level as u32;

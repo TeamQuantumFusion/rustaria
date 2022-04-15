@@ -10,3 +10,5 @@ rustaria-util = { path = "../rustaria-util" }
 rustaria-api = { path = "../rustaria-api" }
 rustariac-backend = { path = "../../libs/rustariac-backend" }
 rustaria = { path = "../../", features  = ["client"] }
+eyre = "0.6"
+

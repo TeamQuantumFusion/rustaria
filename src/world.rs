@@ -1,18 +1,15 @@
 use std::sync::Arc;
 
+use eyre::{Result, Context};
 use rayon::{ThreadPool, ThreadPoolBuilder};
 
-
-use rustaria_api::Carrier;
-use rustaria_network::{EstablishingInstance, NetworkInterface, Token};
-use rustaria_util::Result;
-
-
-use crate::{ClientPacket, Networking, ServerPacket};
 use crate::network::join::PlayerJoinData;
-use chunk::ChunkHandler;
 use crate::world::entity::EntityHandler;
-
+use crate::{ClientPacket, Networking, ServerPacket};
+use chunk::ChunkHandler;
+use rustaria_api::{Carrier, Reloadable};
+use rustaria_network::{EstablishingInstance, NetworkInterface, Token};
+use rustaria_util::debug;
 
 pub mod chunk;
 pub mod entity;
@@ -26,22 +23,30 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(carrier: Carrier, num_threads: usize) -> Result<World> {
+    pub fn new(num_threads: usize) -> Result<World> {
         let thread_pool = Arc::new(ThreadPoolBuilder::new().num_threads(num_threads).build()?);
 
         Ok(World {
-            chunks: ChunkHandler::new(&carrier, thread_pool.clone()),
-            entities: EntityHandler::new(&carrier,thread_pool.clone()),
-            _thread_pool: thread_pool
+            chunks: ChunkHandler::new(thread_pool.clone()),
+            entities: EntityHandler::new(thread_pool.clone()),
+            _thread_pool: thread_pool,
         })
     }
 
     pub fn tick(&mut self, network: &mut Networking) -> Result<()> {
         network.internal.poll(self);
-        self.chunks.tick(network);
+        self.chunks.tick(network).wrap_err("Chunk error")?;
         self.entities.tick(network);
-        network.tick()?;
+        network.tick().wrap_err("Networking error")?;
         Ok(())
+    }
+}
+
+impl Reloadable for World {
+    fn reload(&mut self, api: &rustaria_api::Api, carrier: &Carrier) {
+        debug!("Reloading World");
+        self.chunks.reload(api, carrier);
+        self.entities.reload(api, carrier);
     }
 }
 

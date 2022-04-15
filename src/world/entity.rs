@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
+use eyre::{Result, ContextCompat};
 use legion::{Entity, Resources, Schedule};
 use rayon::ThreadPool;
-use rustaria_api::Carrier;
+use rustaria_api::{Carrier, Reloadable};
 use rustaria_api::ty::{RawId, Prototype};
 use serde::Deserialize;
 
@@ -11,6 +12,7 @@ use rustaria_util::ty::pos::Pos;
 
 pub use legion::*;
 
+use crate::err::SmartError;
 use crate::{Networking, ServerPacket};
 use crate::api::prototype::entity::EntityPrototype;
 
@@ -44,7 +46,7 @@ pub fn update_positions(pos: &mut PositionComp, vel: &VelocityComp) {
 }
 
 pub struct EntityHandler {
-    carrier: Carrier,
+    carrier: Option<Carrier>,
     pub universe: Universe,
     schedule: Schedule,
     resources: Resources,
@@ -54,9 +56,9 @@ pub struct EntityHandler {
 }
 
 impl EntityHandler {
-    pub fn new(carrier: &Carrier, thread_pool: Arc<ThreadPool>) -> EntityHandler {
+    pub fn new(thread_pool: Arc<ThreadPool>) -> EntityHandler {
         EntityHandler {
-            carrier: carrier.clone(),
+            carrier: None,
             universe: Universe::default(),
             resources: Resources::default(),
             schedule: Schedule::builder()
@@ -67,21 +69,22 @@ impl EntityHandler {
         }
     }
 
-    pub fn spawn(&mut self, id: RawId, position: Pos) -> Option<Entity> {
+    pub fn spawn(&mut self, id: RawId, position: Pos) -> Result<Entity> {
+        let carrier = self.carrier.as_ref().wrap_err(SmartError::CarrierUnavailable)?;
         // Create entity and get its entry to add dynamic components.
         let entity = self.universe.push((IdComp(id), PositionComp { position }));
-        let mut entry = self.universe.entry(entity)?;
+        let mut entry = self.universe.entry(entity).unwrap();
 
         // Get instance, get prototype and add all of the needed components.
-        let instance = self.carrier.lock();
-        let prototype = instance.get_registry::<EntityPrototype>().get_prototype(id)?;
+        let instance = carrier.lock();
+        let prototype = instance.get_registry::<EntityPrototype>().get_prototype(id).wrap_err("Could not find entity")?;
         if let Some(velocity) = &prototype.velocity {
             entry.add_component(velocity.create(id));
         }
 
         self.new_entities.push((id, position));
 
-        Some(entity)
+        Ok(entity)
     }
 
     pub fn tick(&mut self, network: &mut Networking) {
@@ -94,5 +97,11 @@ impl EntityHandler {
         for (id, pos) in self.new_entities.drain(..) {
             network.internal.distribute(Token::nil(), ServerPacket::NewEntity(id, pos)).unwrap();
         }
+    }
+}
+
+impl Reloadable for EntityHandler {
+    fn reload(&mut self, _: &rustaria_api::Api, carrier: &Carrier) {
+        self.carrier = Some(carrier.clone());
     }
 }

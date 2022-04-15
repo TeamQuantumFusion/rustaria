@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+use eyre::Result;
 use image::{DynamicImage, GenericImage, GenericImageView, ImageFormat};
 use rectangle_pack::{
     contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert,
@@ -7,7 +8,7 @@ use rectangle_pack::{
 };
 use rustaria_api::ty::Tag;
 use rustaria_api::Api;
-use rustaria_util::{warn, Result};
+use rustaria_util::{warn};
 
 use crate::ty::AtlasLocation;
 
@@ -57,8 +58,8 @@ pub fn build_atlas(api: &Api, sprites: HashSet<Tag>) -> (Atlas, DynamicImage) {
     }
 
     let mut rectangle_placements = Err(RectanglePackError::NotEnoughBinSpace);
-    let mut max_width = 8;
-    let mut max_height = 8;
+    let mut max_width = 128;
+    let mut max_height = 128;
     while let Err(RectanglePackError::NotEnoughBinSpace) = rectangle_placements {
         max_width *= 2;
         max_height *= 2;

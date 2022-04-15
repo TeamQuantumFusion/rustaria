@@ -4,12 +4,13 @@ use std::sync::RwLock;
 use std::time::Instant;
 
 use bimap::BiMap;
-use crossbeam::channel::{Receiver, Sender, unbounded};
+use crossbeam::channel::{unbounded, Receiver, Sender};
 use laminar::{Packet, Socket, SocketEvent};
 
-use rustaria_util::{debug, error, Result, trace, warn};
+use rustaria_util::{debug, error, trace, warn};
 
-use crate::{EstablishingInstance, EstablishingStatus, NetworkInterface, Token};
+
+use crate::{EstablishingInstance, EstablishingStatus, NetworkInterface, Token, Result};
 
 pub struct ServerNetworking<I: crate::Packet, O: crate::Packet, J> {
     local_connections: HashMap<Token, (Sender<O>, Receiver<I>)>,
@@ -185,17 +186,19 @@ impl<I: crate::Packet, O: crate::Packet> ClientNetworking<I, O> {
         Ok(())
     }
 
-    pub fn poll<F: FnMut(I)>(&mut self, mut consumer: F) {
+    pub fn poll<E, F: FnMut(I) -> core::result::Result<(), E>>(&mut self, mut consumer: F) -> core::result::Result<(), E> {
         match self {
             ClientNetworking::Local(_, receiver) => {
                 while let Ok(packet) = receiver.try_recv() {
                     trace!(target: "client_network", "Received packet: {packet:?}");
-                    consumer(packet);
+                    consumer(packet)?;
                 }
             }
             ClientNetworking::Remote(_, _) => {
                 todo!()
             }
         }
+
+        Ok(())
     }
 }
