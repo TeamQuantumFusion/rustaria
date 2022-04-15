@@ -1,36 +1,39 @@
-use std::str::FromStr;
+use rustaria_api::ty::{Prototype, Tag};
+use rustaria_api::Carrier;
+use rustaria_util::ty::{ChunkPos, ChunkSubPos, CHUNK_SIZE};
+use rustaria_util::Result;
 
-use rustaria_api::tag::Tag;
-use rustaria_util::{ContextCompat, Result};
-use rustaria_util::ty::{CHUNK_SIZE, ChunkPos, ChunkSubPos};
-
-use crate::api::Api;
 use crate::api::prototype::tile::TilePrototype;
 use crate::world::chunk::{Chunk, ChunkLayer};
 
-pub fn generate_chunk(api: &Api, pos: ChunkPos) -> Result<Chunk> {
-	let instance = api.instance();
-	let air = instance
-		.get_registry::<TilePrototype>()
-		.create_from_tag(&Tag::from_str("rustaria:air")?).wrap_err("Could not create tile")?;
-
-	let dirt = instance
-		.get_registry::<TilePrototype>()
-		.create_from_tag(&Tag::from_str("rustaria:dirt")?).wrap_err("Could not create tile")?;
-
-	let mut chunk = Chunk {
-		tiles: ChunkLayer::new([[air; CHUNK_SIZE]; CHUNK_SIZE]),
-	};
+pub fn generate_chunk(stack: &Carrier, pos: ChunkPos) -> Result<Chunk> {
+    let instance = stack.lock();
+    let tiles = instance.get_registry::<TilePrototype>();
 
 
-	for y in 0..CHUNK_SIZE {
-		for x in 0..CHUNK_SIZE {
-			if ((y + (pos.y as usize * CHUNK_SIZE)) ^ (x + (pos.x as usize * CHUNK_SIZE))) % 5 == 0 {
-				chunk.tiles.put(dirt, ChunkSubPos::new(x as u8, y as u8));
-			}
-		}
-	}
+	// We do a touch of unwrapping.
+    let id = tiles
+        .get_id(&Tag::new("rustaria:air".to_string()).unwrap())
+        .unwrap();
+    let air = tiles.get_prototype(id).unwrap().create(id);
 
+    let id = tiles
+        .get_id(&Tag::new("rustaria:dirt".to_string()).unwrap())
+        .unwrap();
+    let dirt = tiles.get_prototype(id).unwrap().create(id);
 
-	Ok(chunk)
+    let mut chunk = Chunk {
+        tiles: ChunkLayer::new([[air; CHUNK_SIZE]; CHUNK_SIZE]),
+    };
+
+    for y in 0..CHUNK_SIZE {
+        for x in 0..CHUNK_SIZE {
+            if ((y + (pos.y as usize * CHUNK_SIZE)) ^ (x + (pos.x as usize * CHUNK_SIZE))) % 5 == 0
+            {
+                chunk.tiles.put(dirt, ChunkSubPos::new(x as u8, y as u8));
+            }
+        }
+    }
+
+    Ok(chunk)
 }

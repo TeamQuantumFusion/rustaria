@@ -1,5 +1,8 @@
+use mlua::Error::UserDataTypeMismatch;
+use mlua::{ExternalError, Lua, Value};
 use std::{collections::HashSet, hash::Hash};
 
+use rustaria_api::ty::LuaConvertableCar;
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize, Serialize)]
@@ -17,12 +20,6 @@ impl<T> LockableValue<T> {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub enum BlastResistance {
-    Some(u32),
-    Indestructible,
-}
-
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ConnectionType {
@@ -32,6 +29,30 @@ pub enum ConnectionType {
     Connected,
     // dirt
     Transitional,
+}
+impl LuaConvertableCar for ConnectionType {
+    fn from_luaagh(value: Value, _: &Lua) -> mlua::Result<Self> {
+        match value {
+            Value::Nil => Ok(ConnectionType::Connected),
+            Value::String(string) => match string.to_str()? {
+                "isolated" => Ok(ConnectionType::Isolated),
+                "connected" => Ok(ConnectionType::Connected),
+                "transitional" => Ok(ConnectionType::Transitional),
+                _ => Err("Unknown value".to_lua_err()),
+            },
+            _ => Err("Wrong value type".to_lua_err()),
+        }
+    }
+
+    fn into_luaagh(self, _: &Lua) -> mlua::Result<Value> {
+        todo!()
+    }
+}
+
+impl Default for ConnectionType {
+    fn default() -> Self {
+        ConnectionType::Connected
+    }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize, Serialize)]
@@ -44,7 +65,7 @@ pub enum BreakResistance {
     Hammer(u32),
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum TileType<T: Hash + Eq> {
     Default,
@@ -59,7 +80,7 @@ impl<T: Hash + Eq> Default for TileType<T> {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Filter<T: Hash + Eq> {
     All,
@@ -68,13 +89,18 @@ pub enum Filter<T: Hash + Eq> {
     Blacklist(HashSet<T>),
 }
 
+#[derive(Clone, PartialEq, Debug, Serialize)]
+pub enum BlastResistance {
+    Some(u32),
+    Indestructible,
+}
 mod blast_resistance_serde {
-	use serde::{Deserialize, Deserializer};
-	use serde::de::{Error, Visitor};
+    use serde::de::{Error, Visitor};
+    use serde::{Deserialize, Deserializer};
 
-	use super::BlastResistance;
+    use super::BlastResistance;
 
-	impl<'de> Deserialize<'de> for BlastResistance {
+    impl<'de> Deserialize<'de> for BlastResistance {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where
             D: Deserializer<'de>,

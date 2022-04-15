@@ -1,7 +1,5 @@
-use std::{
-    sync::{mpsc::Receiver, Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
-};
 use std::collections::HashSet;
+use std::sync::{mpsc::Receiver, Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use atlas::Atlas;
 use glfw::{
@@ -9,8 +7,7 @@ use glfw::{
 };
 use image::DynamicImage;
 use layer::LayerChannel;
-use rustaria::api::Api;
-use rustaria_api::{tag::Tag};
+use rustaria_api::{ty::Tag, Api};
 use rustaria_util::{ContextCompat, Result};
 use ty::{PosTexture, Viewport};
 
@@ -43,7 +40,6 @@ impl ClientBackend {
     pub fn instance_mut(&self) -> RwLockWriteGuard<'_, Internals> {
         self.internals.write().unwrap()
     }
-
 
     pub fn screen_y_ratio(&self) -> f32 {
         let size = self.instance().backend.size();
@@ -79,6 +75,7 @@ impl Internals {
         window.set_size_polling(true);
         window.set_framebuffer_size_polling(true);
         glfw.set_swap_interval(SwapInterval::Sync(1));
+        window.set_size(1920 / 2, 1080 / 2);
 
         Ok(Internals {
             backend: Box::new(func(glfw, window, events)?),

@@ -1,6 +1,6 @@
+use rustaria_api::Carrier;
 use rustaria_util::Result;
 
-use crate::api::Api;
 use crate::network::Networking;
 use crate::network::packet::{ClientPacket, ServerPacket};
 use crate::world::World;
@@ -12,7 +12,7 @@ pub mod world;
 pub const UPS: usize = 20;
 
 pub struct Server {
-    pub api: Api,
+    pub carrier: Carrier,
     pub network: Networking,
     pub world: World,
 }

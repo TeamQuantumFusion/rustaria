@@ -3,12 +3,12 @@ use std::sync::Arc;
 use rayon::{ThreadPool, ThreadPoolBuilder};
 
 
+use rustaria_api::Carrier;
 use rustaria_network::{EstablishingInstance, NetworkInterface, Token};
 use rustaria_util::Result;
 
 
 use crate::{ClientPacket, Networking, ServerPacket};
-use crate::api::Api;
 use crate::network::join::PlayerJoinData;
 use chunk::ChunkHandler;
 use crate::world::entity::EntityHandler;
@@ -26,12 +26,12 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(api: Api, num_threads: usize) -> Result<World> {
+    pub fn new(carrier: Carrier, num_threads: usize) -> Result<World> {
         let thread_pool = Arc::new(ThreadPoolBuilder::new().num_threads(num_threads).build()?);
 
         Ok(World {
-            chunks: ChunkHandler::new(&api, thread_pool.clone()),
-            entities: EntityHandler::new(&api,thread_pool.clone()),
+            chunks: ChunkHandler::new(&carrier, thread_pool.clone()),
+            entities: EntityHandler::new(&carrier,thread_pool.clone()),
             _thread_pool: thread_pool
         })
     }

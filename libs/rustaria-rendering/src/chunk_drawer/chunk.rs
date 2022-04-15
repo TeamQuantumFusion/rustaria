@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
 use rustaria::{
-    api::{prototype::tile::TilePrototype, ty::ConnectionType, Api},
+    api::{prototype::tile::TilePrototype, ty::ConnectionType},
     world::chunk::{Chunk, ChunkLayer},
 };
+use rustaria_api::Carrier;
 use rustaria_util::ty::{ChunkPos, ChunkSubPos, Direction, Offset, CHUNK_SIZE};
 use rustariac_backend::{builder::VertexBuilder, ty::PosTexture, ClientBackend};
 
@@ -16,8 +17,8 @@ pub struct BakedChunk {
 }
 
 impl BakedChunk {
-    pub fn new(api: &Api, chunk: &Chunk, backend: &ClientBackend) -> BakedChunk {
-        let instance = api.instance();
+    pub fn new(carrier: &Carrier, chunk: &Chunk, backend: &ClientBackend) -> BakedChunk {
+        let instance = carrier.lock();
         let registry = instance.get_registry::<TilePrototype>();
         let mut tiles = ChunkLayer::new([[None; CHUNK_SIZE]; CHUNK_SIZE]);
         let tile_neighbors = ChunkLayer::new([[EMPTY_MATRIX; CHUNK_SIZE]; CHUNK_SIZE]);
@@ -32,7 +33,7 @@ impl BakedChunk {
         }
 
         let mut tile_drawers = Vec::new();
-        for prototype in registry.entries() {
+        for prototype in registry.iter() {
             tile_drawers.push(TileDrawer::new(prototype, backend));
         }
 
@@ -124,7 +125,7 @@ impl BakedChunk {
             let tile_neighbor_row = &self.tile_neighbors.grid[y];
             for x in 0..CHUNK_SIZE {
                 if let Some(tile) = &tile_row[x] {
-                    if let Some(drawer) = &tile_drawers[tile.id as usize] {
+                    if let Some(drawer) = &tile_drawers[tile.id.index()] {
                         let matrix = &tile_neighbor_row[x];
                         drawer.push(
                             builder,

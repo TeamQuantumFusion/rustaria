@@ -1,5 +1,5 @@
 use rustaria::{api::{prototype::tile::TilePrototype, ty::ConnectionType}, world::tile::Tile};
-use rustaria_api::{RawId, registry::Registry};
+use rustaria_api::{registry::Registry, ty::RawId};
 use rustariac_backend::{
     builder::VertexBuilder,
     ty::{AtlasLocation, PosTexture, Rectangle}, ClientBackend,};
@@ -65,7 +65,7 @@ impl BakedTile {
             sprite: Some(_),
             connection,
             ..
-        }) = registry.get_from_id(tile.id)
+        }) = registry.get_prototype(tile.id)
         {
             Some(BakedTile {
                 id: tile.id,

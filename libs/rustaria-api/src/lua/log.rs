@@ -1,12 +1,9 @@
 use mlua::prelude::*;
-
-use mooncake::mooncake;
 use rustaria_util::{debug, error, info, trace, warn};
 
-use crate::plugin::id::plugin_id;
+use crate::lua::ctx;
 
-#[mooncake(lua)]
-pub fn package() -> LuaResult<LuaTable<'_>> {
+pub fn register(lua: &Lua, _: ()) -> LuaResult<LuaTable<'_>> {
     lua.create_table_from([
         ("trace", lua.create_function(trace)?),
         ("debug", lua.create_function(debug)?),
@@ -16,28 +13,27 @@ pub fn package() -> LuaResult<LuaTable<'_>> {
     ])
 }
 
-#[mooncake(lua)]
-fn trace(msg: String) -> LuaResult<()> {
-    trace!(target: &plugin_id(lua, ())?, "{msg}");
+fn trace(lua: &Lua, msg: String) -> LuaResult<()> {
+    trace!(target: &ctx(lua).id, "{msg}");
     Ok(())
 }
-#[mooncake(lua)]
-fn debug(msg: String) -> LuaResult<()> {
-    debug!(target: &plugin_id(lua, ())?, "{msg}");
+
+fn debug(lua: &Lua, msg: String) -> LuaResult<()> {
+    debug!(target: &ctx(lua).id, "{msg}");
     Ok(())
 }
-#[mooncake(lua)]
-fn info(msg: String) -> LuaResult<()> {
-    info!(target: &plugin_id(lua, ())?, "{msg}");
+
+fn info(lua: &Lua, msg: String) -> LuaResult<()> {
+    info!(target: &ctx(lua).id, "{msg}");
     Ok(())
 }
-#[mooncake(lua)]
-fn warn(msg: String) -> LuaResult<()> {
-    warn!(target: &plugin_id(lua, ())?, "{msg}");
+
+fn warn(lua: &Lua, msg: String) -> LuaResult<()> {
+    warn!(target: &ctx(lua).id, "{msg}");
     Ok(())
 }
-#[mooncake(lua)]
-fn error(msg: String) -> LuaResult<()> {
-    error!(target: &plugin_id(lua, ())?, "{msg}");
+
+fn error(lua: &Lua, msg: String) -> LuaResult<()> {
+    error!(target: &ctx(lua).id, "{msg}");
     Ok(())
 }

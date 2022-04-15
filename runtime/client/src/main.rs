@@ -1,26 +1,22 @@
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::ops::AddAssign;
-use std::str::FromStr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use glfw::{Key, WindowEvent};
 use rayon::ThreadPoolBuilder;
 
-use rustaria::api::prototype::entity::EntityPrototype;
-use rustaria_api::prototype::Prototype;
-use rustaria::api::{Api};
 use rustaria::network::packet::{ClientPacket, ServerPacket};
 use rustaria::network::Networking;
-use rustaria::world::chunk::Chunk;
-use rustaria::world::entity::{EntityHandler};
-use rustaria::world::World;
-use rustaria::{ Server, UPS};
 pub use rustaria::prototypes;
 pub use rustaria::pt;
-use rustaria_api::lua_runtime::Lua;
-use rustaria_api::tag::Tag;
+use rustaria::world::chunk::Chunk;
+use rustaria::world::entity::EntityHandler;
+use rustaria::world::World;
+use rustaria::{Server, UPS};
+use rustaria_api::ty::Prototype;
+use rustaria_api::{Api, Carrier};
 
 use rustaria_controller::button::{ButtonKey, HoldSubscriber, TriggerSubscriber};
 use rustaria_controller::ControllerHandler;
@@ -31,7 +27,7 @@ use rustaria_util::ty::ChunkPos;
 use rustaria_util::ty::CHUNK_SIZE;
 use rustaria_util::{info, warn, Result};
 use rustariac_backend::ty::Viewport;
-use rustariac_backend::{ClientBackend};
+use rustariac_backend::ClientBackend;
 use rustariac_glium_backend::GliumBackend;
 
 mod controller;
@@ -43,14 +39,22 @@ fn main() {
 
     let backend = ClientBackend::new(GliumBackend::new).unwrap();
 
-    let lua = Lua::new();
-    let mut api = Api::new(&lua);
-    api.reload(&lua).unwrap();
+    let mut carrier = Carrier::new();
+    let mut dir = std::env::current_dir().unwrap();
+    dir.push("plugins");
+    let mut api = Api::new(dir).unwrap();
+
+    // Reload your mom
+    let mut reload = api.reload(&mut carrier);
+    prototypes!({ reload.add_reload_registry::<P>() });
+    reload.reload();
+    prototypes!({ reload.add_apply_registry::<P>() });
+    reload.apply();
 
     let mut server = Server {
-        api: api.clone(),
+        carrier: carrier.clone(),
         network: Networking::new(ServerNetworking::new(None).unwrap()),
-        world: World::new(api.clone(), 12).unwrap(),
+        world: World::new(carrier.clone(), 12).unwrap(),
     };
 
     let mut bindings = HashMap::new();
@@ -78,37 +82,40 @@ fn main() {
     controller.apply();
 
     let mut sprites = HashSet::new();
-    let instance = api.instance();
+    let instance = carrier.lock();
 
     prototypes!({
-        for prototype in instance.get_registry::<P>().entries() {
+        for prototype in instance.get_registry::<P>().iter() {
             prototype.get_sprites(&mut sprites);
         }
     });
 
     backend.instance_mut().supply_atlas(&api, sprites);
 
-    server.world.entities.spawn(
-        instance
-            .get_registry::<EntityPrototype>()
-            .get_id_from_tag(&Tag::from_str("rustaria:bunne").unwrap())
-            .unwrap(),
-        Pos { x: 0.0, y: 0.0 },
-    );
+    // server.world.entities.spawn(
+    //     instance
+    //         .get_registry::<EntityPrototype>()
+    //         .get_id(&Tag::new("rustaria:bunne".to_string()).unwrap())
+    //         .unwrap(),
+    //     Pos { x: 0.0, y: 0.0 },
+    // );
 
-    let drawer = ChunkDrawer::new(&api, &backend);
+    let drawer = ChunkDrawer::new(&carrier, &backend);
     Client {
         up,
         down,
         left,
         right,
         zoom_in,
-        api: api.clone(),
+        carrier: carrier.clone(),
         world: Some(ClientWorld {
-            api: api.clone(),
+            carrier: carrier.clone(),
             networking: ClientNetworking::join_local(&mut server.network.internal),
             chunks: Default::default(),
-            entities: EntityHandler::new(&api, Arc::new(ThreadPoolBuilder::new().build().unwrap())),
+            entities: EntityHandler::new(
+                &carrier,
+                Arc::new(ThreadPoolBuilder::new().build().unwrap()),
+            ),
             chunk_drawer: drawer,
             old_chunk: ChunkPos { x: 0, y: 0 },
             old_zoom: 0.0,
@@ -126,7 +133,7 @@ fn main() {
 }
 
 pub struct Client {
-    pub api: Api,
+    pub carrier: Carrier,
     pub up: HoldSubscriber,
     pub down: HoldSubscriber,
     pub left: HoldSubscriber,
@@ -204,12 +211,11 @@ impl Client {
         }
 
         self.backend.instance_mut().backend.draw(&self.view);
-
     }
 }
 
 pub struct ClientWorld {
-    pub api: Api,
+    pub carrier: Carrier,
     pub networking: ClientNetworking<ServerPacket, ClientPacket>,
     pub chunks: HashMap<ChunkPos, ChunkHolder>,
     pub entities: EntityHandler,
@@ -228,8 +234,7 @@ impl ClientWorld {
             if chunk != self.old_chunk || view.zoom != self.old_zoom {
                 info!("{:?}", view);
                 let width = (view.zoom / CHUNK_SIZE as f32) as i32;
-                let height = ((view.zoom * backend.screen_y_ratio())
-                    / CHUNK_SIZE as f32) as i32;
+                let height = ((view.zoom * backend.screen_y_ratio()) / CHUNK_SIZE as f32) as i32;
                 let mut requested = Vec::new();
                 for x in -width..width {
                     for y in -height..height {
@@ -271,7 +276,7 @@ impl ClientWorld {
             },
             ServerPacket::NewEntity(id, pos) => {
                 self.entities.spawn(id, pos);
-                info!("{id}");
+                info!("{id:?}");
             }
         })
     }

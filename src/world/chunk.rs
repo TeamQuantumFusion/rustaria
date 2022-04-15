@@ -1,3 +1,4 @@
+use rustaria_api::Carrier;
 use serde::{Deserialize, Serialize};
 
 use rustaria_util::ty::{CHUNK_SIZE, ChunkPos, ChunkSubPos};
@@ -5,7 +6,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
 use rayon::ThreadPool;
 use rustaria_network::Token;
-use crate::{Api, Networking};
+use crate::{Networking};
 use crate::world::gen::ChunkGenerator;
 
 use crate::world::tile::Tile;
@@ -52,9 +53,9 @@ pub struct ChunkHandler {
 }
 
 impl ChunkHandler {
-	pub fn new(api: &Api, thread_pool: Arc<ThreadPool>) -> ChunkHandler {
+	pub fn new(carrier: &Carrier, thread_pool: Arc<ThreadPool>) -> ChunkHandler {
 		ChunkHandler  {
-			generator: ChunkGenerator::new(api.clone(), thread_pool).unwrap(),
+			generator: ChunkGenerator::new(carrier.clone(), thread_pool).unwrap(),
 			chunks: Default::default(),
 			chunk_queue: Default::default(),
 			chunk_gen_queue: Default::default(),

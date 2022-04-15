@@ -16,6 +16,8 @@ rayon = "1.5.1"
 crossbeam = "0.8.1"
 image = "*"
 
+mlua = { version = "0.7", features = ["serialize", "send"] }
+
 rustaria-util = { path = "./libs/rustaria-util" }
 rustaria-api = { path = "./libs/rustaria-api" }
 rustaria-network = { path = "./libs/rustaria-network" }
@@ -26,7 +28,6 @@ walkdir = "2.3.2"
 
 [workspace]
 members = [
-    "libs/mooncake",
     "libs/rustaria-network",
     "libs/rustaria-util",
     "libs/rustaria-rendering",

@@ -1,16 +1,13 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::sync::RwLockReadGuard;
 
 use image::{DynamicImage, GenericImage, GenericImageView, ImageFormat};
 use rectangle_pack::{
     contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert,
     RectanglePackError, TargetBin,
 };
-use rustaria_util::{Context, eyre, Result, warn};
-use rustaria::api::Api;
-use rustaria_api::ApiHandler;
-use rustaria_api::plugin::archive::ArchivePath;
-use rustaria_api::tag::Tag;
+use rustaria_api::ty::Tag;
+use rustaria_api::Api;
+use rustaria_util::{warn, Result};
 
 use crate::ty::AtlasLocation;
 
@@ -24,20 +21,17 @@ impl Atlas {
     pub fn get(&self, tag: &Tag) -> AtlasLocation {
         match self.lookup.get(tag) {
             Some(value) => value.clone(),
-            None => {
-                self.lookup.get(&self.missing_tag).cloned().unwrap()
-            }
+            None => self.lookup.get(&self.missing_tag).cloned().unwrap(),
         }
     }
 }
 
 pub fn build_atlas(api: &Api, sprites: HashSet<Tag>) -> (Atlas, DynamicImage) {
-    let missing_tag = Tag::from_string("core:missing".to_string()).unwrap();
+    let missing_tag = Tag::new("core:missing".to_string()).unwrap();
     let mut images: Vec<(Tag, DynamicImage)> = Vec::new();
 
-    let instance = api.instance();
     for tag in sprites {
-        match load_sprite(&instance, &tag) {
+        match load_sprite(api, &tag) {
             Ok(image) => {
                 images.push((tag, image));
             }
@@ -47,9 +41,10 @@ pub fn build_atlas(api: &Api, sprites: HashSet<Tag>) -> (Atlas, DynamicImage) {
         }
     }
 
-    images.push((missing_tag.clone(), image::load_from_memory(include_bytes!("./missing.png")).unwrap()));
-
-
+    images.push((
+        missing_tag.clone(),
+        image::load_from_memory(include_bytes!("./missing.png")).unwrap(),
+    ));
 
     let mut rects_to_place = GroupedRectsToPlace::new();
 
@@ -103,19 +98,18 @@ pub fn build_atlas(api: &Api, sprites: HashSet<Tag>) -> (Atlas, DynamicImage) {
         }
     }
 
-    (Atlas { lookup, missing_tag }, image)
+    (
+        Atlas {
+            lookup,
+            missing_tag,
+        },
+        image,
+    )
 }
 
-fn load_sprite(instance: &RwLockReadGuard<ApiHandler>, tag: &Tag) -> Result<DynamicImage> {
-    let plugin = instance.get_plugin(tag.plugin_id()).ok_or_else(|| {
-        eyre!(
-                "Plugin {} does not exist or is not loaded.",
-                tag.plugin_id()
-            )
-    })?;
-    let data = plugin
-        .archive
-        .get_asset(&ArchivePath::Asset(tag.name().to_string()))
-        .wrap_err(format!("Sprite does not exist {}", tag))?;
-    Ok(image::load_from_memory_with_format(data, ImageFormat::Png)?)
+fn load_sprite(api: &Api, tag: &Tag) -> Result<DynamicImage> {
+    Ok(image::load_from_memory_with_format(
+        &api.get_asset(tag)?,
+        ImageFormat::Png,
+    )?)
 }

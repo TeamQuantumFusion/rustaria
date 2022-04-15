@@ -36,6 +36,7 @@ pub struct GliumBackend {
 
 impl GliumBackend {
     pub fn new(glfw: Glfw, window: Window, events: Receiver<(f64, WindowEvent)>) -> Result<Self> {
+        let size = window.get_size();
         let engine = Rc::new(GlfwBackendEngine {
             window,
             events,
@@ -57,8 +58,8 @@ impl GliumBackend {
             facade,
             engine,
             atlas: None,
-            width: 1920,
-            height: 1080,
+            width: size.0 as u32,
+            height: size.1 as u32,
         })
     }
 }

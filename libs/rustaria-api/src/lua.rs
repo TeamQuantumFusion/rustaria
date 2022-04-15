@@ -1,42 +1,26 @@
-use mlua::Lua;
-use mlua::prelude::{LuaResult, LuaTable, LuaUserData};
 
-use rustaria_util::Result;
-
-use crate::{info, Plugin};
+use crate::{plugin::PluginContext, ty::Tag};
 
 mod log;
-mod meta;
+pub mod reload;
 
-pub fn register_api(lua: &Lua) -> Result<()> {
-    info!("Registering api");
+use mlua::{prelude::{LuaTable, LuaResult}, Lua, ExternalResult};
+use rustaria_util::info;
+
+pub fn register_preload(lua: &Lua) -> LuaResult<()>{
     let package: LuaTable = lua.globals().get("package")?;
     let preload: LuaTable = package.get("preload")?;
-    preload.set("log", lua.create_function(log::package)?)?;
-    preload.set("meta", lua.create_function(meta::package)?)?;
-    Ok(())
+    preload.set("log", lua.create_function(log::register)?)?;
+    lua.globals().set("Tag", lua.create_function( |lua, value: String| {
+        info!("Sthit");
+        Tag::new_lua(value, lua).to_lua_err()
+    })?)?;
+    Ok(())  
 }
 
-#[derive(Debug, Clone)]
-pub struct PluginContext {
-    pub id: String,
+pub fn ctx(lua: &Lua) -> PluginContext {
+    // SHOULD NEVER FAIL!!! CAN ONLY HAPPEN IF:
+    // - a plugin removed ctx (wtf) 
+    // - lua got initialized somewhere else (wtf)
+    lua.globals().get("ctx").expect("Context is missing.")
 }
-
-impl PluginContext {
-    pub fn get(lua: &Lua) -> LuaResult<Self> {
-        lua.globals().get("_ctx")
-    }
-    pub fn set(self, lua: &Lua) -> LuaResult<()> {
-        lua.globals().set("_ctx", self)
-    }
-}
-
-impl From<&Plugin> for PluginContext {
-    fn from(plugin: &Plugin) -> Self {
-        PluginContext {
-            id: plugin.manifest.id.clone(),
-        }
-    }
-}
-
-impl LuaUserData for PluginContext {}

@@ -1,5 +1,5 @@
+use rustaria_api::ty::RawId;
 use serde::{Deserialize, Serialize};
-use rustaria_api::RawId;
 
 use rustaria_network::Packet;
 use rustaria_network::packet::CompressedPacket;

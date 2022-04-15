@@ -1,172 +1,186 @@
-use std::collections::HashMap;
-use std::path::PathBuf;
+use std::{
+    collections::HashMap,
+    io::{self, ErrorKind},
+    path::PathBuf,
+    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
+};
 
-use glob::glob;
-use mlua::Lua;
+use lua::reload::{RegistryBuilder};
+use mlua::UserData;
+use plugin::Plugin;
+use registry::Registry;
+use rustaria_util::{blake3::Hasher, info, trace, warn};
+use ty::{PluginId, Prototype, Tag, LuaConvertableCar};
 use type_map::concurrent::TypeMap;
 
-use plugin::id::PluginId;
-use rustaria_util::{Context, ContextCompat, debug, info, Result, trace};
-use rustaria_util::blake3::Hasher;
-
-use crate::lua::PluginContext;
-use crate::plugin::archive::ArchivePath;
-use crate::plugin::Plugin;
-use crate::prototype::Prototype;
-use crate::registry::{Registry, RegistryBuilder};
-
-pub mod lua_runtime {
-    pub use mlua::*;
-}
-
+mod archive;
 pub mod lua;
+
 pub mod plugin;
-pub mod prototype;
 pub mod registry;
-pub mod tag;
+pub mod ty;
 
-// kernel identification
-pub type RawId = u32;
-
-pub struct ApiHandler {
+pub struct Api {
     plugins: HashMap<PluginId, Plugin>,
-    registries: TypeMap,
-    hash: [u8; 32],
 }
 
-impl ApiHandler {
-    pub fn new(lua: &Lua) -> Result<ApiHandler> {
-        let mut handler = ApiHandler {
-            plugins: HashMap::new(),
-            registries: TypeMap::new(),
-            hash: [0u8; 32],
-        };
-        lua::register_api(lua)?;
-        handler.load_plugins()?;
-        Ok(handler)
-    }
+impl Api {
+    pub fn new(plugins_dir: PathBuf) -> io::Result<Api> {
+        let mut plugins = HashMap::new();
+        for entry in std::fs::read_dir(plugins_dir)?.flatten() {
+            let path = entry.path();
 
-    pub fn reload(&mut self) -> ApiReloadInstance {
-        ApiReloadInstance {
-            api: self,
-            hasher: Hasher::new(),
-            registries: TypeMap::new(),
-        }
-    }
-
-    pub fn apply(&mut self, builder: (Hasher, TypeMap)) {
-        self.registries = builder.1;
-        self.hash = builder.0.finalize();
-    }
-
-    pub fn get_plugin(&self, id: &str) -> Option<&Plugin> {
-        self.plugins.get(id)
-    }
-
-    pub fn get_registry<P: Prototype>(&self) -> &Registry<P> {
-        self.registries
-            .get::<Registry<P>>()
-            .wrap_err("Invalid Registry")
-            .unwrap()
-    }
-}
-
-// Internal methods
-impl ApiHandler {
-    fn load_plugins(&mut self) -> Result<()> {
-        debug!("Loading plugins");
-        for path in glob("./plugins/*.zip")
-            .wrap_err("Could not find plugin directory.")?
-            .flatten()
-        {
-            self.load_plugin(path.clone())
-                .wrap_err(format!("Failed to load plugin at {:?}", path))?;
-        }
-
-        Ok(())
-    }
-
-    fn load_plugin(&mut self, path: PathBuf) -> Result<()> {
-        let plugin = Plugin::new(path)?;
-
-        info!("Loaded {} ({})", plugin.manifest.name, plugin.manifest.id);
-        self.plugins.insert(plugin.manifest.id.clone(), plugin);
-        Ok(())
-    }
-}
-
-pub struct ApiReloadInstance<'a> {
-    api: &'a mut ApiHandler,
-    hasher: Hasher,
-    registries: TypeMap,
-}
-
-impl ApiReloadInstance<'_> {
-    pub fn register_builder<P: 'static + Prototype>(&mut self, lua: &Lua) -> Result<()> {
-        let name = P::name();
-        debug!("Registered {}", name);
-        RegistryBuilder::<P>::new(name).register(lua)?;
-        Ok(())
-    }
-
-    //noinspection ALL
-    pub fn reload(&mut self, lua: &Lua) -> Result<()> {
-        macro_rules! entry_point {
-            ($NAME:literal $FIELD:ident) => {
-                for plugin in self.api.plugins.values() {
-                    if let Some(path) = &plugin.manifest.$FIELD {
-                        self.invoke_entrypoint(lua, plugin, path, $NAME)
-                            .wrap_err(format!(
-                                "Error while reloading plugin {}",
-                                plugin.manifest.id
-                            ))?;
+            if match path.extension() {
+                Some(extention) if extention == "zip" => true,
+                _ => path.is_dir(),
+            } {
+                match Plugin::new(&path) {
+                    Ok(plugin) => {
+                        trace!("Loaded plugin {}.", plugin.manifest.id);
+                        plugins.insert(plugin.manifest.id.clone(), plugin);
+                    }
+                    Err(error) => {
+                        warn!("Could not load plugin at {:?}. Reason: {:?}", path, error);
                     }
                 }
-            };
+            }
         }
 
-        entry_point!("preEntry" common_pre_entry);
-        entry_point!("entry" common_entry);
+        Ok(Api { plugins })
+    }
 
-        #[cfg(feature = "client")]
-        {
-            entry_point!("preEntryClient" client_pre_entry);
-            entry_point!("entryClient" client_entry);
+    pub fn get_asset(&self, location: &Tag) -> io::Result<Vec<u8>> {
+        self.plugins
+            .get(location.plugin_id())
+            .ok_or(ErrorKind::NotFound)?
+            .archive
+            .get_asset(&("asset/".to_owned() + location.identifier()))
+    }
+
+    pub fn reload<'a>(&'a mut self, stack: &'a mut Carrier) -> ApiReload<'a> {
+        info!("Reloading {} plugins", self.plugins.len());
+        ApiReload {
+            api: self,
+            stack: stack
+                .data
+                .write()
+                .expect("Could not aquire write lock of RegistryStack."),
+            registry_builders: TypeMap::new(),
+            hasher: Hasher::new(),
+        }
+    }
+}
+
+/// This is the most cringe part of the codebase for the better.
+/// ## add_reload_registry
+/// This should be called for every prototype that the system has. It adds a builder for that registry.
+/// ## reload
+/// This is the first big step. It invokes every plugin entrypoint that fills the builders.
+/// This is also where we reset the `RegistryStack` because the next step fills the registries.
+/// ## add_apply_registry
+/// This step compiles all of the builders and fills the `RegistryStack` with the registries.
+/// This also appends the `Hasher` with all of the entries for syncing.
+/// ## apply
+/// This is the last step. It just compiles the hash and sets it on the `RegistryStack`
+pub struct ApiReload<'a> {
+    api: &'a mut Api,
+    stack: RwLockWriteGuard<'a, (TypeMap, [u8; 32])>,
+    registry_builders: TypeMap,
+    hasher: Hasher,
+}
+
+impl<'a> ApiReload<'a> {
+    pub fn add_reload_registry<P: Prototype + LuaConvertableCar>(&mut self) -> mlua::Result<()> {
+        let mut builder = RegistryBuilder::<P>::new();
+        for (_, plugin) in &mut self.api.plugins {
+            builder.register(&plugin.lua)?;
         }
 
+        self.registry_builders.insert::<RegistryBuilder<P>>(builder);
         Ok(())
     }
 
-    pub fn compile_builder<P: Prototype>(&mut self, lua: &Lua) -> Result<()> {
-        let builder: RegistryBuilder<P> = lua.globals().get(P::name())?;
-        self.registries
-            .insert::<Registry<P>>(builder.finish(&mut self.hasher));
-        Ok(())
+    pub fn reload(&mut self) {
+        // Reset registry stack
+        self.stack.0.clear();
+        self.stack.1 = [0u8; 32];
+
+        // Reload plugins
+        for (id, plugin) in &mut self.api.plugins {
+            if let Some(entry) = &plugin.manifest.common_entry {
+                match plugin.archive.get_asset(&("src/".to_owned() + entry)) {
+                    Ok(code) => {
+                        if let Err(err) = plugin.lua.load(&code).call::<_, ()>(()) {
+                            panic!("Entrypoint error: \n{err}")
+                        }
+                    }
+                    Err(err) => {
+                        warn!(target: id, "Could not find entrypoint because {err}")
+                    }
+                }
+            }
+        }
     }
 
-    fn invoke_entrypoint(
-        &self,
-        lua: &Lua,
-        plugin: &Plugin,
-        path: &String,
-        name: &str,
-    ) -> Result<()> {
-        trace!("Invoking {} {}", plugin.manifest.id, name);
-        PluginContext::from(plugin).set(lua)?;
+    pub fn add_apply_registry<P: Prototype + LuaConvertableCar>(&mut self) -> mlua::Result<()> {
+        // Clear references
+        for (_, plugin) in &mut self.api.plugins {
+            plugin.lua.globals().raw_remove(P::lua_registry_name())?;
+        }
 
-        lua.load(
-            plugin
-                .archive
-                .get_asset(&ArchivePath::Code(path.clone()))
-                .wrap_err(format!("Could not find entrypoint {}s file {}", name, path))?,
-        )
-        .call(())?;
+        // Aquire builder
+        let builder = self
+            .registry_builders
+            .remove::<RegistryBuilder<P>>()
+            .expect("Cannot find registry");
 
+        // Insert registry
+        self.stack
+            .0
+            .insert::<Registry<P>>(builder.finish(&mut self.hasher)?);
         Ok(())
     }
 
     pub fn apply(self) {
-        self.api.registries = self.registries;
-        self.api.hash = self.hasher.finalize();
+        // Set the hash
+        let mut stack = self.stack;
+        stack.1 = self.hasher.finalize();
+    }
+}
+
+/// A carrier of all of the registries and the core hash.
+/// Carrier has arrived!
+#[derive(Clone)]
+pub struct Carrier {
+    data: Arc<RwLock<(TypeMap, [u8; 32])>>,
+}
+
+impl Carrier {
+    pub fn new() -> Carrier {
+        Carrier {
+            data: Arc::new(RwLock::new((TypeMap::new(), [0u8; 32]))),
+        }
+    }
+
+    pub fn lock(&self) -> RegistryStackAccess {
+        RegistryStackAccess { 
+            lock: 
+            self.data.read().unwrap()
+         }
+    }
+}
+
+pub struct RegistryStackAccess<'a> {
+    lock: RwLockReadGuard<'a, (TypeMap, [u8; 32])>
+}
+
+impl<'a> RegistryStackAccess<'a> {
+    pub fn get_hash(&self) -> [u8; 32] {
+        self.lock.1
+    }
+
+    // needs to be func because of lock issues
+    pub fn get_registry<P: Prototype>(&self) -> &Registry<P> {
+        self.lock.0.get::<Registry<P>>().expect("Could not find registry")
     }
 }

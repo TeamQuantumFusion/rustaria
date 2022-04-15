@@ -2,16 +2,16 @@ use std::sync::Arc;
 
 use legion::{Entity, Resources, Schedule};
 use rayon::ThreadPool;
+use rustaria_api::Carrier;
+use rustaria_api::ty::{RawId, Prototype};
 use serde::Deserialize;
-use rustaria_api::prototype::Prototype;
 
-use rustaria_api::RawId;
 use rustaria_network::Token;
 use rustaria_util::ty::pos::Pos;
 
 pub use legion::*;
 
-use crate::{Api, Networking, ServerPacket};
+use crate::{Networking, ServerPacket};
 use crate::api::prototype::entity::EntityPrototype;
 
 /// To prevent conflicts with rustaria::World and legion::World.
@@ -44,7 +44,7 @@ pub fn update_positions(pos: &mut PositionComp, vel: &VelocityComp) {
 }
 
 pub struct EntityHandler {
-    api: Api,
+    carrier: Carrier,
     pub universe: Universe,
     schedule: Schedule,
     resources: Resources,
@@ -54,9 +54,9 @@ pub struct EntityHandler {
 }
 
 impl EntityHandler {
-    pub fn new(api: &Api, thread_pool: Arc<ThreadPool>) -> EntityHandler {
+    pub fn new(carrier: &Carrier, thread_pool: Arc<ThreadPool>) -> EntityHandler {
         EntityHandler {
-            api: api.clone(),
+            carrier: carrier.clone(),
             universe: Universe::default(),
             resources: Resources::default(),
             schedule: Schedule::builder()
@@ -73,8 +73,8 @@ impl EntityHandler {
         let mut entry = self.universe.entry(entity)?;
 
         // Get instance, get prototype and add all of the needed components.
-        let instance = self.api.instance();
-        let prototype = instance.get_registry::<EntityPrototype>().get_from_id(id)?;
+        let instance = self.carrier.lock();
+        let prototype = instance.get_registry::<EntityPrototype>().get_prototype(id)?;
         if let Some(velocity) = &prototype.velocity {
             entry.add_component(velocity.create(id));
         }

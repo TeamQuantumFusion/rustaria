@@ -8,6 +8,14 @@
 			"problemMatcher": [
 				"$rustc"
 			]
+		},
+		{
+			"label": "rust: cargo test",
+			"type": "shell",
+			"command": "cd /home/alphasucks/CLionProjects/rustaria-main/libs/rustaria-api && /home/alphasucks/.cargo/bin/cargo test -- --nocapture",
+			"problemMatcher": [
+				"$rustc"
+			]
 		}
 	]
 }

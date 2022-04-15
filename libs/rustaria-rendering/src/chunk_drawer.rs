@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use rustaria::{api::{Api, prototype::tile::TilePrototype}, world::chunk::Chunk};
+use rustaria::{api::{prototype::tile::TilePrototype}, world::chunk::Chunk};
+use rustaria_api::Carrier;
 use rustaria_util::ty::{ChunkPos, CHUNK_SIZE};
 use rustariac_backend::{layer::LayerChannel, ty::{PosTexture, Viewport, Rectangle}, ClientBackend, builder::VertexBuilder};
 
@@ -11,7 +12,7 @@ pub mod chunk;
 
 pub struct ChunkDrawer {
     backend: ClientBackend,
-    api: Api,
+    carrier: Carrier,
     tile_drawers: Vec<Option<TileDrawer>>,
     layer: LayerChannel<PosTexture>,
     chunks: HashMap<ChunkPos, BakedChunk>,
@@ -19,12 +20,12 @@ pub struct ChunkDrawer {
 
 
 impl ChunkDrawer {
-    pub fn new(api: &Api, backend: &ClientBackend) -> ChunkDrawer {
-        let instance = api.instance();
+    pub fn new(carrier: &Carrier, backend: &ClientBackend) -> ChunkDrawer {
+        let instance = carrier.lock();
         let registry = instance.get_registry::<TilePrototype>();
         
         let mut tile_drawers = Vec::new();
-        for prototype in registry.entries() {
+        for prototype in registry.iter() {
             tile_drawers.push(TileDrawer::new(prototype, backend));
         }
 
@@ -32,14 +33,14 @@ impl ChunkDrawer {
             tile_drawers,
             layer: backend.instance_mut().backend.new_layer_pos_tex(),
             chunks: HashMap::new(),
-            api: api.clone(),
+            carrier: carrier.clone(),
             backend: backend.clone(),
         }
     }
 
     pub fn submit(&mut self, pos: ChunkPos, chunk: &Chunk) {
 		// todo async mesher
-		let mut baked_chunk = BakedChunk::new(&self.api, chunk, &self.backend);
+		let mut baked_chunk = BakedChunk::new(&self.carrier, chunk, &self.backend);
 		baked_chunk.compile_internal();
 		baked_chunk.compile_chunk_borders(&mut self.chunks, pos);
 		self.chunks.insert(pos, baked_chunk);

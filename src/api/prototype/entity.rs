@@ -1,34 +1,33 @@
-use serde::Deserialize;
-use rustaria_api::lua_runtime::UserData;
-use rustaria_api::prototype::Prototype;
-use rustaria_api::RawId;
+use mlua::UserData;
+use rustaria_api::{ty::{Prototype, RawId}};
+use serde::{Deserialize, Serialize};
 
 use rustaria_util::ty::pos::Pos;
 
-use crate::world::entity::VelocityComp;
+use crate::{world::entity::VelocityComp, api::rendering::RenderingSystem};
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug,  Serialize, Deserialize)]
 pub struct EntityPrototype {
 	#[serde(default)]
 	pub velocity: Option<VelocityCompPrototype>,
 	#[cfg(feature = "client")]
-	pub rendering: Option<crate::api::rendering::RenderingSystem>
+	pub rendering: Option<RenderingSystem>
 }
 
-impl UserData for EntityPrototype {}
 
 impl Prototype for EntityPrototype {
 	type Item = ();
 
 	fn create(&self, _: RawId) -> Self::Item {}
 
-	fn name() -> &'static str {
-		"entity"
+	fn lua_registry_name() -> &'static str {
+		"Entities"
 	}
 }
 
 
-#[derive(Clone, Debug, Deserialize, Default)]
+
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
 pub struct VelocityCompPrototype {
 	pub x: f32,
 	pub y: f32,
@@ -46,9 +45,11 @@ impl Prototype for VelocityCompPrototype {
 		}
 	}
 
-	fn name() -> &'static str {
+	fn lua_registry_name() -> &'static str {
 		"entity::velocity"
 	}
 }
 
-impl UserData for VelocityCompPrototype {}
+impl UserData for VelocityCompPrototype {
+
+}
