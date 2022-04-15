@@ -2,11 +2,11 @@ use std::collections::HashMap;
 
 use rustaria::{
     api::{prototype::tile::TilePrototype, ty::ConnectionType},
-    world::chunk::{Chunk, ChunkLayer},
 };
+use rustaria::chunk::{Chunk, ChunkLayer};
 use rustaria_api::Carrier;
-use rustaria_util::ty::{ChunkPos, ChunkSubPos, Direction, Offset, CHUNK_SIZE};
-use rustariac_backend::{builder::VertexBuilder, ty::PosTexture, ClientBackend};
+use rustaria_util::ty::{CHUNK_SIZE, ChunkPos, ChunkSubPos, Direction, Offset};
+use rustariac_backend::{builder::VertexBuilder, ClientBackend, ty::PosTexture};
 
 use super::tile::{BakedTile, TileDrawer};
 

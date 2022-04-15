@@ -2,25 +2,23 @@ use std::collections::HashMap;
 
 use rustaria_network::networking::ServerNetworking;
 use rustaria_network::packet::CompressedPacket;
-use rustaria_network::{Token, Result};
+use rustaria_network::Token;
 use rustaria_util::ty::ChunkPos;
 
-use crate::{ClientPacket, ServerPacket};
-use crate::network::join::PlayerJoinData;
+use crate::{ClientPacket, PlayerJoinData, ServerPacket};
+use crate::chunk::Chunk;
+use crate::network::packet::chunk::ServerChunkPacket;
 use crate::network::packet::ChunkBundlePacket;
-use crate::world::chunk::Chunk;
 
-pub mod join;
-pub mod packet;
-
-pub struct Networking {
+/// The `NetworkManager` handles networking for the server.
+pub(crate) struct NetworkManager {
     pub internal: ServerNetworking<ClientPacket, ServerPacket, PlayerJoinData>,
     chunk_buffer: HashMap<Option<Token>, HashMap<ChunkPos, Chunk>>,
 }
 
-impl Networking {
-    pub fn new(networking: ServerNetworking<ClientPacket, ServerPacket, PlayerJoinData>) -> Networking{
-        Networking {
+impl NetworkManager {
+    pub fn new(networking: ServerNetworking<ClientPacket, ServerPacket, PlayerJoinData>) -> NetworkManager {
+        NetworkManager {
             internal: networking,
             chunk_buffer: Default::default()
         }
@@ -31,11 +29,11 @@ impl Networking {
         self.chunk_buffer.get_mut(&to).unwrap().insert(pos, chunk);
     }
 
-    pub fn tick(&mut self) -> Result<()> {
+    pub fn tick(&mut self) -> rustaria_network::Result<()> {
         for (to, chunks) in self.chunk_buffer.drain() {
-            let packet = ServerPacket::Chunks(CompressedPacket::new(&ChunkBundlePacket {
+            let packet = ServerPacket::Chunk(ServerChunkPacket::Provide(CompressedPacket::new(&ChunkBundlePacket {
                 chunks: chunks.into_iter().collect(),
-            })?);
+            })?));
 
             if let Some(to) = to {
                 self.internal.send(to, packet)?

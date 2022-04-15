@@ -1,5 +1,6 @@
-use rustaria_api::{Api, Carrier};
 use eyre::Result;
+
+use rustaria_api::{Api, Carrier};
 
 #[macro_use]
 pub mod prototype;

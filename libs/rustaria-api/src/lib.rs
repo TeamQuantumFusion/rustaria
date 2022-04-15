@@ -5,8 +5,8 @@ use std::{
     sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
-use lua::reload::{RegistryBuilder};
-use mlua::{UserData, Value};
+use lua::reload::RegistryBuilder;
+use mlua::Value;
 use plugin::Plugin;
 use registry::Registry;
 use rustaria_util::{blake3::Hasher, info, trace, warn, debug};

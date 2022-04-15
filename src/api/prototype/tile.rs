@@ -1,11 +1,10 @@
 use std::collections::HashSet;
 
-use mlua::{UserData, FromLua};
-use rustaria_api::ty::{LuaCar, LuaConvertableCar, Prototype, RawId, Tag};
 use serde::{Deserialize, Serialize};
 
-use crate::api::ty::{BlastResistance, BreakResistance, ConnectionType, LockableValue};
-use crate::world::tile::Tile;
+use rustaria_api::ty::{LuaCar, LuaConvertableCar, Prototype, RawId, Tag};
+
+use crate::{chunk::Tile, api::ty::ConnectionType};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TilePrototype {
@@ -38,28 +37,11 @@ impl LuaConvertableCar for TilePrototype {
         }
     }
 
-    fn into_luaagh(self, lua: &mlua::Lua) -> mlua::Result<mlua::Value> {
+    fn into_luaagh(self, _: &mlua::Lua) -> mlua::Result<mlua::Value> {
         todo!()
     }
 }
 
-impl TilePrototype {
-    fn default_connection() -> ConnectionType {
-        ConnectionType::Connected
-    }
-    fn default_collision() -> LockableValue<bool> {
-        LockableValue::Dynamic(true)
-    }
-    fn default_opaque() -> LockableValue<bool> {
-        LockableValue::Dynamic(true)
-    }
-    fn default_blast_resistance() -> BlastResistance {
-        BlastResistance::Some(3)
-    }
-    fn default_break_resistance() -> BreakResistance {
-        BreakResistance::Any
-    }
-}
 impl Prototype for TilePrototype {
     type Item = Tile;
 

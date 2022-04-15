@@ -1,22 +1,25 @@
-use rustaria_api::ty::RawId;
 use serde::{Deserialize, Serialize};
 
 use rustaria_network::Packet;
-use rustaria_network::packet::CompressedPacket;
 use rustaria_util::ty::ChunkPos;
-use rustaria_util::ty::pos::Pos;
 
-use crate::world::chunk::Chunk;
+use crate::chunk::Chunk;
+
+use self::{chunk::{ClientChunkPacket, ServerChunkPacket}, entity::{ClientEntityPacket, ServerEntityPacket}};
+
+pub mod chunk;
+pub mod entity;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ServerPacket {
-    Chunks(CompressedPacket<ChunkBundlePacket>),
-    NewEntity(RawId, Pos)
+    Chunk(ServerChunkPacket),
+    Entity(ServerEntityPacket)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ClientPacket {
-    RequestChunks(Vec<ChunkPos>),
+    Chunk(ClientChunkPacket),
+    Entity(ClientEntityPacket)
 }
 
 impl Packet for ServerPacket {}

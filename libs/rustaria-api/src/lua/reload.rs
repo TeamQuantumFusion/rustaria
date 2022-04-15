@@ -3,12 +3,12 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use mlua::{Lua, LuaSerdeExt, Table, UserData, Value};
-use rustaria_util::{blake3::Hasher, info, trace};
+use mlua::{Lua, Value};
+use rustaria_util::{blake3::Hasher, trace};
 
 use crate::{
     registry::Registry,
-    ty::{LuaConvertableCar, Prototype, RawId, Tag, LuaCar},
+    ty::{LuaConvertableCar, Prototype, RawId, Tag},
 };
 
 #[derive(Clone)]

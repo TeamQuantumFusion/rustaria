@@ -3,7 +3,7 @@ use std::{
     fmt::{Debug, Display},
 };
 
-use mlua::{ExternalError, FromLua, Lua, ToLua, Value, UserData};
+use mlua::{ExternalError, FromLua, Lua, ToLua, Value};
 use rustaria_util::info;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 

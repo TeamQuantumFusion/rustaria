@@ -1,6 +1,5 @@
 use std::env::current_dir;
 
-use mlua::{FromLua, ToLua, UserData};
 use rustaria_api::{
     ty::{LuaConvertableCar, Prototype, Tag},
     Api, Carrier,
@@ -37,7 +36,7 @@ impl LuaConvertableCar for TilePrototype {
         }
     }
 
-    fn into_luaagh(self, lua: &mlua::Lua) -> mlua::Result<mlua::Value> {
+    fn into_luaagh(self, _: &mlua::Lua) -> mlua::Result<mlua::Value> {
         todo!()
     }
 }
@@ -50,7 +49,7 @@ fn it_adds_two() {
     path.push("tests");
     path.push("basic_plugin");
 
-    let mut api = Api::new(path).unwrap();
+    let mut api = Api::new(path, vec![]).unwrap();
     let mut stack = Carrier::new();
 
     let mut reload = api.reload(&mut stack);

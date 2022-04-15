@@ -1,10 +1,11 @@
 use mlua::UserData;
-use rustaria_api::{ty::{Prototype, RawId}};
 use serde::{Deserialize, Serialize};
 
+use rustaria_api::{ty::{Prototype, RawId}};
 use rustaria_util::ty::pos::Pos;
 
-use crate::{world::entity::VelocityComp, api::rendering::RenderingSystem};
+use crate::api::rendering::RenderingSystem;
+use crate::entity::VelocityComp;
 
 #[derive(Clone, Debug,  Serialize, Deserialize)]
 pub struct EntityPrototype {

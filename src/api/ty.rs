@@ -1,9 +1,9 @@
-use mlua::Error::UserDataTypeMismatch;
-use mlua::{ExternalError, Lua, Value};
 use std::{collections::HashSet, hash::Hash};
 
-use rustaria_api::ty::LuaConvertableCar;
+use mlua::{ExternalError, Lua, Value};
 use serde::{Deserialize, Serialize};
+
+use rustaria_api::ty::LuaConvertableCar;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -95,12 +95,12 @@ pub enum BlastResistance {
     Indestructible,
 }
 mod blast_resistance_serde {
-    use serde::de::{Error, Visitor};
-    use serde::{Deserialize, Deserializer};
+	use serde::{Deserialize, Deserializer};
+	use serde::de::{Error, Visitor};
 
-    use super::BlastResistance;
+	use super::BlastResistance;
 
-    impl<'de> Deserialize<'de> for BlastResistance {
+	impl<'de> Deserialize<'de> for BlastResistance {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where
             D: Deserializer<'de>,

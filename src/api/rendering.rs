@@ -1,7 +1,9 @@
 use std::collections::HashMap;
+
 use mlua::UserData;
-use rustaria_api::{ty::Tag};
 use serde::{Deserialize, Serialize};
+
+use rustaria_api::ty::Tag;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum RenderingSystem {

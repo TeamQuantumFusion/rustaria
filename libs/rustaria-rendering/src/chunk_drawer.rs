@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 
-use rustaria::{api::{prototype::tile::TilePrototype}, world::chunk::Chunk};
-use rustaria::err::SmartError::CarrierUnavailable;
+use rustaria::api::prototype::tile::TilePrototype;
+use rustaria::SmartError::CarrierUnavailable;
 use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_util::ty::{ChunkPos, CHUNK_SIZE};
-use rustariac_backend::{layer::LayerChannel, ty::{PosTexture, Viewport, Rectangle}, ClientBackend, builder::VertexBuilder};
+use rustaria_util::ty::{CHUNK_SIZE, ChunkPos};
+use rustariac_backend::{builder::VertexBuilder, ClientBackend, layer::LayerChannel, ty::{PosTexture, Rectangle, Viewport}};
 use eyre::{ContextCompat, Result};
+use rustaria::chunk::Chunk;
 
 use self::{chunk::BakedChunk, tile::TileDrawer};
 

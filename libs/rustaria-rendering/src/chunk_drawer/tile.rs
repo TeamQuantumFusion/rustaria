@@ -1,8 +1,9 @@
-use rustaria::{api::{prototype::tile::TilePrototype, ty::ConnectionType}, world::tile::Tile};
+use rustaria::{api::{prototype::tile::TilePrototype, ty::ConnectionType}};
+use rustaria::chunk::Tile;
 use rustaria_api::{registry::Registry, ty::RawId};
 use rustariac_backend::{
-    builder::VertexBuilder,
-    ty::{AtlasLocation, PosTexture, Rectangle}, ClientBackend,};
+	builder::VertexBuilder,
+	ClientBackend, ty::{AtlasLocation, PosTexture, Rectangle},};
 
 // todo dynamic this.
 const VARIATIONS: u8 = 3;

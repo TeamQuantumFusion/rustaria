@@ -75,6 +75,7 @@ impl<I: crate::Packet, O: crate::Packet, J> ServerNetworking<I, O, J> {
         Ok(())
     }
 
+    // TODO get rid of this interface, its really annoying because of the &mut that it requires as this instance is prob inside of the impl.
     pub fn poll(&mut self, interface: &mut impl NetworkInterface<I, O, J>) {
         for (client, connection_data) in self.new_players.write().unwrap().drain(..) {
             interface.connected(client, connection_data);
@@ -152,6 +153,7 @@ impl<I: crate::Packet, O: crate::Packet, J> ServerNetworking<I, O, J> {
         }
     }
 }
+
 
 pub enum ClientNetworking<I: crate::Packet, O: crate::Packet> {
     Local(Sender<O>, Receiver<I>),
