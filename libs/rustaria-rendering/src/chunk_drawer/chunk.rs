@@ -79,7 +79,7 @@ impl BakedChunk {
         chunks: &mut HashMap<ChunkPos, BakedChunk>,
         pos: ChunkPos,
     ) {
-        for offset in Direction::all() {
+        for offset in Direction::values() {
             if let Some(neighbor_pos) = pos.offset(offset.into()) {
                 if let Some(neighbor) = chunks.get_mut(&neighbor_pos) {
                     let y_offset = offset.offset_y().max(0) as usize * (CHUNK_SIZE - 1);
@@ -109,7 +109,7 @@ impl BakedChunk {
                             neighbor
                                 .tile_neighbors
                                 .get_mut(neighbor_sub_pos)
-                                .set(offset.flip(), ty);
+                                .set(offset.rotate_180(), ty);
                         }
                     }
                 }
