@@ -1,6 +1,7 @@
 /target
 Cargo.lock
 /runtime/client/run/
+run/
 
 # OS weirdness
 .DS_Store
