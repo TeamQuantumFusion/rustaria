@@ -2,12 +2,11 @@ use std::collections::HashSet;
 use std::ops::AddAssign;
 use std::time::{Duration, Instant};
 
+use clap::Parser;
 use eyre::{Report, Result};
 use glfw::{ffi, Action, Key, Modifiers, WindowEvent};
 
 use rustaria::network::packet::{ClientPacket, ServerPacket};
-pub use rustaria::prototypes;
-pub use rustaria::pt;
 use rustaria::SmartError;
 use rustaria::{Server, UPS};
 use rustaria_api::ty::Prototype;
@@ -21,22 +20,27 @@ use crate::chunk::ChunkHandler;
 use crate::controller::ControllerHandler;
 use crate::entity::EntityHandler;
 
+pub use rustaria::prototypes;
+pub use rustaria::pt;
+
+mod args;
 mod chunk;
 mod controller;
 mod entity;
 
 const DEBUG_MOD: Modifiers =
 	Modifiers::from_bits_truncate(ffi::MOD_ALT + ffi::MOD_CONTROL + ffi::MOD_SHIFT);
-const UPDATE_TIME: Duration = Duration::from_micros(1000000 / UPS as u64);
+const UPDATE_TIME: Duration = Duration::from_micros(1000000 / UPS);
 
 fn main() -> eyre::Result<()> {
+	let args = args::Args::parse();
 	rustaria_util::initialize()?;
 	let backend = ClientBackend::new(GliumBackend::new)?;
 
 	let carrier = Carrier::default();
 	let mut dir = std::env::current_dir()?;
 	dir.push("plugins");
-	let api = Api::new(dir, vec!["../../../plugin".into()])?;
+	let api = Api::new(dir, args.extra_plugin_paths)?;
 
 	let mut client = Client {
 		api,

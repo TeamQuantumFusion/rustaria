@@ -34,7 +34,7 @@ pub mod entity;
 mod manager;
 pub mod network;
 
-pub const UPS: usize = 20;
+pub const UPS: u64 = 20;
 
 /// The main data structure for a server.
 /// This is where the world is stored and the information gets distributed across clients.
