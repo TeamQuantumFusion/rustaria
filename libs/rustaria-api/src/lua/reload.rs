@@ -57,7 +57,7 @@ impl<P: Prototype + LuaConvertableCar> Default for RegistryBuilder<P> {
 }
 
 impl<P: Prototype + LuaConvertableCar> mlua::UserData for RegistryBuilder<P> {
-	fn add_methods<'lua, M: mlua::UserDataMethods<'lua, Self>>(m: &mut M) {
+	fn add_methods<M: mlua::UserDataMethods<Self>>(m: &mut M) {
 		m.add_method_mut("register", |lua, this, t: Value| {
 			trace!(
 				target: P::lua_registry_name(),

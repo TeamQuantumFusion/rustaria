@@ -17,7 +17,7 @@ crossbeam = "0.8.1"
 image = "*"
 eyre = "0.6.8"
 
-mlua = { version = "0.7", features = ["serialize", "send"] }
+mlua = {  git = "https://github.com/alphaqu/mlua", features = ["serialize", "send"] }
 
 rustaria-util = { path = "./libs/rustaria-util" }
 rustaria-api = { path = "./libs/rustaria-api" }

@@ -10,7 +10,7 @@ edition = "2021"
 simplelog = "0.11.2"
 log = "0.4.*"
 
-mlua = { version = "0.7" }
+mlua = { git = "https://github.com/alphaqu/mlua" }
 
 # Errors
 eyre = "0.6"

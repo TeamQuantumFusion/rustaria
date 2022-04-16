@@ -5,7 +5,7 @@ pub mod reload;
 
 use mlua::{
 	prelude::{LuaResult, LuaTable},
-	ExternalResult, Lua,
+	ExternalError, ExternalResult, Lua,
 };
 use rustaria_util::info;
 
@@ -17,7 +17,7 @@ pub fn register_preload(lua: &Lua) -> LuaResult<()> {
 		"Tag",
 		lua.create_function(|lua, value: String| {
 			info!("Sthit");
-			Tag::new_lua(value, lua).to_lua_err()
+			Tag::new_lua(value, lua).map_err(|er| er.to_lua_err())
 		})?,
 	)?;
 	Ok(())

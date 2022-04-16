@@ -3,7 +3,7 @@ use rustaria_util::{debug, error, info, trace, warn};
 
 use crate::lua::ctx;
 
-pub fn register(lua: &Lua, _: ()) -> LuaResult<LuaTable<'_>> {
+pub fn register(lua: &Lua, _: ()) -> LuaResult<LuaTable> {
 	lua.create_table_from([
 		("trace", lua.create_function(trace)?),
 		("debug", lua.create_function(debug)?),

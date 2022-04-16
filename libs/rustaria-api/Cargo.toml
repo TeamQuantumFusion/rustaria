@@ -14,7 +14,7 @@ thiserror = "1.0.30"
 
 
 # Plugins
-mlua = { version = "0.7.4", features = ["lua54", "vendored", "serialize", "send"] }
+mlua = { git = "https://github.com/alphaqu/mlua",  features = ["lua54", "vendored", "serialize", "send"] }
 serde = { version = "1.0", features = ["derive"] }
 semver = { version = "1.0", features = ["serde"] }
 serde_json = "1.0"

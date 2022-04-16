@@ -92,14 +92,14 @@ impl LuaConvertableCar for Tag {
 	}
 }
 
-impl<'lua> FromLua<'lua> for Tag {
-	fn from_lua(lua_value: mlua::Value<'lua>, lua: &'lua Lua) -> mlua::Result<Self> {
+impl FromLua for Tag {
+	fn from_lua(lua_value: mlua::Value, lua: &Lua) -> mlua::Result<Self> {
 		Tag::from_luaagh(lua_value, lua)
 	}
 }
 
-impl<'lua> ToLua<'lua> for Tag {
-	fn to_lua(self, lua: &'lua Lua) -> mlua::Result<Value<'lua>> {
+impl ToLua for Tag {
+	fn to_lua(self, lua: &Lua) -> mlua::Result<Value> {
 		Tag::into_luaagh(self, lua)
 	}
 }
@@ -195,14 +195,14 @@ impl<K: LuaConvertableCar + Eq + Hash, V: LuaConvertableCar> LuaConvertableCar f
 	}
 }
 
-impl<'lua, A: LuaConvertableCar> FromLua<'lua> for LuaCar<A> {
-	fn from_lua(lua_value: Value<'lua>, lua: &'lua Lua) -> mlua::Result<Self> {
+impl<A: LuaConvertableCar> FromLua for LuaCar<A> {
+	fn from_lua(lua_value: Value, lua: &Lua) -> mlua::Result<Self> {
 		A::from_luaagh(lua_value, lua).map(LuaCar)
 	}
 }
 
-impl<'lua, A: LuaConvertableCar> ToLua<'lua> for LuaCar<A> {
-	fn to_lua(self, lua: &'lua Lua) -> mlua::Result<Value<'lua>> {
+impl<A: LuaConvertableCar> ToLua for LuaCar<A> {
+	fn to_lua(self, lua: &Lua) -> mlua::Result<Value> {
 		self.0.into_luaagh(lua)
 	}
 }
