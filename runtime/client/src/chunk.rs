@@ -2,6 +2,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
 use eyre::Result;
+use rustaria_util::ty::Offset;
 
 use crate::NetworkHandler;
 use rustaria::chunk::Chunk;
@@ -31,7 +32,7 @@ impl ChunkHandler {
             backend: backend.clone(),
             chunks: HashMap::new(),
             chunk_drawer: ChunkDrawer::new(backend),
-            old_chunk: ChunkPos::new(60, 420).unwrap(),
+            old_chunk: ChunkPos { x: 60, y: 420 },
             old_zoom: 0.0,
         }
     }
@@ -67,7 +68,7 @@ impl ChunkHandler {
                 let mut requested = Vec::new();
                 for x in -width..width {
                     for y in -height..height {
-                        if let Some(pos) = chunk.offset([x, y]) {
+                        if let Some(pos) = chunk.checked_offset((x, y)) {
                             if let Entry::Vacant(e) = self.chunks.entry(pos) {
                                 e.insert(ChunkHolder::Requested);
                                 requested.push(pos);

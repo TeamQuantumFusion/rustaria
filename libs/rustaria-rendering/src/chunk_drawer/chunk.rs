@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use rustaria::api::{prototype::tile::TilePrototype, ty::ConnectionType};
 use rustaria::chunk::{Chunk, ChunkLayer};
 use rustaria_api::Carrier;
-use rustaria_util::ty::{ChunkPos, ChunkSubPos, Direction, Offset, CHUNK_SIZE};
+use rustaria_util::ty::{ChunkPos, ChunkSubPos, Direction, Offset, CHUNK_SIZE, CHUNK_SIZE_U8};
 use rustariac_backend::{builder::VertexBuilder, ty::PosTexture, ClientBackend};
 
 use super::tile::{BakedTile, TileDrawer};
@@ -79,23 +79,26 @@ impl BakedChunk {
         chunks: &mut HashMap<ChunkPos, BakedChunk>,
         pos: ChunkPos,
     ) {
-        for offset in Direction::values() {
-            if let Some(neighbor_pos) = pos.offset(offset.into()) {
+        for dir in Direction::values() {
+            if let Some(neighbor_pos) = pos.checked_offset(dir) {
                 if let Some(neighbor) = chunks.get_mut(&neighbor_pos) {
-                    let y_offset = offset.offset_y().max(0) as usize * (CHUNK_SIZE - 1);
-                    let x_offset = offset.offset_x().max(0) as usize * (CHUNK_SIZE - 1);
-                    let y_length = (CHUNK_SIZE - 1) * (offset.offset_x().abs() as usize);
-                    let x_length = (CHUNK_SIZE - 1) * (offset.offset_y().abs() as usize);
+                    let c = CHUNK_SIZE_U8 - 1;
+
+                    let y_offset = dir.offset_y().max(0) as u8 * c;
+                    let x_offset = dir.offset_x().max(0) as u8 * c;
+                    let y_length = dir.offset_x().unsigned_abs() * c;
+                    let x_length = dir.offset_y().unsigned_abs() * c;
+
                     for y in y_offset..=y_length + y_offset {
-                        let row = &self.tiles.grid[y];
+                        let row = &self.tiles.grid[y as usize];
                         // clippy having a stroke
                         #[allow(clippy::needless_range_loop)]
                         for x in x_offset..=x_length + x_offset {
                             let neighbor_sub_pos =
-                                ChunkSubPos::new(x as u8, y as u8).euclid_offset(offset.into());
+                                ChunkSubPos::new(x, y).euclid_offset(dir.offset());
 
                             let mut ty = ConnectionType::Isolated;
-                            if let Some(tile) = &row[x] {
+                            if let Some(tile) = &row[x as usize] {
                                 if let Some(neighbor_tile) = neighbor.tiles.get(neighbor_sub_pos) {
                                     if let (ConnectionType::Connected, ConnectionType::Connected) =
                                         (tile.connection, neighbor_tile.connection)
@@ -105,11 +108,11 @@ impl BakedChunk {
                                 }
                             }
 
-                            self.tile_neighbors.grid[y][x].set(offset, ty);
+                            self.tile_neighbors.grid[y as usize][x as usize].set(dir, ty);
                             neighbor
                                 .tile_neighbors
                                 .get_mut(neighbor_sub_pos)
-                                .set(offset.rotate_180(), ty);
+                                .set(dir.rotate_180(), ty);
                         }
                     }
                 }

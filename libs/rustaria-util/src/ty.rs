@@ -10,7 +10,8 @@ pub enum Error {
     OutOfBounds,
 }
 
-pub const CHUNK_SIZE: u8 = 16;
+pub const CHUNK_SIZE: usize = CHUNK_SIZE_U8 as usize;
+pub const CHUNK_SIZE_U8: u8 = 16;
 pub const CHUNK_SIZE_MASK: u8 = 0xf;
 pub const CHUNK_SIZE_F: f32 = 16.0;
 
@@ -32,6 +33,26 @@ pub enum Direction {
 }
 
 impl Direction {
+    pub fn offset(self) -> (i8, i8) {
+        (self.offset_x(), self.offset_y())
+    }
+    pub fn offset_x(self) -> i8 {
+        use Direction::*;
+        match self {
+            Left => -1,
+            Right => 1,
+            Up | Down => 0,
+        }
+    }
+    pub fn offset_y(self) -> i8 {
+        use Direction::*;
+        match self {
+            Up => 1,
+            Down => -1,
+            Left | Right => 0,
+        }
+    }
+
     pub fn clockwise(self) -> Self {
         use Direction::*;
         match self {
@@ -137,12 +158,12 @@ pub struct ChunkSubPos(u8);
 
 impl ChunkSubPos {
     pub fn new(x: u8, y: u8) -> Self {
-        assert!(x < CHUNK_SIZE, "x is out-of-bounds: {x} >= {CHUNK_SIZE}");
-        assert!(y < CHUNK_SIZE, "y is out-of-bounds: {y} >= {CHUNK_SIZE}");
+        assert!(x < CHUNK_SIZE_U8, "x is out-of-bounds: {x} >= {CHUNK_SIZE}");
+        assert!(y < CHUNK_SIZE_U8, "y is out-of-bounds: {y} >= {CHUNK_SIZE}");
         Self::new_unchecked(x, y)
     }
     pub fn try_new(x: u8, y: u8) -> Option<Self> {
-        if x < CHUNK_SIZE || y < CHUNK_SIZE {
+        if x < CHUNK_SIZE_U8 || y < CHUNK_SIZE_U8 {
             None
         } else {
             Some(Self::new_unchecked(x, y))
