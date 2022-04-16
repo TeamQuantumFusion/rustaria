@@ -39,75 +39,75 @@ pub const UPS: usize = 20;
 /// The main data structure for a server.
 /// This is where the world is stored and the information gets distributed across clients.
 pub struct Server {
-    network: NetworkManager,
-    chunk: ChunkManager,
-    entity: EntityManager,
+	network: NetworkManager,
+	chunk: ChunkManager,
+	entity: EntityManager,
 }
 
 impl Server {
-    pub fn new(num_threads: usize, ip_address: Option<SocketAddr>) -> Result<Server> {
-        let thread_pool = Arc::new(ThreadPoolBuilder::new().num_threads(num_threads).build()?);
+	pub fn new(num_threads: usize, ip_address: Option<SocketAddr>) -> Result<Server> {
+		let thread_pool = Arc::new(ThreadPoolBuilder::new().num_threads(num_threads).build()?);
 
-        Ok(Server {
-            network: NetworkManager::new(ServerNetworking::new(ip_address)?),
-            chunk: ChunkManager::new(thread_pool.clone()),
-            entity: EntityManager::new(thread_pool),
-        })
-    }
+		Ok(Server {
+			network: NetworkManager::new(ServerNetworking::new(ip_address)?),
+			chunk: ChunkManager::new(thread_pool.clone()),
+			entity: EntityManager::new(thread_pool),
+		})
+	}
 
-    pub fn tick(&mut self) -> Result<()> {
-        // yes i know there is unsafe here. Check the _todo in poll.
-        self.network
-            .internal
-            .poll(unsafe { (self as *const Server as *mut Server).as_mut().unwrap() });
-        self.chunk.tick(&mut self.network).wrap_err("Chunk error")?;
-        self.entity
-            .tick(&mut self.network)
-            .wrap_err("Entity error")?;
-        self.network.tick().wrap_err("Networking error")?;
-        Ok(())
-    }
+	pub fn tick(&mut self) -> Result<()> {
+		// yes i know there is unsafe here. Check the _todo in poll.
+		self.network
+			.internal
+			.poll(unsafe { (self as *const Server as *mut Server).as_mut().unwrap() });
+		self.chunk.tick(&mut self.network).wrap_err("Chunk error")?;
+		self.entity
+			.tick(&mut self.network)
+			.wrap_err("Entity error")?;
+		self.network.tick().wrap_err("Networking error")?;
+		Ok(())
+	}
 
-    pub fn create_local_connection(&mut self) -> ClientNetworking<ServerPacket, ClientPacket> {
-        ClientNetworking::join_local(&mut self.network.internal)
-    }
+	pub fn create_local_connection(&mut self) -> ClientNetworking<ServerPacket, ClientPacket> {
+		ClientNetworking::join_local(&mut self.network.internal)
+	}
 }
 
 impl NetworkInterface<ClientPacket, ServerPacket, PlayerJoinData> for Server {
-    fn receive(&mut self, from: Token, packet: ClientPacket) {
-        match packet {
-            ClientPacket::Chunk(packet) => self.chunk.packet(from, packet),
-            ClientPacket::Entity(packet) => self.entity.packet(from, packet),
-        }
-    }
+	fn receive(&mut self, from: Token, packet: ClientPacket) {
+		match packet {
+			ClientPacket::Chunk(packet) => self.chunk.packet(from, packet),
+			ClientPacket::Entity(packet) => self.entity.packet(from, packet),
+		}
+	}
 
-    fn disconnected(&mut self, _client: Token) {}
+	fn disconnected(&mut self, _client: Token) {}
 
-    fn connected(&mut self, _client: Token, _connection_data: PlayerJoinData) {}
+	fn connected(&mut self, _client: Token, _connection_data: PlayerJoinData) {}
 
-    fn establishing(&mut self) -> Box<dyn EstablishingInstance<PlayerJoinData>> {
-        todo!()
-    }
+	fn establishing(&mut self) -> Box<dyn EstablishingInstance<PlayerJoinData>> {
+		todo!()
+	}
 }
 
 impl Reloadable for Server {
-    fn reload(&mut self, api: &Api, carrier: &Carrier) {
-        self.chunk.reload(api, carrier);
-        self.entity.reload(api, carrier);
-    }
+	fn reload(&mut self, api: &Api, carrier: &Carrier) {
+		self.chunk.reload(api, carrier);
+		self.entity.reload(api, carrier);
+	}
 }
 
 #[derive(Debug)]
 pub enum SmartError {
-    CarrierUnavailable,
+	CarrierUnavailable,
 }
 
 impl Display for SmartError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SmartError::CarrierUnavailable => {
-                f.write_str("Carrier is unavailable, Force reloading instance.")
-            }
-        }
-    }
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			SmartError::CarrierUnavailable => {
+				f.write_str("Carrier is unavailable, Force reloading instance.")
+			}
+		}
+	}
 }

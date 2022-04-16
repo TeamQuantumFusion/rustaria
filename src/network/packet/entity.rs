@@ -5,7 +5,7 @@ use rustaria_util::ty::pos::Pos;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ServerEntityPacket {
-    Spawn(RawId, Pos),
+	Spawn(RawId, Pos),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

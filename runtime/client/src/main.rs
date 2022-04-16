@@ -26,186 +26,186 @@ mod controller;
 mod entity;
 
 const DEBUG_MOD: Modifiers =
-    Modifiers::from_bits_truncate(ffi::MOD_ALT + ffi::MOD_CONTROL + ffi::MOD_SHIFT);
+	Modifiers::from_bits_truncate(ffi::MOD_ALT + ffi::MOD_CONTROL + ffi::MOD_SHIFT);
 const UPDATE_TIME: Duration = Duration::from_micros(1000000 / UPS as u64);
 
 fn main() -> eyre::Result<()> {
-    rustaria_util::initialize()?;
-    let backend = ClientBackend::new(GliumBackend::new)?;
+	rustaria_util::initialize()?;
+	let backend = ClientBackend::new(GliumBackend::new)?;
 
-    let carrier = Carrier::default();
-    let mut dir = std::env::current_dir()?;
-    dir.push("plugins");
-    let api = Api::new(dir, vec!["../../../plugin".into()])?;
+	let carrier = Carrier::default();
+	let mut dir = std::env::current_dir()?;
+	dir.push("plugins");
+	let api = Api::new(dir, vec!["../../../plugin".into()])?;
 
-    let mut client = Client {
-        api,
-        carrier,
-        world: None,
-        control: ControllerHandler::new(),
-        view: Viewport {
-            position: [0.0, 0.0],
-            zoom: 30.0,
-        },
-        backend,
-    };
+	let mut client = Client {
+		api,
+		carrier,
+		world: None,
+		control: ControllerHandler::new(),
+		view: Viewport {
+			position: [0.0, 0.0],
+			zoom: 30.0,
+		},
+		backend,
+	};
 
-    client.reload()?;
-    client.join_integrated()?;
-    client.run();
+	client.reload()?;
+	client.join_integrated()?;
+	client.run();
 
-    Ok(())
+	Ok(())
 }
 
 pub struct Client {
-    // Api
-    api: Api,
-    carrier: Carrier,
+	// Api
+	api: Api,
+	carrier: Carrier,
 
-    view: Viewport,
-    control: ControllerHandler,
-    world: Option<ClientWorld>,
-    backend: ClientBackend,
+	view: Viewport,
+	control: ControllerHandler,
+	world: Option<ClientWorld>,
+	backend: ClientBackend,
 }
 
 impl Client {
-    pub fn run(&mut self) {
-        let mut last_tick = Instant::now();
-        let mut last_delta = 0f32;
+	pub fn run(&mut self) {
+		let mut last_tick = Instant::now();
+		let mut last_delta = 0f32;
 
-        let mut reload = false;
-        while !self.backend.instance().backend.window().should_close() {
-            for event in self.backend.instance_mut().backend.poll_events() {
-                match event {
-                    WindowEvent::Scroll(_, y) => {
-                        self.view.zoom += y as f32;
-                    }
-                    WindowEvent::Key(Key::R, _, Action::Release, DEBUG_MOD) => {
-                        reload = true;
-                    }
-                    _ => {}
-                }
+		let mut reload = false;
+		while !self.backend.instance().backend.window().should_close() {
+			for event in self.backend.instance_mut().backend.poll_events() {
+				match event {
+					WindowEvent::Scroll(_, y) => {
+						self.view.zoom += y as f32;
+					}
+					WindowEvent::Key(Key::R, _, Action::Release, DEBUG_MOD) => {
+						reload = true;
+					}
+					_ => {}
+				}
 
-                self.control.consume_event(event);
-            }
+				self.control.consume_event(event);
+			}
 
-            while last_tick.elapsed() >= UPDATE_TIME {
-                if let Err(error) = self.tick() {
-                    match error.downcast_ref::<SmartError>() {
-                        Some(err @ SmartError::CarrierUnavailable) => {
-                            info!("{}", err);
-                            reload = true;
-                        }
-                        _ => Err(error).unwrap(),
-                    }
-                }
-                last_tick.add_assign(UPDATE_TIME);
-            }
+			while last_tick.elapsed() >= UPDATE_TIME {
+				if let Err(error) = self.tick() {
+					match error.downcast_ref::<SmartError>() {
+						Some(err @ SmartError::CarrierUnavailable) => {
+							info!("{}", err);
+							reload = true;
+						}
+						_ => Err(error).unwrap(),
+					}
+				}
+				last_tick.add_assign(UPDATE_TIME);
+			}
 
-            if reload {
-                self.reload().unwrap();
-                reload = false;
-            }
+			if reload {
+				self.reload().unwrap();
+				reload = false;
+			}
 
-            let delta = ((last_tick.elapsed().as_secs_f32() / UPDATE_TIME.as_secs_f32())
-                - last_delta)
-                .abs();
-            self.draw(delta);
-            last_delta = delta;
-        }
-    }
+			let delta = ((last_tick.elapsed().as_secs_f32() / UPDATE_TIME.as_secs_f32())
+				- last_delta)
+				.abs();
+			self.draw(delta);
+			last_delta = delta;
+		}
+	}
 
-    pub fn join_integrated(&mut self) -> Result<()> {
-        let mut server = Server::new(12, None)?;
-        let mut client_world = ClientWorld {
-            networking: server.create_local_connection(),
-            chunk: ChunkHandler::new(&self.backend),
-            entity: EntityHandler {},
-            integrated: Some(Box::new(server)),
-        };
+	pub fn join_integrated(&mut self) -> Result<()> {
+		let mut server = Server::new(12, None)?;
+		let mut client_world = ClientWorld {
+			networking: server.create_local_connection(),
+			chunk: ChunkHandler::new(&self.backend),
+			entity: EntityHandler {},
+			integrated: Some(Box::new(server)),
+		};
 
-        // sync api
-        client_world.reload(&self.api, &self.carrier);
+		// sync api
+		client_world.reload(&self.api, &self.carrier);
 
-        self.world = Some(client_world);
-        Ok(())
-    }
+		self.world = Some(client_world);
+		Ok(())
+	}
 
-    fn reload(&mut self) -> Result<()> {
-        debug!("Reloading Client");
-        rustaria::api::reload(&mut self.api, &mut self.carrier)?;
+	fn reload(&mut self) -> Result<()> {
+		debug!("Reloading Client");
+		rustaria::api::reload(&mut self.api, &mut self.carrier)?;
 
-        let carrier = self.carrier.lock();
-        let mut sprites = HashSet::new();
-        prototypes!({
-            for prototype in carrier.get_registry::<P>().iter() {
-                prototype.get_sprites(&mut sprites);
-            }
-        });
-        self.backend.instance_mut().supply_atlas(&self.api, sprites);
+		let carrier = self.carrier.lock();
+		let mut sprites = HashSet::new();
+		prototypes!({
+			for prototype in carrier.get_registry::<P>().iter() {
+				prototype.get_sprites(&mut sprites);
+			}
+		});
+		self.backend.instance_mut().supply_atlas(&self.api, sprites);
 
-        if let Some(world) = &mut self.world {
-            world.reload(&self.api, &self.carrier);
-        }
+		if let Some(world) = &mut self.world {
+			world.reload(&self.api, &self.carrier);
+		}
 
-        Ok(())
-    }
+		Ok(())
+	}
 
-    fn tick(&mut self) -> Result<()> {
-        if let Some(world) = &mut self.world {
-            world.tick(&self.view)?;
-        }
+	fn tick(&mut self) -> Result<()> {
+		if let Some(world) = &mut self.world {
+			world.tick(&self.view)?;
+		}
 
-        Ok(())
-    }
+		Ok(())
+	}
 
-    fn draw(&mut self, delta: f32) {
-        self.control.tick(&mut self.view, delta);
+	fn draw(&mut self, delta: f32) {
+		self.control.tick(&mut self.view, delta);
 
-        if let Some(world) = &mut self.world {
-            world.draw(&self.view);
-        }
+		if let Some(world) = &mut self.world {
+			world.draw(&self.view);
+		}
 
-        self.backend.instance_mut().backend.draw(&self.view);
-    }
+		self.backend.instance_mut().backend.draw(&self.view);
+	}
 }
 
 pub type NetworkHandler =
-    rustaria_network::networking::ClientNetworking<ServerPacket, ClientPacket>;
+	rustaria_network::networking::ClientNetworking<ServerPacket, ClientPacket>;
 
 pub struct ClientWorld {
-    networking: NetworkHandler,
-    chunk: ChunkHandler,
-    entity: EntityHandler,
-    integrated: Option<Box<Server>>,
+	networking: NetworkHandler,
+	chunk: ChunkHandler,
+	entity: EntityHandler,
+	integrated: Option<Box<Server>>,
 }
 
 impl ClientWorld {
-    pub fn tick(&mut self, view: &Viewport) -> Result<()> {
-        self.chunk.tick(view, &mut self.networking)?;
-        if let Some(integrated) = &mut self.integrated {
-            integrated.tick()?;
-        }
+	pub fn tick(&mut self, view: &Viewport) -> Result<()> {
+		self.chunk.tick(view, &mut self.networking)?;
+		if let Some(integrated) = &mut self.integrated {
+			integrated.tick()?;
+		}
 
-        self.networking.poll::<Report, _>(|packet| match packet {
-            ServerPacket::Chunk(packet) => self.chunk.packet(packet),
-            ServerPacket::Entity(packet) => self.entity.packet(packet),
-        })?;
+		self.networking.poll::<Report, _>(|packet| match packet {
+			ServerPacket::Chunk(packet) => self.chunk.packet(packet),
+			ServerPacket::Entity(packet) => self.entity.packet(packet),
+		})?;
 
-        Ok(())
-    }
+		Ok(())
+	}
 
-    pub fn draw(&mut self, view: &Viewport) {
-        self.chunk.draw(view);
-    }
+	pub fn draw(&mut self, view: &Viewport) {
+		self.chunk.draw(view);
+	}
 }
 
 impl Reloadable for ClientWorld {
-    fn reload(&mut self, api: &Api, carrier: &Carrier) {
-        self.chunk.reload(api, carrier);
-        self.entity.reload(api, carrier);
-        if let Some(server) = &mut self.integrated {
-            server.reload(api, carrier);
-        }
-    }
+	fn reload(&mut self, api: &Api, carrier: &Carrier) {
+		self.chunk.reload(api, carrier);
+		self.entity.reload(api, carrier);
+		if let Some(server) = &mut self.integrated {
+			server.reload(api, carrier);
+		}
+	}
 }
