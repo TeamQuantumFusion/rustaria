@@ -13,7 +13,7 @@ use self::{chunk::BakedChunk, tile::TileDrawer};
 pub mod tile;
 pub mod chunk;
 
-pub struct ChunkDrawer {
+pub struct WorldChunkDrawer {
     backend: ClientBackend,
     carrier: Option<Carrier>,
     tile_drawers: Vec<Option<TileDrawer>>,
@@ -22,9 +22,9 @@ pub struct ChunkDrawer {
 }
 
 
-impl ChunkDrawer {
-    pub fn new(backend: &ClientBackend) -> ChunkDrawer {
-        ChunkDrawer {
+impl WorldChunkDrawer {
+    pub fn new(backend: &ClientBackend) -> WorldChunkDrawer {
+        WorldChunkDrawer {
             tile_drawers: Vec::new(),
             layer: backend.instance_mut().backend.new_layer_pos_tex(),
             chunks: HashMap::new(),
@@ -71,7 +71,7 @@ impl ChunkDrawer {
 	}
 }
 
-impl Reloadable for ChunkDrawer  {
+impl Reloadable for WorldChunkDrawer  {
 	fn reload(&mut self, _: &Api, carrier: &Carrier) {
 		self.chunks.clear();
 		self.carrier = Some(carrier.clone());

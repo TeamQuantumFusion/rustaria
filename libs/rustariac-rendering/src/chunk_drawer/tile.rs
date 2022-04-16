@@ -7,7 +7,6 @@ use rustariac_backend::{
     ClientBackend,
 };
 
-
 pub struct TileDrawer {
     image: AtlasLocation,
 }
@@ -54,11 +53,11 @@ impl TileDrawer {
             },
             AtlasLocation {
                 x: (self.image.x + (kind_x * tile_width)) + (variation as f32 * variation_width),
-                y: (self.image.y + (kind_y * tile_height)) + tile_height,
+                y: (self.image.y + (kind_y * tile_height)),
                 width: tile_width,
-                height: -tile_height,
+                height: tile_height,
             },
-        ));
+        ))
     }
 }
 
@@ -140,22 +139,22 @@ impl TileConnectionKind {
 
     pub fn get_tex_pos(self) -> (f32, f32) {
         match self {
-            TileConnectionKind::Solid => (0.0, 3.0),
-            TileConnectionKind::Vertical => (0.0, 2.0),
-            TileConnectionKind::Horizontal => (1.0, 3.0),
-            TileConnectionKind::Standalone => (1.0, 2.0),
-            TileConnectionKind::UpLeft => (0.0, 0.0),
-            TileConnectionKind::UpRight => (1.0, 0.0),
-            TileConnectionKind::DownLeft => (0.0, 1.0),
-            TileConnectionKind::DownRight => (1.0, 1.0),
-            TileConnectionKind::UpFlat => (3.0, 0.0),
-            TileConnectionKind::DownFlat => (3.0, 1.0),
-            TileConnectionKind::LeftFlat => (3.0, 2.0),
-            TileConnectionKind::RightFlat => (3.0, 3.0),
-            TileConnectionKind::UpEnd => (2.0, 0.0),
-            TileConnectionKind::DownEnd => (2.0, 1.0),
-            TileConnectionKind::LeftEnd => (2.0, 2.0),
-            TileConnectionKind::RightEnd => (2.0, 3.0),
+            TileConnectionKind::Solid => (0.0, 0.0),
+            TileConnectionKind::Vertical => (0.0, 1.0),
+            TileConnectionKind::Horizontal => (1.0, 0.0),
+            TileConnectionKind::Standalone => (1.0, 1.0),
+            TileConnectionKind::UpLeft => (0.0, 3.0),
+            TileConnectionKind::UpRight => (1.0, 3.0),
+            TileConnectionKind::DownLeft => (0.0, 2.0),
+            TileConnectionKind::DownRight => (1.0, 2.0),
+            TileConnectionKind::UpFlat => (3.0, 3.0),
+            TileConnectionKind::DownFlat => (3.0, 2.0),
+            TileConnectionKind::LeftFlat => (3.0, 1.0),
+            TileConnectionKind::RightFlat => (3.0, 0.0),
+            TileConnectionKind::UpEnd => (2.0, 3.0),
+            TileConnectionKind::DownEnd => (2.0, 2.0),
+            TileConnectionKind::LeftEnd => (2.0, 1.0),
+            TileConnectionKind::RightEnd => (2.0, 0.0),
         }
     }
 }

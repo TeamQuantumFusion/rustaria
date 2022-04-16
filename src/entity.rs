@@ -44,7 +44,7 @@ pub fn update_positions(pos: &mut PositionComp, vel: &VelocityComp) {
 
 pub struct EntityContainer {
     carrier: Option<Carrier>,
-    universe: Universe,
+    pub universe: Universe,
     schedule: Schedule,
     resources: Resources,
     thread_pool: Arc<ThreadPool>,

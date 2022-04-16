@@ -27,9 +27,9 @@ rustaria-network = { path = "./libs/rustaria-network" }
 members = [
     "libs/rustaria-network",
     "libs/rustaria-util",
-    "libs/rustaria-rendering",
     "libs/rustaria-controller",
     "libs/rustaria-api",
+    "libs/rustariac-rendering",
     "libs/rustariac-backend",
     "libs/rustariac-glium-backend",
     "runtime/client",

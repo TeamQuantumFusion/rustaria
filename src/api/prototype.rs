@@ -16,6 +16,6 @@ pub fn test() {}
 #[macro_export]
 macro_rules! prototypes {
     ($B:block) => {
-        pt!($crate::api::prototype::tile::TilePrototype => $B);
+        pt!($crate::api::prototype::tile::TilePrototype, $crate::api::prototype::entity::EntityPrototype => $B);
     };
 }

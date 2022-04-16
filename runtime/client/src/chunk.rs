@@ -8,18 +8,18 @@ use rustaria::chunk::Chunk;
 use rustaria::network::packet::chunk::ClientChunkPacket;
 use rustaria::network::packet::ClientPacket;
 use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_rendering::chunk_drawer::ChunkDrawer;
 use rustaria_util::{info, ty::ChunkPos, warn};
 use rustaria_util::ty::CHUNK_SIZE;
 use rustaria_util::ty::pos::Pos;
 use rustariac_backend::{ClientBackend, ty::Viewport};
+use rustariac_rendering::chunk_drawer::WorldChunkDrawer;
 use crate::NetworkHandler;
 
 pub(crate) struct ChunkHandler {
     backend: ClientBackend,
 
     chunks: HashMap<ChunkPos, ChunkHolder>,
-    chunk_drawer: ChunkDrawer,
+    drawer: WorldChunkDrawer,
 
     old_chunk: ChunkPos,
     old_zoom: f32,
@@ -30,7 +30,7 @@ impl ChunkHandler {
         ChunkHandler {
             backend: backend.clone(),
             chunks: HashMap::new(),
-            chunk_drawer: ChunkDrawer::new(backend),
+            drawer: WorldChunkDrawer::new(backend),
             old_chunk: ChunkPos::new(60, 420).unwrap(),
             old_zoom: 0.0
         }
@@ -41,7 +41,7 @@ impl ChunkHandler {
             ServerChunkPacket::Provide(chunks) => match chunks.export() {
                 Ok(chunks) => {
                     for (pos, chunk) in chunks.chunks {
-                        self.chunk_drawer.submit(pos, &chunk)?;
+                        self.drawer.submit(pos, &chunk)?;
                         self.chunks.insert(pos, ChunkHolder::Active(chunk));
                     }
                 }
@@ -75,7 +75,7 @@ impl ChunkHandler {
                     }
                 }
 
-                self.chunk_drawer.mark_dirty();
+                self.drawer.mark_dirty();
                 if !requested.is_empty() {
                     networking.send(ClientPacket::Chunk(ClientChunkPacket::Request(requested)))?;
                 }
@@ -88,14 +88,14 @@ impl ChunkHandler {
     }
 
     pub fn draw(&mut self, view: &Viewport) {
-        self.chunk_drawer.draw(view);
+        self.drawer.draw(view);
     }
 }
 
 impl Reloadable for ChunkHandler {
     fn reload(&mut self, api: &Api, carrier: &Carrier) {
         self.chunks.clear();
-        self.chunk_drawer.reload(api, carrier);
+        self.drawer.reload(api, carrier);
     }
 }
 

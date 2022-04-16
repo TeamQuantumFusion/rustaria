@@ -14,7 +14,7 @@ use crate::network::packet::entity::{ClientEntityPacket, ServerEntityPacket};
 
 pub(crate) struct EntityManager {
     container: EntityContainer,
-    new_entities: Vec<(RawId, Pos)>,
+    new_entities: Vec<(Token, RawId, Pos)>,
 }
 
 impl EntityManager {
@@ -25,26 +25,31 @@ impl EntityManager {
         }
     }
 
-    #[allow(unused)]
-    pub fn spawn(&mut self, id: RawId, position: Pos) -> eyre::Result<Entity> {
+    pub fn spawn(&mut self, from: Token, id: RawId, position: Pos) -> eyre::Result<Entity> {
         let entity = self.container.spawn(id, position)?;
-        self.new_entities.push((id, position));
+        self.new_entities.push((from, id, position));
         Ok(entity)
     }
 
     pub fn tick(&mut self, network: &mut NetworkManager) -> eyre::Result<()> {
         self.container.tick();
-        for (id, pos) in self.new_entities.drain(..) {
+        for (from, id, pos) in self.new_entities.drain(..) {
             network
                 .internal
-                .distribute(Token::nil(), ServerPacket::Entity(ServerEntityPacket::Spawn(id, pos)))?;
+                .distribute(from, ServerPacket::Entity(ServerEntityPacket::New(id, pos)))?;
         }
 
         Ok(())
     }
 
-    pub fn packet(&mut self, _: Token, packet: ClientEntityPacket) {
-        match packet {}
+    pub fn packet(&mut self, from: Token, packet: ClientEntityPacket) -> eyre::Result<()> {
+        match packet {
+            ClientEntityPacket::Spawn(id, pos) => {
+                self.spawn(from, id, pos)?;
+            }
+        }
+
+        Ok(())
     }
 }
 

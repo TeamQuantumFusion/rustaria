@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use rustaria::{
-    api::{prototype::tile::TilePrototype, ty::ConnectionType},
-};
+use rustaria::api::{prototype::tile::TilePrototype, ty::ConnectionType};
 use rustaria::chunk::{Chunk, ChunkLayer};
 use rustaria_api::Carrier;
 use rustaria_util::ty::{CHUNK_SIZE, ChunkPos, ChunkSubPos, Direction, Offset};
