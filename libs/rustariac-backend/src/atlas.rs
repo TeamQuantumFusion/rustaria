@@ -2,7 +2,10 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use eyre::Result;
 use image::{DynamicImage, GenericImage, GenericImageView, ImageFormat};
-use rectangle_pack::{contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert, RectanglePackError, TargetBin, PackedLocation, RectanglePackOk};
+use rectangle_pack::{
+	contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, PackedLocation,
+	RectToInsert, RectanglePackError, RectanglePackOk, TargetBin,
+};
 use rustaria_api::ty::Tag;
 use rustaria_api::Api;
 use rustaria_util::warn;
@@ -13,8 +16,8 @@ use crate::ty::{AtlasLocation, Rectangle};
 pub struct Atlas {
 	lookup: HashMap<Tag, AtlasLocation>,
 	missing_tag: Tag,
-    width: u32,
-    height: u32,
+	width: u32,
+	height: u32,
 }
 
 impl Atlas {
@@ -25,17 +28,19 @@ impl Atlas {
 		}
 	}
 
-    pub fn get_width(&self) -> u32 {
-        self.width
-    }
+	pub fn get_width(&self) -> u32 {
+		self.width
+	}
 
-
-    pub fn get_height(&self) -> u32 {
-        self.height
-    }
+	pub fn get_height(&self) -> u32 {
+		self.height
+	}
 }
 
-pub fn build_atlas(api: &Api, sprites: HashSet<Tag>) -> (Atlas, Vec<(DynamicImage, AtlasLocation)>) {
+pub fn build_atlas(
+	api: &Api,
+	sprites: HashSet<Tag>,
+) -> (Atlas, Vec<(DynamicImage, AtlasLocation)>) {
 	let missing_tag = Tag::new("core:missing".to_string()).unwrap();
 	let mut images: HashMap<Tag, DynamicImage> = HashMap::new();
 
@@ -54,13 +59,13 @@ pub fn build_atlas(api: &Api, sprites: HashSet<Tag>) -> (Atlas, Vec<(DynamicImag
 	}
 
 	// Insert builtin sprites.
-    images.insert(
+	images.insert(
 		missing_tag.clone(),
 		image::load_from_memory(include_bytes!("./missing.png")).unwrap(),
 	);
 
 	// Setup packing
-    let mut packing_setup: GroupedRectsToPlace<Tag, Option<u8>> = GroupedRectsToPlace::new();
+	let mut packing_setup: GroupedRectsToPlace<Tag, Option<u8>> = GroupedRectsToPlace::new();
 
 	for (id, (tag, image)) in images.iter().enumerate() {
 		packing_setup.push_rect(
@@ -89,7 +94,7 @@ pub fn build_atlas(api: &Api, sprites: HashSet<Tag>) -> (Atlas, Vec<(DynamicImag
 	}
 
 	// Create image and lookup
-	let  mut lookup = HashMap::new();
+	let mut lookup = HashMap::new();
 	let mut images_out = Vec::new();
 	for (tag, (_, location)) in rectangle_placements.unwrap().packed_locations() {
 		let image = images.remove(tag).unwrap();
@@ -103,22 +108,25 @@ pub fn build_atlas(api: &Api, sprites: HashSet<Tag>) -> (Atlas, Vec<(DynamicImag
 			},
 		);
 
-		images_out.push((DynamicImage::from(image.to_rgba8()),  AtlasLocation {
-            x: location.x() as f32,
-		 y: location.y() as f32,
-			width: location.width() as f32,
-			height: location.height() as f32,
-		}));
+		images_out.push((
+			DynamicImage::from(image.to_rgba8()),
+			AtlasLocation {
+				x: location.x() as f32,
+				y: location.y() as f32,
+				width: location.width() as f32,
+				height: location.height() as f32,
+			},
+		));
 	}
 
 	(
 		Atlas {
 			lookup,
 			missing_tag,
-		width: max_width,
-            height: max_height
+			width: max_width,
+			height: max_height,
 		},
-        images_out,
+		images_out,
 	)
 }
 

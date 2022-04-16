@@ -6,14 +6,13 @@ pub struct Pos {
 	pub y: f32,
 }
 
-
 impl Pos {
-    pub fn lerp(&self, other: &Pos, delta: f32) -> Pos {
-        Pos {
-            x: (self.x * (delta)) + (other.x * (1.0 - delta)),
-            y: (self.y * (delta)) + (other.y * (1.0 - delta)),
-        }
-    }
+	pub fn lerp(&self, other: &Pos, delta: f32) -> Pos {
+		Pos {
+			x: (self.x * (delta)) + (other.x * (1.0 - delta)),
+			y: (self.y * (delta)) + (other.y * (1.0 - delta)),
+		}
+	}
 }
 
 impl Add for Pos {

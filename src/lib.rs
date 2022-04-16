@@ -47,8 +47,6 @@ pub struct Server {
 
 impl Server {
 	pub fn new(thread_pool: Arc<ThreadPool>, ip_address: Option<SocketAddr>) -> Result<Server> {
-
-
 		Ok(Server {
 			network: NetworkManager::new(ServerNetworking::new(ip_address)?),
 			chunk: ChunkManager::new(thread_pool.clone()),
@@ -79,7 +77,7 @@ impl NetworkInterface<ClientPacket, ServerPacket, PlayerJoinData> for Server {
 		match packet {
 			ClientPacket::Chunk(packet) => self.chunk.packet(from, packet),
 			// TODO error handling here
-            ClientPacket::Entity(packet) => self.entity.packet(from, packet).unwrap(),
+			ClientPacket::Entity(packet) => self.entity.packet(from, packet).unwrap(),
 		}
 	}
 

@@ -25,33 +25,32 @@ impl EntityManager {
 		}
 	}
 
-
-	pub fn spawn(&mut self, from: Token,id: RawId, position: Pos) -> eyre::Result<Entity> {
+	pub fn spawn(&mut self, from: Token, id: RawId, position: Pos) -> eyre::Result<Entity> {
 		let entity = self.container.spawn(id, position)?;
-		self.new_entities.push((from,id, position));
+		self.new_entities.push((from, id, position));
 		Ok(entity)
 	}
 
-    pub fn tick(&mut self, network: &mut NetworkManager) -> eyre::Result<()> {
-        self.container.tick();
-        for (from, id, pos) in self.new_entities.drain(..) {
-            network
-                .internal
-                .distribute(from, ServerPacket::Entity(ServerEntityPacket::New(id, pos)))?;
-        }
+	pub fn tick(&mut self, network: &mut NetworkManager) -> eyre::Result<()> {
+		self.container.tick();
+		for (from, id, pos) in self.new_entities.drain(..) {
+			network
+				.internal
+				.distribute(from, ServerPacket::Entity(ServerEntityPacket::New(id, pos)))?;
+		}
 
 		Ok(())
 	}
 
-	pub fn packet(&mut self, from: Token, packet: ClientEntityPacket) -> eyre::Result<()>{
+	pub fn packet(&mut self, from: Token, packet: ClientEntityPacket) -> eyre::Result<()> {
 		match packet {
-	ClientEntityPacket::Spawn(id, pos) => {
-                self.spawn(from, id, pos)?;
-            }
-        }
+			ClientEntityPacket::Spawn(id, pos) => {
+				self.spawn(from, id, pos)?;
+			}
+		}
 
-        Ok(())
-    }
+		Ok(())
+	}
 }
 
 impl Reloadable for EntityManager {

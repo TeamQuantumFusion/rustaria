@@ -38,4 +38,4 @@ local function error(msg)
     -- builtin
 end
 
-return {trace = trace, debug = debug, info = info, warn = warn, error = error}
+return { trace = trace, debug = debug, info = info, warn = warn, error = error }

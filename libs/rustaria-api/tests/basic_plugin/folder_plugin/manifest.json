@@ -1,6 +1,6 @@
 {
-    "id": "test",
-    "name": "Your Mom",
-    "version": "0.69.0",
-    "commonEntry": "main.lua"
+  "id": "test",
+  "name": "Your Mom",
+  "version": "0.69.0",
+  "commonEntry": "main.lua"
 }

@@ -4,6 +4,6 @@ use clap::Parser;
 
 #[derive(Debug, Parser)]
 pub struct Args {
-    #[clap(long)]
-    pub extra_plugin_paths: Vec<PathBuf>,
+	#[clap(long)]
+	pub extra_plugin_paths: Vec<PathBuf>,
 }

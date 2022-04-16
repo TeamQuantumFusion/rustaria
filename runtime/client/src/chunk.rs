@@ -2,7 +2,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
 use eyre::Result;
-use rustaria_util::ty::{CHUNK_SIZE, CHUNK_SIZE_F, ChunkPos, Offset};
+use rustaria_util::ty::{ChunkPos, Offset, CHUNK_SIZE, CHUNK_SIZE_F};
 
 use crate::NetworkHandler;
 use rustaria::chunk::Chunk;
@@ -12,10 +12,9 @@ use rustaria::network::packet::ClientPacket;
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_util::ty::pos::Pos;
 use rustaria_util::{info, warn};
-use rustariac_backend::ClientBackend;
 use rustariac_backend::ty::Viewport;
+use rustariac_backend::ClientBackend;
 use rustariac_rendering::chunk_drawer::WorldChunkDrawer;
-
 
 pub(crate) struct ChunkHandler {
 	backend: ClientBackend,
@@ -64,8 +63,7 @@ impl ChunkHandler {
 			if chunk != self.old_chunk || view.zoom != self.old_zoom {
 				info!("{:?}", view);
 				let width = (view.zoom / CHUNK_SIZE_F) as i32;
-				let height =
-					((view.zoom * self.backend.screen_y_ratio()) / CHUNK_SIZE_F) as i32;
+				let height = ((view.zoom * self.backend.screen_y_ratio()) / CHUNK_SIZE_F) as i32;
 				let mut requested = Vec::new();
 				for x in -width..width {
 					for y in -height..height {

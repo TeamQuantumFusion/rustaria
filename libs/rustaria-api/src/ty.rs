@@ -79,24 +79,23 @@ impl Display for Tag {
 
 impl LuaConvertableCar for Tag {
 	fn from_luaagh(value: Value, lua: &Lua) -> mlua::Result<Self> {
-
 		match value {
 			mlua::Value::String(string) => {
 				Tag::new_lua(string.to_str()?.to_string(), lua).map_err(|err| err.to_lua_err())
 			}
 			_ => Err(mlua::Error::SerializeError(format!("{value:?}"))),
-        }
-    }
+		}
+	}
 
-    fn into_luaagh(self, lua: &Lua) -> mlua::Result<Value> {
+	fn into_luaagh(self, lua: &Lua) -> mlua::Result<Value> {
 		Ok(Value::String(lua.create_string(&self.inner)?))
 	}
 }
 
 impl<'lua> FromLua<'lua> for Tag {
-    fn from_lua(lua_value: mlua::Value<'lua>, lua: &'lua Lua) -> mlua::Result<Self> {
-        Tag::from_luaagh(lua_value, lua)
-    }
+	fn from_lua(lua_value: mlua::Value<'lua>, lua: &'lua Lua) -> mlua::Result<Self> {
+		Tag::from_luaagh(lua_value, lua)
+	}
 }
 
 impl<'lua> ToLua<'lua> for Tag {
@@ -155,45 +154,45 @@ lazy_alpha!(u8, i8, u16, i16, i32, u32, f32, f64, i64, u64, i128, u128, String);
 pub struct LuaCar<T>(pub T);
 
 impl<A: LuaConvertableCar> LuaConvertableCar for Option<A> {
-    fn from_luaagh(value: Value, lua: &Lua) -> mlua::Result<Self> {
-        match value {
-            Value::Nil => Ok(None),
-            _ => Ok(Some(A::from_luaagh(value, lua)?)),
-        }
-    }
+	fn from_luaagh(value: Value, lua: &Lua) -> mlua::Result<Self> {
+		match value {
+			Value::Nil => Ok(None),
+			_ => Ok(Some(A::from_luaagh(value, lua)?)),
+		}
+	}
 
-    fn into_luaagh(self, lua: &Lua) -> mlua::Result<Value> {
-        match self {
-            None => Ok(Value::Nil),
-            Some(value) => value.into_luaagh(lua),
-        }
-    }
+	fn into_luaagh(self, lua: &Lua) -> mlua::Result<Value> {
+		match self {
+			None => Ok(Value::Nil),
+			Some(value) => value.into_luaagh(lua),
+		}
+	}
 }
 
 impl<K: LuaConvertableCar + Eq + Hash, V: LuaConvertableCar> LuaConvertableCar for HashMap<K, V> {
-    fn from_luaagh(value: Value, lua: &Lua) -> mlua::Result<Self> {
-        match value {
-            Value::Table(table) => {
-                let mut out = HashMap::new();
-                for (key, value) in table.pairs::<Value, Value>().flatten() {
-                    out.insert(K::from_luaagh(key, lua)?, V::from_luaagh(value, lua)?);
-                }
+	fn from_luaagh(value: Value, lua: &Lua) -> mlua::Result<Self> {
+		match value {
+			Value::Table(table) => {
+				let mut out = HashMap::new();
+				for (key, value) in table.pairs::<Value, Value>().flatten() {
+					out.insert(K::from_luaagh(key, lua)?, V::from_luaagh(value, lua)?);
+				}
 
-                Ok(out)
-            }
-            _ => Err(Error::DeserializeError("Invalid type".to_string())),
-        }
-    }
+				Ok(out)
+			}
+			_ => Err(Error::DeserializeError("Invalid type".to_string())),
+		}
+	}
 
-    fn into_luaagh(self, lua: &Lua) -> mlua::Result<Value> {
-        let table = lua.create_table()?;
+	fn into_luaagh(self, lua: &Lua) -> mlua::Result<Value> {
+		let table = lua.create_table()?;
 
-        for (key, value) in self {
-            table.set(key.into_luaagh(lua)?, value.into_luaagh(lua)?)?;
-        }
+		for (key, value) in self {
+			table.set(key.into_luaagh(lua)?, value.into_luaagh(lua)?)?;
+		}
 
-        Ok(Value::Table(table))
-    }
+		Ok(Value::Table(table))
+	}
 }
 
 impl<'lua, A: LuaConvertableCar> FromLua<'lua> for LuaCar<A> {

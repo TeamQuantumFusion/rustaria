@@ -25,7 +25,7 @@ pub(crate) struct ControllerHandler {
 	zoom_in: TriggerSubscriber,
 	zoom_out: TriggerSubscriber,
 	controller: Controller,
-    old_delta: f32
+	old_delta: f32,
 }
 
 impl ControllerHandler {
@@ -62,7 +62,8 @@ impl ControllerHandler {
 			zoom_in,
 			zoom_out,
 			controller,
-		old_delta: 0.0}
+			old_delta: 0.0,
+		}
 	}
 
 	pub fn consume_event(&mut self, event: WindowEvent) {
@@ -71,10 +72,11 @@ impl ControllerHandler {
 
 	pub fn tick(&mut self, view: &mut Viewport, delta: f32) {
 		if self.old_delta > delta {
-            self.old_delta = delta;
-        }
+			self.old_delta = delta;
+		}
 
-        let movement_delta = delta - self.old_delta;let zoom = view.zoom / 30.0;
+		let movement_delta = delta - self.old_delta;
+		let zoom = view.zoom / 30.0;
 		if self.up.held() {
 			view.position[1] += 1.6 * movement_delta * zoom;
 		}
@@ -93,6 +95,6 @@ impl ControllerHandler {
 		if self.zoom_out.triggered() {
 			view.zoom -= 5.0;
 		}
-	self.old_delta = delta;
-    }
+		self.old_delta = delta;
+	}
 }
