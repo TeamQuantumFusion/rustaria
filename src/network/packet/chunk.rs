@@ -7,11 +7,10 @@ use super::ChunkBundlePacket;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ServerChunkPacket {
-    Provide(CompressedPacket<ChunkBundlePacket>)
+	Provide(CompressedPacket<ChunkBundlePacket>),
 }
-
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ClientChunkPacket {
-    Request(Vec<ChunkPos>)
+	Request(Vec<ChunkPos>),
 }
