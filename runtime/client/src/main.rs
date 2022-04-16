@@ -29,14 +29,14 @@ const DEBUG_MOD: Modifiers =
     Modifiers::from_bits_truncate(ffi::MOD_ALT + ffi::MOD_CONTROL + ffi::MOD_SHIFT);
 const UPDATE_TIME: Duration = Duration::from_micros(1000000 / UPS as u64);
 
-fn main() {
-    rustaria_util::initialize().unwrap();
-    let backend = ClientBackend::new(GliumBackend::new).unwrap();
+fn main() -> eyre::Result<()> {
+    rustaria_util::initialize()?;
+    let backend = ClientBackend::new(GliumBackend::new)?;
 
     let carrier = Carrier::new();
-    let mut dir = std::env::current_dir().unwrap();
+    let mut dir = std::env::current_dir()?;
     dir.push("plugins");
-    let api = Api::new(dir, vec!["../../../plugin".into()]).unwrap();
+    let api = Api::new(dir, vec!["../../../plugin".into()])?;
 
     let mut client = Client {
         api,
@@ -50,9 +50,11 @@ fn main() {
         backend,
     };
 
-    client.reload().unwrap();
-    client.join_integrated().unwrap();
+    client.reload()?;
+    client.join_integrated()?;
     client.run();
+
+    Ok(())
 }
 
 pub struct Client {

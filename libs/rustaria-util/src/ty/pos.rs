@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign, SubAssign, Sub};
+use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Pos {
@@ -36,7 +36,6 @@ impl SubAssign for Pos {
         *self = *self - rhs;
     }
 }
-
 
 impl From<[f32; 2]> for Pos {
     fn from([x, y]: [f32; 2]) -> Self {

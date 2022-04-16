@@ -222,7 +222,7 @@ impl Offset<(i8, i8)> for TilePos {
             None => Self {
                 chunk: self.chunk.wrapping_offset((dx as i32, dy as i32)),
                 sub: self.sub.euclid_offset(displacement),
-            }
+            },
         }
     }
 
@@ -295,4 +295,3 @@ fn checked_add_signed_u8(a: u8, b: i8) -> Option<u8> {
         Some(res)
     }
 }
-

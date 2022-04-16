@@ -27,8 +27,11 @@ pub struct Api {
 impl Api {
     pub fn new(plugins_dir: PathBuf, extra_locations: Vec<PathBuf>) -> io::Result<Api> {
         let mut plugins = HashMap::new();
-        for entry in std::fs::read_dir(plugins_dir)?.flatten() {
-            Self::load_plugin(entry.path(), &mut plugins);
+
+        if let Ok(dir) = std::fs::read_dir(plugins_dir) {
+            for entry in dir.flatten() {
+                Self::load_plugin(entry.path(), &mut plugins);
+            }
         }
 
         for path in extra_locations {
