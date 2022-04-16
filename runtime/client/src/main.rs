@@ -14,7 +14,6 @@ use rustaria::network::packet::{ClientPacket, ServerPacket};
 use rustaria::SmartError;
 use rustaria::{Server, UPS};
 use rustaria_api::ty::{Prototype, Tag};
-use rustaria::{Server, UPS};
 use rustaria_util::ty::pos::Pos;
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_util::{debug, info};
@@ -67,7 +66,7 @@ fn main() -> eyre::Result<()> {
         let lock = client.carrier.lock();
         let prototype = lock.get_registry::<EntityPrototype>();
         let id = prototype
-            .get_id(&Tag::new("rustaria:bunne".to_string()).unwrap())
+            .id_from_tag(&Tag::new("rustaria:bunne".to_string()).unwrap())
             .unwrap();
         let world = client.world.as_mut().unwrap();
         let pos = Pos { x: 5.0, y: 5.0 };

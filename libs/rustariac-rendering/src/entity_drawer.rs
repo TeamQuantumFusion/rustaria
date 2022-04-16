@@ -36,7 +36,7 @@ impl WorldEntityDrawer {
     pub fn draw(&mut self, view: &Viewport, container: &EntityContainer, delta: f32) -> Result<()> {
         self.carrier.as_ref().wrap_err(CarrierUnavailable)?;
 
-        let mut builder = VertexBuilder::new();
+        let mut builder = VertexBuilder::default();
         let mut query = <(Entity, &IdComp, &PositionComp)>::query();
         for val in query.iter(&container.universe) {
             let (entity, id, pos): (&Entity, &IdComp, &PositionComp) = val;

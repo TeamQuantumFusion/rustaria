@@ -2,10 +2,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use eyre::Result;
 use image::{DynamicImage, GenericImage, GenericImageView, ImageFormat};
-use rectangle_pack::{
-	contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert,
-	RectanglePackError, TargetBin,
-PackedLocation};
+use rectangle_pack::{contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert, RectanglePackError, TargetBin, PackedLocation, RectanglePackOk};
 use rustaria_api::ty::Tag;
 use rustaria_api::Api;
 use rustaria_util::warn;
@@ -42,13 +39,16 @@ pub fn build_atlas(api: &Api, sprites: HashSet<Tag>) -> (Atlas, Vec<(DynamicImag
 	let missing_tag = Tag::new("core:missing".to_string()).unwrap();
 	let mut images: HashMap<Tag, DynamicImage> = HashMap::new();
 
-	// Load all of the spritesfor tag in sprites {
-		match load_sprite(api, &tag) {
-			Ok(image) => {
-				images.insert(tag, image);
-			}
-			Err(error) => {
-				warn!("Could not load sprite {} {}", tag, error);
+	// Load all of the spritesfor tag in sprites
+	{
+		for tag in sprites {
+			match load_sprite(api, &tag) {
+				Ok(image) => {
+					images.insert(tag, image);
+				}
+				Err(error) => {
+					warn!("Could not load sprite {} {}", tag, error);
+				}
 			}
 		}
 	}
@@ -71,6 +71,7 @@ pub fn build_atlas(api: &Api, sprites: HashSet<Tag>) -> (Atlas, Vec<(DynamicImag
 	}
 
 	// Try to insert, if it does not have enough space double the atlas size.let mut rectangle_placements = Err(RectanglePackError::NotEnoughBinSpace);
+	let mut rectangle_placements = Err(RectanglePackError::NotEnoughBinSpace);
 	let mut max_width = 128;
 	let mut max_height = 128;
 	while let Err(RectanglePackError::NotEnoughBinSpace) = rectangle_placements {

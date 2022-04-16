@@ -81,12 +81,6 @@ impl Prototype for VelocityCompPrototype {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, Default)]
-pub struct VelocityCompPrototype {
-    pub x: f32,
-    pub y: f32,
-}
-
 impl LuaConvertableCar for VelocityCompPrototype {
     fn from_luaagh(table: mlua::Value, _: &mlua::Lua) -> mlua::Result<Self> {
         if let mlua::Value::Table(table) = table {

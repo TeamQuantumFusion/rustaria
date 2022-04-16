@@ -77,7 +77,7 @@ impl Display for Tag {
 	}
 }
 
-implLuaConvertableCar for Tag {
+impl LuaConvertableCar for Tag {
 	fn from_luaagh(value: Value, lua: &Lua) -> mlua::Result<Self> {
 
 		match value {
