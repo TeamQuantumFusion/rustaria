@@ -120,7 +120,7 @@ impl BakedChunk {
     pub fn push(
         &self,
         builder: &mut VertexBuilder<PosTexture>,
-        tile_drawers: &Vec<Option<TileDrawer>>,
+        tile_drawers: &[Option<TileDrawer>],
         pos: &ChunkPos,
     ) {
         for y in 0..CHUNK_SIZE {

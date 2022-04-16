@@ -95,8 +95,8 @@ impl<'a> ApiReload<'a> {
             "Registered \"{}\" registry. (reload)",
             P::lua_registry_name()
         );
-        let mut builder = RegistryBuilder::<P>::new();
-        for (_, plugin) in &mut self.api.plugins {
+        let mut builder = RegistryBuilder::<P>::default();
+        for plugin in self.api.plugins.values_mut() {
             builder.register(&plugin.lua)?;
         }
 
@@ -138,7 +138,7 @@ impl<'a> ApiReload<'a> {
             P::lua_registry_name()
         );
         // Clear references
-        for (_, plugin) in &mut self.api.plugins {
+        for plugin in self.api.plugins.values_mut() {
             plugin
                 .lua
                 .globals()

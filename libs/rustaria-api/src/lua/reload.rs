@@ -15,12 +15,6 @@ pub struct RegistryBuilder<P: Prototype + LuaConvertableCar> {
 }
 
 impl<P: Prototype + LuaConvertableCar> RegistryBuilder<P> {
-    pub fn new() -> RegistryBuilder<P> {
-        RegistryBuilder {
-            entries: Arc::new(Mutex::new(HashMap::new())),
-        }
-    }
-
     pub fn register(&mut self, lua: &Lua) -> mlua::Result<()> {
         lua.globals().set(P::lua_registry_name(), self.clone())
     }
@@ -30,7 +24,7 @@ impl<P: Prototype + LuaConvertableCar> RegistryBuilder<P> {
         let data = std::mem::take(&mut *entries);
         let mut data: Vec<_> = data.into_iter().collect();
 
-        data.sort_by(|(i1, _), (i2, _)| i1.cmp(&i2));
+        data.sort_by(|(i1, _), (i2, _)| i1.cmp(i2));
 
         for (id, (tag, _)) in data.iter().enumerate() {
             hasher.update(&id.to_be_bytes());
@@ -52,6 +46,11 @@ impl<P: Prototype + LuaConvertableCar> RegistryBuilder<P> {
             id_to_tag,
             entries,
         })
+    }
+}
+impl<P: Prototype + LuaConvertableCar> Default for RegistryBuilder<P> {
+    fn default() -> Self {
+        Self { entries: Default::default() }
     }
 }
 

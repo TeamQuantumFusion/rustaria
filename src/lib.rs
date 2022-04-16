@@ -51,7 +51,7 @@ impl Server {
         Ok(Server {
             network: NetworkManager::new(ServerNetworking::new(ip_address)?),
             chunk: ChunkManager::new(thread_pool.clone()),
-            entity: EntityManager::new(thread_pool.clone()),
+            entity: EntityManager::new(thread_pool),
         })
     }
 

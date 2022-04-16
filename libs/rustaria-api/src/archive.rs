@@ -41,7 +41,7 @@ impl Archive {
             }
             Archive::Zip(zip) => {
                 let mut zip = zip.write().unwrap();
-                let mut file = zip.by_name(&path)?;
+                let mut file = zip.by_name(path)?;
                 let mut data = Vec::with_capacity(file.size() as usize);
                 file.read_to_end(&mut data)?;
                 Ok(data)

@@ -49,7 +49,7 @@ impl Tag {
         match Self::new(tag.clone()) {
             Ok(tag) => Ok(tag),
             Err(TagCreationError::ColonMissing) => {
-                let mut new_tag = ctx(lua).id.clone();
+                let mut new_tag = ctx(lua).id;
                 new_tag.push(':');
                 new_tag.push_str(&tag);
                 Self::new(new_tag)

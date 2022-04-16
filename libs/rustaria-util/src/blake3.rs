@@ -357,3 +357,9 @@ impl Hasher {
         out
     }
 }
+
+impl Default for Hasher {
+    fn default() -> Self {
+        Self::new()
+    }
+}

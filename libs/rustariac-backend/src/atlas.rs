@@ -21,7 +21,7 @@ pub struct Atlas {
 impl Atlas {
     pub fn get(&self, tag: &Tag) -> AtlasLocation {
         match self.lookup.get(tag) {
-            Some(value) => value.clone(),
+            Some(&value) => value,
             None => self.lookup.get(&self.missing_tag).cloned().unwrap(),
         }
     }

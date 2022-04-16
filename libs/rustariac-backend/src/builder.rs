@@ -1,15 +1,9 @@
-pub struct VertexBuilder<V: Copy + Clone> {
+pub struct VertexBuilder<V: Copy> {
     pub vertex_data: Vec<V>,
     pub index_data: Vec<u32>,
 }
 
-impl<V: Copy + Clone> VertexBuilder<V> {
-    pub fn new() -> VertexBuilder<V> {
-        VertexBuilder {
-            vertex_data: Vec::new(),
-            index_data: Vec::new(),
-        }
-    }
+impl<V: Copy> VertexBuilder<V> {
     pub fn point(&mut self, value: V) {
         self.index_data.push(self.vertex_data.len() as u32);
         self.vertex_data.push(value);
@@ -20,6 +14,14 @@ impl<V: Copy + Clone> VertexBuilder<V> {
         self.index_data
             .extend_from_slice(&[len, 1 + len, 3 + len, 1 + len, 2 + len, 3 + len]);
         self.vertex_data.extend_from_slice(&value.expand());
+    }
+}
+impl<V: Copy> Default for VertexBuilder<V> {
+    fn default() -> Self {
+        Self {
+            vertex_data: Default::default(),
+            index_data: Default::default(),
+        }
     }
 }
 

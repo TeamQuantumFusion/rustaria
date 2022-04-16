@@ -19,16 +19,20 @@ pub struct WorldGenManager {
     carrier: Option<Carrier>,
     thread_pool: Arc<ThreadPool>,
     submitted_chunks: HashSet<ChunkPos>,
-    channel: (Sender<(Chunk, ChunkPos)>, Receiver<(Chunk, ChunkPos)>),
+
+    tx: Sender<(Chunk, ChunkPos)>,
+    rx: Receiver<(Chunk, ChunkPos)>,
 }
 
 impl WorldGenManager {
     pub fn new(thread_pool: Arc<ThreadPool>) -> eyre::Result<WorldGenManager> {
+        let (tx, rx) = unbounded();
         Ok(WorldGenManager {
             carrier: None,
             thread_pool,
             submitted_chunks: Default::default(),
-            channel: unbounded(),
+            tx,
+            rx,
         })
     }
 
@@ -39,13 +43,14 @@ impl WorldGenManager {
                 .carrier
                 .clone()
                 .wrap_err(SmartError::CarrierUnavailable)?;
-            let sender = self.channel.0.clone();
+
+            let sender = self.tx.clone();
             self.thread_pool.spawn(move || {
                 let api = carrier;
                 match world_gen::generate_chunk(&api, pos) {
                     Ok(chunk) => sender.send((chunk, pos)).unwrap(),
                     Err(err) => {
-                        error!("Could not generate chunk {}", err);
+                        error!("Could not generate chunk {err}");
                     }
                 };
             });
@@ -55,7 +60,7 @@ impl WorldGenManager {
     }
 
     pub fn poll_chunks<C: FnMut(Chunk, ChunkPos)>(&mut self, mut func: C) {
-        while let Ok((chunk, pos)) = self.channel.1.try_recv() {
+        while let Ok((chunk, pos)) = self.rx.try_recv() {
             self.submitted_chunks.remove(&pos);
             func(chunk, pos);
         }

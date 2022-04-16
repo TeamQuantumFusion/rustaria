@@ -43,7 +43,7 @@ impl ChunkHandler {
                 Ok(chunks) => {
                     for (pos, chunk) in chunks.chunks {
                         self.chunk_drawer.submit(pos, &chunk)?;
-                        self.chunks.insert(pos, ChunkHolder::Active(chunk));
+                        self.chunks.insert(pos, Some(Box::new(chunk)));
                     }
                 }
                 Err(chunks) => {
@@ -70,7 +70,7 @@ impl ChunkHandler {
                     for y in -height..height {
                         if let Some(pos) = chunk.checked_offset((x, y)) {
                             if let Entry::Vacant(e) = self.chunks.entry(pos) {
-                                e.insert(ChunkHolder::Requested);
+                                e.insert(None);
                                 requested.push(pos);
                             }
                         }
@@ -101,7 +101,4 @@ impl Reloadable for ChunkHandler {
     }
 }
 
-pub enum ChunkHolder {
-    Active(Chunk),
-    Requested,
-}
+pub type ChunkHolder = Option<Box<Chunk>>;

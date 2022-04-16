@@ -56,7 +56,7 @@ impl ChunkDrawer {
         if self.layer.dirty() {
             let viewport = view.viewport(self.backend.screen_y_ratio());
 
-            let mut builder = VertexBuilder::new();
+            let mut builder = VertexBuilder::default();
             for (pos, chunk) in &self.chunks {
                 let chunk_rect = Rectangle {
                     x: pos.x as f32 * CHUNK_SIZE as f32,
