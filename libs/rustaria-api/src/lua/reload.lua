@@ -9,7 +9,7 @@ Tiles = {}
 --- @field connection connection_type
 
 
---- @param prototypes table<string, TilePrototype>
+--- @param prototypes table
 function Tiles:register(prototypes)
     -- builtin stub
 end

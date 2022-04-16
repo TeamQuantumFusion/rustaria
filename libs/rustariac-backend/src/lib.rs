@@ -10,6 +10,7 @@ use image::DynamicImage;
 use layer::LayerChannel;
 use rustaria_api::{ty::Tag, Api};
 use ty::{PosTexture, Viewport};
+use crate::ty::AtlasLocation;
 
 pub mod atlas;
 pub mod builder;
@@ -84,8 +85,8 @@ impl Internals {
 	}
 
 	pub fn supply_atlas(&mut self, api: &Api, sprites: HashSet<Tag>) {
-		let (atlas, image) = atlas::build_atlas(api, sprites);
-		self.backend.supply_atlas(image, 3);
+		let (atlas, images) = atlas::build_atlas(api, sprites);
+		self.backend.supply_atlas(atlas.get_width(), atlas.get_height(), images, 3);
 		self.atlas = atlas;
 	}
 }
@@ -97,6 +98,6 @@ pub trait Backend {
 
 	fn poll_events(&mut self) -> Vec<WindowEvent>;
 	fn new_layer_pos_tex(&mut self) -> LayerChannel<PosTexture>;
-	fn supply_atlas(&mut self, image: DynamicImage, level: u32);
+	fn supply_atlas(&mut self, width: u32, height: u32, images: Vec<(DynamicImage, AtlasLocation)>, level: u32);
 	fn draw(&mut self, view: &Viewport);
 }

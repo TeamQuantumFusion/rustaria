@@ -10,11 +10,12 @@ use glium::{
 };
 use image::{imageops::FilterType, DynamicImage};
 use pipeline::LayerPipeline;
-use rustaria_util::trace;
+use rustaria_util::{info, trace};
 use rustariac_backend::{
 	layer::LayerChannel,
 	ty::{PosTexture, Viewport},
 };
+use rustariac_backend::ty::AtlasLocation;
 
 pub mod engine;
 mod pipeline;
@@ -77,9 +78,8 @@ impl rustariac_backend::Backend for GliumBackend {
 		&self.engine.glfw
 	}
 
-	fn supply_atlas(&mut self, image: DynamicImage, level: u32) {
-		let width = image.width();
-		let height = image.height();
+	fn supply_atlas(&mut self, width: u32, height: u32, images: Vec<(DynamicImage, AtlasLocation)>,level: u32) {
+
 		let atlas = texture::SrgbTexture2d::empty_with_mipmaps(
 			&self.facade,
 			texture::MipmapsOption::EmptyMipmapsMax(level),
@@ -90,20 +90,23 @@ impl rustariac_backend::Backend for GliumBackend {
 
 		for level in 0..=level {
 			if let Some(mipmap) = atlas.mipmap(level) {
-				let width = width >> level as u32;
-				let height = height >> level as u32;
-				let image = image.resize(width, height, FilterType::Nearest);
-				mipmap.write(
+				for (image, location) in &images {
+                    let x = location.x as u32 >> level as u32;
+                    let y = location.y as u32 >> level as u32;
+                    let width = image.width() >> level as u32;
+				let height = image.height() >> level as u32;
+				let image = image.resize_exact(width, height, FilterType::Nearest);
+				info!("{x}:{y} {width}x{height}");mipmap.write(
 					Rect {
-						left: 0,
-						bottom: 0,
-						width,
-						height,
+						left: location.x as u32 >> level as u32,
+						bottom: location.y as u32 >> level as u32,
+						width:  location.width as u32 >> level as u32,
+						height:  location.height as u32 >> level as u32,
 					},
-					RawImage2d::from_raw_rgba(image.into_bytes(), (width, height)),
+					RawImage2d::from_raw_rgba_reversed(image.as_bytes(), (width, height)),
 				);
 			}
-		}
+		}}
 
 		self.atlas = Some(atlas);
 	}

@@ -1,15 +1,21 @@
 use std::collections::HashSet;
 use std::ops::AddAssign;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use clap::Parser;
 use eyre::{Report, Result};
 use glfw::{ffi, Action, Key, Modifiers, WindowEvent};
 
+use rayon::{ThreadPool, ThreadPoolBuilder};
+use rustaria::api::prototype::entity::EntityPrototype;
+use rustaria::network::packet::entity::{ClientEntityPacket, ServerEntityPacket};
 use rustaria::network::packet::{ClientPacket, ServerPacket};
 use rustaria::SmartError;
 use rustaria::{Server, UPS};
-use rustaria_api::ty::Prototype;
+use rustaria_api::ty::{Prototype, Tag};
+use rustaria::{Server, UPS};
+use rustaria_util::ty::pos::Pos;
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_util::{debug, info};
 use rustariac_backend::ty::Viewport;
@@ -52,17 +58,34 @@ fn main() -> eyre::Result<()> {
 			zoom: 30.0,
 		},
 		backend,
-	};
+	thread_pool: Arc::new(ThreadPoolBuilder::new().num_threads(12).build().unwrap()),
+    };
 
 	client.reload()?;
 	client.join_integrated()?;
-	client.run();
+	{
+        let lock = client.carrier.lock();
+        let prototype = lock.get_registry::<EntityPrototype>();
+        let id = prototype
+            .get_id(&Tag::new("rustaria:bunne".to_string()).unwrap())
+            .unwrap();
+        let world = client.world.as_mut().unwrap();
+        let pos = Pos { x: 5.0, y: 5.0 };
+        world
+            .entity
+            .packet(ServerEntityPacket::New(id, pos))
+            .unwrap();
+
+        world
+            .networking
+            .send(ClientPacket::Entity(ClientEntityPacket::Spawn(id, pos))).unwrap();
+    }client.run();
 
 	Ok(())
 }
 
 pub struct Client {
-	// Api
+	thread_pool: Arc<ThreadPool>,// Api
 	api: Api,
 	carrier: Carrier,
 
@@ -106,25 +129,34 @@ impl Client {
 				last_tick.add_assign(UPDATE_TIME);
 			}
 
-			if reload {
-				self.reload().unwrap();
-				reload = false;
-			}
 
-			let delta = ((last_tick.elapsed().as_secs_f32() / UPDATE_TIME.as_secs_f32())
-				- last_delta)
+
+			let delta = (last_tick.elapsed().as_secs_f32() / UPDATE_TIME.as_secs_f32())
+
 				.abs();
-			self.draw(delta);
-			last_delta = delta;
+			if let Err(error) = self.draw(delta) {
+			match error.downcast_ref::<SmartError>() {
+                    Some(err @ SmartError::CarrierUnavailable) => {
+                        info!("{}", err);
+                        reload = true;
+                    }
+                    _ => Err(error).unwrap(),
+                }
+            }
+
+            if reload {
+                self.reload().unwrap();
+                reload = false;
+            }
 		}
 	}
 
 	pub fn join_integrated(&mut self) -> Result<()> {
-		let mut server = Server::new(12, None)?;
+		let mut server = Server::new(self.thread_pool.clone(), None)?;
 		let mut client_world = ClientWorld {
 			networking: server.create_local_connection(),
 			chunk: ChunkHandler::new(&self.backend),
-			entity: EntityHandler {},
+			entity: EntityHandler::new(&self.backend, self.thread_pool.clone()),
 			integrated: Some(Box::new(server)),
 		};
 
@@ -163,15 +195,16 @@ impl Client {
 		Ok(())
 	}
 
-	fn draw(&mut self, delta: f32) {
+	fn draw(&mut self, delta: f32)  -> Result<()>{
 		self.control.tick(&mut self.view, delta);
 
 		if let Some(world) = &mut self.world {
-			world.draw(&self.view);
+			world.draw(&self.view, delta)?;
 		}
 
 		self.backend.instance_mut().backend.draw(&self.view);
-	}
+	Ok(())
+    }
 }
 
 pub type NetworkHandler =
@@ -187,7 +220,7 @@ pub struct ClientWorld {
 impl ClientWorld {
 	pub fn tick(&mut self, view: &Viewport) -> Result<()> {
 		self.chunk.tick(view, &mut self.networking)?;
-		if let Some(integrated) = &mut self.integrated {
+		self.entity.tick(view, &mut self.networking)?;if let Some(integrated) = &mut self.integrated {
 			integrated.tick()?;
 		}
 
@@ -199,9 +232,12 @@ impl ClientWorld {
 		Ok(())
 	}
 
-	pub fn draw(&mut self, view: &Viewport) {
+	pub fn draw(&mut self, view: &Viewport, delta: f32) -> Result<()> {
 		self.chunk.draw(view);
-	}
+	self.entity.draw(view, delta)?;
+
+        Ok(())
+    }
 }
 
 impl Reloadable for ClientWorld {

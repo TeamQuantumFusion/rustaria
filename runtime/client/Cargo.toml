@@ -10,7 +10,7 @@ rustaria = { path = "../../", features = ["client"] }
 rustaria-util = { path = "../../libs/rustaria-util" }
 rustaria-api = { path = "../../libs/rustaria-api" }
 rustaria-network = { path = "../../libs/rustaria-network" }
-rustaria-rendering = { path = "../../libs/rustaria-rendering" }
+rustariac-rendering = { path = "../../libs/rustariac-rendering" }
 rustariac-backend = { path = "../../libs/rustariac-backend" }
 rustariac-glium-backend = { path = "../../libs/rustariac-glium-backend" }
 rustaria-controller = { path = "../../libs/rustaria-controller" }

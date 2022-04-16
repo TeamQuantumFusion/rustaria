@@ -15,6 +15,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use eyre::{Result, WrapErr};
+use mlua::Thread;
 use rayon::{ThreadPool, ThreadPoolBuilder};
 
 use manager::chunk::ChunkManager;
@@ -45,8 +46,8 @@ pub struct Server {
 }
 
 impl Server {
-	pub fn new(num_threads: usize, ip_address: Option<SocketAddr>) -> Result<Server> {
-		let thread_pool = Arc::new(ThreadPoolBuilder::new().num_threads(num_threads).build()?);
+	pub fn new(thread_pool: Arc<ThreadPool>, ip_address: Option<SocketAddr>) -> Result<Server> {
+
 
 		Ok(Server {
 			network: NetworkManager::new(ServerNetworking::new(ip_address)?),
@@ -77,7 +78,8 @@ impl NetworkInterface<ClientPacket, ServerPacket, PlayerJoinData> for Server {
 	fn receive(&mut self, from: Token, packet: ClientPacket) {
 		match packet {
 			ClientPacket::Chunk(packet) => self.chunk.packet(from, packet),
-			ClientPacket::Entity(packet) => self.entity.packet(from, packet),
+			// TODO error handling here
+            ClientPacket::Entity(packet) => self.entity.packet(from, packet).unwrap(),
 		}
 	}
 

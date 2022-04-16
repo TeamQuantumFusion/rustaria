@@ -5,17 +5,19 @@ use image::{DynamicImage, GenericImage, GenericImageView, ImageFormat};
 use rectangle_pack::{
 	contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert,
 	RectanglePackError, TargetBin,
-};
+PackedLocation};
 use rustaria_api::ty::Tag;
 use rustaria_api::Api;
 use rustaria_util::warn;
 
-use crate::ty::AtlasLocation;
+use crate::ty::{AtlasLocation, Rectangle};
 
 #[derive(Default)]
 pub struct Atlas {
 	lookup: HashMap<Tag, AtlasLocation>,
 	missing_tag: Tag,
+    width: u32,
+    height: u32,
 }
 
 impl Atlas {
@@ -25,16 +27,25 @@ impl Atlas {
 			None => self.lookup.get(&self.missing_tag).cloned().unwrap(),
 		}
 	}
+
+    pub fn get_width(&self) -> u32 {
+        self.width
+    }
+
+
+    pub fn get_height(&self) -> u32 {
+        self.height
+    }
 }
 
-pub fn build_atlas(api: &Api, sprites: HashSet<Tag>) -> (Atlas, DynamicImage) {
+pub fn build_atlas(api: &Api, sprites: HashSet<Tag>) -> (Atlas, Vec<(DynamicImage, AtlasLocation)>) {
 	let missing_tag = Tag::new("core:missing".to_string()).unwrap();
-	let mut images: Vec<(Tag, DynamicImage)> = Vec::new();
+	let mut images: HashMap<Tag, DynamicImage> = HashMap::new();
 
-	for tag in sprites {
+	// Load all of the spritesfor tag in sprites {
 		match load_sprite(api, &tag) {
 			Ok(image) => {
-				images.push((tag, image));
+				images.insert(tag, image);
 			}
 			Err(error) => {
 				warn!("Could not load sprite {} {}", tag, error);
@@ -42,22 +53,24 @@ pub fn build_atlas(api: &Api, sprites: HashSet<Tag>) -> (Atlas, DynamicImage) {
 		}
 	}
 
-	images.push((
+	// Insert builtin sprites.
+    images.insert(
 		missing_tag.clone(),
 		image::load_from_memory(include_bytes!("./missing.png")).unwrap(),
-	));
+	);
 
-	let mut rects_to_place = GroupedRectsToPlace::new();
+	// Setup packing
+    let mut packing_setup: GroupedRectsToPlace<Tag, Option<u8>> = GroupedRectsToPlace::new();
 
-	for (id, (_, image)) in images.iter().enumerate() {
-		rects_to_place.push_rect(
-			id as u32,
-			Some(vec![0u8]),
+	for (id, (tag, image)) in images.iter().enumerate() {
+		packing_setup.push_rect(
+			tag.clone(),
+			None,
 			RectToInsert::new(image.width(), image.height(), 1),
 		);
 	}
 
-	let mut rectangle_placements = Err(RectanglePackError::NotEnoughBinSpace);
+	// Try to insert, if it does not have enough space double the atlas size.let mut rectangle_placements = Err(RectanglePackError::NotEnoughBinSpace);
 	let mut max_width = 128;
 	let mut max_height = 128;
 	while let Err(RectanglePackError::NotEnoughBinSpace) = rectangle_placements {
@@ -67,7 +80,7 @@ pub fn build_atlas(api: &Api, sprites: HashSet<Tag>) -> (Atlas, DynamicImage) {
 		let mut target_bins = BTreeMap::new();
 		target_bins.insert(0, TargetBin::new(max_width, max_height, 1));
 		rectangle_placements = pack_rects(
-			&rects_to_place,
+			&packing_setup,
 			&mut target_bins,
 			&volume_heuristic,
 			&contains_smallest_box,
@@ -75,14 +88,12 @@ pub fn build_atlas(api: &Api, sprites: HashSet<Tag>) -> (Atlas, DynamicImage) {
 	}
 
 	// Create image and lookup
-	let pack = rectangle_placements.unwrap();
-	let locations = pack.packed_locations();
-	let mut lookup = HashMap::new();
-	let mut image = image::DynamicImage::new_rgba8(max_width, max_height);
-	for (id, (_, location)) in locations {
-		let (tag, source) = &images[*id as usize];
+	let  mut lookup = HashMap::new();
+	let mut images_out = Vec::new();
+	for (tag, (_, location)) in rectangle_placements.unwrap().packed_locations() {
+		let image = images.remove(tag).unwrap();
 		lookup.insert(
-			tag.clone(),
+			(*tag).clone(),
 			AtlasLocation {
 				x: location.x() as f32 / max_width as f32,
 				y: location.y() as f32 / max_height as f32,
@@ -90,21 +101,23 @@ pub fn build_atlas(api: &Api, sprites: HashSet<Tag>) -> (Atlas, DynamicImage) {
 				height: location.height() as f32 / max_height as f32,
 			},
 		);
-		let x_offset = location.x();
-		let y_offset = location.y();
-		for y in 0..location.height() {
-			for x in 0..location.width() {
-				image.put_pixel(x_offset + x, y_offset + y, source.get_pixel(x, y));
-			}
-		}
+
+		images_out.push((DynamicImage::from(image.to_rgba8()),  AtlasLocation {
+            x: location.x() as f32,
+		 y: location.y() as f32,
+			width: location.width() as f32,
+			height: location.height() as f32,
+		}));
 	}
 
 	(
 		Atlas {
 			lookup,
 			missing_tag,
+		width: max_width,
+            height: max_height
 		},
-		image,
+        images_out,
 	)
 }
 
