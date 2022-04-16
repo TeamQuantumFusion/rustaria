@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use rustaria_api::ty::{LuaCar, LuaConvertableCar, Prototype, RawId, Tag};
 
-use crate::{chunk::Tile, api::ty::ConnectionType};
+use crate::{api::ty::ConnectionType, chunk::Tile};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TilePrototype {

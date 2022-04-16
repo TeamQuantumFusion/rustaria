@@ -9,8 +9,7 @@ use laminar::{Packet, Socket, SocketEvent};
 
 use rustaria_util::{debug, error, trace, warn};
 
-
-use crate::{EstablishingInstance, EstablishingStatus, NetworkInterface, Token, Result};
+use crate::{EstablishingInstance, EstablishingStatus, NetworkInterface, Result, Token};
 
 pub struct ServerNetworking<I: crate::Packet, O: crate::Packet, J> {
     local_connections: HashMap<Token, (Sender<O>, Receiver<I>)>,
@@ -154,7 +153,6 @@ impl<I: crate::Packet, O: crate::Packet, J> ServerNetworking<I, O, J> {
     }
 }
 
-
 pub enum ClientNetworking<I: crate::Packet, O: crate::Packet> {
     Local(Sender<O>, Receiver<I>),
     Remote(Box<Socket>, SocketAddr),
@@ -188,7 +186,10 @@ impl<I: crate::Packet, O: crate::Packet> ClientNetworking<I, O> {
         Ok(())
     }
 
-    pub fn poll<E, F: FnMut(I) -> core::result::Result<(), E>>(&mut self, mut consumer: F) -> core::result::Result<(), E> {
+    pub fn poll<E, F: FnMut(I) -> core::result::Result<(), E>>(
+        &mut self,
+        mut consumer: F,
+    ) -> core::result::Result<(), E> {
         match self {
             ClientNetworking::Local(_, receiver) => {
                 while let Ok(packet) = receiver.try_recv() {

@@ -2,15 +2,15 @@ use std::sync::Arc;
 
 use legion::Entity;
 
-use rustaria_api::{Carrier, Reloadable};
 use rustaria_api::ty::RawId;
+use rustaria_api::{Carrier, Reloadable};
 use rustaria_network::Token;
 use rustaria_util::ty::pos::Pos;
 
-use crate::{ServerPacket, ThreadPool};
 use crate::entity::EntityContainer;
 use crate::manager::network::NetworkManager;
 use crate::network::packet::entity::{ClientEntityPacket, ServerEntityPacket};
+use crate::{ServerPacket, ThreadPool};
 
 pub(crate) struct EntityManager {
     container: EntityContainer,
@@ -35,9 +35,10 @@ impl EntityManager {
     pub fn tick(&mut self, network: &mut NetworkManager) -> eyre::Result<()> {
         self.container.tick();
         for (id, pos) in self.new_entities.drain(..) {
-            network
-                .internal
-                .distribute(Token::nil(), ServerPacket::Entity(ServerEntityPacket::Spawn(id, pos)))?;
+            network.internal.distribute(
+                Token::nil(),
+                ServerPacket::Entity(ServerEntityPacket::Spawn(id, pos)),
+            )?;
         }
 
         Ok(())

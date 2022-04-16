@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use crossbeam::channel::SendError;
 use serde::{de::DeserializeOwned, Serialize};
 
-use rustaria_util::{Uuid};
+use rustaria_util::Uuid;
 use thiserror::Error;
 
 pub mod networking;
@@ -35,7 +35,6 @@ pub enum EstablishingStatus<C> {
     Connect(C),
 }
 
-
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
@@ -48,12 +47,12 @@ pub enum Error {
 
     #[error("Decompression error")]
     Decompression(#[from] lz4_flex::block::DecompressError),
-    
+
     #[error("Remote Networking error")]
     Remote(#[from] laminar::ErrorKind),
-    
+
     #[error("Local channel error")]
-    Channel
+    Channel,
 }
 
 impl<T> From<SendError<T>> for Error {

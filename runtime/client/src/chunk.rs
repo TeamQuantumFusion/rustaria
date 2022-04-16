@@ -3,17 +3,17 @@ use std::collections::HashMap;
 
 use eyre::Result;
 
-use rustaria::network::packet::chunk::ServerChunkPacket;
+use crate::NetworkHandler;
 use rustaria::chunk::Chunk;
 use rustaria::network::packet::chunk::ClientChunkPacket;
+use rustaria::network::packet::chunk::ServerChunkPacket;
 use rustaria::network::packet::ClientPacket;
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_rendering::chunk_drawer::ChunkDrawer;
-use rustaria_util::{info, ty::ChunkPos, warn};
-use rustaria_util::ty::CHUNK_SIZE;
 use rustaria_util::ty::pos::Pos;
-use rustariac_backend::{ClientBackend, ty::Viewport};
-use crate::NetworkHandler;
+use rustaria_util::ty::CHUNK_SIZE;
+use rustaria_util::{info, ty::ChunkPos, warn};
+use rustariac_backend::{ty::Viewport, ClientBackend};
 
 pub(crate) struct ChunkHandler {
     backend: ClientBackend,
@@ -32,7 +32,7 @@ impl ChunkHandler {
             chunks: HashMap::new(),
             chunk_drawer: ChunkDrawer::new(backend),
             old_chunk: ChunkPos::new(60, 420).unwrap(),
-            old_zoom: 0.0
+            old_zoom: 0.0,
         }
     }
 
@@ -50,11 +50,11 @@ impl ChunkHandler {
                 }
             },
         }
-        
+
         Ok(())
     }
 
-    pub fn tick(&mut self, view: &Viewport, networking: &mut NetworkHandler) -> Result<()>{
+    pub fn tick(&mut self, view: &Viewport, networking: &mut NetworkHandler) -> Result<()> {
         if let Ok(chunk) = ChunkPos::try_from(Pos {
             x: view.position[0],
             y: view.position[1],
@@ -62,7 +62,8 @@ impl ChunkHandler {
             if chunk != self.old_chunk || view.zoom != self.old_zoom {
                 info!("{:?}", view);
                 let width = (view.zoom / CHUNK_SIZE as f32) as i32;
-                let height = ((view.zoom * self.backend.screen_y_ratio()) / CHUNK_SIZE as f32) as i32;
+                let height =
+                    ((view.zoom * self.backend.screen_y_ratio()) / CHUNK_SIZE as f32) as i32;
                 let mut requested = Vec::new();
                 for x in -width..width {
                     for y in -height..height {

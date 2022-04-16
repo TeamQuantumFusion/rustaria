@@ -10,9 +10,9 @@ impl Add for Pos {
     type Output = Pos;
 
     fn add(self, rhs: Self) -> Self::Output {
-        Pos  {
+        Pos {
             x: self.x + rhs.x,
-            y: self.y + rhs.y
+            y: self.y + rhs.y,
         }
     }
 }
@@ -22,8 +22,6 @@ impl AddAssign for Pos {
         *self = self.add(rhs);
     }
 }
-
-
 
 impl From<[f32; 2]> for Pos {
     fn from(values: [f32; 2]) -> Self {

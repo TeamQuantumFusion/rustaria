@@ -2,7 +2,10 @@ use std::fs::File;
 
 // Imports
 pub use log::*;
-use simplelog::{ColorChoice, CombinedLogger, Config, ConfigBuilder, LevelPadding, TermLogger, TerminalMode, WriteLogger, Color, TargetPadding};
+use simplelog::{
+    Color, ColorChoice, CombinedLogger, Config, ConfigBuilder, LevelPadding, TargetPadding,
+    TermLogger, TerminalMode, WriteLogger,
+};
 pub use uuid::Uuid;
 
 pub mod blake3;

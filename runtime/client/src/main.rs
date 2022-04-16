@@ -1,20 +1,20 @@
-use std::collections::{HashSet};
+use std::collections::HashSet;
 use std::ops::AddAssign;
 use std::time::{Duration, Instant};
 
 use eyre::{Report, Result};
-use glfw::{Action, ffi, Key, Modifiers, WindowEvent};
+use glfw::{ffi, Action, Key, Modifiers, WindowEvent};
 
-use rustaria::{Server, UPS};
 use rustaria::network::packet::{ClientPacket, ServerPacket};
 pub use rustaria::prototypes;
 pub use rustaria::pt;
 use rustaria::SmartError;
-use rustaria_api::{Api, Carrier, Reloadable};
+use rustaria::{Server, UPS};
 use rustaria_api::ty::Prototype;
+use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_util::{debug, info};
-use rustariac_backend::ClientBackend;
 use rustariac_backend::ty::Viewport;
+use rustariac_backend::ClientBackend;
 use rustariac_glium_backend::GliumBackend;
 
 use crate::chunk::ChunkHandler;
@@ -99,7 +99,7 @@ impl Client {
                 }
                 last_tick.add_assign(UPDATE_TIME);
             }
-            
+
             if reload {
                 self.reload().unwrap();
                 reload = false;
@@ -207,4 +207,3 @@ impl Reloadable for ClientWorld {
         }
     }
 }
-

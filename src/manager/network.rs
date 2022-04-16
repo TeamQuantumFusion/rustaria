@@ -5,10 +5,10 @@ use rustaria_network::packet::CompressedPacket;
 use rustaria_network::Token;
 use rustaria_util::ty::ChunkPos;
 
-use crate::{ClientPacket, PlayerJoinData, ServerPacket};
 use crate::chunk::Chunk;
 use crate::network::packet::chunk::ServerChunkPacket;
 use crate::network::packet::ChunkBundlePacket;
+use crate::{ClientPacket, PlayerJoinData, ServerPacket};
 
 /// The `NetworkManager` handles networking for the server.
 pub(crate) struct NetworkManager {
@@ -17,10 +17,12 @@ pub(crate) struct NetworkManager {
 }
 
 impl NetworkManager {
-    pub fn new(networking: ServerNetworking<ClientPacket, ServerPacket, PlayerJoinData>) -> NetworkManager {
+    pub fn new(
+        networking: ServerNetworking<ClientPacket, ServerPacket, PlayerJoinData>,
+    ) -> NetworkManager {
         NetworkManager {
             internal: networking,
-            chunk_buffer: Default::default()
+            chunk_buffer: Default::default(),
         }
     }
 
@@ -31,9 +33,11 @@ impl NetworkManager {
 
     pub fn tick(&mut self) -> rustaria_network::Result<()> {
         for (to, chunks) in self.chunk_buffer.drain() {
-            let packet = ServerPacket::Chunk(ServerChunkPacket::Provide(CompressedPacket::new(&ChunkBundlePacket {
-                chunks: chunks.into_iter().collect(),
-            })?));
+            let packet = ServerPacket::Chunk(ServerChunkPacket::Provide(CompressedPacket::new(
+                &ChunkBundlePacket {
+                    chunks: chunks.into_iter().collect(),
+                },
+            )?));
 
             if let Some(to) = to {
                 self.internal.send(to, packet)?

@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::sync::{mpsc::Receiver, Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use atlas::Atlas;
-use eyre::{Result, ContextCompat};
+use eyre::{ContextCompat, Result};
 use glfw::{
     Context, Glfw, OpenGlProfileHint, SwapInterval, Window, WindowEvent, WindowHint, WindowMode,
 };

@@ -5,7 +5,7 @@ use std::{
 
 use mlua::{ExternalError, FromLua, Lua, ToLua, Value};
 use rustaria_util::info;
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::lua::ctx;
 
@@ -79,7 +79,6 @@ impl Display for Tag {
     }
 }
 
-
 impl<'lua> FromLua<'lua> for Tag {
     fn from_lua(lua_value: mlua::Value<'lua>, lua: &'lua Lua) -> mlua::Result<Self> {
         info!("Dog shit");
@@ -134,7 +133,6 @@ impl<'lua, A: LuaConvertableCar> FromLua<'lua> for LuaCar<A> {
 
 impl<'lua, A: LuaConvertableCar> ToLua<'lua> for LuaCar<A> {
     fn to_lua(self, lua: &'lua Lua) -> mlua::Result<Value<'lua>> {
-         self.0.into_luaagh(lua)
+        self.0.into_luaagh(lua)
     }
 }
-

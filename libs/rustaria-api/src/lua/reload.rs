@@ -74,9 +74,15 @@ impl<P: Prototype + LuaConvertableCar> mlua::UserData for RegistryBuilder<P> {
             let mut lock = this.entries.lock().unwrap();
             let entries = lock.as_mut().unwrap();
             for (tag, table) in new_entries {
-                trace!(target: P::lua_registry_name(), "Registering: {tag} {table:?}");
+                trace!(
+                    target: P::lua_registry_name(),
+                    "Registering: {tag} {table:?}"
+                );
                 let prototype: P = P::from_luaagh(table, lua)?;
-                trace!(target: P::lua_registry_name(), "Registered: {tag} {prototype:?}");
+                trace!(
+                    target: P::lua_registry_name(),
+                    "Registered: {tag} {prototype:?}"
+                );
                 entries.insert(tag, prototype);
             }
             Ok(())

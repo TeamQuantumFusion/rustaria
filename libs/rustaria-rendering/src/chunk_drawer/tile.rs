@@ -7,7 +7,6 @@ use rustariac_backend::{
     ClientBackend,
 };
 
-
 pub struct TileDrawer {
     image: AtlasLocation,
 }

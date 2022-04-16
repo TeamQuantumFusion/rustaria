@@ -1,8 +1,10 @@
-use std::{sync::mpsc::Receiver, ffi::c_void, rc::Rc};
+use std::{ffi::c_void, rc::Rc, sync::mpsc::Receiver};
 
-use glfw::{Window, WindowEvent, Glfw, Context};
-use glium::{SwapBuffersError, backend::{Backend, Facade}};
-
+use glfw::{Context, Glfw, Window, WindowEvent};
+use glium::{
+    backend::{Backend, Facade},
+    SwapBuffersError,
+};
 
 pub struct GlfwBackendEngine {
     pub(crate) window: Window,
@@ -34,12 +36,11 @@ unsafe impl Backend for GlfwBackendEngine {
     unsafe fn make_current(&self) {
         glfw::ffi::glfwMakeContextCurrent(self.window.window_ptr());
     }
-} 
-
+}
 
 #[derive(Clone)]
 pub struct GliumBackendEngine {
-    pub(crate) context: Rc<glium::backend::Context>
+    pub(crate) context: Rc<glium::backend::Context>,
 }
 
 impl Facade for GliumBackendEngine {

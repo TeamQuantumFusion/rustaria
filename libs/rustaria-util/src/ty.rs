@@ -1,8 +1,8 @@
 //! A collection of types used in Rustaria.
 
 use num::FromPrimitive;
-use std::ops::Add;
 use pos::Pos;
+use std::ops::Add;
 
 use crate::ty::Error::OOB;
 
@@ -239,12 +239,12 @@ impl TryFrom<Pos> for TilePos {
 }
 
 /// A boostable value has a base value that is basically static and a boost value which gets filled every tick.
-pub struct BoostableValue<T: Add<Output =  T> + Default + Copy> {
+pub struct BoostableValue<T: Add<Output = T> + Default + Copy> {
     base_value: T,
     boost_value: T,
 }
 
-impl<T: Add<Output =  T> + Default + Copy> BoostableValue<T> {
+impl<T: Add<Output = T> + Default + Copy> BoostableValue<T> {
     pub fn new(value: T) -> BoostableValue<T> {
         BoostableValue {
             base_value: value,
@@ -256,4 +256,3 @@ impl<T: Add<Output =  T> + Default + Copy> BoostableValue<T> {
         self.base_value + self.boost_value
     }
 }
-

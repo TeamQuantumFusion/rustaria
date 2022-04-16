@@ -20,8 +20,7 @@ impl<P: Serialize + DeserializeOwned> CompressedPacket<P> {
     }
 
     pub fn export(self) -> Result<P> {
-        let decompressed =
-            lz4_flex::decompress_size_prepended(self.data.as_slice())?;
+        let decompressed = lz4_flex::decompress_size_prepended(self.data.as_slice())?;
         Ok(bincode::deserialize(decompressed.as_slice())?)
     }
 }

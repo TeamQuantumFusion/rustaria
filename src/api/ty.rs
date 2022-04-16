@@ -95,12 +95,12 @@ pub enum BlastResistance {
     Indestructible,
 }
 mod blast_resistance_serde {
-	use serde::{Deserialize, Deserializer};
-	use serde::de::{Error, Visitor};
+    use serde::de::{Error, Visitor};
+    use serde::{Deserialize, Deserializer};
 
-	use super::BlastResistance;
+    use super::BlastResistance;
 
-	impl<'de> Deserialize<'de> for BlastResistance {
+    impl<'de> Deserialize<'de> for BlastResistance {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where
             D: Deserializer<'de>,

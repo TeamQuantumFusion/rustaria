@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use rustaria_api::ty::RawId;
-use rustaria_util::ty::{CHUNK_SIZE, ChunkSubPos};
+use rustaria_util::ty::{ChunkSubPos, CHUNK_SIZE};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Chunk {
@@ -33,7 +33,6 @@ impl<T> ChunkLayer<T> {
         self.grid[pos.y() as usize][pos.x() as usize] = value;
     }
 }
-
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct Tile {

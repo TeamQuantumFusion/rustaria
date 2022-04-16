@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use eyre::{ContextCompat, Result};
-use legion::{Entity, Resources, Schedule};
 pub use legion::*;
+use legion::{Entity, Resources, Schedule};
 use rayon::ThreadPool;
 use serde::Deserialize;
 
-use rustaria_api::{Carrier, Reloadable};
 use rustaria_api::ty::{Prototype, RawId};
+use rustaria_api::{Carrier, Reloadable};
 use rustaria_util::ty::pos::Pos;
 
 use crate::api::prototype::entity::EntityPrototype;

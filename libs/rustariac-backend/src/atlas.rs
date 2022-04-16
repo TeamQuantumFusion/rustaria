@@ -8,7 +8,7 @@ use rectangle_pack::{
 };
 use rustaria_api::ty::Tag;
 use rustaria_api::Api;
-use rustaria_util::{warn};
+use rustaria_util::warn;
 
 use crate::ty::AtlasLocation;
 

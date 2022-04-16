@@ -1,7 +1,8 @@
 use std::{
     fs::File,
     io::{self, Read},
-    path::PathBuf, sync::RwLock,
+    path::PathBuf,
+    sync::RwLock,
 };
 
 use zip::ZipArchive;

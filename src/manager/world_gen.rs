@@ -1,14 +1,14 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use crossbeam::channel::{Receiver, Sender, unbounded};
+use crossbeam::channel::{unbounded, Receiver, Sender};
 use eyre::ContextCompat;
 use rayon::ThreadPool;
 
-use rustaria_api::{Carrier, Reloadable};
 use rustaria_api::ty::{Prototype, Tag};
+use rustaria_api::{Carrier, Reloadable};
 use rustaria_util::error;
-use rustaria_util::ty::{CHUNK_SIZE, ChunkPos, ChunkSubPos};
+use rustaria_util::ty::{ChunkPos, ChunkSubPos, CHUNK_SIZE};
 
 use crate::api::prototype::tile::TilePrototype;
 use crate::chunk::{Chunk, ChunkLayer};
@@ -75,10 +75,14 @@ fn generate_chunk(stack: &Carrier, pos: ChunkPos) -> eyre::Result<Chunk> {
     let tiles = instance.get_registry::<TilePrototype>();
 
     // We do a touch of unwrapping.
-    let id = tiles.get_id(&Tag::new("rustaria:air".to_string())?).wrap_err("lol")?;
+    let id = tiles
+        .get_id(&Tag::new("rustaria:air".to_string())?)
+        .wrap_err("lol")?;
     let air = tiles.get_prototype(id).unwrap().create(id);
 
-    let id = tiles.get_id(&Tag::new("rustaria:dirt".to_string())?).wrap_err("lol")?;
+    let id = tiles
+        .get_id(&Tag::new("rustaria:dirt".to_string())?)
+        .wrap_err("lol")?;
     let dirt = tiles.get_prototype(id).wrap_err("lmao")?.create(id);
 
     let mut chunk = Chunk {

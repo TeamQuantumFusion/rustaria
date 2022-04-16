@@ -39,7 +39,12 @@ impl Plugin {
 
         let lua = Lua::new();
         register_preload(&lua)?;
-        lua.globals().set("ctx", PluginContext { id: manifest.id.clone() })?;
+        lua.globals().set(
+            "ctx",
+            PluginContext {
+                id: manifest.id.clone(),
+            },
+        )?;
 
         Ok(Plugin {
             manifest,

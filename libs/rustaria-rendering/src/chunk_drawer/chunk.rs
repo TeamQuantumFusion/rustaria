@@ -1,12 +1,10 @@
 use std::collections::HashMap;
 
-use rustaria::{
-    api::{prototype::tile::TilePrototype, ty::ConnectionType},
-};
+use rustaria::api::{prototype::tile::TilePrototype, ty::ConnectionType};
 use rustaria::chunk::{Chunk, ChunkLayer};
 use rustaria_api::Carrier;
-use rustaria_util::ty::{CHUNK_SIZE, ChunkPos, ChunkSubPos, Direction, Offset};
-use rustariac_backend::{builder::VertexBuilder, ClientBackend, ty::PosTexture};
+use rustaria_util::ty::{ChunkPos, ChunkSubPos, Direction, Offset, CHUNK_SIZE};
+use rustariac_backend::{builder::VertexBuilder, ty::PosTexture, ClientBackend};
 
 use super::tile::{BakedTile, TileDrawer};
 
@@ -119,7 +117,12 @@ impl BakedChunk {
         }
     }
 
-    pub fn push(&self, builder: &mut VertexBuilder<PosTexture>, tile_drawers: &Vec<Option<TileDrawer>>, pos: &ChunkPos) {
+    pub fn push(
+        &self,
+        builder: &mut VertexBuilder<PosTexture>,
+        tile_drawers: &Vec<Option<TileDrawer>>,
+        pos: &ChunkPos,
+    ) {
         for y in 0..CHUNK_SIZE {
             let tile_row = &self.tiles.grid[y];
             let tile_neighbor_row = &self.tile_neighbors.grid[y];

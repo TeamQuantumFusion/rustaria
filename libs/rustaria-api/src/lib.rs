@@ -9,8 +9,8 @@ use lua::reload::RegistryBuilder;
 use mlua::Value;
 use plugin::Plugin;
 use registry::Registry;
-use rustaria_util::{blake3::Hasher, info, trace, warn, debug};
-use ty::{PluginId, Prototype, Tag, LuaConvertableCar};
+use rustaria_util::{blake3::Hasher, debug, info, trace, warn};
+use ty::{LuaConvertableCar, PluginId, Prototype, Tag};
 use type_map::concurrent::TypeMap;
 
 mod archive;
@@ -97,7 +97,10 @@ pub struct ApiReload<'a> {
 
 impl<'a> ApiReload<'a> {
     pub fn add_reload_registry<P: Prototype + LuaConvertableCar>(&mut self) -> mlua::Result<()> {
-        debug!("Registered \"{}\" registry. (reload)", P::lua_registry_name());
+        debug!(
+            "Registered \"{}\" registry. (reload)",
+            P::lua_registry_name()
+        );
         let mut builder = RegistryBuilder::<P>::new();
         for (_, plugin) in &mut self.api.plugins {
             builder.register(&plugin.lua)?;
@@ -132,10 +135,16 @@ impl<'a> ApiReload<'a> {
     }
 
     pub fn add_apply_registry<P: Prototype + LuaConvertableCar>(&mut self) -> mlua::Result<()> {
-        debug!("Registered \"{}\" registry. (apply)", P::lua_registry_name());
+        debug!(
+            "Registered \"{}\" registry. (apply)",
+            P::lua_registry_name()
+        );
         // Clear references
         for (_, plugin) in &mut self.api.plugins {
-            plugin.lua.globals().set(P::lua_registry_name(), Value::Nil)?;
+            plugin
+                .lua
+                .globals()
+                .set(P::lua_registry_name(), Value::Nil)?;
         }
 
         // Aquire builder
@@ -174,15 +183,14 @@ impl Carrier {
     }
 
     pub fn lock(&self) -> RegistryStackAccess {
-        RegistryStackAccess { 
-            lock: 
-            self.data.read().unwrap()
-         }
+        RegistryStackAccess {
+            lock: self.data.read().unwrap(),
+        }
     }
 }
 
 pub struct RegistryStackAccess<'a> {
-    lock: RwLockReadGuard<'a, (TypeMap, [u8; 32])>
+    lock: RwLockReadGuard<'a, (TypeMap, [u8; 32])>,
 }
 
 impl<'a> RegistryStackAccess<'a> {
@@ -192,10 +200,12 @@ impl<'a> RegistryStackAccess<'a> {
 
     // needs to be func because of lock issues
     pub fn get_registry<P: Prototype>(&self) -> &Registry<P> {
-        self.lock.0.get::<Registry<P>>().expect("Could not find registry")
+        self.lock
+            .0
+            .get::<Registry<P>>()
+            .expect("Could not find registry")
     }
 }
-
 
 pub trait Reloadable {
     fn reload(&mut self, api: &Api, carrier: &Carrier);

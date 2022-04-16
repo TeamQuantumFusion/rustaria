@@ -61,7 +61,7 @@ impl Rectangle {
         self.left().max(rect.left()) < self.right().min(rect.right())
             && self.bottom().max(rect.bottom()) < self.top().min(rect.top())
     }
-    
+
     pub fn right_top(self) -> [f32; 2] {
         [self.right(), self.top()]
     }
