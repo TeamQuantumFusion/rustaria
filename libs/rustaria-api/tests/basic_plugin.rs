@@ -50,7 +50,7 @@ fn it_adds_two() {
     path.push("basic_plugin");
 
     let mut api = Api::new(path, vec![]).unwrap();
-    let mut stack = Carrier::new();
+    let mut stack = Carrier::default();
 
     let mut reload = api.reload(&mut stack);
     reload.add_reload_registry::<TilePrototype>().unwrap();

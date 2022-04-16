@@ -30,10 +30,10 @@ impl BakedChunk {
             }
         }
 
-        let mut tile_drawers = Vec::new();
-        for prototype in registry.iter() {
-            tile_drawers.push(TileDrawer::new(prototype, backend));
-        }
+        let tile_drawers: Vec<_> = registry
+            .iter()
+            .map(|prototype| TileDrawer::new(prototype, backend))
+            .collect();
 
         BakedChunk {
             tiles,
@@ -99,7 +99,7 @@ impl BakedChunk {
 
                             let mut ty = ConnectionType::Isolated;
                             if let Some(tile) = &row[x as usize] {
-                                if let Some(neighbor_tile) = neighbor.tiles.get(neighbor_sub_pos) {
+                                if let Some(neighbor_tile) = neighbor.tiles[neighbor_sub_pos] {
                                     if let (ConnectionType::Connected, ConnectionType::Connected) =
                                         (tile.connection, neighbor_tile.connection)
                                     {
@@ -109,10 +109,7 @@ impl BakedChunk {
                             }
 
                             self.tile_neighbors.grid[y as usize][x as usize].set(dir, ty);
-                            neighbor
-                                .tile_neighbors
-                                .get_mut(neighbor_sub_pos)
-                                .set(dir.rotate_180(), ty);
+                            neighbor.tile_neighbors[neighbor_sub_pos].set(dir.rotate_180(), ty);
                         }
                     }
                 }

@@ -1,12 +1,12 @@
 --- @class Registry
 --- @type Registry
 Tiles = {}
---- @alias coonetion_type '"isolated"' | '"connected"' | '"transitional"'
+--- @alias connection_type '"isolated"' | '"connected"' | '"transitional"'
 
 
 --- @class TilePrototype
 --- @field sprite string
---- @field connection coonetion_type
+--- @field connection connection_type
 
 
 --- @param prototypes table<string, TilePrototype>

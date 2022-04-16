@@ -11,22 +11,15 @@ use crate::lua::ctx;
 
 // Raw Ids
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub struct RawId(u32);
+pub struct RawId(pub u32);
 
 impl RawId {
-    pub(crate) fn new(id: u32) -> RawId {
-        RawId(id)
-    }
-
     pub fn index(self) -> usize {
         self.0 as usize
-    }
+    } 
 }
 
-// PluginId
 pub type PluginId = String;
-
-// Tag
 
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Serialize, Deserialize)]
 pub struct Tag {
@@ -46,7 +39,8 @@ impl Tag {
         })
     }
 
-    pub fn new(tag: String) -> Result<Tag, TagCreationError> {
+    pub fn new<S: Into<String>>(tag: S) -> Result<Tag, TagCreationError> {
+        let tag = tag.into();
         let colon_index = tag.find(':').ok_or(TagCreationError::ColonMissing)?;
         Self::new_internal(tag, colon_index)
     }
@@ -64,6 +58,9 @@ impl Tag {
         }
     }
 
+    pub fn as_bytes(&self) -> &[u8] {
+        self.inner.as_bytes()
+    }
     pub fn plugin_id(&self) -> &str {
         &self.inner[..self.colon_index as usize]
     }

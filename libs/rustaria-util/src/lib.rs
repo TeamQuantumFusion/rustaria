@@ -34,7 +34,7 @@ pub fn initialize() -> eyre::Result<()> {
         WriteLogger::new(
             LevelFilter::Info,
             Config::default(),
-            File::create("my_rust_binary.log").unwrap(),
+            File::create("rustaria.log").unwrap(),
         ),
     ])?;
 

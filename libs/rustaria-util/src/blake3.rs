@@ -3,6 +3,8 @@
 use core::cmp::min;
 use core::convert::TryInto;
 
+pub type Blake3Hash = [u8; 32];
+
 pub const OUT_LEN: usize = 32;
 
 const KEY_LEN: usize = 32;
@@ -334,7 +336,7 @@ impl Hasher {
     }
 
     /// Finalize the hash and write any number of output bytes.
-    pub fn finalize(&self) -> [u8; 32] {
+    pub fn finalize(&self) -> Blake3Hash {
         // Starting with the Output from the current chunk, compute all the
         // parent chaining values along the right edge of the tree, until we
         // have the root Output.

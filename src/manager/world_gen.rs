@@ -76,14 +76,14 @@ fn generate_chunk(stack: &Carrier, pos: ChunkPos) -> eyre::Result<Chunk> {
 
     // We do a touch of unwrapping.
     let id = tiles
-        .get_id(&Tag::new("rustaria:air".to_string())?)
+        .id_from_tag(&Tag::new("rustaria:air".to_string())?)
         .wrap_err("lol")?;
-    let air = tiles.get_prototype(id).unwrap().create(id);
+    let air = tiles.prototype_from_id(id).unwrap().create(id);
 
     let id = tiles
-        .get_id(&Tag::new("rustaria:dirt".to_string())?)
+        .id_from_tag(&Tag::new("rustaria:dirt".to_string())?)
         .wrap_err("lol")?;
-    let dirt = tiles.get_prototype(id).wrap_err("lmao")?.create(id);
+    let dirt = tiles.prototype_from_id(id).wrap_err("lmao")?.create(id);
 
     let mut chunk = Chunk {
         tiles: ChunkLayer::new([[air; CHUNK_SIZE]; CHUNK_SIZE]),
@@ -93,7 +93,8 @@ fn generate_chunk(stack: &Carrier, pos: ChunkPos) -> eyre::Result<Chunk> {
         for x in 0..CHUNK_SIZE {
             if ((y + (pos.y as usize * CHUNK_SIZE)) ^ (x + (pos.x as usize * CHUNK_SIZE))) % 5 == 0
             {
-                chunk.tiles.put(dirt, ChunkSubPos::new(x as u8, y as u8));
+                let pos = ChunkSubPos::new(x as u8, y as u8);
+                chunk.tiles[pos] = dirt;
             }
         }
     }

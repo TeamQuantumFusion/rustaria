@@ -76,7 +76,7 @@ impl EntityContainer {
         let instance = carrier.lock();
         let prototype = instance
             .get_registry::<EntityPrototype>()
-            .get_prototype(id)
+            .prototype_from_id(id)
             .wrap_err("Could not find entity")?;
         if let Some(velocity) = &prototype.velocity {
             entry.add_component(velocity.create(id));

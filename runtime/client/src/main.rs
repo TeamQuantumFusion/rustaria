@@ -33,7 +33,7 @@ fn main() -> eyre::Result<()> {
     rustaria_util::initialize()?;
     let backend = ClientBackend::new(GliumBackend::new)?;
 
-    let carrier = Carrier::new();
+    let carrier = Carrier::default();
     let mut dir = std::env::current_dir()?;
     dir.push("plugins");
     let api = Api::new(dir, vec!["../../../plugin".into()])?;

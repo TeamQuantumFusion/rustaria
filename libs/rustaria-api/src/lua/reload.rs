@@ -1,7 +1,5 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use parking_lot::Mutex;
+use std::{collections::HashMap, sync::Arc};
 
 use mlua::{Lua, Value};
 use rustaria_util::{blake3::Hasher, trace};
@@ -13,13 +11,13 @@ use crate::{
 
 #[derive(Clone)]
 pub struct RegistryBuilder<P: Prototype + LuaConvertableCar> {
-    entries: Arc<Mutex<Option<HashMap<Tag, P>>>>,
+    entries: Arc<Mutex<HashMap<Tag, P>>>,
 }
 
 impl<P: Prototype + LuaConvertableCar> RegistryBuilder<P> {
     pub fn new() -> RegistryBuilder<P> {
         RegistryBuilder {
-            entries: Arc::new(Mutex::new(Some(HashMap::new()))),
+            entries: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
@@ -28,20 +26,15 @@ impl<P: Prototype + LuaConvertableCar> RegistryBuilder<P> {
     }
 
     pub fn finish(self, hasher: &mut Hasher) -> mlua::Result<Registry<P>> {
-        let mut data: Vec<(Tag, P)> = self
-            .entries
-            .lock()
-            .unwrap()
-            .take()
-            .unwrap()
-            .into_iter()
-            .collect();
+        let mut entries = self.entries.lock();
+        let data = std::mem::take(&mut *entries);
+        let mut data: Vec<_> = data.into_iter().collect();
 
-        data.sort_by(|(i1, _), (i2, _)| i1.to_string().cmp(&i2.to_string()));
+        data.sort_by(|(i1, _), (i2, _)| i1.cmp(&i2));
 
         for (id, (tag, _)) in data.iter().enumerate() {
             hasher.update(&id.to_be_bytes());
-            hasher.update(tag.to_string().as_bytes());
+            hasher.update(tag.as_bytes());
         }
 
         let mut tag_to_id = HashMap::new();
@@ -49,7 +42,7 @@ impl<P: Prototype + LuaConvertableCar> RegistryBuilder<P> {
         let mut entries = Vec::new();
 
         for (id, (tag, prototype)) in data.into_iter().enumerate() {
-            tag_to_id.insert(tag.clone(), RawId::new(id as u32));
+            tag_to_id.insert(tag.clone(), RawId(id as u32));
             id_to_tag.push(tag);
             entries.push(prototype);
         }
@@ -71,8 +64,7 @@ impl<P: Prototype + LuaConvertableCar> mlua::UserData for RegistryBuilder<P> {
             );
 
             let new_entries: HashMap<Tag, Value> = lua.unpack(t)?;
-            let mut lock = this.entries.lock().unwrap();
-            let entries = lock.as_mut().unwrap();
+            let mut entries = this.entries.lock();
             for (tag, table) in new_entries {
                 trace!(
                     target: P::lua_registry_name(),

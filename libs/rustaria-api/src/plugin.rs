@@ -35,7 +35,7 @@ impl Plugin {
     pub fn new(path: &PathBuf) -> Result<Plugin, PluginLoadError> {
         let archive = Archive::new(path)?;
         let manifest_binary = archive.get_asset("manifest.json")?;
-        let manifest: Manifest = serde_json::from_slice(&*manifest_binary)?;
+        let manifest: Manifest = serde_json::from_slice(&manifest_binary)?;
 
         let lua = Lua::new();
         register_preload(&lua)?;

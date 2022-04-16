@@ -73,7 +73,7 @@ impl BakedTile {
             sprite: Some(_),
             connection,
             ..
-        }) = registry.get_prototype(tile.id)
+        }) = registry.prototype_from_id(tile.id)
         {
             Some(BakedTile {
                 id: tile.id,

@@ -1,3 +1,5 @@
+use std::ops::{Index, IndexMut};
+
 use serde::{Deserialize, Serialize};
 
 use rustaria_api::ty::RawId;
@@ -17,20 +19,17 @@ impl<T> ChunkLayer<T> {
     pub fn new(values: [[T; CHUNK_SIZE]; CHUNK_SIZE]) -> ChunkLayer<T> {
         ChunkLayer { grid: values }
     }
+}
+impl<T> Index<ChunkSubPos> for ChunkLayer<T> {
+    type Output = T;
 
-    #[inline(always)]
-    pub fn get(&self, pos: ChunkSubPos) -> &T {
-        &self.grid[pos.y() as usize][pos.x() as usize]
+    fn index(&self, index: ChunkSubPos) -> &Self::Output {
+        &self.grid[index.y() as usize][index.x() as usize]
     }
-
-    #[inline(always)]
-    pub fn get_mut(&mut self, pos: ChunkSubPos) -> &mut T {
-        &mut self.grid[pos.y() as usize][pos.x() as usize]
-    }
-
-    #[inline(always)]
-    pub fn put(&mut self, value: T, pos: ChunkSubPos) {
-        self.grid[pos.y() as usize][pos.x() as usize] = value;
+}
+impl<T> IndexMut<ChunkSubPos> for ChunkLayer<T> {
+    fn index_mut(&mut self, index: ChunkSubPos) -> &mut Self::Output {
+        &mut self.grid[index.y() as usize][index.x() as usize]
     }
 }
 

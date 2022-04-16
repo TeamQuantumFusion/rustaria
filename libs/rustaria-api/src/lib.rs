@@ -9,7 +9,7 @@ use lua::reload::RegistryBuilder;
 use mlua::Value;
 use plugin::Plugin;
 use registry::Registry;
-use rustaria_util::{blake3::Hasher, debug, info, trace, warn};
+use rustaria_util::{blake3::{Hasher, Blake3Hash}, debug, info, trace, warn};
 use ty::{LuaConvertableCar, PluginId, Prototype, Tag};
 use type_map::concurrent::TypeMap;
 
@@ -52,7 +52,7 @@ impl Api {
                     plugins.insert(plugin.manifest.id.clone(), plugin);
                 }
                 Err(error) => {
-                    warn!("Could not load plugin at {:?}. Reason: {:?}", path, error);
+                    warn!("Could not load plugin at {path:?}. Reason: {error:?}");
                 }
             }
         }
@@ -67,13 +67,13 @@ impl Api {
     }
 
     pub fn reload<'a>(&'a mut self, stack: &'a mut Carrier) -> ApiReload<'a> {
-        info!("preparing aquire");
+        info!("preparing acquire");
         ApiReload {
             api: self,
             stack: stack
                 .data
                 .write()
-                .expect("Could not aquire write lock of RegistryStack."),
+                .expect("Could not acquire write lock of RegistryStack."),
             registry_builders: TypeMap::new(),
             hasher: Hasher::new(),
         }
@@ -81,24 +81,15 @@ impl Api {
 }
 
 /// This is the most cringe part of the codebase for the better.
-/// ## add_reload_registry
-/// This should be called for every prototype that the system has. It adds a builder for that registry.
-/// ## reload
-/// This is the first big step. It invokes every plugin entrypoint that fills the builders.
-/// This is also where we reset the `RegistryStack` because the next step fills the registries.
-/// ## add_apply_registry
-/// This step compiles all of the builders and fills the `RegistryStack` with the registries.
-/// This also appends the `Hasher` with all of the entries for syncing.
-/// ## apply
-/// This is the last step. It just compiles the hash and sets it on the `RegistryStack`
 pub struct ApiReload<'a> {
     api: &'a mut Api,
-    stack: RwLockWriteGuard<'a, (TypeMap, [u8; 32])>,
+    stack: RwLockWriteGuard<'a, (TypeMap, Blake3Hash)>,
     registry_builders: TypeMap,
     hasher: Hasher,
 }
 
 impl<'a> ApiReload<'a> {
+    /// This should be called for every prototype that the system has. It adds a builder for that registry.
     pub fn add_reload_registry<P: Prototype + LuaConvertableCar>(&mut self) -> mlua::Result<()> {
         debug!(
             "Registered \"{}\" registry. (reload)",
@@ -113,11 +104,13 @@ impl<'a> ApiReload<'a> {
         Ok(())
     }
 
+    /// This is the first big step. It invokes every plugin entrypoint that fills the builders.
+    /// This is also where we reset the `RegistryStack` because the next step fills the registries.
     pub fn reload(&mut self) {
         info!("Reloading {} plugins.", self.api.plugins.len());
         // Reset registry stack
         self.stack.0.clear();
-        self.stack.1 = [0u8; 32];
+        self.stack.1 = Default::default();
 
         // Reload plugins
         for (id, plugin) in &mut self.api.plugins {
@@ -137,6 +130,8 @@ impl<'a> ApiReload<'a> {
         }
     }
 
+    /// This step compiles all of the builders and fills the `RegistryStack` with the registries.
+    /// This also appends the `Hasher` with all of the entries for syncing.
     pub fn add_apply_registry<P: Prototype + LuaConvertableCar>(&mut self) -> mlua::Result<()> {
         debug!(
             "Registered \"{}\" registry. (apply)",
@@ -163,6 +158,7 @@ impl<'a> ApiReload<'a> {
         Ok(())
     }
 
+    /// This is the last step. It just compiles the hash and sets it on the `RegistryStack`
     pub fn apply(self) {
         info!("applying");
         // Set the hash
@@ -173,18 +169,12 @@ impl<'a> ApiReload<'a> {
 
 /// A carrier of all of the registries and the core hash.
 /// Carrier has arrived!
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Carrier {
-    data: Arc<RwLock<(TypeMap, [u8; 32])>>,
+    data: Arc<RwLock<(TypeMap, Blake3Hash)>>,
 }
 
 impl Carrier {
-    pub fn new() -> Carrier {
-        Carrier {
-            data: Arc::new(RwLock::new((TypeMap::new(), [0u8; 32]))),
-        }
-    }
-
     pub fn lock(&self) -> RegistryStackAccess {
         RegistryStackAccess {
             lock: self.data.read().unwrap(),
