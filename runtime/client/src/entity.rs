@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
 use crate::NetworkHandler;
-use eyre::{ContextCompat, Result};
+use eyre::Result;
 use rayon::ThreadPool;
-use rustaria::api::prototype::entity::EntityPrototype;
-use rustaria::entity::{EntityContainer, World};
+use rustaria::entity::EntityWorld;
 use rustaria::network::packet::entity::ServerEntityPacket;
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustariac_backend::ty::Camera;
@@ -12,14 +11,14 @@ use rustariac_backend::ClientBackend;
 use rustariac_rendering::entity_drawer::WorldEntityDrawer;
 
 pub(crate) struct EntityHandler {
-	container: EntityContainer,
+	container: EntityWorld,
 	drawer: WorldEntityDrawer,
 }
 
 impl EntityHandler {
 	pub fn new(backend: &ClientBackend, thread_pool: Arc<ThreadPool>) -> EntityHandler {
 		EntityHandler {
-			container: EntityContainer::new(thread_pool),
+			container: EntityWorld::default(),
 			drawer: WorldEntityDrawer::new(backend),
 		}
 	}

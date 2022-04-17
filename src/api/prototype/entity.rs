@@ -2,10 +2,11 @@ use mlua::{FromLua, Lua, Value};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-use rustaria_api::ty::{Tag};
+use rustaria_api::ty::Tag;
 use rustaria_api::ty::{Prototype, RawId};
 use rustaria_util::ty::pos::Pos;
 
+#[cfg(feature = "client")]
 use crate::api::rendering::RenderingSystem;
 use crate::entity::VelocityComp;
 
@@ -21,6 +22,7 @@ impl FromLua for EntityPrototype {
 		if let mlua::Value::Table(table) = value {
 			Ok(EntityPrototype {
 				velocity: table.get("velocity")?,
+				#[cfg(feature = "client")]
 				rendering: table.get("rendering")?,
 				// collision: table.get("collision")?,
 				// opaque: table.get("opaque")?,
@@ -39,6 +41,7 @@ impl Prototype for EntityPrototype {
 	fn create(&self, _: RawId) -> Self::Item {}
 
 	fn get_sprites(&self, sprites: &mut HashSet<Tag>) {
+		#[cfg(feature = "client")]
 		if let Some(system) = &self.rendering {
 			match system {
 				RenderingSystem::Static(pane) => {

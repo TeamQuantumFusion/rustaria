@@ -10,11 +10,8 @@ edition = "2021"
 simplelog = "0.11.2"
 log = "0.4.*"
 
-mlua = { git = "https://github.com/alphaqu/mlua" }
-
 # Errors
 eyre = "0.6"
-thiserror = "1.0.30"
 color-eyre = { version = "0.6", default-features = false }
 
 # Tags
