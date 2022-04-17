@@ -103,21 +103,29 @@ impl Client {
 
 		let mut reload = false;
 		while !self.backend.instance().backend.window().should_close() {
-			for event in self.backend.instance_mut().backend.poll_events() {
-				match event {
-					WindowEvent::Size(width, height) => {
-						self.camera.screen_y_ratio = width as f32 / height as f32;
+			{
+				let mut guard = self.backend.instance_mut();
+				for event in guard.backend.poll_events() {
+					match event {
+						WindowEvent::Size(width, height) => {
+							self.camera.screen_y_ratio = width as f32 / height as f32;
+						}
+						WindowEvent::Scroll(_, y) => {
+							self.camera.zoom += y as f32;
+						}
+						// Reload
+						WindowEvent::Key(Key::R, _, Action::Release, DEBUG_MOD) => {
+							reload = true;
+						}
+						// Re-mesh
+						WindowEvent::Key(Key::M, _, Action::Release, DEBUG_MOD) => {
+							guard.backend.mark_dirty();
+						}
+						_ => {}
 					}
-					WindowEvent::Scroll(_, y) => {
-						self.camera.zoom += y as f32;
-					}
-					WindowEvent::Key(Key::R, _, Action::Release, DEBUG_MOD) => {
-						reload = true;
-					}
-					_ => {}
-				}
 
-				self.control.consume_event(event);
+					self.control.consume_event(event);
+				}
 			}
 
 			while last_tick.elapsed() >= UPDATE_TIME {

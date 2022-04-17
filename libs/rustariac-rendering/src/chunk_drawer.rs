@@ -53,10 +53,13 @@ impl WorldChunkDrawer {
 		self.layer.mark_dirty();
 	}
 
+	pub fn dirty(&mut self) -> bool {
+		self.layer.dirty()
+	}
+
 	pub fn draw(&mut self, camera: &Camera) {
 		if self.layer.dirty() {
 			let viewport = camera.visible();
-			info!("{viewport:?}");
 
 			let mut builder = VertexBuilder::default();
 			for (pos, chunk) in &self.chunks {

@@ -91,6 +91,7 @@ pub trait Backend {
 	fn glfw(&self) -> &Glfw;
 	fn size(&self) -> (u32, u32);
 
+	fn mark_dirty(&mut self);
 	fn poll_events(&mut self) -> Vec<WindowEvent>;
 	fn new_layer_pos_tex(&mut self) -> LayerChannel<PosTexture>;
 	fn supply_atlas(

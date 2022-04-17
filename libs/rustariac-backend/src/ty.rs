@@ -1,5 +1,6 @@
 use crate::builder::Quadable;
 use rustaria_util::info;
+use rustaria_util::ty::CHUNK_SIZE_F;
 
 pub type AtlasLocation = Rectangle;
 
@@ -42,8 +43,8 @@ pub struct Camera {
 
 impl Camera {
 	pub fn visible(&self) -> Rectangle {
-		let x_view = self.zoom;
-		let y_view = self.zoom / self.screen_y_ratio;
+		let x_view = (self.zoom) * (CHUNK_SIZE_F * 2.0);
+		let y_view = (self.zoom / self.screen_y_ratio) * (CHUNK_SIZE_F * 2.0);
 		Rectangle {
 			x: self.position[0] - x_view,
 			y: self.position[1] - y_view,

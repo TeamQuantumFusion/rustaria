@@ -169,4 +169,8 @@ impl rustariac_backend::Backend for GliumBackend {
 			events
 		}
 	}
+
+	fn mark_dirty(&mut self) {
+		self.pos_texture.mark_dirty();
+	}
 }

@@ -34,6 +34,14 @@ impl<V: Clone + Copy + Vertex> LayerPipeline<V> {
 		}
 	}
 
+	pub fn mark_dirty(&mut self) {
+		for layer in &self.layers {
+			if let Some(data) = layer.reference.upgrade() {
+				data.write().unwrap().dirty = true;
+			}
+		}
+	}
+
 	pub fn create_layer(&mut self, facade: &GliumBackendEngine) -> LayerChannel<V> {
 		let layer = LayerChannel(Arc::new(RwLock::new(LayerChannelData {
 			dirty: true,

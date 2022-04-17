@@ -60,7 +60,7 @@ impl ChunkHandler {
 			x: camera.position[0],
 			y: camera.position[1],
 		}) {
-			if chunk != self.old_chunk || camera.zoom != self.old_zoom {
+			if chunk != self.old_chunk || camera.zoom != self.old_zoom || self.drawer.dirty() {
 				let width = (camera.zoom / CHUNK_SIZE_F) as i32;
 				let height = ((camera.zoom * camera.screen_y_ratio) / CHUNK_SIZE_F) as i32;
 				let mut requested = Vec::new();
