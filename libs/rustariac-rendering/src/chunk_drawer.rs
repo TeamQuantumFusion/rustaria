@@ -5,6 +5,7 @@ use rustaria::api::prototype::tile::TilePrototype;
 use rustaria::chunk::Chunk;
 use rustaria::SmartError::CarrierUnavailable;
 use rustaria_api::{Api, Carrier, Reloadable};
+use rustaria_util::info;
 use rustaria_util::ty::{ChunkPos, CHUNK_SIZE};
 use rustariac_backend::{
 	builder::VertexBuilder,
@@ -55,6 +56,7 @@ impl WorldChunkDrawer {
 	pub fn draw(&mut self, camera: &Camera) {
 		if self.layer.dirty() {
 			let viewport = camera.visible();
+			info!("{viewport:?}");
 
 			let mut builder = VertexBuilder::default();
 			for (pos, chunk) in &self.chunks {
