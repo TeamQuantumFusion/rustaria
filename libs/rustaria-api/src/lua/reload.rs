@@ -1,20 +1,20 @@
 use parking_lot::Mutex;
 use std::{collections::HashMap, sync::Arc};
 
-use mlua::{Lua, Value};
+use mlua::Lua;
 use rustaria_util::{blake3::Hasher, trace};
 
 use crate::{
 	registry::Registry,
-	ty::{LuaConvertableCar, Prototype, RawId, Tag},
+	ty::{Prototype, RawId, Tag},
 };
 
 #[derive(Clone)]
-pub struct RegistryBuilder<P: Prototype + LuaConvertableCar> {
+pub struct RegistryBuilder<P: Prototype> {
 	entries: Arc<Mutex<HashMap<Tag, P>>>,
 }
 
-impl<P: Prototype + LuaConvertableCar> RegistryBuilder<P> {
+impl<P: Prototype> RegistryBuilder<P> {
 	pub fn register(&mut self, lua: &Lua) -> mlua::Result<()> {
 		lua.globals().set(P::lua_registry_name(), self.clone())
 	}
@@ -48,7 +48,7 @@ impl<P: Prototype + LuaConvertableCar> RegistryBuilder<P> {
 		})
 	}
 }
-impl<P: Prototype + LuaConvertableCar> Default for RegistryBuilder<P> {
+impl<P: Prototype> Default for RegistryBuilder<P> {
 	fn default() -> Self {
 		Self {
 			entries: Default::default(),
@@ -56,22 +56,16 @@ impl<P: Prototype + LuaConvertableCar> Default for RegistryBuilder<P> {
 	}
 }
 
-impl<P: Prototype + LuaConvertableCar> mlua::UserData for RegistryBuilder<P> {
+impl<P: Prototype> mlua::UserData for RegistryBuilder<P> {
 	fn add_methods<M: mlua::UserDataMethods<Self>>(m: &mut M) {
-		m.add_method_mut("register", |lua, this, t: Value| {
+		m.add_method_mut("register", |_, this, prototypes: HashMap<Tag, P>| {
 			trace!(
 				target: P::lua_registry_name(),
 				"Registered entries to registry"
 			);
 
-			let new_entries: HashMap<Tag, Value> = lua.unpack(t)?;
 			let mut entries = this.entries.lock();
-			for (tag, table) in new_entries {
-				trace!(
-					target: P::lua_registry_name(),
-					"Registering: {tag} {table:?}"
-				);
-				let prototype: P = P::from_luaagh(table, lua)?;
+			for (tag, prototype) in prototypes {
 				trace!(
 					target: P::lua_registry_name(),
 					"Registered: {tag} {prototype:?}"

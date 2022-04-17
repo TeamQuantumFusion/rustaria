@@ -15,8 +15,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use eyre::{Result, WrapErr};
-use mlua::Thread;
-use rayon::{ThreadPool, ThreadPoolBuilder};
+use rayon::ThreadPool;
 
 use manager::chunk::ChunkManager;
 use manager::entity::EntityManager;

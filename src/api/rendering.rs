@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use mlua::{Error, Lua, LuaSerdeExt, UserData, Value};
+use mlua::{Error, FromLua, Lua, Value};
 use serde::{Deserialize, Serialize};
 
-use rustaria_api::ty::{LuaConvertableCar, Tag};
+use rustaria_api::ty::{Tag};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum RenderingSystem {
@@ -22,41 +22,38 @@ pub struct Pane {
 	pub sprite: Tag,
 }
 
-impl LuaConvertableCar for Pane {
-	fn from_luaagh(value: Value, lua: &Lua) -> mlua::Result<Self> {
+impl FromLua for Pane {
+	fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
 		if let Value::Table(table) = value {
 			Ok(Pane {
-				x_offset: LuaConvertableCar::from_luaagh(table.get("x_offset")?, lua)?,
-				y_offset: LuaConvertableCar::from_luaagh(table.get("y_offset")?, lua)?,
-				width: LuaConvertableCar::from_luaagh(table.get("width")?, lua)?,
-				height: LuaConvertableCar::from_luaagh(table.get("height")?, lua)?,
-				sprite: LuaConvertableCar::from_luaagh(table.get("sprite")?, lua)?,
+				x_offset: table.get("x_offset")?,
+				y_offset: table.get("y_offset")?,
+				width: table.get("width")?,
+				height: table.get("height")?,
+				sprite: table.get("sprite")?,
 			})
 		} else {
 			Err(Error::UserDataTypeMismatch)
 		}
 	}
-
-	fn into_luaagh(self, lua: &Lua) -> mlua::Result<Value> {
-		todo!()
-	}
 }
 
-impl LuaConvertableCar for RenderingSystem {
-	fn from_luaagh(value: mlua::Value, lua: &mlua::Lua) -> mlua::Result<Self> {
+impl FromLua for RenderingSystem {
+	fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
 		if let Value::Table(table) = value {
-			if let value @ Value::Table(_) = table.get("Static")? {
-				return Ok(RenderingSystem::Static(Pane::from_luaagh(value, lua)?));
-			}
-			if let value @ Value::Table(_) = table.get("State")? {
-				return Ok(RenderingSystem::State(HashMap::from_luaagh(value, lua)?));
+			for (string, value) in table.pairs::<String, Value>().flatten() {
+				match string.as_str() {
+					"Static" => {
+						return Ok(RenderingSystem::Static(FromLua::from_lua(value, lua)?));
+					}
+					"State" => {
+						return Ok(RenderingSystem::State(FromLua::from_lua(value, lua)?));
+					}
+					_ => {}
+				}
 			}
 		}
 
 		Err(Error::UserDataTypeMismatch)
-	}
-
-	fn into_luaagh(self, lua: &mlua::Lua) -> mlua::Result<mlua::Value> {
-		lua.to_value(&self)
 	}
 }

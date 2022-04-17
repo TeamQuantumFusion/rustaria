@@ -1,8 +1,9 @@
+use mlua::{FromLua, Lua, Value};
 use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 
-use rustaria_api::ty::{LuaCar, LuaConvertableCar, Prototype, RawId, Tag};
+use rustaria_api::ty::{Prototype, RawId, Tag};
 
 use crate::{api::ty::ConnectionType, chunk::Tile};
 
@@ -21,12 +22,12 @@ pub struct TilePrototype {
 	//   pub break_resistance: BreakResistance,
 }
 
-impl LuaConvertableCar for TilePrototype {
-	fn from_luaagh(table: mlua::Value, _: &mlua::Lua) -> mlua::Result<Self> {
-		if let mlua::Value::Table(table) = table {
+impl FromLua for TilePrototype {
+	fn from_lua(value: Value, _: &Lua) -> mlua::Result<Self> {
+		if let mlua::Value::Table(table) = value {
 			Ok(TilePrototype {
 				sprite: table.get("sprite")?,
-				connection: table.get::<_, LuaCar<_>>("connection")?.0,
+				connection: table.get("connection")?,
 				// collision: table.get("collision")?,
 				// opaque: table.get("opaque")?,
 				// blast_resistance: table.get("blast_resistance")?,
@@ -35,10 +36,6 @@ impl LuaConvertableCar for TilePrototype {
 		} else {
 			Err(mlua::Error::UserDataTypeMismatch)
 		}
-	}
-
-	fn into_luaagh(self, _: &mlua::Lua) -> mlua::Result<mlua::Value> {
-		todo!()
 	}
 }
 

@@ -1,3 +1,4 @@
+use mlua::{FromLua, Lua, Value};
 use std::env::current_dir;
 
 use rustaria_api::{
@@ -24,9 +25,9 @@ impl Prototype for TilePrototype {
 	}
 }
 
-impl LuaConvertableCar for TilePrototype {
-	fn from_luaagh(table: mlua::Value, _: &mlua::Lua) -> mlua::Result<Self> {
-		if let mlua::Value::Table(table) = table {
+impl FromLua for TilePrototype {
+	fn from_lua(value: Value, _: &Lua) -> mlua::Result<Self> {
+		if let mlua::Value::Table(table) = value {
 			Ok(TilePrototype {
 				eggs: table.get("eggs")?,
 				name: table.get("name")?,
@@ -34,10 +35,6 @@ impl LuaConvertableCar for TilePrototype {
 		} else {
 			Err(mlua::Error::UserDataTypeMismatch)
 		}
-	}
-
-	fn into_luaagh(self, _: &mlua::Lua) -> mlua::Result<mlua::Value> {
-		todo!()
 	}
 }
 

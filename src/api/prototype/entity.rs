@@ -1,8 +1,8 @@
-use mlua::UserData;
+use mlua::{FromLua, Lua, Value};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-use rustaria_api::ty::{LuaCar, LuaConvertableCar, Tag};
+use rustaria_api::ty::{Tag};
 use rustaria_api::ty::{Prototype, RawId};
 use rustaria_util::ty::pos::Pos;
 
@@ -16,12 +16,12 @@ pub struct EntityPrototype {
 	pub rendering: Option<RenderingSystem>,
 }
 
-impl LuaConvertableCar for EntityPrototype {
-	fn from_luaagh(table: mlua::Value, _: &mlua::Lua) -> mlua::Result<Self> {
-		if let mlua::Value::Table(table) = table {
+impl FromLua for EntityPrototype {
+	fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
+		if let mlua::Value::Table(table) = value {
 			Ok(EntityPrototype {
-				velocity: table.get::<_, LuaCar<_>>("velocity")?.0,
-				rendering: table.get::<_, LuaCar<_>>("rendering")?.0,
+				velocity: table.get("velocity")?,
+				rendering: table.get("rendering")?,
 				// collision: table.get("collision")?,
 				// opaque: table.get("opaque")?,
 				// blast_resistance: table.get("blast_resistance")?,
@@ -30,10 +30,6 @@ impl LuaConvertableCar for EntityPrototype {
 		} else {
 			Err(mlua::Error::UserDataTypeMismatch)
 		}
-	}
-
-	fn into_luaagh(self, _: &mlua::Lua) -> mlua::Result<mlua::Value> {
-		todo!()
 	}
 }
 
@@ -81,19 +77,15 @@ impl Prototype for VelocityCompPrototype {
 	}
 }
 
-impl LuaConvertableCar for VelocityCompPrototype {
-	fn from_luaagh(table: mlua::Value, _: &mlua::Lua) -> mlua::Result<Self> {
-		if let mlua::Value::Table(table) = table {
+impl FromLua for VelocityCompPrototype {
+	fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
+		if let mlua::Value::Table(table) = value {
 			Ok(VelocityCompPrototype {
-				x: table.get::<_, LuaCar<_>>("x")?.0,
-				y: table.get::<_, LuaCar<_>>("y")?.0,
+				x: table.get("x")?,
+				y: table.get("y")?,
 			})
 		} else {
 			Err(mlua::Error::UserDataTypeMismatch)
 		}
-	}
-
-	fn into_luaagh(self, _: &mlua::Lua) -> mlua::Result<mlua::Value> {
-		todo!()
 	}
 }

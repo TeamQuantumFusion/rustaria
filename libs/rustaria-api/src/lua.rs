@@ -5,7 +5,7 @@ pub mod reload;
 
 use mlua::{
 	prelude::{LuaResult, LuaTable},
-	ExternalError, ExternalResult, Lua,
+	ExternalError, Lua,
 };
 use rustaria_util::info;
 

@@ -1,9 +1,7 @@
 use std::{collections::HashSet, hash::Hash};
 
-use mlua::{ExternalError, Lua, Value};
+use mlua::{ExternalError, FromLua, Lua, Value};
 use serde::{Deserialize, Serialize};
-
-use rustaria_api::ty::LuaConvertableCar;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -30,8 +28,9 @@ pub enum ConnectionType {
 	// dirt
 	Transitional,
 }
-impl LuaConvertableCar for ConnectionType {
-	fn from_luaagh(value: Value, _: &Lua) -> mlua::Result<Self> {
+
+impl FromLua for ConnectionType {
+	fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
 		match value {
 			Value::Nil => Ok(ConnectionType::Connected),
 			Value::String(string) => match string.to_str()? {
@@ -42,10 +41,6 @@ impl LuaConvertableCar for ConnectionType {
 			},
 			_ => Err("Wrong value type".to_lua_err()),
 		}
-	}
-
-	fn into_luaagh(self, _: &Lua) -> mlua::Result<Value> {
-		todo!()
 	}
 }
 

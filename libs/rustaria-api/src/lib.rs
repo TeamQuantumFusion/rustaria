@@ -13,7 +13,7 @@ use rustaria_util::{
 	blake3::{Blake3Hash, Hasher},
 	debug, info, trace, warn,
 };
-use ty::{LuaConvertableCar, PluginId, Prototype, Tag};
+use ty::{PluginId, Prototype, Tag};
 use type_map::concurrent::TypeMap;
 
 mod archive;
@@ -93,7 +93,7 @@ pub struct ApiReload<'a> {
 
 impl<'a> ApiReload<'a> {
 	/// This should be called for every prototype that the system has. It adds a builder for that registry.
-	pub fn add_reload_registry<P: Prototype + LuaConvertableCar>(&mut self) -> mlua::Result<()> {
+	pub fn add_reload_registry<P: Prototype>(&mut self) -> mlua::Result<()> {
 		debug!(
 			"Registered \"{}\" registry. (reload)",
 			P::lua_registry_name()
@@ -135,7 +135,7 @@ impl<'a> ApiReload<'a> {
 
 	/// This step compiles all of the builders and fills the `RegistryStack` with the registries.
 	/// This also appends the `Hasher` with all of the entries for syncing.
-	pub fn add_apply_registry<P: Prototype + LuaConvertableCar>(&mut self) -> mlua::Result<()> {
+	pub fn add_apply_registry<P: Prototype>(&mut self) -> mlua::Result<()> {
 		debug!(
 			"Registered \"{}\" registry. (apply)",
 			P::lua_registry_name()
