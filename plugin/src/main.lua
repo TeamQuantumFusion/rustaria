@@ -21,7 +21,7 @@ Entities:register {
     },
     ["bunne"] = {
         velocity = {
-            x = 0.1,
+            x = 0.5,
             y = 0,
         },
         rendering = {

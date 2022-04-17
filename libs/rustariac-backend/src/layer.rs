@@ -18,11 +18,9 @@ impl<V: Clone + Copy> LayerChannel<V> {
 
 	/// Supply the layer with a mesh.
 	pub fn supply(&mut self, builder: VertexBuilder<V>) {
-		if !builder.index_data.is_empty() {
-			let mut data = self.0.write().unwrap();
-			data.new_data = Some(builder);
-			data.dirty = false;
-		}
+		let mut data = self.0.write().unwrap();
+		data.new_data = Some(builder);
+		data.dirty = false;
 	}
 }
 

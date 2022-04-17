@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use rustaria::api::rendering::{Pane, RenderingSystem};
 use rustariac_backend::builder::VertexBuilder;
-use rustariac_backend::ty::{PosTexture, Rectangle};
+use rustariac_backend::ty::{Camera, PosTexture, Rectangle};
 use rustariac_backend::{ty::AtlasLocation, ClientBackend};
 
 pub mod chunk_drawer;
@@ -28,9 +28,9 @@ impl BakedRenderingSystem {
 		}
 	}
 
-	pub fn push(&self, builder: &mut VertexBuilder<PosTexture>, x: f32, y: f32) {
+	pub fn push(&self, builder: &mut VertexBuilder<PosTexture>, camera: &Camera, x: f32, y: f32) {
 		match self {
-			BakedRenderingSystem::Static(pane) => pane.push(builder, x, y),
+			BakedRenderingSystem::Static(pane) => pane.push(builder, camera, x, y),
 			BakedRenderingSystem::State(_) => todo!(),
 		}
 	}
@@ -62,15 +62,15 @@ impl BakedPane {
 		}
 	}
 
-	pub fn push(&self, builder: &mut VertexBuilder<PosTexture>, x: f32, y: f32) {
-		builder.quad((
-			Rectangle {
-				x: x + self.x_offset,
-				y: y + self.y_offset,
-				width: self.width,
-				height: self.height,
-			},
-			self.sprite,
-		))
+	pub fn push(&self, builder: &mut VertexBuilder<PosTexture>, camera: &Camera, x: f32, y: f32) {
+		let rectangle = Rectangle {
+			x: x + self.x_offset,
+			y: y + self.y_offset,
+			width: self.width,
+			height: self.height,
+		};
+		if camera.visible().overlaps(&rectangle) {
+			builder.quad((rectangle, self.sprite))
+		}
 	}
 }

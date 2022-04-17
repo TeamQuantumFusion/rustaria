@@ -69,14 +69,16 @@ pub struct LayerReceiver<V: Clone + Copy + Vertex> {
 	pub vertex_data: VertexBuffer<V>,
 	pub index_data: IndexBuffer<u32>,
 	pub reference: Weak<RwLock<LayerChannelData<V>>>,
+	pub elements: usize,
 }
 
 impl<V: Clone + Copy + Vertex> LayerReceiver<V> {
 	pub fn new(facade: &GliumBackendEngine, layer: &LayerChannel<V>) -> LayerReceiver<V> {
 		LayerReceiver {
-			vertex_data: VertexBuffer::dynamic(facade, &[]).unwrap(),
-			index_data: IndexBuffer::dynamic(facade, PrimitiveType::TrianglesList, &[]).unwrap(),
+			vertex_data: VertexBuffer::immutable(facade, &[]).unwrap(),
+			index_data: IndexBuffer::immutable(facade, PrimitiveType::TrianglesList, &[]).unwrap(),
 			reference: Arc::downgrade(&layer.0),
+			elements: 0,
 		}
 	}
 
@@ -90,20 +92,26 @@ impl<V: Clone + Copy + Vertex> LayerReceiver<V> {
 	) -> Option<()> {
 		if let Some(data) = self.reference.upgrade() {
 			if let Some(builder) = data.write().unwrap().new_data.take() {
-				self.vertex_data = VertexBuffer::dynamic(facade, &builder.vertex_data).unwrap();
-				self.index_data =
-					IndexBuffer::dynamic(facade, PrimitiveType::TrianglesList, &builder.index_data)
-						.unwrap();
-			}
-			frame
-				.draw(
-					&self.vertex_data,
-					&self.index_data,
-					program,
-					uniforms,
-					draw_parameters,
+				self.vertex_data = VertexBuffer::immutable(facade, &builder.vertex_data).unwrap();
+				self.index_data = IndexBuffer::immutable(
+					facade,
+					PrimitiveType::TrianglesList,
+					&builder.index_data,
 				)
 				.unwrap();
+				self.elements = self.index_data.len();
+			}
+			if self.elements > 0 {
+				frame
+					.draw(
+						&self.vertex_data,
+						&self.index_data,
+						program,
+						uniforms,
+						draw_parameters,
+					)
+					.unwrap();
+			}
 			Some(())
 		} else {
 			None

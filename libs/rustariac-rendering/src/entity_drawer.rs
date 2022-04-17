@@ -45,7 +45,7 @@ impl WorldEntityDrawer {
 				let pos = pos.position.lerp(old_pos, delta);
 
 				if let Some(Some(system)) = self.entity_drawers.get(id.index()) {
-					system.push(&mut builder, pos.x, pos.y);
+					system.push(&mut builder, camera, pos.x, pos.y);
 				}
 			}
 		}
