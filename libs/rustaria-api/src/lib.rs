@@ -1,23 +1,21 @@
-use std::{
-	collections::HashMap,
-	io::{self, ErrorKind},
-	path::PathBuf,
-	sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
-};
-
-use lua::reload::RegistryBuilder;
-use mlua::Value;
+use crate::registry::RegistryBuilder;
+use eyre::Result;
 use plugin::Plugin;
 use registry::Registry;
 use rustaria_util::{
 	blake3::{Blake3Hash, Hasher},
 	debug, info, trace, warn,
 };
+use std::{
+	collections::HashMap,
+	io::{self, ErrorKind},
+	path::PathBuf,
+	sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
+};
 use ty::{PluginId, Prototype, Tag};
 use type_map::concurrent::TypeMap;
 
 mod archive;
-pub mod lua;
 
 pub mod plugin;
 pub mod registry;
@@ -71,102 +69,43 @@ impl Api {
 
 	pub fn reload<'a>(&'a mut self, stack: &'a mut Carrier) -> ApiReload<'a> {
 		info!("preparing acquire");
+		let mut lock = stack
+			.data
+			.write()
+			.expect("Could not acquire write lock of RegistryStack.");
+		lock.0.clear();
+		lock.1 = Default::default();
+
 		ApiReload {
 			api: self,
-			stack: stack
-				.data
-				.write()
-				.expect("Could not acquire write lock of RegistryStack."),
+			lock,
 			registry_builders: TypeMap::new(),
 			hasher: Hasher::new(),
 		}
 	}
 }
 
-/// This is the most cringe part of the codebase for the better.
 pub struct ApiReload<'a> {
 	api: &'a mut Api,
-	stack: RwLockWriteGuard<'a, (TypeMap, Blake3Hash)>,
+	lock: RwLockWriteGuard<'a, (TypeMap, Blake3Hash)>,
 	registry_builders: TypeMap,
 	hasher: Hasher,
 }
 
 impl<'a> ApiReload<'a> {
-	/// This should be called for every prototype that the system has. It adds a builder for that registry.
-	pub fn add_reload_registry<P: Prototype>(&mut self) -> mlua::Result<()> {
+	pub fn add_registry<P: Prototype>(&mut self, builder: RegistryBuilder<P>) -> Result<()> {
 		debug!(
 			"Registered \"{}\" registry. (reload)",
 			P::lua_registry_name()
 		);
-		let mut builder = RegistryBuilder::<P>::default();
-		for plugin in self.api.plugins.values_mut() {
-			builder.register(&plugin.lua)?;
-		}
-
-		self.registry_builders.insert::<RegistryBuilder<P>>(builder);
-		Ok(())
-	}
-
-	/// This is the first big step. It invokes every plugin entrypoint that fills the builders.
-	/// This is also where we reset the `RegistryStack` because the next step fills the registries.
-	pub fn reload(&mut self) {
-		info!("Reloading {} plugins.", self.api.plugins.len());
-		// Reset registry stack
-		self.stack.0.clear();
-		self.stack.1 = Default::default();
-
-		// Reload plugins
-		for (id, plugin) in &mut self.api.plugins {
-			debug!("Reloading {id}");
-			if let Some(entry) = &plugin.manifest.common_entry {
-				match plugin.archive.get_asset(&("src/".to_owned() + entry)) {
-					Ok(code) => {
-						if let Err(err) = plugin.lua.load(&code).call::<_, ()>(()) {
-							panic!("Entrypoint error: \n{err}")
-						}
-					}
-					Err(err) => {
-						warn!(target: id, "Could not find entrypoint because {err}")
-					}
-				}
-			}
-		}
-	}
-
-	/// This step compiles all of the builders and fills the `RegistryStack` with the registries.
-	/// This also appends the `Hasher` with all of the entries for syncing.
-	pub fn add_apply_registry<P: Prototype>(&mut self) -> mlua::Result<()> {
-		debug!(
-			"Registered \"{}\" registry. (apply)",
-			P::lua_registry_name()
-		);
-		// Clear references
-		for plugin in self.api.plugins.values_mut() {
-			plugin
-				.lua
-				.globals()
-				.set(P::lua_registry_name(), Value::Nil)?;
-		}
-
-		// Aquire builder
-		let builder = self
-			.registry_builders
-			.remove::<RegistryBuilder<P>>()
-			.expect("Cannot find registry");
-
-		// Insert registry
-		self.stack
+		self.lock
 			.0
 			.insert::<Registry<P>>(builder.finish(&mut self.hasher)?);
 		Ok(())
 	}
 
-	/// This is the last step. It just compiles the hash and sets it on the `RegistryStack`
-	pub fn apply(self) {
-		info!("applying");
-		// Set the hash
-		let mut stack = self.stack;
-		stack.1 = self.hasher.finalize();
+	pub fn reload(mut self) {
+		self.lock.1 = self.hasher.finalize();
 	}
 }
 

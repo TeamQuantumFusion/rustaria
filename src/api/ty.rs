@@ -1,6 +1,5 @@
 use std::{collections::HashSet, hash::Hash};
 
-use mlua::{ExternalError, FromLua, Lua, Value};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize, Serialize)]
@@ -27,21 +26,6 @@ pub enum ConnectionType {
 	Connected,
 	// dirt
 	Transitional,
-}
-
-impl FromLua for ConnectionType {
-	fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
-		match value {
-			Value::Nil => Ok(ConnectionType::Connected),
-			Value::String(string) => match string.to_str()? {
-				"isolated" => Ok(ConnectionType::Isolated),
-				"connected" => Ok(ConnectionType::Connected),
-				"transitional" => Ok(ConnectionType::Transitional),
-				_ => Err("Unknown value".to_lua_err()),
-			},
-			_ => Err("Wrong value type".to_lua_err()),
-		}
-	}
 }
 
 impl Default for ConnectionType {

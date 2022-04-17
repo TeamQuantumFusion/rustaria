@@ -1,5 +1,5 @@
-use crate::{archive::Archive, lua::register_preload, ty::PluginId};
-use mlua::{Lua, UserData};
+use crate::archive::Archive;
+use crate::PluginId;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
@@ -26,7 +26,6 @@ pub struct Manifest {
 }
 
 pub struct Plugin {
-	pub lua: Lua,
 	pub manifest: Manifest,
 	pub archive: Archive,
 }
@@ -37,20 +36,7 @@ impl Plugin {
 		let manifest_binary = archive.get_asset("manifest.json")?;
 		let manifest: Manifest = serde_json::from_slice(&manifest_binary)?;
 
-		let lua = Lua::new();
-		register_preload(&lua)?;
-		lua.globals().set(
-			"ctx",
-			PluginContext {
-				id: manifest.id.clone(),
-			},
-		)?;
-
-		Ok(Plugin {
-			manifest,
-			archive,
-			lua,
-		})
+		Ok(Plugin { manifest, archive })
 	}
 }
 
@@ -60,8 +46,6 @@ pub enum PluginLoadError {
 	Io(#[from] std::io::Error),
 	#[error("Manifest parsing error `{0}`")]
 	ManifestParsing(#[from] serde_json::Error),
-	#[error("Initializing Lua error `{0}`")]
-	Lua(#[from] mlua::Error),
 }
 
 /// Used in every lua context. global "ctx"
@@ -69,5 +53,3 @@ pub enum PluginLoadError {
 pub struct PluginContext {
 	pub id: String,
 }
-
-impl UserData for PluginContext {}

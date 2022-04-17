@@ -1,3 +1,5 @@
+#![allow(clippy::new_without_default)]
+
 //! Ok can we please stop calling everything handler. There are a ton of conlicts.
 //! Here are the definitions
 //!

@@ -1,5 +1,3 @@
-use mlua::{FromLua, Lua, Value};
-use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 use rustaria_api::ty::Tag;
@@ -10,29 +8,11 @@ use rustaria_util::ty::pos::Pos;
 use crate::api::rendering::RenderingSystem;
 use crate::entity::VelocityComp;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct EntityPrototype {
 	pub velocity: Option<VelocityCompPrototype>,
 	#[cfg(feature = "client")]
 	pub rendering: Option<RenderingSystem>,
-}
-
-impl FromLua for EntityPrototype {
-	fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
-		if let mlua::Value::Table(table) = value {
-			Ok(EntityPrototype {
-				velocity: table.get("velocity")?,
-				#[cfg(feature = "client")]
-				rendering: table.get("rendering")?,
-				// collision: table.get("collision")?,
-				// opaque: table.get("opaque")?,
-				// blast_resistance: table.get("blast_resistance")?,
-				// break_resistance: table.get("break_resistance")?,
-			})
-		} else {
-			Err(mlua::Error::UserDataTypeMismatch)
-		}
-	}
 }
 
 impl Prototype for EntityPrototype {
@@ -61,7 +41,7 @@ impl Prototype for EntityPrototype {
 	}
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct VelocityCompPrototype {
 	pub x: f32,
 	pub y: f32,
@@ -76,19 +56,6 @@ impl Prototype for VelocityCompPrototype {
 				x: self.x,
 				y: self.y,
 			},
-		}
-	}
-}
-
-impl FromLua for VelocityCompPrototype {
-	fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
-		if let mlua::Value::Table(table) = value {
-			Ok(VelocityCompPrototype {
-				x: table.get("x")?,
-				y: table.get("y")?,
-			})
-		} else {
-			Err(mlua::Error::UserDataTypeMismatch)
 		}
 	}
 }

@@ -15,8 +15,6 @@ rayon = "1.5.1"
 crossbeam = "0.8.1"
 eyre = "0.6.8"
 
-mlua = {  git = "https://github.com/alphaqu/mlua", features = ["serialize", "send"] }
-
 rustaria-util = { path = "./libs/rustaria-util" }
 rustaria-api = { path = "./libs/rustaria-api" }
 rustaria-network = { path = "./libs/rustaria-network" }

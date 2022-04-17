@@ -1,4 +1,3 @@
-use mlua::{FromLua, Lua, Value};
 use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
@@ -20,23 +19,6 @@ pub struct TilePrototype {
 	//  pub blast_resistance: BlastResistance,
 	//   #[serde(default = "TilePrototype::default_break_resistance")]
 	//   pub break_resistance: BreakResistance,
-}
-
-impl FromLua for TilePrototype {
-	fn from_lua(value: Value, _: &Lua) -> mlua::Result<Self> {
-		if let mlua::Value::Table(table) = value {
-			Ok(TilePrototype {
-				sprite: table.get("sprite")?,
-				connection: table.get("connection")?,
-				// collision: table.get("collision")?,
-				// opaque: table.get("opaque")?,
-				// blast_resistance: table.get("blast_resistance")?,
-				// break_resistance: table.get("break_resistance")?,
-			})
-		} else {
-			Err(mlua::Error::UserDataTypeMismatch)
-		}
-	}
 }
 
 impl Prototype for TilePrototype {

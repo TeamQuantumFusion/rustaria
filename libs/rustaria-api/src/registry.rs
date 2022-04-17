@@ -1,3 +1,5 @@
+use eyre::Result;
+use rustaria_util::blake3::Hasher;
 use std::collections::HashMap;
 use std::slice::Iter;
 
@@ -31,5 +33,49 @@ impl<P: Prototype> Registry<P> {
 		self.tag_to_id.clear();
 		self.id_to_tag.clear();
 		self.entries.clear();
+	}
+}
+
+#[derive(Clone)]
+pub struct RegistryBuilder<P: Prototype> {
+	entries: HashMap<Tag, P>,
+}
+
+impl<P: Prototype> RegistryBuilder<P> {
+	pub fn new() -> RegistryBuilder<P> {
+		RegistryBuilder {
+			entries: HashMap::new()
+		}
+	}
+	
+	pub fn register(&mut self, tag: Tag, prototype: P) {
+		self.entries.insert(tag, prototype);
+	}
+
+	pub fn finish(self, hasher: &mut Hasher) -> Result<Registry<P>> {
+		let mut data: Vec<_> = self.entries.into_iter().collect();
+
+		data.sort_by(|(i1, _), (i2, _)| i1.cmp(i2));
+
+		for (id, (tag, _)) in data.iter().enumerate() {
+			hasher.update(&id.to_be_bytes());
+			hasher.update(tag.as_bytes());
+		}
+
+		let mut tag_to_id = HashMap::new();
+		let mut id_to_tag = Vec::new();
+		let mut entries = Vec::new();
+
+		for (id, (tag, prototype)) in data.into_iter().enumerate() {
+			tag_to_id.insert(tag.clone(), RawId(id as u32));
+			id_to_tag.push(tag);
+			entries.push(prototype);
+		}
+
+		Ok(Registry {
+			tag_to_id,
+			id_to_tag,
+			entries,
+		})
 	}
 }

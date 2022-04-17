@@ -4,10 +4,7 @@ use std::{
 	fmt::{Debug, Display},
 };
 
-use mlua::{ExternalError, FromLua, Lua, ToLua, Value};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-
-use crate::lua::ctx;
+use serde::{Deserialize, Serialize};
 
 // Raw Ids
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, PartialOrd)]
@@ -45,19 +42,6 @@ impl Tag {
 		Self::new_internal(tag, colon_index)
 	}
 
-	pub fn new_lua(tag: String, lua: &Lua) -> Result<Tag, TagCreationError> {
-		match Self::new(tag.clone()) {
-			Ok(tag) => Ok(tag),
-			Err(TagCreationError::ColonMissing) => {
-				let mut new_tag = ctx(lua).id;
-				new_tag.push(':');
-				new_tag.push_str(&tag);
-				Self::new(new_tag)
-			}
-			Err(err) => Err(err),
-		}
-	}
-
 	pub fn as_bytes(&self) -> &[u8] {
 		self.inner.as_bytes()
 	}
@@ -76,23 +60,6 @@ impl Display for Tag {
 	}
 }
 
-impl FromLua for Tag {
-	fn from_lua(value: mlua::Value, lua: &Lua) -> mlua::Result<Self> {
-		match value {
-			mlua::Value::String(string) => {
-				Tag::new_lua(string.to_str()?.to_string(), lua).map_err(|err| err.to_lua_err())
-			}
-			_ => Err(mlua::Error::SerializeError(format!("{value:?}"))),
-		}
-	}
-}
-
-impl ToLua for Tag {
-	fn to_lua(self, lua: &Lua) -> mlua::Result<Value> {
-		Ok(Value::String(lua.create_string(&self.inner)?))
-	}
-}
-
 #[derive(thiserror::Error, Debug)]
 pub enum TagCreationError {
 	#[error("Could not find a colon, and plugin context is not available to inherit from.")]
@@ -103,9 +70,7 @@ pub enum TagCreationError {
 	IllegalCharacters,
 }
 
-pub trait Prototype:
-	Clone + Send + Sync + 'static + Debug + DeserializeOwned + Serialize + FromLua
-{
+pub trait Prototype: Send + Sync + 'static + Debug {
 	type Item;
 
 	fn create(&self, id: RawId) -> Self::Item;

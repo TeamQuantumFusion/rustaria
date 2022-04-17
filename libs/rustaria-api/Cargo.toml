@@ -11,15 +11,13 @@ rustaria-util = { path = "../rustaria-util" }
 
 # Error
 thiserror = "1.0.30"
-
+eyre = "0.6.8"
 
 # Plugins
-mlua = { git = "https://github.com/alphaqu/mlua",  features = ["lua54", "vendored", "serialize", "send"] }
 serde = { version = "1.0", features = ["derive"] }
 semver = { version = "1.0", features = ["serde"] }
 serde_json = "1.0"
 zip = { version = "0.6.2", default-features = false, features = ["deflate"] }
-parking_lot = "0.12.0"
 
 # Registries
 type-map = "0.5"
