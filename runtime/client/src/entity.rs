@@ -7,7 +7,7 @@ use rustaria::api::prototype::entity::EntityPrototype;
 use rustaria::entity::{EntityContainer, World};
 use rustaria::network::packet::entity::ServerEntityPacket;
 use rustaria_api::{Api, Carrier, Reloadable};
-use rustariac_backend::ty::Viewport;
+use rustariac_backend::ty::Camera;
 use rustariac_backend::ClientBackend;
 use rustariac_rendering::entity_drawer::WorldEntityDrawer;
 
@@ -33,14 +33,14 @@ impl EntityHandler {
 
 		Ok(())
 	}
-	pub fn draw(&mut self, view: &Viewport, delta: f32) -> Result<()> {
-		self.drawer.draw(view, &self.container, delta)?;
+	pub fn draw(&mut self, camera: &Camera, delta: f32) -> Result<()> {
+		self.drawer.draw(camera, &self.container, delta)?;
 
 		Ok(())
 	}
 
-	pub fn tick(&mut self, view: &Viewport, networking: &mut NetworkHandler) -> Result<()> {
-		self.drawer.tick(view, &self.container)?;
+	pub fn tick(&mut self, camera: &Camera, networking: &mut NetworkHandler) -> Result<()> {
+		self.drawer.tick(camera, &self.container)?;
 		self.container.tick();
 
 		Ok(())

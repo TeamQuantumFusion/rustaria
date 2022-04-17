@@ -10,7 +10,7 @@ use glfw::{
 use image::DynamicImage;
 use layer::LayerChannel;
 use rustaria_api::{ty::Tag, Api};
-use ty::{PosTexture, Viewport};
+use ty::{Camera, PosTexture};
 
 pub mod atlas;
 pub mod builder;
@@ -106,5 +106,5 @@ pub trait Backend {
 		images: Vec<(DynamicImage, AtlasLocation)>,
 		level: u32,
 	);
-	fn draw(&mut self, view: &Viewport);
+	fn draw(&mut self, camera: &Camera);
 }

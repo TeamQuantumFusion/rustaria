@@ -17,7 +17,7 @@ use rustaria_api::ty::{Prototype, Tag};
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_util::ty::pos::Pos;
 use rustaria_util::{debug, info};
-use rustariac_backend::ty::Viewport;
+use rustariac_backend::ty::Camera;
 use rustariac_backend::ClientBackend;
 use rustariac_glium_backend::GliumBackend;
 
@@ -52,7 +52,7 @@ fn main() -> eyre::Result<()> {
 		carrier,
 		world: None,
 		control: ControllerHandler::new(),
-		view: Viewport {
+		camera: Camera {
 			position: [0.0, 0.0],
 			zoom: 30.0,
 		},
@@ -90,7 +90,7 @@ pub struct Client {
 	api: Api,
 	carrier: Carrier,
 
-	view: Viewport,
+	camera: Camera,
 	control: ControllerHandler,
 	world: Option<ClientWorld>,
 	backend: ClientBackend,
@@ -99,14 +99,13 @@ pub struct Client {
 impl Client {
 	pub fn run(&mut self) {
 		let mut last_tick = Instant::now();
-		let mut last_delta = 0f32;
 
 		let mut reload = false;
 		while !self.backend.instance().backend.window().should_close() {
 			for event in self.backend.instance_mut().backend.poll_events() {
 				match event {
 					WindowEvent::Scroll(_, y) => {
-						self.view.zoom += y as f32;
+						self.camera.zoom += y as f32;
 					}
 					WindowEvent::Key(Key::R, _, Action::Release, DEBUG_MOD) => {
 						reload = true;
@@ -186,20 +185,20 @@ impl Client {
 
 	fn tick(&mut self) -> Result<()> {
 		if let Some(world) = &mut self.world {
-			world.tick(&self.view)?;
+			world.tick(&self.camera)?;
 		}
 
 		Ok(())
 	}
 
 	fn draw(&mut self, delta: f32) -> Result<()> {
-		self.control.tick(&mut self.view, delta);
+		self.control.tick(&mut self.camera, delta);
 
 		if let Some(world) = &mut self.world {
-			world.draw(&self.view, delta)?;
+			world.draw(&self.camera, delta)?;
 		}
 
-		self.backend.instance_mut().backend.draw(&self.view);
+		self.backend.instance_mut().backend.draw(&self.camera);
 		Ok(())
 	}
 }
@@ -215,9 +214,9 @@ pub struct ClientWorld {
 }
 
 impl ClientWorld {
-	pub fn tick(&mut self, view: &Viewport) -> Result<()> {
-		self.chunk.tick(view, &mut self.networking)?;
-		self.entity.tick(view, &mut self.networking)?;
+	pub fn tick(&mut self, camera: &Camera) -> Result<()> {
+		self.chunk.tick(camera, &mut self.networking)?;
+		self.entity.tick(camera, &mut self.networking)?;
 		if let Some(integrated) = &mut self.integrated {
 			integrated.tick()?;
 		}
@@ -230,9 +229,9 @@ impl ClientWorld {
 		Ok(())
 	}
 
-	pub fn draw(&mut self, view: &Viewport, delta: f32) -> Result<()> {
-		self.chunk.draw(view);
-		self.entity.draw(view, delta)?;
+	pub fn draw(&mut self, camera: &Camera, delta: f32) -> Result<()> {
+		self.chunk.draw(camera);
+		self.entity.draw(camera, delta)?;
 
 		Ok(())
 	}

@@ -33,13 +33,13 @@ impl Quadable<PosTexture> for (Rectangle, AtlasLocation) {
 }
 
 #[derive(Debug)]
-pub struct Viewport {
+pub struct Camera {
 	pub position: [f32; 2],
 	pub zoom: f32,
 }
 
-impl Viewport {
-	pub fn viewport(&self, screen_y_ratio: f32) -> Rectangle {
+impl Camera {
+	pub fn visible(&self, screen_y_ratio: f32) -> Rectangle {
 		Rectangle {
 			x: self.position[0] - ((self.zoom / 2.0) * screen_y_ratio),
 			y: self.position[1] - (self.zoom / 2.0),

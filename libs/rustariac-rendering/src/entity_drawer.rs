@@ -7,7 +7,7 @@ use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_util::info;
 use rustaria_util::ty::pos::Pos;
 use rustariac_backend::builder::VertexBuilder;
-use rustariac_backend::ty::Viewport;
+use rustariac_backend::ty::Camera;
 use rustariac_backend::{layer::LayerChannel, ty::PosTexture, ClientBackend};
 use std::collections::HashMap;
 
@@ -33,7 +33,7 @@ impl WorldEntityDrawer {
 		}
 	}
 
-	pub fn draw(&mut self, view: &Viewport, container: &EntityContainer, delta: f32) -> Result<()> {
+	pub fn draw(&mut self, camera: &Camera, container: &EntityContainer, delta: f32) -> Result<()> {
 		self.carrier.as_ref().wrap_err(CarrierUnavailable)?;
 
 		let mut builder = VertexBuilder::default();
@@ -57,7 +57,7 @@ impl WorldEntityDrawer {
 		Ok(())
 	}
 
-	pub fn tick(&mut self, view: &Viewport, container: &EntityContainer) -> Result<()> {
+	pub fn tick(&mut self, camera: &Camera, container: &EntityContainer) -> Result<()> {
 		self.carrier.as_ref().wrap_err(CarrierUnavailable)?;
 
 		let mut query = <(Entity, &PositionComp)>::query();

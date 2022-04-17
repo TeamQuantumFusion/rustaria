@@ -11,11 +11,11 @@ use glium::{
 use image::{imageops::FilterType, DynamicImage};
 use pipeline::LayerPipeline;
 use rustaria_util::{info, trace};
+use rustariac_backend::ty::AtlasLocation;
 use rustariac_backend::{
 	layer::LayerChannel,
-	ty::{PosTexture, Viewport},
+	ty::{Camera, PosTexture},
 };
-use rustariac_backend::ty::AtlasLocation;
 
 pub mod engine;
 mod pipeline;
@@ -78,8 +78,13 @@ impl rustariac_backend::Backend for GliumBackend {
 		&self.engine.glfw
 	}
 
-	fn supply_atlas(&mut self, width: u32, height: u32, images: Vec<(DynamicImage, AtlasLocation)>,level: u32) {
-
+	fn supply_atlas(
+		&mut self,
+		width: u32,
+		height: u32,
+		images: Vec<(DynamicImage, AtlasLocation)>,
+		level: u32,
+	) {
 		let atlas = texture::SrgbTexture2d::empty_with_mipmaps(
 			&self.facade,
 			texture::MipmapsOption::EmptyMipmapsMax(level),
@@ -91,27 +96,29 @@ impl rustariac_backend::Backend for GliumBackend {
 		for level in 0..=level {
 			if let Some(mipmap) = atlas.mipmap(level) {
 				for (image, location) in &images {
-                    let x = location.x as u32 >> level as u32;
-                    let y = location.y as u32 >> level as u32;
-                    let width = image.width() >> level as u32;
-				let height = image.height() >> level as u32;
-				let image = image.resize_exact(width, height, FilterType::Nearest);
-				info!("{x}:{y} {width}x{height}");mipmap.write(
-					Rect {
-						left: location.x as u32 >> level as u32,
-						bottom: location.y as u32 >> level as u32,
-						width:  location.width as u32 >> level as u32,
-						height:  location.height as u32 >> level as u32,
-					},
-					RawImage2d::from_raw_rgba_reversed(image.as_bytes(), (width, height)),
-				);
+					let x = location.x as u32 >> level as u32;
+					let y = location.y as u32 >> level as u32;
+					let width = image.width() >> level as u32;
+					let height = image.height() >> level as u32;
+					let image = image.resize_exact(width, height, FilterType::Nearest);
+					info!("{x}:{y} {width}x{height}");
+					mipmap.write(
+						Rect {
+							left: location.x as u32 >> level as u32,
+							bottom: location.y as u32 >> level as u32,
+							width: location.width as u32 >> level as u32,
+							height: location.height as u32 >> level as u32,
+						},
+						RawImage2d::from_raw_rgba_reversed(image.as_bytes(), (width, height)),
+					);
+				}
 			}
-		}}
+		}
 
 		self.atlas = Some(atlas);
 	}
 
-	fn draw(&mut self, view: &Viewport) {
+	fn draw(&mut self, camera: &Camera) {
 		let mut frame = Frame::new(self.facade.context.clone(), (self.width, self.height));
 		frame.clear_color(0.1, 0.1, 0.1, 1.0);
 		if let Some(atlas) = &self.atlas {
@@ -121,8 +128,8 @@ impl rustariac_backend::Backend for GliumBackend {
 			};
 			let uniforms = uniform! {
 					  screen_y_ratio: self.width as f32 / self.height as f32,
-					  zoom: view.zoom,
-					  player_pos: view.position,
+					  zoom: camera.zoom,
+					  player_pos: camera.position,
 					  tex: glium::uniforms::Sampler::new(atlas)
 			.minify_filter(glium::uniforms::MinifySamplerFilter::NearestMipmapNearest)
 			.magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest)};

@@ -12,7 +12,7 @@ use rustaria::network::packet::ClientPacket;
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_util::ty::pos::Pos;
 use rustaria_util::{info, warn};
-use rustariac_backend::ty::Viewport;
+use rustariac_backend::ty::Camera;
 use rustariac_backend::ClientBackend;
 use rustariac_rendering::chunk_drawer::WorldChunkDrawer;
 
@@ -55,15 +55,14 @@ impl ChunkHandler {
 		Ok(())
 	}
 
-	pub fn tick(&mut self, view: &Viewport, networking: &mut NetworkHandler) -> Result<()> {
+	pub fn tick(&mut self, camera: &Camera, networking: &mut NetworkHandler) -> Result<()> {
 		if let Ok(chunk) = ChunkPos::try_from(Pos {
-			x: view.position[0],
-			y: view.position[1],
+			x: camera.position[0],
+			y: camera.position[1],
 		}) {
-			if chunk != self.old_chunk || view.zoom != self.old_zoom {
-				info!("{:?}", view);
-				let width = (view.zoom / CHUNK_SIZE_F) as i32;
-				let height = ((view.zoom * self.backend.screen_y_ratio()) / CHUNK_SIZE_F) as i32;
+			if chunk != self.old_chunk || camera.zoom != self.old_zoom {
+				let width = (camera.zoom / CHUNK_SIZE_F) as i32;
+				let height = ((camera.zoom * self.backend.screen_y_ratio()) / CHUNK_SIZE_F) as i32;
 				let mut requested = Vec::new();
 				for x in -width..width {
 					for y in -height..height {
@@ -81,15 +80,15 @@ impl ChunkHandler {
 					networking.send(ClientPacket::Chunk(ClientChunkPacket::Request(requested)))?;
 				}
 				self.old_chunk = chunk;
-				self.old_zoom = view.zoom;
+				self.old_zoom = camera.zoom;
 			}
 		}
 
 		Ok(())
 	}
 
-	pub fn draw(&mut self, view: &Viewport) {
-		self.drawer.draw(view);
+	pub fn draw(&mut self, camera: &Camera) {
+		self.drawer.draw(camera);
 	}
 }
 

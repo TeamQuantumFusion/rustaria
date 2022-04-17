@@ -9,7 +9,7 @@ use rustaria_util::ty::{ChunkPos, CHUNK_SIZE};
 use rustariac_backend::{
 	builder::VertexBuilder,
 	layer::LayerChannel,
-	ty::{PosTexture, Rectangle, Viewport},
+	ty::{Camera, PosTexture, Rectangle},
 	ClientBackend,
 };
 
@@ -52,9 +52,9 @@ impl WorldChunkDrawer {
 		self.layer.mark_dirty();
 	}
 
-	pub fn draw(&mut self, view: &Viewport) {
+	pub fn draw(&mut self, camera: &Camera) {
 		if self.layer.dirty() {
-			let viewport = view.viewport(self.backend.screen_y_ratio());
+			let viewport = camera.visible(self.backend.screen_y_ratio());
 
 			let mut builder = VertexBuilder::default();
 			for (pos, chunk) in &self.chunks {

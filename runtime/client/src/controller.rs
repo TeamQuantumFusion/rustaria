@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use rustaria_controller::button::{ButtonKey, ButtonSubscriber, HoldSubscriber, TriggerSubscriber};
 use rustaria_controller::Controller;
 use rustaria_util::info;
-use rustariac_backend::ty::Viewport;
+use rustariac_backend::ty::Camera;
 
 pub struct PrintSubscriber {
 	pub message: &'static str,
@@ -70,7 +70,7 @@ impl ControllerHandler {
 		self.controller.consume(event);
 	}
 
-	pub fn tick(&mut self, view: &mut Viewport, delta: f32) {
+	pub fn tick(&mut self, view: &mut Camera, delta: f32) {
 		if self.old_delta > delta {
 			self.old_delta = delta;
 		}
