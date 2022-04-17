@@ -295,3 +295,50 @@ fn checked_add_signed_u8(a: u8, b: i8) -> Option<u8> {
 		Some(res)
 	}
 }
+
+#[derive(Copy, Clone, Debug)]
+pub struct Rectangle {
+	pub x: f32,
+	pub y: f32,
+	pub width: f32,
+	pub height: f32,
+}
+
+impl Rectangle {
+	pub fn overlaps(&self, rect: &Rectangle) -> bool {
+		self.left().max(rect.left()) < self.right().min(rect.right())
+			&& self.bottom().max(rect.bottom()) < self.top().min(rect.top())
+	}
+
+	pub fn right_top(self) -> [f32; 2] {
+		[self.right(), self.top()]
+	}
+
+	pub fn left_top(self) -> [f32; 2] {
+		[self.left(), self.top()]
+	}
+
+	pub fn right_bottom(self) -> [f32; 2] {
+		[self.right(), self.bottom()]
+	}
+
+	pub fn left_bottom(self) -> [f32; 2] {
+		[self.left(), self.bottom()]
+	}
+
+	pub fn right(self) -> f32 {
+		self.x + self.width
+	}
+
+	pub fn left(self) -> f32 {
+		self.x
+	}
+
+	pub fn top(self) -> f32 {
+		self.y + self.height
+	}
+
+	pub fn bottom(self) -> f32 {
+		self.y
+	}
+}

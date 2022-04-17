@@ -6,11 +6,11 @@ use rustaria::chunk::Chunk;
 use rustaria::SmartError::CarrierUnavailable;
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_util::info;
-use rustaria_util::ty::{ChunkPos, CHUNK_SIZE};
+use rustaria_util::ty::{ChunkPos, Rectangle, CHUNK_SIZE};
 use rustariac_backend::{
 	builder::VertexBuilder,
 	layer::LayerChannel,
-	ty::{Camera, PosTexture, Rectangle},
+	ty::{Camera, PosTexture},
 	ClientBackend,
 };
 

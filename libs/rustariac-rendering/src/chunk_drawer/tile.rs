@@ -1,9 +1,10 @@
 use rustaria::api::{prototype::tile::TilePrototype, ty::ConnectionType};
 use rustaria::chunk::Tile;
 use rustaria_api::{registry::Registry, ty::RawId};
+use rustaria_util::ty::Rectangle;
 use rustariac_backend::{
 	builder::VertexBuilder,
-	ty::{AtlasLocation, PosTexture, Rectangle},
+	ty::{AtlasLocation, PosTexture},
 	ClientBackend,
 };
 

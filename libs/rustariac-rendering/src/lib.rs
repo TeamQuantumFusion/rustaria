@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 use rustaria::api::rendering::{Pane, RenderingSystem};
+use rustaria_util::ty::Rectangle;
 use rustariac_backend::builder::VertexBuilder;
-use rustariac_backend::ty::{Camera, PosTexture, Rectangle};
+use rustariac_backend::ty::{Camera, PosTexture};
 use rustariac_backend::{ty::AtlasLocation, ClientBackend};
 
 pub mod chunk_drawer;
