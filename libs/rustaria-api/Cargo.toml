@@ -18,7 +18,7 @@ mlua = { git = "https://github.com/alphaqu/mlua",  features = ["lua54", "vendore
 serde = { version = "1.0", features = ["derive"] }
 semver = { version = "1.0", features = ["serde"] }
 serde_json = "1.0"
-zip = "0.5"
+zip = { version = "0.6.2", default-features = false, features = ["deflate"] }
 parking_lot = "0.12.0"
 
 # Registries
