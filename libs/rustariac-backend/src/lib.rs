@@ -41,11 +41,6 @@ impl ClientBackend {
 	pub fn instance_mut(&self) -> RwLockWriteGuard<'_, Internals> {
 		self.internals.write().unwrap()
 	}
-
-	pub fn screen_y_ratio(&self) -> f32 {
-		let size = self.instance().backend.size();
-		size.0 as f32 / size.1 as f32
-	}
 }
 
 pub struct Internals {
@@ -64,9 +59,8 @@ impl Internals {
 		glfw.window_hint(WindowHint::OpenGlProfile(OpenGlProfileHint::Core));
 		glfw.window_hint(WindowHint::ContextVersion(4, 6));
 
-		let size = (1920 / 2, 1080 / 2);
 		let (mut window, events) = glfw
-			.create_window(size.0, size.1, "Rustaria", WindowMode::Windowed)
+			.create_window(1922 / 2, 1080 / 2, "Rustaria", WindowMode::Windowed)
 			.wrap_err("Could not create window")?;
 
 		window.make_current();

@@ -55,6 +55,7 @@ fn main() -> eyre::Result<()> {
 		camera: Camera {
 			position: [0.0, 0.0],
 			zoom: 30.0,
+			screen_y_ratio: 0.0,
 		},
 		backend,
 		thread_pool: Arc::new(ThreadPoolBuilder::new().num_threads(12).build().unwrap()),
@@ -104,6 +105,9 @@ impl Client {
 		while !self.backend.instance().backend.window().should_close() {
 			for event in self.backend.instance_mut().backend.poll_events() {
 				match event {
+					WindowEvent::Size(width, height) => {
+						self.camera.screen_y_ratio = width as f32 / height as f32;
+					}
 					WindowEvent::Scroll(_, y) => {
 						self.camera.zoom += y as f32;
 					}

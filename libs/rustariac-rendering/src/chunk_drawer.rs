@@ -54,7 +54,7 @@ impl WorldChunkDrawer {
 
 	pub fn draw(&mut self, camera: &Camera) {
 		if self.layer.dirty() {
-			let viewport = camera.visible(self.backend.screen_y_ratio());
+			let viewport = camera.visible();
 
 			let mut builder = VertexBuilder::default();
 			for (pos, chunk) in &self.chunks {

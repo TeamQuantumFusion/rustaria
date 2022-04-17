@@ -62,7 +62,7 @@ impl ChunkHandler {
 		}) {
 			if chunk != self.old_chunk || camera.zoom != self.old_zoom {
 				let width = (camera.zoom / CHUNK_SIZE_F) as i32;
-				let height = ((camera.zoom * self.backend.screen_y_ratio()) / CHUNK_SIZE_F) as i32;
+				let height = ((camera.zoom * camera.screen_y_ratio) / CHUNK_SIZE_F) as i32;
 				let mut requested = Vec::new();
 				for x in -width..width {
 					for y in -height..height {
