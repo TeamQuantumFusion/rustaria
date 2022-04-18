@@ -1,3 +1,4 @@
+#![feature(negative_impls)]
 use std::fs::File;
 
 // Imports
@@ -9,6 +10,7 @@ use simplelog::{
 pub use uuid::Uuid;
 
 pub mod blake3;
+pub mod rcl;
 pub mod ty;
 
 pub fn initialize() -> eyre::Result<()> {
