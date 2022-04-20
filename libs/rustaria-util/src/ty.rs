@@ -2,6 +2,7 @@
 
 use num::FromPrimitive;
 use pos::Pos;
+use std::fmt::{Display, Formatter};
 use std::ops::Add;
 
 pub mod pos;
@@ -163,7 +164,7 @@ impl ChunkSubPos {
 		Self::new_unchecked(x, y)
 	}
 	pub fn try_new(x: u8, y: u8) -> Option<Self> {
-		if x < CHUNK_SIZE_U8 || y < CHUNK_SIZE_U8 {
+		if x >= CHUNK_SIZE_U8 || y >= CHUNK_SIZE_U8 {
 			None
 		} else {
 			Some(Self::new_unchecked(x, y))
@@ -215,6 +216,16 @@ pub struct TilePos {
 	pub sub: ChunkSubPos,
 }
 
+impl TilePos {
+	pub fn x(&self) -> i64 {
+		(self.chunk.x as i64 * CHUNK_SIZE as i64) + self.sub.x() as i64
+	}
+
+	pub fn y(&self) -> i64 {
+		(self.chunk.y as i64 * CHUNK_SIZE as i64) + self.sub.y() as i64
+	}
+}
+
 impl Offset<(i8, i8)> for TilePos {
 	fn wrapping_offset(self, displacement @ (dx, dy): (i8, i8)) -> Self {
 		match Self::checked_offset(self, displacement) {
@@ -240,6 +251,35 @@ impl Offset<(i8, i8)> for TilePos {
 	}
 }
 
+impl TryFrom<Pos> for TilePos {
+	type Error = Error;
+
+	fn try_from(value: Pos) -> Result<Self, Self::Error> {
+		Ok(TilePos {
+			chunk: ChunkPos::try_from(value)?,
+			sub: ChunkSubPos::new(
+				(value.x as i64 % CHUNK_SIZE as i64) as u8,
+				(value.y as i64 % CHUNK_SIZE as i64) as u8,
+			),
+		})
+	}
+}
+
+impl Display for TilePos {
+	//123, 432 (3:0@4:4)
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		let x = (self.chunk.x as i64 * CHUNK_SIZE as i64) + self.sub.x() as i64;
+		let y = (self.chunk.y as i64 * CHUNK_SIZE as i64) + self.sub.y() as i64;
+		f.write_str(&format!(
+			"{x}, {y} ({}:{}@{}:{})",
+			self.chunk.x,
+			self.chunk.y,
+			self.sub.x(),
+			self.sub.y()
+		))
+	}
+}
+
 impl TryFrom<Pos> for ChunkPos {
 	type Error = Error;
 
@@ -247,6 +287,17 @@ impl TryFrom<Pos> for ChunkPos {
 		Ok(ChunkPos {
 			x: u32::from_f32(value.x / CHUNK_SIZE_F).ok_or(Error::OutOfBounds)?,
 			y: u32::from_f32(value.y / CHUNK_SIZE_F).ok_or(Error::OutOfBounds)?,
+		})
+	}
+}
+
+impl TryFrom<(i64, i64)> for ChunkPos {
+	type Error = Error;
+
+	fn try_from(value: (i64, i64)) -> Result<Self, Self::Error> {
+		Ok(ChunkPos {
+			x: u32::from_i64(value.0 / CHUNK_SIZE as i64).ok_or(Error::OutOfBounds)?,
+			y: u32::from_i64(value.1 / CHUNK_SIZE as i64).ok_or(Error::OutOfBounds)?,
 		})
 	}
 }

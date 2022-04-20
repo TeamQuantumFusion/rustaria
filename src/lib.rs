@@ -62,7 +62,7 @@ impl Server {
 			.poll(unsafe { (self as *const Server as *mut Server).as_mut().unwrap() });
 		self.chunk.tick(&mut self.network).wrap_err("Chunk error")?;
 		self.entity
-			.tick(&mut self.network)
+			.tick(&self.chunk, &mut self.network)
 			.wrap_err("Entity error")?;
 		self.network.tick().wrap_err("Networking error")?;
 		Ok(())

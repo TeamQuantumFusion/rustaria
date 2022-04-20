@@ -1,11 +1,11 @@
 use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use eyre::Result;
 use rustaria_util::ty::{ChunkPos, Offset, CHUNK_SIZE, CHUNK_SIZE_F};
 
 use crate::NetworkHandler;
-use rustaria::chunk::Chunk;
+use rustaria::chunk::{Chunk, ChunkWorld};
 use rustaria::network::packet::chunk::ClientChunkPacket;
 use rustaria::network::packet::chunk::ServerChunkPacket;
 use rustaria::network::packet::ClientPacket;
@@ -19,7 +19,8 @@ use rustariac_rendering::chunk_drawer::WorldChunkDrawer;
 pub(crate) struct ChunkHandler {
 	backend: ClientBackend,
 
-	chunks: HashMap<ChunkPos, ChunkHolder>,
+	pub chunks: ChunkWorld,
+	stored_chunks: HashSet<ChunkPos>,
 	drawer: WorldChunkDrawer,
 
 	old_chunk: ChunkPos,
@@ -30,7 +31,8 @@ impl ChunkHandler {
 	pub fn new(backend: &ClientBackend) -> ChunkHandler {
 		ChunkHandler {
 			backend: backend.clone(),
-			chunks: HashMap::new(),
+			chunks: Default::default(),
+			stored_chunks: Default::default(),
 			drawer: WorldChunkDrawer::new(backend),
 			old_chunk: ChunkPos { x: 60, y: 420 },
 			old_zoom: 0.0,
@@ -43,7 +45,7 @@ impl ChunkHandler {
 				Ok(chunks) => {
 					for (pos, chunk) in chunks.chunks {
 						self.drawer.submit(pos, &chunk)?;
-						self.chunks.insert(pos, Some(Box::new(chunk)));
+						self.chunks.put_chunk(pos, chunk);
 					}
 				}
 				Err(chunks) => {
@@ -67,9 +69,9 @@ impl ChunkHandler {
 				for x in -width..width {
 					for y in -height..height {
 						if let Some(pos) = chunk.checked_offset((x, y)) {
-							if let Entry::Vacant(e) = self.chunks.entry(pos) {
-								e.insert(None);
+							if !self.stored_chunks.contains(&pos) {
 								requested.push(pos);
+								self.stored_chunks.insert(pos);
 							}
 						}
 					}

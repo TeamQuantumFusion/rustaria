@@ -197,6 +197,21 @@ impl Client {
 
 	fn tick(&mut self) -> Result<()> {
 		if let Some(world) = &mut self.world {
+			let lock = self.carrier.lock();
+			let prototype = lock.get_registry::<EntityPrototype>();
+			let id = prototype
+				.id_from_tag(&Tag::new("rustaria:bunne".to_string()).unwrap())
+				.unwrap();
+			let pos = Pos { x: 5.0, y: 5.0 };
+			world
+				.entity
+				.packet(ServerEntityPacket::New(id, pos))
+				.unwrap();
+
+			world
+				.networking
+				.send(ClientPacket::Entity(ClientEntityPacket::Spawn(id, pos)))
+				.unwrap();
 			world.tick(&self.camera)?;
 		}
 
@@ -228,7 +243,7 @@ pub struct ClientWorld {
 impl ClientWorld {
 	pub fn tick(&mut self, camera: &Camera) -> Result<()> {
 		self.chunk.tick(camera, &mut self.networking)?;
-		self.entity.tick(camera, &mut self.networking)?;
+		self.entity.tick(camera, &self.chunk.chunks)?;
 		if let Some(integrated) = &mut self.integrated {
 			integrated.tick()?;
 		}

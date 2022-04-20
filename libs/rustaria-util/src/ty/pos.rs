@@ -1,5 +1,7 @@
+use crate::ty::{TilePos, CHUNK_SIZE_F};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
+pub const ZERO: Pos = Pos { x: 0.0, y: 0.0 };
 #[derive(Copy, Clone, PartialOrd, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Pos {
 	pub x: f32,
@@ -12,6 +14,12 @@ impl Pos {
 			x: (self.x * (delta)) + (other.x * (1.0 - delta)),
 			y: (self.y * (delta)) + (other.y * (1.0 - delta)),
 		}
+	}
+
+	pub fn distance(&self, other: &Pos) -> f32 {
+		let x = (other.x - self.x);
+		let y = (other.y - self.y);
+		((x * x) + (y * y)).sqrt()
 	}
 }
 
@@ -43,6 +51,15 @@ impl Sub for Pos {
 impl SubAssign for Pos {
 	fn sub_assign(&mut self, rhs: Self) {
 		*self = *self - rhs;
+	}
+}
+
+impl From<TilePos> for Pos {
+	fn from(pos: TilePos) -> Self {
+		Pos {
+			x: (pos.chunk.x as f32 * CHUNK_SIZE_F) + pos.sub.x() as f32,
+			y: (pos.chunk.y as f32 * CHUNK_SIZE_F) + pos.sub.y() as f32,
+		}
 	}
 }
 

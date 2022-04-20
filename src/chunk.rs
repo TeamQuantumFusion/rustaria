@@ -1,9 +1,10 @@
+use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
 
 use serde::{Deserialize, Serialize};
 
 use rustaria_api::ty::RawId;
-use rustaria_util::ty::{ChunkSubPos, CHUNK_SIZE};
+use rustaria_util::ty::{ChunkPos, ChunkSubPos, CHUNK_SIZE};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Chunk {
@@ -38,4 +39,30 @@ pub struct Tile {
 	pub id: RawId,
 	pub collision: bool,
 	pub opaque: bool,
+}
+
+#[derive(Default)]
+pub struct ChunkWorld {
+	pub chunks: HashMap<ChunkPos, Chunk>,
+}
+
+impl ChunkWorld {
+	#[allow(unused)]
+	pub fn put_chunk(&mut self, pos: ChunkPos, chunk: Chunk) {
+		self.chunks.insert(pos, chunk);
+	}
+
+	#[allow(unused)]
+	pub fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
+		self.chunks.get(&pos)
+	}
+
+	#[allow(unused)]
+	pub fn get_chunk_mut(&mut self, pos: ChunkPos) -> Option<&mut Chunk> {
+		self.chunks.get_mut(&pos)
+	}
+
+	pub fn clear(&mut self) {
+		self.chunks.clear();
+	}
 }

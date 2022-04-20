@@ -5,7 +5,7 @@ use rustaria_api::{Carrier, Reloadable};
 use rustaria_network::Token;
 use rustaria_util::ty::ChunkPos;
 
-use crate::chunk::Chunk;
+use crate::chunk::{Chunk, ChunkWorld};
 use crate::manager::network::NetworkManager;
 use crate::manager::world_gen::WorldGenManager;
 use crate::network::packet::chunk::ClientChunkPacket;
@@ -13,7 +13,7 @@ use crate::ThreadPool;
 
 pub(crate) struct ChunkManager {
 	generator: WorldGenManager,
-	chunks: HashMap<ChunkPos, Chunk>,
+	pub chunks: ChunkWorld,
 	chunk_queue: VecDeque<(ChunkPos, Token)>,
 	chunk_gen_queue: HashMap<ChunkPos, HashSet<Token>>,
 	// Chunks that updated and need to be resent
@@ -33,23 +33,23 @@ impl ChunkManager {
 
 	#[allow(unused)]
 	pub fn put_chunk(&mut self, pos: ChunkPos, chunk: Chunk) {
-		self.chunks.insert(pos, chunk);
+		self.chunks.put_chunk(pos, chunk);
 		self.dirty_chunks.insert(pos);
 	}
 
 	#[allow(unused)]
 	pub fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
-		self.chunks.get(&pos)
+		self.chunks.get_chunk(pos)
 	}
 
 	#[allow(unused)]
 	pub fn get_chunk_mut(&mut self, pos: ChunkPos) -> Option<&mut Chunk> {
-		self.chunks.get_mut(&pos)
+		self.chunks.get_chunk_mut(pos)
 	}
 
 	pub fn tick(&mut self, network: &mut NetworkManager) -> eyre::Result<()> {
 		for (pos, from) in self.chunk_queue.drain(..) {
-			if let Some(chunk) = self.chunks.get(&pos) {
+			if let Some(chunk) = self.chunks.get_chunk(pos) {
 				network.send_chunk(Some(from), pos, chunk.clone());
 			} else {
 				self.generator.request_chunk(pos)?;
@@ -65,11 +65,11 @@ impl ChunkManager {
 				}
 			}
 
-			self.chunks.insert(pos, chunk);
+			self.chunks.put_chunk(pos, chunk);
 		});
 
 		for pos in self.dirty_chunks.drain() {
-			if let Some(chunk) = self.chunks.get(&pos) {
+			if let Some(chunk) = self.chunks.get_chunk(pos) {
 				network.send_chunk(None, pos, chunk.clone());
 			}
 		}

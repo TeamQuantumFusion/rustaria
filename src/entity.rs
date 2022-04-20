@@ -1,36 +1,22 @@
-use std::collections::HashMap;
+pub mod hitbox;
+pub mod pos;
+pub mod velocity;
+
+use std::collections::{HashMap, HashSet};
 
 use eyre::{ContextCompat, Result};
-use serde::Deserialize;
+use pos::PositionComp;
 
 use rustaria_api::ty::{Prototype, RawId};
 use rustaria_api::{Carrier, Reloadable};
 use rustaria_util::ty::pos::Pos;
-use rustaria_util::Uuid;
+use rustaria_util::{error, info, Uuid};
+use velocity::VelocityComp;
 
 use crate::api::prototype::entity::EntityPrototype;
-use crate::SmartError;
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct PositionComp {
-	pub position: Pos,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct IdComp(pub RawId);
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct VelocityComp {
-	pub velocity: Pos,
-}
-
-impl Default for VelocityComp {
-	fn default() -> Self {
-		VelocityComp {
-			velocity: Pos { x: 0.0, y: 0.0 },
-		}
-	}
-}
+use crate::chunk::ChunkWorld;
+use crate::entity::hitbox::HitboxComp;
+use crate::{ChunkManager, SmartError};
 
 #[derive(Default)]
 pub struct EntityWorld {
@@ -38,10 +24,13 @@ pub struct EntityWorld {
 	pub entities: HashMap<Uuid, RawId>,
 	pub position: HashMap<Uuid, PositionComp>,
 	pub velocity: HashMap<Uuid, VelocityComp>,
+	pub hitbox: HashMap<Uuid, HitboxComp>,
+	pub dead: HashSet<Uuid>,
 }
 
 impl EntityWorld {
 	pub fn spawn(&mut self, id: RawId, pos: Pos) -> Result<Uuid> {
+		info!("spawn");
 		let carrier = self
 			.carrier
 			.as_ref()
@@ -64,8 +53,12 @@ impl EntityWorld {
 		// Add components
 		self.position.insert(uuid, PositionComp { position: pos });
 
+		if let Some(hitbox) = &prototype.hitbox {
+			self.hitbox.insert(uuid, hitbox.clone());
+		}
+
 		if let Some(velocity) = &prototype.velocity {
-			self.velocity.insert(uuid, velocity.create(id));
+			self.velocity.insert(uuid, velocity.clone());
 		}
 
 		Ok(uuid)
@@ -75,12 +68,33 @@ impl EntityWorld {
 		self.entities.remove(&id);
 		self.position.remove(&id);
 		self.velocity.remove(&id);
+		self.hitbox.remove(&id);
 	}
 
-	pub fn tick(&mut self) {
+	pub fn tick(&mut self, chunks: &ChunkWorld) {
+		for id in self.dead.drain() {
+			self.entities.remove(&id);
+			self.position.remove(&id);
+			self.velocity.remove(&id);
+			self.hitbox.remove(&id);
+		}
+
 		for (id, velocity) in &mut self.velocity {
-			if let Some(pos) = self.position.get_mut(id) {
-				pos.position += velocity.velocity;
+			// required
+			if let Some(position) = self.position.get_mut(id) {
+				// optional
+				if let Some(hitbox) = self.hitbox.get(id) {
+					if let Some((pos, hit)) =
+						hitbox.calc(hitbox.hitbox, position.position, velocity.velocity, chunks)
+					{
+						position.position = pos;
+						if hit {
+							self.dead.insert(*id);
+						}
+					}
+				} else {
+					position.position += velocity.velocity;
+				}
 			}
 		}
 	}

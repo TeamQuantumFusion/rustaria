@@ -9,7 +9,7 @@ use rustaria_util::Uuid;
 use crate::entity::EntityWorld;
 use crate::manager::network::NetworkManager;
 use crate::network::packet::entity::{ClientEntityPacket, ServerEntityPacket};
-use crate::{ServerPacket, ThreadPool};
+use crate::{ChunkManager, ServerPacket, ThreadPool};
 
 pub(crate) struct EntityManager {
 	world: EntityWorld,
@@ -30,8 +30,12 @@ impl EntityManager {
 		Ok(entity)
 	}
 
-	pub fn tick(&mut self, network: &mut NetworkManager) -> eyre::Result<()> {
-		self.world.tick();
+	pub fn tick(
+		&mut self,
+		chunks: &ChunkManager,
+		network: &mut NetworkManager,
+	) -> eyre::Result<()> {
+		self.world.tick(&chunks.chunks);
 		for (from, id, pos) in self.new_entities.drain(..) {
 			network
 				.internal

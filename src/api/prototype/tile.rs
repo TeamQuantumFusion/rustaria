@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use rustaria_api::ty::{Prototype, RawId, Tag};
 
+use crate::api::ty::LockableValue;
 use crate::{api::ty::ConnectionType, chunk::Tile};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -11,9 +12,7 @@ pub struct TilePrototype {
 	// name: LanguageKey,
 	pub sprite: Option<Tag>,
 	pub connection: ConnectionType,
-	// #[serde(default = "TilePrototype::default_collision")]
-	//  pub collision: LockableValue<bool>,
-	//  #[serde(default = "TilePrototype::default_opaque")]
+	pub collision: bool,
 	//   pub opaque: LockableValue<bool>,
 	//  #[serde(default = "TilePrototype::default_blast_resistance")]
 	//  pub blast_resistance: BlastResistance,
@@ -29,7 +28,7 @@ impl Prototype for TilePrototype {
 			id,
 			// collision: *self.collision.default(),
 			// opaque: *self.opaque.default(),
-			collision: false,
+			collision: self.collision,
 			opaque: false,
 		}
 	}

@@ -6,11 +6,13 @@ use rustaria_util::ty::pos::Pos;
 
 #[cfg(feature = "client")]
 use crate::api::rendering::RenderingSystem;
-use crate::entity::VelocityComp;
+use crate::entity::hitbox::HitboxComp;
+use crate::entity::velocity::VelocityComp;
 
 #[derive(Clone, Debug)]
 pub struct EntityPrototype {
-	pub velocity: Option<VelocityCompPrototype>,
+	pub velocity: Option<VelocityComp>,
+	pub hitbox: Option<HitboxComp>,
 	#[cfg(feature = "client")]
 	pub rendering: Option<RenderingSystem>,
 }
@@ -38,24 +40,5 @@ impl Prototype for EntityPrototype {
 
 	fn lua_registry_name() -> &'static str {
 		"Entities"
-	}
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct VelocityCompPrototype {
-	pub x: f32,
-	pub y: f32,
-}
-
-impl Prototype for VelocityCompPrototype {
-	type Item = VelocityComp;
-
-	fn create(&self, _: RawId) -> Self::Item {
-		VelocityComp {
-			velocity: Pos {
-				x: self.x,
-				y: self.y,
-			},
-		}
 	}
 }
