@@ -6,20 +6,20 @@ use rustaria_network::Token;
 use rustaria_util::ty::pos::Pos;
 use rustaria_util::Uuid;
 
-use crate::entity::EntityWorld;
+use crate::entity::EntityContainer;
 use crate::manager::network::NetworkManager;
 use crate::network::packet::entity::{ClientEntityPacket, ServerEntityPacket};
 use crate::{ChunkManager, ServerPacket, ThreadPool};
 
 pub(crate) struct EntityManager {
-	world: EntityWorld,
+	world: EntityContainer,
 	new_entities: Vec<(Token, RawId, Pos)>,
 }
 
 impl EntityManager {
 	pub fn new(thread_pool: Arc<ThreadPool>) -> EntityManager {
 		EntityManager {
-			world: EntityWorld::default(),
+			world: EntityContainer::default(),
 			new_entities: vec![],
 		}
 	}

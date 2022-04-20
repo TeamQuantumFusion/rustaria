@@ -14,12 +14,12 @@ use rustaria_util::{error, info, Uuid};
 use velocity::VelocityComp;
 
 use crate::api::prototype::entity::EntityPrototype;
-use crate::chunk::ChunkWorld;
+use crate::chunk::ChunkContainer;
 use crate::entity::hitbox::HitboxComp;
 use crate::{ChunkManager, SmartError};
 
 #[derive(Default)]
-pub struct EntityWorld {
+pub struct EntityContainer {
 	carrier: Option<Carrier>,
 	pub entities: HashMap<Uuid, RawId>,
 	pub position: HashMap<Uuid, PositionComp>,
@@ -28,9 +28,8 @@ pub struct EntityWorld {
 	pub dead: HashSet<Uuid>,
 }
 
-impl EntityWorld {
+impl EntityContainer {
 	pub fn spawn(&mut self, id: RawId, pos: Pos) -> Result<Uuid> {
-		info!("spawn");
 		let carrier = self
 			.carrier
 			.as_ref()
@@ -65,13 +64,10 @@ impl EntityWorld {
 	}
 
 	pub fn kill(&mut self, id: Uuid) {
-		self.entities.remove(&id);
-		self.position.remove(&id);
-		self.velocity.remove(&id);
-		self.hitbox.remove(&id);
+		self.dead.insert(id);
 	}
 
-	pub fn tick(&mut self, chunks: &ChunkWorld) {
+	pub fn tick(&mut self, chunks: &ChunkContainer) {
 		for id in self.dead.drain() {
 			self.entities.remove(&id);
 			self.position.remove(&id);
@@ -100,7 +96,7 @@ impl EntityWorld {
 	}
 }
 
-impl Reloadable for EntityWorld {
+impl Reloadable for EntityContainer {
 	fn reload(&mut self, _: &rustaria_api::Api, carrier: &Carrier) {
 		self.carrier = Some(carrier.clone());
 	}

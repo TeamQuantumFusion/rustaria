@@ -5,7 +5,7 @@ use eyre::Result;
 use rustaria_util::ty::{ChunkPos, Offset, CHUNK_SIZE, CHUNK_SIZE_F};
 
 use crate::NetworkHandler;
-use rustaria::chunk::{Chunk, ChunkWorld};
+use rustaria::chunk::{Chunk, ChunkContainer};
 use rustaria::network::packet::chunk::ClientChunkPacket;
 use rustaria::network::packet::chunk::ServerChunkPacket;
 use rustaria::network::packet::ClientPacket;
@@ -19,7 +19,7 @@ use rustariac_rendering::chunk_drawer::WorldChunkDrawer;
 pub(crate) struct ChunkHandler {
 	backend: ClientBackend,
 
-	pub chunks: ChunkWorld,
+	pub chunks: ChunkContainer,
 	stored_chunks: HashSet<ChunkPos>,
 	drawer: WorldChunkDrawer,
 

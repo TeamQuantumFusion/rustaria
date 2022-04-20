@@ -164,7 +164,7 @@ impl Client {
 		let mut client_world = ClientWorld {
 			networking: server.create_local_connection(),
 			chunk: ChunkHandler::new(&self.backend),
-			entity: EntityHandler::new(&self.backend, self.thread_pool.clone()),
+			entity: EntityHandler::new(&self.backend),
 			integrated: Some(Box::new(server)),
 		};
 

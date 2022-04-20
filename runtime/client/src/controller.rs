@@ -1,21 +1,10 @@
-use glfw::Modifiers;
-use glfw::{Action, Key, WindowEvent};
+use glfw::{Key, WindowEvent};
 use std::collections::HashMap;
 
 use rustaria_controller::button::{ButtonKey, ButtonSubscriber, HoldSubscriber, TriggerSubscriber};
 use rustaria_controller::Controller;
-use rustaria_util::info;
+
 use rustariac_backend::ty::Camera;
-
-pub struct PrintSubscriber {
-	pub message: &'static str,
-}
-
-impl ButtonSubscriber for PrintSubscriber {
-	fn event(&mut self, action: Action, modifiers: Modifiers) {
-		info!("{} {:?} {:?}", self.message, action, modifiers);
-	}
-}
 
 pub(crate) struct ControllerHandler {
 	up: HoldSubscriber,

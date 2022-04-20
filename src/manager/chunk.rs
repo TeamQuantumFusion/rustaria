@@ -5,7 +5,7 @@ use rustaria_api::{Carrier, Reloadable};
 use rustaria_network::Token;
 use rustaria_util::ty::ChunkPos;
 
-use crate::chunk::{Chunk, ChunkWorld};
+use crate::chunk::{Chunk, ChunkContainer};
 use crate::manager::network::NetworkManager;
 use crate::manager::world_gen::WorldGenManager;
 use crate::network::packet::chunk::ClientChunkPacket;
@@ -13,7 +13,7 @@ use crate::ThreadPool;
 
 pub(crate) struct ChunkManager {
 	generator: WorldGenManager,
-	pub chunks: ChunkWorld,
+	pub chunks: ChunkContainer,
 	chunk_queue: VecDeque<(ChunkPos, Token)>,
 	chunk_gen_queue: HashMap<ChunkPos, HashSet<Token>>,
 	// Chunks that updated and need to be resent

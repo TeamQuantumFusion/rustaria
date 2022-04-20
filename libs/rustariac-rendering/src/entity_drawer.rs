@@ -1,6 +1,6 @@
 use eyre::{ContextCompat, Result};
 use rustaria::api::prototype::entity::EntityPrototype;
-use rustaria::entity::EntityWorld;
+use rustaria::entity::EntityContainer;
 use rustaria::SmartError::CarrierUnavailable;
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_util::ty::pos::Pos;
@@ -32,7 +32,7 @@ impl WorldEntityDrawer {
 		}
 	}
 
-	pub fn draw(&mut self, camera: &Camera, container: &EntityWorld, delta: f32) -> Result<()> {
+	pub fn draw(&mut self, camera: &Camera, container: &EntityContainer, delta: f32) -> Result<()> {
 		self.carrier.as_ref().wrap_err(CarrierUnavailable)?;
 
 		let mut builder = VertexBuilder::default();
@@ -55,7 +55,7 @@ impl WorldEntityDrawer {
 		Ok(())
 	}
 
-	pub fn tick(&mut self, camera: &Camera, container: &EntityWorld) -> Result<()> {
+	pub fn tick(&mut self, camera: &Camera, container: &EntityContainer) -> Result<()> {
 		self.carrier.as_ref().wrap_err(CarrierUnavailable)?;
 
 		for (uuid, pos) in &container.position {

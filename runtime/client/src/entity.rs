@@ -1,10 +1,6 @@
-use std::sync::Arc;
-
-use crate::NetworkHandler;
 use eyre::Result;
-use rayon::ThreadPool;
-use rustaria::chunk::ChunkWorld;
-use rustaria::entity::EntityWorld;
+use rustaria::chunk::ChunkContainer;
+use rustaria::entity::EntityContainer;
 use rustaria::network::packet::entity::ServerEntityPacket;
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustariac_backend::ty::Camera;
@@ -12,14 +8,14 @@ use rustariac_backend::ClientBackend;
 use rustariac_rendering::entity_drawer::WorldEntityDrawer;
 
 pub(crate) struct EntityHandler {
-	container: EntityWorld,
+	container: EntityContainer,
 	drawer: WorldEntityDrawer,
 }
 
 impl EntityHandler {
-	pub fn new(backend: &ClientBackend, thread_pool: Arc<ThreadPool>) -> EntityHandler {
+	pub fn new(backend: &ClientBackend) -> EntityHandler {
 		EntityHandler {
-			container: EntityWorld::default(),
+			container: EntityContainer::default(),
 			drawer: WorldEntityDrawer::new(backend),
 		}
 	}
@@ -39,7 +35,7 @@ impl EntityHandler {
 		Ok(())
 	}
 
-	pub fn tick(&mut self, camera: &Camera, chunks: &ChunkWorld) -> Result<()> {
+	pub fn tick(&mut self, camera: &Camera, chunks: &ChunkContainer) -> Result<()> {
 		self.drawer.tick(camera, &self.container)?;
 		self.container.tick(chunks);
 

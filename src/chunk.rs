@@ -42,22 +42,19 @@ pub struct Tile {
 }
 
 #[derive(Default)]
-pub struct ChunkWorld {
-	pub chunks: HashMap<ChunkPos, Chunk>,
+pub struct ChunkContainer {
+	chunks: HashMap<ChunkPos, Chunk>,
 }
 
-impl ChunkWorld {
-	#[allow(unused)]
+impl ChunkContainer {
 	pub fn put_chunk(&mut self, pos: ChunkPos, chunk: Chunk) {
 		self.chunks.insert(pos, chunk);
 	}
 
-	#[allow(unused)]
 	pub fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
 		self.chunks.get(&pos)
 	}
 
-	#[allow(unused)]
 	pub fn get_chunk_mut(&mut self, pos: ChunkPos) -> Option<&mut Chunk> {
 		self.chunks.get_mut(&pos)
 	}

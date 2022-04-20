@@ -1,4 +1,4 @@
-use crate::chunk::{Chunk, ChunkWorld};
+use crate::chunk::{Chunk, ChunkContainer};
 use crate::ChunkManager;
 use rustaria_util::info;
 use rustaria_util::ty::pos::{Pos, ZERO};
@@ -16,7 +16,7 @@ impl HitboxComp {
 		rect: Rectangle,
 		start_pos: Pos,
 		velocity: Pos,
-		chunks: &ChunkWorld,
+		chunks: &ChunkContainer,
 	) -> Option<(Pos, bool)> {
 		let caster = RayCaster::new(rect, start_pos, velocity, chunks)?;
 		caster.hit()
@@ -37,7 +37,7 @@ pub struct RayCaster<'a> {
 	rect: Rectangle,
 	pos: Pos,
 	velocity: Pos,
-	chunks: &'a ChunkWorld,
+	chunks: &'a ChunkContainer,
 
 	// cache
 	last_chunk_pos: ChunkPos,
@@ -46,7 +46,7 @@ pub struct RayCaster<'a> {
 
 // EVERYTHING IS BASED IN THE BOTTOM LEFT
 impl<'a> RayCaster<'a> {
-	fn new(rect: Rectangle, pos: Pos, velocity: Pos, chunks: &ChunkWorld) -> Option<RayCaster> {
+	fn new(rect: Rectangle, pos: Pos, velocity: Pos, chunks: &ChunkContainer) -> Option<RayCaster> {
 		let chunk_pos = ChunkPos::try_from(pos).ok()?;
 		Some(RayCaster {
 			rect,
