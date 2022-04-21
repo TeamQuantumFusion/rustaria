@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use eyre::Result;
+use rustaria_util::debug;
 
 #[derive(Clone, Default)]
 pub struct RegistryBuilderLua<P: Prototype>(Arc<Mutex<RegistryBuilder<P>>>);
@@ -24,7 +25,7 @@ impl<P: Prototype> UserData for RegistryBuilderLua<P> {
 	fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
 		methods.add_method("register", |lua, builder, values: HashMap<Tag, Value>| {
 			for (tag, prototype) in values {
-				info!("{tag:?}");
+				debug!(target: "reload@rustaria.api", "Registered {tag:?}");
 
 				builder
 					.0

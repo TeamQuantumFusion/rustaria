@@ -132,7 +132,6 @@ impl Client {
 				if let Err(error) = self.tick() {
 					match error.downcast_ref::<SmartError>() {
 						Some(err @ SmartError::CarrierUnavailable) => {
-							info!("{}", err);
 							reload = true;
 						}
 						_ => Err(error).unwrap(),
@@ -145,7 +144,6 @@ impl Client {
 			if let Err(error) = self.draw(delta) {
 				match error.downcast_ref::<SmartError>() {
 					Some(err @ SmartError::CarrierUnavailable) => {
-						info!("{}", err);
 						reload = true;
 					}
 					_ => Err(error).unwrap(),
@@ -176,7 +174,7 @@ impl Client {
 	}
 
 	fn reload(&mut self) -> Result<()> {
-		debug!("Reloading Client");
+		debug!(target: "reload@rustariac", "Reloading Client");
 		rustaria::api::reload(&mut self.api, &mut self.carrier)?;
 
 		let carrier = self.carrier.lock();

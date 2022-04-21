@@ -41,7 +41,7 @@ impl<I: crate::Packet, O: crate::Packet, J> ServerNetworking<I, O, J> {
 	}
 
 	pub fn send(&self, to: Token, packet: O) -> Result<()> {
-		trace!(target: "server_network", "Sending packet {packet:?} to {to}");
+		trace!(target: "misc@network.server", "Sending packet {packet:?} to {to}");
 		if let Some(socket) = &self.socket {
 			if let Some(remote) = self.remote_clients.get_by_left(&to) {
 				socket.get_packet_sender().send(Packet::reliable_unordered(
@@ -96,12 +96,12 @@ impl<I: crate::Packet, O: crate::Packet, J> ServerNetworking<I, O, J> {
 							if let Ok(packet) = bincode::deserialize(packet.payload()) {
 								interface.receive(*from, packet);
 							} else {
-								error!("Invalid packet from {}@{}", from, addr);
+								error!(target: "tick@network.server", "Invalid packet from {}@{}", from, addr);
 							}
 						} else if let std::collections::hash_map::Entry::Vacant(e) =
 							self.remote_establishing.entry(addr)
 						{
-							debug!("Received data from new point {}", addr);
+							debug!(target: "tick@network.server", "Received data from new point {}", addr);
 							if packet.payload() == [0x69] {
 								e.insert(interface.establishing());
 							}
@@ -126,7 +126,7 @@ impl<I: crate::Packet, O: crate::Packet, J> ServerNetworking<I, O, J> {
 									self.remote_establishing.remove(&addr);
 								}
 								Err(err) => {
-									error!("Error connecting to {}, {}", addr, err);
+									error!(target: "tick@network.server", "Error connecting to {}, {}", addr, err);
 									self.remote_establishing.remove(&addr);
 								}
 							};
@@ -146,7 +146,7 @@ impl<I: crate::Packet, O: crate::Packet, J> ServerNetworking<I, O, J> {
 				interface.disconnected(client);
 				self.remote_clients.remove_by_left(&client);
 				if self.local_connections.contains_key(&client) {
-					warn!("Tried to disconnect local client.");
+					warn!(target: "tick@network.server", "Tried to disconnect local client.");
 				}
 			}
 		}
@@ -170,7 +170,7 @@ impl<I: crate::Packet, O: crate::Packet> ClientNetworking<I, O> {
 	}
 
 	pub fn send(&self, packet: O) -> Result<()> {
-		trace!(target: "client_network", "Sending packet: {packet:?}");
+		trace!(target: "tick@network.client", "Sending packet: {packet:?}");
 		match self {
 			ClientNetworking::Local(sender, _) => {
 				sender.send(packet).unwrap();
@@ -193,7 +193,7 @@ impl<I: crate::Packet, O: crate::Packet> ClientNetworking<I, O> {
 		match self {
 			ClientNetworking::Local(_, receiver) => {
 				while let Ok(packet) = receiver.try_recv() {
-					trace!(target: "client_network", "Received packet: {packet:?}");
+					trace!(target: "tick@network.client", "Received packet: {packet:?}");
 					consumer(packet)?;
 				}
 			}

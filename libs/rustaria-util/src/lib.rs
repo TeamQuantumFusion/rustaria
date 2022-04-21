@@ -19,13 +19,14 @@ pub fn initialize() -> eyre::Result<()> {
 
 	CombinedLogger::init(vec![
 		TermLogger::new(
-			LevelFilter::Trace,
+			LevelFilter::Debug,
 			ConfigBuilder::new()
+				.set_time_format_str("\x1b[37m%T")
 				.set_level_padding(LevelPadding::Off)
 				.set_target_level(LevelFilter::Error)
 				.set_target_padding(TargetPadding::Left(2))
-				.set_level_color(Level::Trace, Some(Color::Magenta))
-				.set_level_color(Level::Debug, Some(Color::Blue))
+				.set_level_color(Level::Trace, Some(Color::Rgb(255, 0, 255)))
+				.set_level_color(Level::Debug, Some(Color::Cyan))
 				.set_level_color(Level::Info, Some(Color::Green))
 				.set_level_color(Level::Warn, Some(Color::Yellow))
 				.set_level_color(Level::Error, Some(Color::Red))

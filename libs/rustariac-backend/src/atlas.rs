@@ -7,7 +7,7 @@ use rectangle_pack::{
 	RectToInsert, RectanglePackError, RectanglePackOk, TargetBin,
 };
 use rustaria_api::ty::Tag;
-use rustaria_api::Api;
+use rustaria_api::{Api, AssetKind};
 use rustaria_util::ty::Rectangle;
 use rustaria_util::warn;
 
@@ -53,7 +53,7 @@ pub fn build_atlas(
 					images.insert(tag, image);
 				}
 				Err(error) => {
-					warn!("Could not load sprite {} {}", tag, error);
+					warn!(target: "init@rustariac.backend", "Could not load sprite {} {}", tag, error);
 				}
 			}
 		}
@@ -133,7 +133,7 @@ pub fn build_atlas(
 
 fn load_sprite(api: &Api, tag: &Tag) -> Result<DynamicImage> {
 	Ok(image::load_from_memory_with_format(
-		&api.get_asset(tag)?,
+		&api.get_asset(AssetKind::Asset, tag)?,
 		ImageFormat::Png,
 	)?)
 }

@@ -1,5 +1,5 @@
 use crate::lua::new_lua;
-use crate::{archive::Archive, Reloadable};
+use crate::{archive::Archive, Api, Reloadable};
 use crate::{lua, PluginId};
 use mlua::Lua;
 use semver::Version;
@@ -31,19 +31,19 @@ pub struct Plugin {
 }
 
 impl Plugin {
-	pub fn new(path: &PathBuf) -> Result<Plugin, PluginLoadError> {
+	pub fn new(path: &PathBuf, api: &Api) -> Result<Plugin, PluginLoadError> {
 		let archive = Archive::new(path)?;
 		let manifest_binary = archive.get_asset("manifest.json")?;
 		let manifest: Manifest = serde_json::from_slice(&manifest_binary)?;
 
 		Ok(Plugin {
-			lua_state: new_lua(&manifest)?,
+			lua_state: new_lua(&manifest, api)?,
 			manifest,
 			archive,
 		})
 	}
 
-	pub fn reload(&mut self) -> eyre::Result<()> {
+	pub fn reload(&self) -> eyre::Result<()> {
 		if let Some(entry) = &self.manifest.common_entry {
 			let lua_file = self.archive.get_asset(&("./src/".to_owned() + entry))?;
 			self.lua_state.load(&lua_file).exec()?;

@@ -50,7 +50,7 @@ impl WorldGenManager {
 				match world_gen::generate_chunk(&api, pos) {
 					Ok(chunk) => sender.send((chunk, pos)).unwrap(),
 					Err(err) => {
-						error!("Could not generate chunk {err}");
+						error!(target: "misc@rustaria", "Could not generate chunk {err}");
 					}
 				};
 			});

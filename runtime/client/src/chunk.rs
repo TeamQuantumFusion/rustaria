@@ -49,7 +49,7 @@ impl ChunkHandler {
 					}
 				}
 				Err(chunks) => {
-					warn!("Could not deserialize chunk packet. {chunks}")
+					warn!(target: "misc@rustariac", "Could not deserialize chunk packet. {chunks}")
 				}
 			},
 		}

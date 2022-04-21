@@ -51,7 +51,7 @@ impl Controller {
 					lookup.insert(*id);
 				}
 			} else {
-				warn!("Could not find subscribers for {}", name)
+				warn!(target: "init@rustaria.controller", "Could not find subscribers for {}", name)
 			}
 		}
 	}

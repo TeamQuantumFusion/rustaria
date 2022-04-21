@@ -1,6 +1,9 @@
+extern crate core;
+
 use crate::lua::reload::RegistryBuilderLua;
 use crate::registry::RegistryBuilder;
 use eyre::{ContextCompat, Result, WrapErr};
+use mlua::UserData;
 use plugin::Plugin;
 use registry::Registry;
 use rustaria_util::{
@@ -23,55 +26,73 @@ pub mod plugin;
 pub mod registry;
 pub mod ty;
 
+#[derive(Clone)]
 pub struct Api {
-	plugins: HashMap<PluginId, Plugin>,
+	internals: Arc<RwLock<ApiInternals>>,
 }
 
 impl Api {
 	pub fn new(plugins_dir: PathBuf, extra_locations: Vec<PathBuf>) -> io::Result<Api> {
-		info!(target: "init@rustaria-api", "Loading plugins.");
-		let mut plugins = HashMap::new();
+		let api = Api {
+			internals: Arc::new(RwLock::new(ApiInternals {
+				plugins: Default::default(),
+			})),
+		};
 
+		info!(target: "init@rustaria.api", "Loading plugins.");
 		if let Ok(dir) = std::fs::read_dir(plugins_dir) {
 			for entry in dir.flatten() {
-				Self::load_plugin(entry.path(), &mut plugins);
+				Self::load_plugin(entry.path(), &api);
 			}
 		}
 
 		for path in extra_locations {
-			Self::load_plugin(path, &mut plugins);
+			Self::load_plugin(path, &api);
 		}
 
-		Ok(Api { plugins })
+		Ok(api)
 	}
 
-	fn load_plugin(path: PathBuf, plugins: &mut HashMap<String, Plugin>) {
+	pub(crate) fn read(&self) -> RwLockReadGuard<'_, ApiInternals> {
+		self.internals.read().unwrap()
+	}
+
+	pub(crate) fn write(&self) -> RwLockWriteGuard<'_, ApiInternals> {
+		self.internals.write().unwrap()
+	}
+
+	fn load_plugin(path: PathBuf, api: &Api) {
 		if match path.extension() {
 			Some(extention) if extention == "zip" => true,
 			_ => path.is_dir(),
 		} {
-			match Plugin::new(&path) {
+			match Plugin::new(&path, api) {
 				Ok(plugin) => {
-					info!(target: "init@rustaria-api", " - {} [{} {}]", plugin.manifest.name, plugin.manifest.id, plugin.manifest.version);
-					plugins.insert(plugin.manifest.id.clone(), plugin);
+					info!(target: "init@rustaria.api", " - {} [{} {}]", plugin.manifest.name, plugin.manifest.id, plugin.manifest.version);
+					api.write()
+						.plugins
+						.insert(plugin.manifest.id.clone(), plugin);
 				}
 				Err(error) => {
-					warn!("Could not load plugin at {path:?}. Reason: {error:?}");
+					warn!(target: "init@rustaria.api", "Could not load plugin at {path:?}. Reason: {error:?}");
 				}
 			}
 		}
 	}
 
-	pub fn get_asset(&self, location: &Tag) -> io::Result<Vec<u8>> {
-		self.plugins
+	pub fn get_asset(&self, kind: AssetKind, location: &Tag) -> io::Result<Vec<u8>> {
+		self.internals
+			.read()
+			.unwrap()
+			.plugins
 			.get(location.plugin_id())
 			.ok_or(ErrorKind::NotFound)?
 			.archive
-			.get_asset(&("asset/".to_owned() + location.identifier()))
+			.get_asset(&(kind.string() + location.identifier()))
 	}
 
 	pub fn reload<'a>(&'a mut self, stack: &'a mut Carrier) -> ApiReload<'a> {
-		info!("Locking api.");
+		info!(target: "init@rustaria.api", "Freezing carrier.");
 		let mut lock = stack
 			.data
 			.write()
@@ -88,6 +109,26 @@ impl Api {
 	}
 }
 
+pub enum AssetKind {
+	Asset,
+	Source,
+}
+
+impl AssetKind {
+	pub fn string(self) -> String {
+		match self {
+			AssetKind::Asset => "asset/".to_owned(),
+			AssetKind::Source => "src/".to_owned(),
+		}
+	}
+}
+
+pub(crate) struct ApiInternals {
+	plugins: HashMap<PluginId, Plugin>,
+}
+
+impl UserData for Api {}
+
 pub struct ApiReload<'a> {
 	api: &'a mut Api,
 	carrier_lock: RwLockWriteGuard<'a, (TypeMap, Blake3Hash)>,
@@ -97,14 +138,14 @@ pub struct ApiReload<'a> {
 
 impl<'a> ApiReload<'a> {
 	pub fn register<P: Prototype>(&mut self) -> Result<()> {
-		debug!(target: "reload",
+		debug!(target: "reload@rustaria.api",
 			"Registered \"{}\" registry.",
 			P::lua_registry_name()
 		);
 
 		let builder = RegistryBuilderLua::new();
-		for (id, plugin) in &self.api.plugins {
-			trace!(target: "reload",
+		for (id, plugin) in &self.api.internals.read().unwrap().plugins {
+			trace!(target: "reload@rustaria.api",
 				"Registered \"{}\" registry to {id}.",
 				P::lua_registry_name()
 			);
@@ -120,8 +161,8 @@ impl<'a> ApiReload<'a> {
 	}
 
 	pub fn reload(&mut self) -> Result<()> {
-		for (id, plugin) in &mut self.api.plugins {
-			trace!(target: "reload", "Reloading {id}");
+		for (id, plugin) in &self.api.internals.read().unwrap().plugins {
+			trace!(target: "reload@rustaria.api", "Reloading {id}");
 			plugin
 				.reload()
 				.wrap_err(format!("Error while reloading plugin {id}"))?;
@@ -133,7 +174,7 @@ impl<'a> ApiReload<'a> {
 	}
 
 	pub fn collect<P: Prototype>(&mut self) -> Result<()> {
-		debug!(target: "reload",
+		debug!(target: "reload@rustaria.api",
 			"Collecting \"{}\" registry.",
 			P::lua_registry_name()
 		);

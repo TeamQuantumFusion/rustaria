@@ -1,5 +1,6 @@
 use crate::lua::PluginLua;
 
+use crate::Tag;
 use mlua::Lua;
 use rustaria_util::{log, Level};
 
@@ -34,7 +35,7 @@ fn error(lua: &Lua, msg: String) -> mlua::Result<()> {
 }
 
 fn event(lua: &Lua, level: Level, msg: String) -> mlua::Result<()> {
-	let log_target = "plugin@".to_owned() + &*PluginLua::import(lua).id;
+	let log_target = "plugin_log@".to_owned() + &*PluginLua::import(lua).id;
 	let log_target: &str = &log_target;
 	log!(target: log_target, level, "{msg}");
 	Ok(())

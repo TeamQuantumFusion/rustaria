@@ -1,3 +1,7 @@
+local stuff = require "test.lua";
+stuff.test();
+
+
 info "Registering tiles."
 Tiles:register {
     ["dirt"] = {

@@ -15,6 +15,17 @@
 --- @class Tag
 --- @field value string
 
+-- =============== Globals ===============
+-- Here go the globals. Anything that starts with _ should never be touched.
+
+
+-- Api reference
+_api = {}
+
+--- @class Plugin Information about your plugin.
+--- @field id string
+plugin = {}
+
 
 -- =============== Logging ===============
 -- Docs are forwarded from rust log library

@@ -52,7 +52,7 @@ impl<P: Prototype> RegistryBuilder<P> {
 	}
 
 	pub fn register(&mut self, tag: Tag, prototype: P) {
-		trace!("Registered {tag} {prototype:?}");
+		trace!(target: "reload@rustaria.api", "Registered {tag} {prototype:?}");
 		self.entries.insert(tag, prototype);
 	}
 

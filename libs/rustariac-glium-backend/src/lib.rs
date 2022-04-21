@@ -101,7 +101,6 @@ impl rustariac_backend::Backend for GliumBackend {
 					let width = image.width() >> level as u32;
 					let height = image.height() >> level as u32;
 					let image = image.resize_exact(width, height, FilterType::Nearest);
-					info!("{x}:{y} {width}x{height}");
 					mipmap.write(
 						Rect {
 							left: location.x as u32 >> level as u32,
@@ -137,7 +136,7 @@ impl rustariac_backend::Backend for GliumBackend {
 			self.pos_texture
 				.draw(&self.facade, &mut frame, &uniforms, &draw_parameters);
 		} else {
-			trace!("Atlas is not loaded. Skipping rendering frame");
+			trace!(target: "draw@rustariac.glium", "Atlas is not loaded. Skipping rendering frame");
 		}
 
 		frame.finish().unwrap();
