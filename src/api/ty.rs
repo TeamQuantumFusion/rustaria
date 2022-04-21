@@ -1,3 +1,4 @@
+use mlua::{FromLua, Lua, ToLua, Value};
 use std::{collections::HashSet, hash::Hash};
 
 use serde::{Deserialize, Serialize};
@@ -17,8 +18,9 @@ impl<T> LockableValue<T> {
 	}
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize, Serialize, frogelua::FromLua)]
 #[serde(rename_all = "snake_case")]
+#[use_default]
 pub enum ConnectionType {
 	// air
 	Isolated,

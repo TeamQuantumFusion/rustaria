@@ -36,8 +36,8 @@ impl EntityHandler {
 	}
 
 	pub fn tick(&mut self, camera: &Camera, chunks: &ChunkContainer) -> Result<()> {
-		self.drawer.tick(camera, &self.container)?;
 		self.container.tick(chunks);
+		self.drawer.tick(camera, &self.container)?;
 
 		Ok(())
 	}

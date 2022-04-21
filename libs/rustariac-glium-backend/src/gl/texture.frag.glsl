@@ -1,4 +1,4 @@
-#version 410
+#version 330
 
 in vec2 v_tex_coords;
 

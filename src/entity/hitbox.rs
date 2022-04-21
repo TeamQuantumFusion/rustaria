@@ -1,13 +1,21 @@
 use crate::chunk::{Chunk, ChunkContainer};
-use crate::ChunkManager;
-use rustaria_util::info;
+use mlua::{FromLua, Lua, Value};
 use rustaria_util::ty::pos::{Pos, ZERO};
 use rustaria_util::ty::{ChunkPos, ChunkSubPos, Offset, Rectangle, TilePos, CHUNK_SIZE};
+use serde::Deserialize;
 use std::ops::Index;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct HitboxComp {
 	pub hitbox: Rectangle,
+}
+
+impl FromLua for HitboxComp {
+	fn from_lua(lua_value: Value, lua: &Lua) -> mlua::Result<Self> {
+		Ok(HitboxComp {
+			hitbox: Rectangle::from_lua(lua_value, lua)?,
+		})
+	}
 }
 
 impl HitboxComp {

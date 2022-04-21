@@ -1,15 +1,17 @@
+use mlua::UserData;
 use std::collections::HashSet;
 
 use rustaria_api::ty::Tag;
 use rustaria_api::ty::{Prototype, RawId};
 use rustaria_util::ty::pos::Pos;
+use serde::Deserialize;
 
 #[cfg(feature = "client")]
 use crate::api::rendering::RenderingSystem;
 use crate::entity::hitbox::HitboxComp;
 use crate::entity::velocity::VelocityComp;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, frogelua::FromLua)]
 pub struct EntityPrototype {
 	pub velocity: Option<VelocityComp>,
 	pub hitbox: Option<HitboxComp>,

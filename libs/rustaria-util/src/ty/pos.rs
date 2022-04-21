@@ -2,7 +2,18 @@ use crate::ty::{TilePos, CHUNK_SIZE_F};
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 pub const ZERO: Pos = Pos { x: 0.0, y: 0.0 };
-#[derive(Copy, Clone, PartialOrd, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(
+	Copy,
+	Clone,
+	PartialOrd,
+	PartialEq,
+	Debug,
+	Default,
+	serde::Serialize,
+	serde::Deserialize,
+	frogelua::FromLua,
+)]
+#[use_default]
 pub struct Pos {
 	pub x: f32,
 	pub y: f32,

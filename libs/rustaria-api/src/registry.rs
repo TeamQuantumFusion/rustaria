@@ -1,7 +1,10 @@
+use crate::trace;
 use eyre::Result;
+use mlua::UserData;
 use rustaria_util::blake3::Hasher;
 use std::collections::HashMap;
 use std::slice::Iter;
+use std::sync::{Arc, RwLock};
 
 use crate::ty::{Prototype, RawId, Tag};
 
@@ -36,7 +39,7 @@ impl<P: Prototype> Registry<P> {
 	}
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct RegistryBuilder<P: Prototype> {
 	entries: HashMap<Tag, P>,
 }
@@ -44,16 +47,17 @@ pub struct RegistryBuilder<P: Prototype> {
 impl<P: Prototype> RegistryBuilder<P> {
 	pub fn new() -> RegistryBuilder<P> {
 		RegistryBuilder {
-			entries: HashMap::new()
+			entries: HashMap::new(),
 		}
 	}
-	
+
 	pub fn register(&mut self, tag: Tag, prototype: P) {
+		trace!("Registered {tag} {prototype:?}");
 		self.entries.insert(tag, prototype);
 	}
 
-	pub fn finish(self, hasher: &mut Hasher) -> Result<Registry<P>> {
-		let mut data: Vec<_> = self.entries.into_iter().collect();
+	pub fn finish(&self, hasher: &mut Hasher) -> Result<Registry<P>> {
+		let mut data: Vec<_> = self.entries.clone().into_iter().collect();
 
 		data.sort_by(|(i1, _), (i2, _)| i1.cmp(i2));
 

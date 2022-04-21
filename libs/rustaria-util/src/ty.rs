@@ -2,6 +2,7 @@
 
 use num::FromPrimitive;
 use pos::Pos;
+use serde::Deserialize;
 use std::fmt::{Display, Formatter};
 use std::ops::Add;
 
@@ -106,7 +107,7 @@ impl Direction {
 
 // ======================================== POSITION ========================================
 #[derive(
-	Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, serde::Serialize, serde::Deserialize,
+	Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, serde::Serialize, serde::Deserialize, frogelua::FromLua
 )]
 pub struct ChunkPos {
 	pub x: u32,
@@ -153,7 +154,7 @@ impl Offset<(i32, i32)> for ChunkPos {
 }
 
 #[derive(
-	Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, serde::Serialize, serde::Deserialize,
+	Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, serde::Serialize, serde::Deserialize, 
 )]
 pub struct ChunkSubPos(u8);
 
@@ -347,7 +348,7 @@ fn checked_add_signed_u8(a: u8, b: i8) -> Option<u8> {
 	}
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Deserialize, Debug, frogelua::FromLua)]
 pub struct Rectangle {
 	pub x: f32,
 	pub y: f32,

@@ -1,18 +1,12 @@
-local log = require "log"
-
-log.warn "IDK what alpha's on, one entrypoint is good enough"
-log.debug "use dash, not froge"
-
-
+info "Registering tiles."
 Tiles:register {
     ["dirt"] = {
-        sprite = "lab.png",
-        connection = "connected"
+        sprite = "lab.png"
     },
-    ["air"] = {},
+    ["air"] = {}
 }
 
-
+info "Registering entities."
 Entities:register {
     ["player"] = {
         health = {
@@ -20,6 +14,12 @@ Entities:register {
         }
     },
     ["bunne"] = {
+        hitbox = {
+            x = 0,
+            y = 0,
+            width = 10,
+            height = 10,
+        },
         velocity = {
             x = 0.5,
             y = 0,
@@ -35,5 +35,3 @@ Entities:register {
         }
     }
 }
-
-log.error "alpha kinda stinks"

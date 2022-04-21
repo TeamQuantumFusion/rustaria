@@ -1,5 +1,7 @@
-use crate::archive::Archive;
-use crate::PluginId;
+use crate::lua::new_lua;
+use crate::{archive::Archive, Reloadable};
+use crate::{lua, PluginId};
+use mlua::Lua;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
@@ -12,10 +14,7 @@ pub struct Manifest {
 	pub name: String,
 	pub version: Version,
 	// Entry points
-	pub common_pre_entry: Option<String>,
 	pub common_entry: Option<String>,
-	pub client_pre_entry: Option<String>,
-	pub client_entry: Option<String>,
 	// Other plugins
 	#[serde(default)]
 	pub dependencies: HashMap<PluginId, Version>,
@@ -28,6 +27,7 @@ pub struct Manifest {
 pub struct Plugin {
 	pub manifest: Manifest,
 	pub archive: Archive,
+	pub lua_state: Lua,
 }
 
 impl Plugin {
@@ -36,7 +36,19 @@ impl Plugin {
 		let manifest_binary = archive.get_asset("manifest.json")?;
 		let manifest: Manifest = serde_json::from_slice(&manifest_binary)?;
 
-		Ok(Plugin { manifest, archive })
+		Ok(Plugin {
+			lua_state: new_lua(&manifest)?,
+			manifest,
+			archive,
+		})
+	}
+
+	pub fn reload(&mut self) -> eyre::Result<()> {
+		if let Some(entry) = &self.manifest.common_entry {
+			let lua_file = self.archive.get_asset(&("./src/".to_owned() + entry))?;
+			self.lua_state.load(&lua_file).exec()?;
+		}
+		Ok(())
 	}
 }
 
@@ -46,6 +58,8 @@ pub enum PluginLoadError {
 	Io(#[from] std::io::Error),
 	#[error("Manifest parsing error `{0}`")]
 	ManifestParsing(#[from] serde_json::Error),
+	#[error("Failed to initialize lua context `{0}`")]
+	LuaInitialization(#[from] mlua::Error),
 }
 
 /// Used in every lua context. global "ctx"

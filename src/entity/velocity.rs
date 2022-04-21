@@ -1,4 +1,5 @@
 use crate::entity::pos::PositionComp;
+use mlua::{FromLua, Lua, Value};
 use rustaria_util::ty::pos::Pos;
 use serde::Deserialize;
 
@@ -18,5 +19,13 @@ impl Default for VelocityComp {
 		VelocityComp {
 			velocity: Pos { x: 0.0, y: 0.0 },
 		}
+	}
+}
+
+impl FromLua for VelocityComp {
+	fn from_lua(lua_value: Value, lua: &Lua) -> mlua::Result<Self> {
+		Ok(VelocityComp {
+			velocity: Pos::from_lua(lua_value, lua)?,
+		})
 	}
 }

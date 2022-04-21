@@ -1,9 +1,12 @@
+use mlua::{Error, FromLua, Lua, ToLua, UserData, Value};
 use std::hash::Hash;
 use std::{
 	collections::HashSet,
 	fmt::{Debug, Display},
 };
 
+use crate::lua::PluginLua;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 // Raw Ids
@@ -36,6 +39,19 @@ impl Tag {
 		})
 	}
 
+	pub fn new_lua(tag: String, lua: &Lua) -> Result<Tag, TagCreationError> {
+		match Self::new(tag.clone()) {
+			Ok(tag) => Ok(tag),
+			Err(TagCreationError::ColonMissing) => {
+				let mut new_tag = PluginLua::import(lua).id;
+				new_tag.push(':');
+				new_tag.push_str(&tag);
+				Self::new(new_tag)
+			}
+			Err(err) => Err(err),
+		}
+	}
+
 	pub fn new<S: Into<String>>(tag: S) -> Result<Tag, TagCreationError> {
 		let tag = tag.into();
 		let colon_index = tag.find(':').ok_or(TagCreationError::ColonMissing)?;
@@ -51,6 +67,22 @@ impl Tag {
 
 	pub fn identifier(&self) -> &str {
 		&self.inner[self.colon_index as usize + 1..]
+	}
+}
+
+impl FromLua for Tag {
+	fn from_lua(value: mlua::Value, lua: &Lua) -> mlua::Result<Self> {
+		match value {
+			mlua::Value::String(string) => Tag::new_lua(string.to_str()?.to_string(), lua)
+				.map_err(|err| Error::RuntimeError(err.to_string())),
+			_ => Err(mlua::Error::SerializeError(format!("{value:?}"))),
+		}
+	}
+}
+
+impl ToLua for Tag {
+	fn to_lua(self, lua: &Lua) -> mlua::Result<Value> {
+		Ok(Value::String(lua.create_string(&self.inner)?))
 	}
 }
 
@@ -70,7 +102,7 @@ pub enum TagCreationError {
 	IllegalCharacters,
 }
 
-pub trait Prototype: Send + Sync + 'static + Debug {
+pub trait Prototype: Send + Clone + Sync + FromLua + 'static + Debug {
 	type Item;
 
 	fn create(&self, id: RawId) -> Self::Item;

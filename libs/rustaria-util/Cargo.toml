@@ -10,6 +10,10 @@ edition = "2021"
 simplelog = "0.11.2"
 log = "0.4.*"
 
+# Lua
+frogelua = { path = "../frogelua" }
+mlua = { git = "https://github.com/alphaqu/mlua", features = ["lua54", "vendored", "serialize", "send"] }
+
 # Errors
 eyre = "0.6"
 color-eyre = { version = "0.6", default-features = false }

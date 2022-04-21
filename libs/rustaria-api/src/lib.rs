@@ -1,5 +1,6 @@
+use crate::lua::reload::RegistryBuilderLua;
 use crate::registry::RegistryBuilder;
-use eyre::Result;
+use eyre::{ContextCompat, Result, WrapErr};
 use plugin::Plugin;
 use registry::Registry;
 use rustaria_util::{
@@ -17,6 +18,7 @@ use type_map::concurrent::TypeMap;
 
 mod archive;
 
+pub mod lua;
 pub mod plugin;
 pub mod registry;
 pub mod ty;
@@ -27,6 +29,7 @@ pub struct Api {
 
 impl Api {
 	pub fn new(plugins_dir: PathBuf, extra_locations: Vec<PathBuf>) -> io::Result<Api> {
+		info!(target: "init@rustaria-api", "Loading plugins.");
 		let mut plugins = HashMap::new();
 
 		if let Ok(dir) = std::fs::read_dir(plugins_dir) {
@@ -49,7 +52,7 @@ impl Api {
 		} {
 			match Plugin::new(&path) {
 				Ok(plugin) => {
-					trace!("Loaded plugin {}.", plugin.manifest.id);
+					info!(target: "init@rustaria-api", " - {} [{} {}]", plugin.manifest.name, plugin.manifest.id, plugin.manifest.version);
 					plugins.insert(plugin.manifest.id.clone(), plugin);
 				}
 				Err(error) => {
@@ -68,7 +71,7 @@ impl Api {
 	}
 
 	pub fn reload<'a>(&'a mut self, stack: &'a mut Carrier) -> ApiReload<'a> {
-		info!("preparing acquire");
+		info!("Locking api.");
 		let mut lock = stack
 			.data
 			.write()
@@ -78,7 +81,7 @@ impl Api {
 
 		ApiReload {
 			api: self,
-			lock,
+			carrier_lock: lock,
 			registry_builders: TypeMap::new(),
 			hasher: Hasher::new(),
 		}
@@ -87,25 +90,70 @@ impl Api {
 
 pub struct ApiReload<'a> {
 	api: &'a mut Api,
-	lock: RwLockWriteGuard<'a, (TypeMap, Blake3Hash)>,
+	carrier_lock: RwLockWriteGuard<'a, (TypeMap, Blake3Hash)>,
 	registry_builders: TypeMap,
 	hasher: Hasher,
 }
 
 impl<'a> ApiReload<'a> {
-	pub fn add_registry<P: Prototype>(&mut self, builder: RegistryBuilder<P>) -> Result<()> {
-		debug!(
-			"Registered \"{}\" registry. (reload)",
+	pub fn register<P: Prototype>(&mut self) -> Result<()> {
+		debug!(target: "reload",
+			"Registered \"{}\" registry.",
 			P::lua_registry_name()
 		);
-		self.lock
-			.0
-			.insert::<Registry<P>>(builder.finish(&mut self.hasher)?);
+
+		let builder = RegistryBuilderLua::new();
+		for (id, plugin) in &self.api.plugins {
+			trace!(target: "reload",
+				"Registered \"{}\" registry to {id}.",
+				P::lua_registry_name()
+			);
+			plugin
+				.lua_state
+				.globals()
+				.set(P::lua_registry_name(), builder.clone())?;
+		}
+
+		self.registry_builders
+			.insert::<RegistryBuilderLua<P>>(builder);
 		Ok(())
 	}
 
-	pub fn reload(mut self) {
-		self.lock.1 = self.hasher.finalize();
+	pub fn reload(&mut self) -> Result<()> {
+		for (id, plugin) in &mut self.api.plugins {
+			trace!(target: "reload", "Reloading {id}");
+			plugin
+				.reload()
+				.wrap_err(format!("Error while reloading plugin {id}"))?;
+		}
+
+		self.carrier_lock.1 = self.hasher.finalize();
+
+		Ok(())
+	}
+
+	pub fn collect<P: Prototype>(&mut self) -> Result<()> {
+		debug!(target: "reload",
+			"Collecting \"{}\" registry.",
+			P::lua_registry_name()
+		);
+
+		let builder = self
+			.registry_builders
+			.remove::<RegistryBuilderLua<P>>()
+			.wrap_err(format!(
+				"Could not find registry {}",
+				P::lua_registry_name()
+			))?;
+
+		let registry = builder.collect(&mut self.hasher)?;
+
+		self.carrier_lock.0.insert::<Registry<P>>(registry);
+		Ok(())
+	}
+
+	pub fn apply(mut self) {
+		self.carrier_lock.1 = self.hasher.finalize();
 	}
 }
 
