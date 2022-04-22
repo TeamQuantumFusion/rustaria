@@ -3,7 +3,8 @@ use rustaria::api::prototype::entity::EntityPrototype;
 use rustaria::entity::EntityContainer;
 use rustaria::SmartError::CarrierUnavailable;
 use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_util::ty::pos::Pos;
+use rustaria_util::math::{Vector2D, WorldSpace};
+use rustaria_util::ty::Pos;
 use rustaria_util::Uuid;
 use rustariac_backend::builder::VertexBuilder;
 use rustariac_backend::ty::Camera;
@@ -16,7 +17,7 @@ pub struct WorldEntityDrawer {
 	backend: ClientBackend,
 	carrier: Option<Carrier>,
 	entity_drawers: Vec<Option<BakedRenderingSystem>>,
-	entities: HashMap<Uuid, Pos>,
+	entities: HashMap<Uuid, Vector2D<f32, WorldSpace>>,
 
 	layer: LayerChannel<PosTexture>,
 }
@@ -42,7 +43,7 @@ impl WorldEntityDrawer {
 					self.entities.insert(*uuid, pos.position);
 				}
 				let old_pos = self.entities.get_mut(uuid).unwrap();
-				let pos = pos.position.lerp(old_pos, delta);
+				let pos = pos.position.lerp(*old_pos, delta);
 
 				if let Some(Some(system)) = self.entity_drawers.get(id.index()) {
 					system.push(&mut builder, camera, pos.x, pos.y);

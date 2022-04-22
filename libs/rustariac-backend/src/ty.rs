@@ -1,7 +1,7 @@
 use crate::builder::Quadable;
-use rustaria_util::ty::Rectangle;
+use rustaria_util::math::{rect, AtlasSpace, Rect, WorldSpace};
 
-pub type AtlasLocation = Rectangle;
+pub type AtlasLocation = Rect<f32, AtlasSpace>;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -10,24 +10,24 @@ pub struct PosTexture {
 	tex_coords: [f32; 2],
 }
 
-impl Quadable<PosTexture> for (Rectangle, AtlasLocation) {
+impl<S> Quadable<PosTexture> for (Rect<f32, S>, Rect<f32, AtlasSpace>) {
 	fn expand(self) -> [PosTexture; 4] {
 		[
 			PosTexture {
-				position: self.0.left_bottom(),
-				tex_coords: self.1.left_bottom(),
+				position: [self.0.min_x(), self.0.min_y()],
+				tex_coords: [self.1.min_x(), self.1.min_y()],
 			},
 			PosTexture {
-				position: self.0.left_top(),
-				tex_coords: self.1.left_top(),
+				position: [self.0.min_x(), self.0.max_y()],
+				tex_coords: [self.1.min_x(), self.1.max_y()],
 			},
 			PosTexture {
-				position: self.0.right_top(),
-				tex_coords: self.1.right_top(),
+				position: [self.0.max_x(), self.0.max_y()],
+				tex_coords: [self.1.max_x(), self.1.max_y()],
 			},
 			PosTexture {
-				position: self.0.right_bottom(),
-				tex_coords: self.1.right_bottom(),
+				position: [self.0.max_x(), self.0.min_y()],
+				tex_coords: [self.1.max_x(), self.1.min_y()],
 			},
 		]
 	}
@@ -41,14 +41,14 @@ pub struct Camera {
 }
 
 impl Camera {
-	pub fn visible(&self) -> Rectangle {
-		let x_view = (self.zoom);
-		let y_view = (self.zoom / self.screen_y_ratio);
-		Rectangle {
-			x: self.position[0] - x_view,
-			y: self.position[1] - y_view,
-			width: x_view * 2.0,
-			height: y_view * 2.0,
-		}
+	pub fn visible(&self) -> Rect<f32, WorldSpace> {
+		let x_view = self.zoom;
+		let y_view = self.zoom / self.screen_y_ratio;
+		rect(
+			self.position[0] - x_view,
+			self.position[1] - y_view,
+			x_view * 2.0,
+			y_view * 2.0,
+		)
 	}
 }

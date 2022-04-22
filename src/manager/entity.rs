@@ -3,7 +3,8 @@ use std::sync::Arc;
 use rustaria_api::ty::RawId;
 use rustaria_api::{Carrier, Reloadable};
 use rustaria_network::Token;
-use rustaria_util::ty::pos::Pos;
+use rustaria_util::math::{Vector2D, WorldSpace};
+use rustaria_util::ty::Pos;
 use rustaria_util::Uuid;
 
 use crate::entity::EntityContainer;
@@ -13,7 +14,7 @@ use crate::{ChunkManager, ServerPacket, ThreadPool};
 
 pub(crate) struct EntityManager {
 	world: EntityContainer,
-	new_entities: Vec<(Token, RawId, Pos)>,
+	new_entities: Vec<(Token, RawId, Vector2D<f32, WorldSpace>)>,
 }
 
 impl EntityManager {
@@ -24,7 +25,12 @@ impl EntityManager {
 		}
 	}
 
-	pub fn spawn(&mut self, from: Token, id: RawId, position: Pos) -> eyre::Result<Uuid> {
+	pub fn spawn(
+		&mut self,
+		from: Token,
+		id: RawId,
+		position: Vector2D<f32, WorldSpace>,
+	) -> eyre::Result<Uuid> {
 		let entity = self.world.spawn(id, position)?;
 		self.new_entities.push((from, id, position));
 		Ok(entity)

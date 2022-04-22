@@ -24,3 +24,6 @@ uuid = { version = "0.8", features = ["v4"] }
 # Types
 serde = { version = "1.0", features = ["derive"] }
 num = "0.4"
+
+# Math
+euclid = { version = "0.22.7", features = ["serde"] }

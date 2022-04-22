@@ -1,12 +1,10 @@
 //! A collection of types used in Rustaria.
 
+use euclid::{rect, vec2, Rect, Vector2D};
 use num::FromPrimitive;
-use pos::Pos;
 use serde::Deserialize;
 use std::fmt::{Display, Formatter};
 use std::ops::Add;
-
-pub mod pos;
 
 pub enum Error {
 	OutOfBounds,
@@ -107,7 +105,17 @@ impl Direction {
 
 // ======================================== POSITION ========================================
 #[derive(
-	Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, serde::Serialize, serde::Deserialize, frogelua::FromLua
+	Copy,
+	Clone,
+	Ord,
+	PartialOrd,
+	Eq,
+	PartialEq,
+	Hash,
+	Debug,
+	serde::Serialize,
+	serde::Deserialize,
+	frogelua::FromLua,
 )]
 pub struct ChunkPos {
 	pub x: u32,
@@ -154,7 +162,7 @@ impl Offset<(i32, i32)> for ChunkPos {
 }
 
 #[derive(
-	Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, serde::Serialize, serde::Deserialize, 
+	Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, serde::Serialize, serde::Deserialize,
 )]
 pub struct ChunkSubPos(u8);
 
@@ -252,10 +260,10 @@ impl Offset<(i8, i8)> for TilePos {
 	}
 }
 
-impl TryFrom<Pos> for TilePos {
+impl<S> TryFrom<Vector2D<f32, S>> for TilePos {
 	type Error = Error;
 
-	fn try_from(value: Pos) -> Result<Self, Self::Error> {
+	fn try_from(value: Vector2D<f32, S>) -> Result<Self, Self::Error> {
 		Ok(TilePos {
 			chunk: ChunkPos::try_from(value)?,
 			sub: ChunkSubPos::new(
@@ -281,10 +289,10 @@ impl Display for TilePos {
 	}
 }
 
-impl TryFrom<Pos> for ChunkPos {
+impl<S> TryFrom<Vector2D<f32, S>> for ChunkPos {
 	type Error = Error;
 
-	fn try_from(value: Pos) -> Result<Self, Self::Error> {
+	fn try_from(value: Vector2D<f32, S>) -> Result<Self, Self::Error> {
 		Ok(ChunkPos {
 			x: u32::from_f32(value.x / CHUNK_SIZE_F).ok_or(Error::OutOfBounds)?,
 			y: u32::from_f32(value.y / CHUNK_SIZE_F).ok_or(Error::OutOfBounds)?,
@@ -356,41 +364,33 @@ pub struct Rectangle {
 	pub height: f32,
 }
 
-impl Rectangle {
-	pub fn overlaps(&self, rect: &Rectangle) -> bool {
-		self.left().max(rect.left()) < self.right().min(rect.right())
-			&& self.bottom().max(rect.bottom()) < self.top().min(rect.top())
+#[allow(clippy::from_over_into)]
+impl<S> Into<Rect<f32, S>> for Rectangle {
+	fn into(self) -> Rect<f32, S> {
+		rect(self.x, self.y, self.width, self.height)
 	}
+}
 
-	pub fn right_top(self) -> [f32; 2] {
-		[self.right(), self.top()]
-	}
+#[derive(
+	Copy,
+	Clone,
+	PartialOrd,
+	PartialEq,
+	Debug,
+	Default,
+	serde::Serialize,
+	serde::Deserialize,
+	frogelua::FromLua,
+)]
+#[use_default]
+pub struct Pos {
+	pub x: f32,
+	pub y: f32,
+}
 
-	pub fn left_top(self) -> [f32; 2] {
-		[self.left(), self.top()]
-	}
-
-	pub fn right_bottom(self) -> [f32; 2] {
-		[self.right(), self.bottom()]
-	}
-
-	pub fn left_bottom(self) -> [f32; 2] {
-		[self.left(), self.bottom()]
-	}
-
-	pub fn right(self) -> f32 {
-		self.x + self.width
-	}
-
-	pub fn left(self) -> f32 {
-		self.x
-	}
-
-	pub fn top(self) -> f32 {
-		self.y + self.height
-	}
-
-	pub fn bottom(self) -> f32 {
-		self.y
+#[allow(clippy::from_over_into)]
+impl<S> Into<Vector2D<f32, S>> for Pos {
+	fn into(self) -> Vector2D<f32, S> {
+		vec2(self.x, self.y)
 	}
 }

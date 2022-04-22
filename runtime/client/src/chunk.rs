@@ -4,13 +4,13 @@ use std::collections::{HashMap, HashSet};
 use eyre::Result;
 use rustaria_util::ty::{ChunkPos, Offset, CHUNK_SIZE, CHUNK_SIZE_F};
 
-use crate::NetworkHandler;
+use crate::{vec2, NetworkHandler};
 use rustaria::chunk::{Chunk, ChunkContainer};
 use rustaria::network::packet::chunk::ClientChunkPacket;
 use rustaria::network::packet::chunk::ServerChunkPacket;
 use rustaria::network::packet::ClientPacket;
 use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_util::ty::pos::Pos;
+use rustaria_util::ty::Pos;
 use rustaria_util::{info, warn};
 use rustariac_backend::ty::Camera;
 use rustariac_backend::ClientBackend;
@@ -58,10 +58,8 @@ impl ChunkHandler {
 	}
 
 	pub fn tick(&mut self, camera: &Camera, networking: &mut NetworkHandler) -> Result<()> {
-		if let Ok(chunk) = ChunkPos::try_from(Pos {
-			x: camera.position[0],
-			y: camera.position[1],
-		}) {
+		if let Ok(chunk) = ChunkPos::try_from(vec2::<_, ()>(camera.position[0], camera.position[1]))
+		{
 			if chunk != self.old_chunk || camera.zoom != self.old_zoom || self.drawer.dirty() {
 				let width = (camera.zoom / CHUNK_SIZE_F) as i32;
 				let height = ((camera.zoom * camera.screen_y_ratio) / CHUNK_SIZE_F) as i32;

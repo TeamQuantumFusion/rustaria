@@ -3,7 +3,7 @@ use std::collections::HashSet;
 
 use rustaria_api::ty::Tag;
 use rustaria_api::ty::{Prototype, RawId};
-use rustaria_util::ty::pos::Pos;
+use rustaria_util::ty::Pos;
 use serde::Deserialize;
 
 #[cfg(feature = "client")]

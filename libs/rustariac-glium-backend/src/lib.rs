@@ -1,14 +1,14 @@
 use std::{rc::Rc, sync::mpsc::Receiver};
 
-use engine::{GlfwBackendEngine, GliumBackendEngine};
 use eyre::Result;
 use glfw::{Glfw, Window, WindowEvent};
-
 use glium::{
 	texture::{self, RawImage2d, SrgbTexture2d},
 	uniform, Frame, Rect, Surface,
 };
 use image::{imageops::FilterType, DynamicImage};
+
+use engine::{GlfwBackendEngine, GliumBackendEngine};
 use pipeline::LayerPipeline;
 use rustaria_util::{info, trace};
 use rustariac_backend::ty::AtlasLocation;
@@ -96,17 +96,17 @@ impl rustariac_backend::Backend for GliumBackend {
 		for level in 0..=level {
 			if let Some(mipmap) = atlas.mipmap(level) {
 				for (image, location) in &images {
-					let x = location.x as u32 >> level as u32;
-					let y = location.y as u32 >> level as u32;
-					let width = image.width() >> level as u32;
-					let height = image.height() >> level as u32;
+					let left = location.origin.x as u32 >> level;
+					let bottom = location.origin.y as u32 >> level;
+					let width = location.width() as u32 >> level;
+					let height = location.height() as u32 >> level;
 					let image = image.resize_exact(width, height, FilterType::Nearest);
 					mipmap.write(
 						Rect {
-							left: location.x as u32 >> level as u32,
-							bottom: location.y as u32 >> level as u32,
-							width: location.width as u32 >> level as u32,
-							height: location.height as u32 >> level as u32,
+							left,
+							bottom,
+							width,
+							height,
 						},
 						RawImage2d::from_raw_rgba_reversed(image.as_bytes(), (width, height)),
 					);

@@ -15,7 +15,7 @@ use rustaria::SmartError;
 use rustaria::{Server, UPS};
 use rustaria_api::ty::{Prototype, Tag};
 use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_util::ty::pos::Pos;
+use rustaria_util::ty::Pos;
 use rustaria_util::{debug, info};
 use rustariac_backend::ty::Camera;
 use rustariac_backend::ClientBackend;
@@ -27,6 +27,7 @@ use crate::entity::EntityHandler;
 
 pub use rustaria::prototypes;
 pub use rustaria::pt;
+use rustaria_util::math::vec2;
 
 mod args;
 mod chunk;
@@ -70,7 +71,7 @@ fn main() -> eyre::Result<()> {
 			.id_from_tag(&Tag::new("rustaria:bunne".to_string()).unwrap())
 			.unwrap();
 		let world = client.world.as_mut().unwrap();
-		let pos = Pos { x: 5.0, y: 5.0 };
+		let pos = vec2(5.0, 5.0);
 		world
 			.entity
 			.packet(ServerEntityPacket::New(id, pos))
@@ -200,7 +201,7 @@ impl Client {
 			let id = prototype
 				.id_from_tag(&Tag::new("rustaria:bunne".to_string()).unwrap())
 				.unwrap();
-			let pos = Pos { x: 5.0, y: 5.0 };
+			let pos = vec2(5.0, 5.0);
 			world
 				.entity
 				.packet(ServerEntityPacket::New(id, pos))

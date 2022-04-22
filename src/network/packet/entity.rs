@@ -1,15 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 use rustaria_api::ty::RawId;
-use rustaria_util::ty::pos::Pos;
+use rustaria_util::math::{Vector2D, WorldSpace};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ServerEntityPacket {
-    New(RawId, Pos)
+	New(RawId, Vector2D<f32, WorldSpace>),
 }
-
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ClientEntityPacket {
-    Spawn(RawId, Pos)
+	Spawn(RawId, Vector2D<f32, WorldSpace>),
 }

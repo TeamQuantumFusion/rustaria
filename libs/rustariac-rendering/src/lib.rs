@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use rustaria::api::rendering::{Pane, RenderingSystem};
+use rustaria_util::math::rect;
 use rustaria_util::ty::Rectangle;
 use rustariac_backend::builder::VertexBuilder;
 use rustariac_backend::ty::{Camera, PosTexture};
@@ -48,29 +49,23 @@ pub struct BakedPane {
 impl BakedPane {
 	pub fn new(pane: &Pane, backend: &ClientBackend) -> BakedPane {
 		let instance = backend.instance();
-		let location = instance.atlas.get(&pane.sprite);
 		BakedPane {
 			x_offset: pane.x_offset,
 			y_offset: pane.y_offset,
 			width: pane.width,
 			height: pane.height,
-			sprite: AtlasLocation {
-				x: location.x,
-				y: location.y,
-				width: location.width,
-				height: location.height,
-			},
+			sprite: instance.atlas.get(&pane.sprite),
 		}
 	}
 
 	pub fn push(&self, builder: &mut VertexBuilder<PosTexture>, camera: &Camera, x: f32, y: f32) {
-		let rectangle = Rectangle {
-			x: x + self.x_offset,
-			y: y + self.y_offset,
-			width: self.width,
-			height: self.height,
-		};
-		if camera.visible().overlaps(&rectangle) {
+		let rectangle = rect(
+			x + self.x_offset,
+			y + self.y_offset,
+			self.width,
+			self.height,
+		);
+		if camera.visible().intersects(&rectangle) {
 			builder.quad((rectangle, self.sprite))
 		}
 	}

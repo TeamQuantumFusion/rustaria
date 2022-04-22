@@ -7,16 +7,17 @@ use std::collections::{HashMap, HashSet};
 use eyre::{ContextCompat, Result};
 use pos::PositionComp;
 
-use rustaria_api::ty::{Prototype, RawId};
+use rustaria_api::ty::RawId;
 use rustaria_api::{Carrier, Reloadable};
-use rustaria_util::ty::pos::Pos;
-use rustaria_util::{error, info, Uuid};
+use rustaria_util::math::{Vector2D, WorldSpace};
+
+use rustaria_util::Uuid;
 use velocity::VelocityComp;
 
 use crate::api::prototype::entity::EntityPrototype;
 use crate::chunk::ChunkContainer;
 use crate::entity::hitbox::HitboxComp;
-use crate::{ChunkManager, SmartError};
+use crate::SmartError;
 
 #[derive(Default)]
 pub struct EntityContainer {
@@ -29,7 +30,7 @@ pub struct EntityContainer {
 }
 
 impl EntityContainer {
-	pub fn spawn(&mut self, id: RawId, pos: Pos) -> Result<Uuid> {
+	pub fn spawn(&mut self, id: RawId, pos: Vector2D<f32, WorldSpace>) -> Result<Uuid> {
 		let carrier = self
 			.carrier
 			.as_ref()
@@ -79,18 +80,18 @@ impl EntityContainer {
 			// required
 			if let Some(position) = self.position.get_mut(id) {
 				// optional
-				if let Some(hitbox) = self.hitbox.get(id) {
-					if let Some((pos, hit)) =
-						hitbox.calc(hitbox.hitbox, position.position, velocity.velocity, chunks)
-					{
-						position.position = pos;
-						if hit {
-							self.dead.insert(*id);
-						}
-					}
-				} else {
-					position.position += velocity.velocity;
-				}
+				//if let Some(hitbox) = self.hitbox.get(id) {
+				//	if let Some((pos, hit)) =
+				//		hitbox.calc(hitbox.hitbox, position.position, velocity.velocity, chunks)
+				//	{
+				//		position.position = pos;
+				//		if hit {
+				//			self.dead.insert(*id);
+				//		}
+				//	}
+				//} else {
+				position.position += velocity.velocity;
+				//}
 			}
 		}
 	}

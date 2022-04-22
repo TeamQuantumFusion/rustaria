@@ -1,7 +1,7 @@
 use rustaria::api::{prototype::tile::TilePrototype, ty::ConnectionType};
 use rustaria::chunk::Tile;
 use rustaria_api::{registry::Registry, ty::RawId};
-use rustaria_util::ty::Rectangle;
+use rustaria_util::math::rect;
 use rustariac_backend::{
 	builder::VertexBuilder,
 	ty::{AtlasLocation, PosTexture},
@@ -29,10 +29,10 @@ impl TileDrawer {
 	) {
 		let (kind_x, kind_y) = kind.get_tex_pos();
 
-		let tile_height = self.image.height / 4.0;
-		let variations = (self.image.width / self.image.height).round();
-		let variation_width = self.image.width / variations;
-		let tile_width = self.image.width / (4.0 * variations);
+		let tile_height = self.image.height() / 4.0;
+		let variations = (self.image.width() / self.image.height()).round();
+		let variation_width = self.image.width() / variations;
+		let tile_width = self.image.width() / (4.0 * variations);
 		let variation = next2(
 			((x.overflowing_add(69420).0).overflowing_mul(69).0)
 				.overflowing_mul(y + 420)
@@ -46,18 +46,14 @@ impl TileDrawer {
 		}
 
 		builder.quad((
-			Rectangle {
-				x: x as f32,
-				y: y as f32,
-				width: 1.0,
-				height: 1.0,
-			},
-			AtlasLocation {
-				x: (self.image.x + (kind_x * tile_width)) + (variation as f32 * variation_width),
-				y: (self.image.y + (kind_y * tile_height)),
-				width: tile_width,
-				height: tile_height,
-			},
+			rect::<_, ()>(x as f32, y as f32, 1.0, 1.0),
+			rect(
+				(self.image.origin.x + (kind_x * tile_width))
+					+ (variation as f32 * variation_width),
+				self.image.origin.y + (kind_y * tile_height),
+				tile_width,
+				tile_height,
+			),
 		))
 	}
 }

@@ -5,8 +5,8 @@ use rustaria::api::prototype::tile::TilePrototype;
 use rustaria::chunk::Chunk;
 use rustaria::SmartError::CarrierUnavailable;
 use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_util::info;
-use rustaria_util::ty::{ChunkPos, Rectangle, CHUNK_SIZE};
+use rustaria_util::math::rect;
+use rustaria_util::ty::{ChunkPos, CHUNK_SIZE};
 use rustariac_backend::{
 	builder::VertexBuilder,
 	layer::LayerChannel,
@@ -63,14 +63,14 @@ impl WorldChunkDrawer {
 
 			let mut builder = VertexBuilder::default();
 			for (pos, chunk) in &self.chunks {
-				let chunk_rect = Rectangle {
-					x: pos.x as f32 * CHUNK_SIZE as f32,
-					y: pos.y as f32 * CHUNK_SIZE as f32,
-					width: CHUNK_SIZE as f32,
-					height: CHUNK_SIZE as f32,
-				};
+				let chunk_rect = rect(
+					pos.x as f32 * CHUNK_SIZE as f32,
+					pos.y as f32 * CHUNK_SIZE as f32,
+					CHUNK_SIZE as f32,
+					CHUNK_SIZE as f32,
+				);
 
-				if viewport.overlaps(&chunk_rect) {
+				if viewport.intersects(&chunk_rect) {
 					chunk.push(&mut builder, &self.tile_drawers, pos);
 				}
 			}

@@ -52,6 +52,7 @@
       <sourceFolder url="file://$MODULE_DIR$/libs/serluade/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustariac-rendering/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/frogelua/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-math/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/runtime/client/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-util/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rustaria-client/src" isTestSource="false" />

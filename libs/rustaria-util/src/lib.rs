@@ -12,6 +12,12 @@ pub use uuid::Uuid;
 pub mod blake3;
 pub mod rcl;
 pub mod ty;
+pub mod math {
+	pub struct WorldSpace;
+	pub struct ScreenSpace;
+	pub struct AtlasSpace;
+	pub use euclid::*;
+}
 
 pub fn initialize() -> eyre::Result<()> {
 	std::env::set_var("RUST_BACKTRACE", "1");

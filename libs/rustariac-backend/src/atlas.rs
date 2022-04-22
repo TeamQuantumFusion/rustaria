@@ -1,14 +1,14 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use eyre::Result;
-use image::{DynamicImage, GenericImage, GenericImageView, ImageFormat};
+use image::{DynamicImage, ImageFormat};
 use rectangle_pack::{
-	contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, PackedLocation,
-	RectToInsert, RectanglePackError, RectanglePackOk, TargetBin,
+	contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert,
+	RectanglePackError, TargetBin,
 };
 use rustaria_api::ty::Tag;
 use rustaria_api::{Api, AssetKind};
-use rustaria_util::ty::Rectangle;
+use rustaria_util::math::rect;
 use rustaria_util::warn;
 
 use crate::ty::AtlasLocation;
@@ -101,22 +101,22 @@ pub fn build_atlas(
 		let image = images.remove(tag).unwrap();
 		lookup.insert(
 			(*tag).clone(),
-			AtlasLocation {
-				x: location.x() as f32 / max_width as f32,
-				y: location.y() as f32 / max_height as f32,
-				width: location.width() as f32 / max_width as f32,
-				height: location.height() as f32 / max_height as f32,
-			},
+			rect(
+				location.x() as f32 / max_width as f32,
+				location.y() as f32 / max_height as f32,
+				location.width() as f32 / max_width as f32,
+				location.height() as f32 / max_height as f32,
+			),
 		);
 
 		images_out.push((
 			DynamicImage::from(image.to_rgba8()),
-			AtlasLocation {
-				x: location.x() as f32,
-				y: location.y() as f32,
-				width: location.width() as f32,
-				height: location.height() as f32,
-			},
+			rect(
+				location.x() as f32,
+				location.y() as f32,
+				location.width() as f32,
+				location.height() as f32,
+			),
 		));
 	}
 
