@@ -1,13 +1,9 @@
-use mlua::Result;
-use mlua::Table;
-use mlua::UserData;
-use mlua::{Lua, Value};
-
 use crate::plugin::Manifest;
-use crate::{debug, info, Api};
-use crate::{AssetKind, Tag};
+use crate::{debug, Api, AssetKind, Tag};
+use mlua::{Lua, Result, Table, UserData};
 
 pub mod core;
+pub mod hook;
 pub mod reload;
 
 pub fn new_lua(manifest: &Manifest, api: &Api) -> Result<Lua> {

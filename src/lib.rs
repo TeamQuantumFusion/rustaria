@@ -41,14 +41,20 @@ pub const UPS: u64 = 20;
 /// The main data structure for a server.
 /// This is where the world is stored and the information gets distributed across clients.
 pub struct Server {
+	api: Api,
 	network: NetworkManager,
 	chunk: ChunkManager,
 	entity: EntityManager,
 }
 
 impl Server {
-	pub fn new(thread_pool: Arc<ThreadPool>, ip_address: Option<SocketAddr>) -> Result<Server> {
+	pub fn new(
+		api: &Api,
+		thread_pool: Arc<ThreadPool>,
+		ip_address: Option<SocketAddr>,
+	) -> Result<Server> {
 		Ok(Server {
+			api: api.clone(),
 			network: NetworkManager::new(ServerNetworking::new(ip_address)?),
 			chunk: ChunkManager::new(thread_pool.clone()),
 			entity: EntityManager::new(thread_pool),
@@ -60,6 +66,9 @@ impl Server {
 		self.network
 			.internal
 			.poll(unsafe { (self as *const Server as *mut Server).as_mut().unwrap() });
+
+		self.api.invoke_hook("rustaria:tick", || ())?;
+
 		self.chunk.tick(&mut self.network).wrap_err("Chunk error")?;
 		self.entity
 			.tick(&self.chunk, &mut self.network)

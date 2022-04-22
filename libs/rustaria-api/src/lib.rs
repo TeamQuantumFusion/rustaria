@@ -1,9 +1,10 @@
 extern crate core;
 
+use crate::lua::hook::{HookInstance, HookInstanceBuilder};
 use crate::lua::reload::RegistryBuilderLua;
 use crate::registry::RegistryBuilder;
 use eyre::{ContextCompat, Result, WrapErr};
-use mlua::UserData;
+use mlua::{ToLuaMulti, UserData, Value};
 use plugin::Plugin;
 use registry::Registry;
 use rustaria_util::{
@@ -36,6 +37,7 @@ impl Api {
 		let api = Api {
 			internals: Arc::new(RwLock::new(ApiInternals {
 				plugins: Default::default(),
+				hook_instance: HookInstance::default(),
 			})),
 		};
 
@@ -91,6 +93,16 @@ impl Api {
 			.get_asset(&(kind.string() + location.identifier()))
 	}
 
+	pub fn invoke_hook<F: FnOnce() -> A, A: ToLuaMulti + Clone>(
+		&self,
+		name: &'static str,
+		args_func: F,
+	) -> mlua::Result<()> {
+		let guard = self.read();
+		let instance = &guard.hook_instance;
+		instance.trigger(name, args_func)
+	}
+
 	pub fn reload<'a>(&'a mut self, stack: &'a mut Carrier) -> ApiReload<'a> {
 		info!(target: "init@rustaria.api", "Freezing carrier.");
 		let mut lock = stack
@@ -104,6 +116,7 @@ impl Api {
 			api: self,
 			carrier_lock: lock,
 			registry_builders: TypeMap::new(),
+			hook_builder: Default::default(),
 			hasher: Hasher::new(),
 		}
 	}
@@ -125,6 +138,7 @@ impl AssetKind {
 
 pub(crate) struct ApiInternals {
 	plugins: HashMap<PluginId, Plugin>,
+	hook_instance: HookInstance,
 }
 
 impl UserData for Api {}
@@ -133,6 +147,8 @@ pub struct ApiReload<'a> {
 	api: &'a mut Api,
 	carrier_lock: RwLockWriteGuard<'a, (TypeMap, Blake3Hash)>,
 	registry_builders: TypeMap,
+
+	hook_builder: HookInstanceBuilder,
 	hasher: Hasher,
 }
 
@@ -162,10 +178,17 @@ impl<'a> ApiReload<'a> {
 
 	pub fn reload(&mut self) -> Result<()> {
 		for (id, plugin) in &self.api.internals.read().unwrap().plugins {
+			plugin
+				.lua_state
+				.globals()
+				.set("hook", self.hook_builder.lua())?;
+
 			trace!(target: "reload@rustaria.api", "Reloading {id}");
 			plugin
 				.reload()
 				.wrap_err(format!("Error while reloading plugin {id}"))?;
+
+			plugin.lua_state.globals().set("hook", Value::Nil)?;
 		}
 
 		self.carrier_lock.1 = self.hasher.finalize();
@@ -194,6 +217,7 @@ impl<'a> ApiReload<'a> {
 	}
 
 	pub fn apply(mut self) {
+		self.api.write().hook_instance = self.hook_builder.export();
 		self.carrier_lock.1 = self.hasher.finalize();
 	}
 }

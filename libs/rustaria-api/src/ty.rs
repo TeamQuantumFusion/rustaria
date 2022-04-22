@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::lua::PluginLua;
-use serde::de::DeserializeOwned;
+
 use serde::{Deserialize, Serialize};
 
 // Raw Ids

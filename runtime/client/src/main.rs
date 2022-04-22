@@ -158,7 +158,7 @@ impl Client {
 	}
 
 	pub fn join_integrated(&mut self) -> Result<()> {
-		let mut server = Server::new(self.thread_pool.clone(), None)?;
+		let mut server = Server::new(&self.api, self.thread_pool.clone(), None)?;
 		let mut client_world = ClientWorld {
 			networking: server.create_local_connection(),
 			chunk: ChunkHandler::new(&self.backend),
