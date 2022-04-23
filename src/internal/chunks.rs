@@ -1,19 +1,21 @@
+mod world_generation;
+
+use rayon::ThreadPool;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
+use crate::chunk::ChunkStorage;
+use crate::internal::chunks::world_generation::WorldGeneration;
+use crate::packet::chunk::ClientChunkPacket;
+use crate::NetworkManager;
 use rustaria_api::{Carrier, Reloadable};
 use rustaria_network::Token;
 use rustaria_util::ty::ChunkPos;
 
-use crate::chunk::{Chunk, ChunkContainer};
-use crate::manager::network::NetworkManager;
-use crate::manager::world_gen::WorldGenManager;
-use crate::network::packet::chunk::ClientChunkPacket;
-use crate::ThreadPool;
-
 pub(crate) struct ChunkManager {
-	generator: WorldGenManager,
-	pub chunks: ChunkContainer,
+	generator: WorldGeneration,
+	storage: ChunkStorage,
 	chunk_queue: VecDeque<(ChunkPos, Token)>,
 	chunk_gen_queue: HashMap<ChunkPos, HashSet<Token>>,
 	// Chunks that updated and need to be resent
@@ -23,33 +25,17 @@ pub(crate) struct ChunkManager {
 impl ChunkManager {
 	pub fn new(thread_pool: Arc<ThreadPool>) -> ChunkManager {
 		ChunkManager {
-			generator: WorldGenManager::new(thread_pool).unwrap(),
-			chunks: Default::default(),
+			generator: WorldGeneration::new(thread_pool).unwrap(),
+			storage: Default::default(),
 			chunk_queue: Default::default(),
 			chunk_gen_queue: Default::default(),
 			dirty_chunks: Default::default(),
 		}
 	}
 
-	#[allow(unused)]
-	pub fn put_chunk(&mut self, pos: ChunkPos, chunk: Chunk) {
-		self.chunks.put_chunk(pos, chunk);
-		self.dirty_chunks.insert(pos);
-	}
-
-	#[allow(unused)]
-	pub fn get_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
-		self.chunks.get_chunk(pos)
-	}
-
-	#[allow(unused)]
-	pub fn get_chunk_mut(&mut self, pos: ChunkPos) -> Option<&mut Chunk> {
-		self.chunks.get_chunk_mut(pos)
-	}
-
 	pub fn tick(&mut self, network: &mut NetworkManager) -> eyre::Result<()> {
 		for (pos, from) in self.chunk_queue.drain(..) {
-			if let Some(chunk) = self.chunks.get_chunk(pos) {
+			if let Some(chunk) = self.storage.get_chunk(pos) {
 				network.send_chunk(Some(from), pos, chunk.clone());
 			} else {
 				self.generator.request_chunk(pos)?;
@@ -65,11 +51,11 @@ impl ChunkManager {
 				}
 			}
 
-			self.chunks.put_chunk(pos, chunk);
+			self.storage.put_chunk(pos, chunk);
 		});
 
 		for pos in self.dirty_chunks.drain() {
-			if let Some(chunk) = self.chunks.get_chunk(pos) {
+			if let Some(chunk) = self.storage.get_chunk(pos) {
 				network.send_chunk(None, pos, chunk.clone());
 			}
 		}
@@ -91,5 +77,19 @@ impl ChunkManager {
 impl Reloadable for ChunkManager {
 	fn reload(&mut self, api: &rustaria_api::Api, carrier: &Carrier) {
 		self.generator.reload(api, carrier);
+	}
+}
+
+impl Deref for ChunkManager {
+	type Target = ChunkStorage;
+
+	fn deref(&self) -> &Self::Target {
+		&self.storage
+	}
+}
+
+impl DerefMut for ChunkManager {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.storage
 	}
 }

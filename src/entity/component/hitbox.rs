@@ -1,9 +1,9 @@
-use crate::chunk::ChunkContainer;
+use crate::chunk::ChunkStorage;
 use crate::util::aabb;
 use mlua::{FromLua, Lua, Value};
-use rustaria_util::info;
-use rustaria_util::math::{vec2, Point2D, Rect, Size2D, Vector2D, WorldSpace};
-use rustaria_util::ty::{Pos, Rectangle, TilePos};
+
+use rustaria_util::math::{vec2, Rect, Size2D, Vector2D, WorldSpace};
+use rustaria_util::ty::{Rectangle, TilePos};
 use serde::Deserialize;
 use std::ops::Index;
 
@@ -25,7 +25,7 @@ impl FromLua for HitboxComp {
 pub fn tile_collision(
 	pos: Vector2D<f32, WorldSpace>,
 	hitbox: &mut HitboxComp,
-	chunks: &ChunkContainer,
+	chunks: &ChunkStorage,
 ) -> Vector2D<f32, WorldSpace> {
 	let mut new_pos = pos;
 	if let Some(old_pos) = hitbox.old_pos {
@@ -75,7 +75,7 @@ fn test_tile(
 	pos: Vector2D<f32, WorldSpace>,
 	vel: Vector2D<f32, WorldSpace>,
 	collision_area: Rect<f32, WorldSpace>,
-	chunks: &ChunkContainer,
+	chunks: &ChunkStorage,
 ) -> Option<(Rect<f32, WorldSpace>, f32)> {
 	const TILE_SIZE: Size2D<f32, WorldSpace> = Size2D::new(1.0, 1.0);
 
@@ -109,7 +109,7 @@ fn test_tile(
 //		//// most cave man brain collision ever. Go below to the raycaster to experience undone DDA over-engineering.
 //		//let next_pos_tile = TilePos::try_from(next_pos).ok()?;
 //		//let hit = chunks
-//		//	.get_chunk(next_pos_tile.chunk)?
+//		//	.get_chunk(next_pos_tile.chunks)?
 //		//	.tiles
 //		//	.index(next_pos_tile.sub)
 //		//	.collision;
@@ -188,7 +188,7 @@ fn test_tile(
 // 				let x = offset_x as i64 + map_pos.x();
 // 				for y in y..=y_height {
 // 					if self.check(TilePos {
-// 						chunk: ChunkPos::try_from((x, y)).ok()?,
+// 						chunks: ChunkPos::try_from((x, y)).ok()?,
 // 						sub: ChunkSubPos::new(
 // 							(x % CHUNK_SIZE as i64) as u8,
 // 							(y % CHUNK_SIZE as i64) as u8,
@@ -207,7 +207,7 @@ fn test_tile(
 // 				let y = offset_y as i64 + map_pos.y();
 // 				for x in x..=x_height {
 // 					if self.check(TilePos {
-// 						chunk: ChunkPos::try_from((x, y)).ok()?,
+// 						chunks: ChunkPos::try_from((x, y)).ok()?,
 // 						sub: ChunkSubPos::new(
 // 							(x % CHUNK_SIZE as i64) as u8,
 // 							(y % CHUNK_SIZE as i64) as u8,
@@ -235,7 +235,7 @@ fn test_tile(
 // 		for y in y..=y_height {
 // 			for x in x..=x_width {
 // 				if self.check(TilePos {
-// 					chunk: ChunkPos::try_from((x, y)).ok()?,
+// 					chunks: ChunkPos::try_from((x, y)).ok()?,
 // 					sub: ChunkSubPos::new(
 // 						(x % CHUNK_SIZE as i64) as u8,
 // 						(y % CHUNK_SIZE as i64) as u8,
@@ -250,10 +250,10 @@ fn test_tile(
 // 	}
 //
 // 	fn check(&mut self, pos: TilePos) -> bool {
-// 		if self.last_chunk_pos != pos.chunk {
-// 			if let Some(chunk) = self.chunks.get_chunk(pos.chunk) {
-// 				self.last_chunk = chunk;
-// 				self.last_chunk_pos = pos.chunk;
+// 		if self.last_chunk_pos != pos.chunks {
+// 			if let Some(chunks) = self.chunks.get_chunk(pos.chunks) {
+// 				self.last_chunk = chunks;
+// 				self.last_chunk_pos = pos.chunks;
 // 			} else {
 // 				return true;
 // 			}

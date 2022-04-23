@@ -12,10 +12,9 @@ use rustaria_util::ty::{ChunkPos, ChunkSubPos, CHUNK_SIZE};
 
 use crate::api::prototype::tile::TilePrototype;
 use crate::chunk::{Chunk, ChunkLayer};
-use crate::manager::world_gen;
 use crate::SmartError;
 
-pub struct WorldGenManager {
+pub struct WorldGeneration {
 	carrier: Option<Carrier>,
 	thread_pool: Arc<ThreadPool>,
 	submitted_chunks: HashSet<ChunkPos>,
@@ -24,10 +23,10 @@ pub struct WorldGenManager {
 	rx: Receiver<(Chunk, ChunkPos)>,
 }
 
-impl WorldGenManager {
-	pub fn new(thread_pool: Arc<ThreadPool>) -> eyre::Result<WorldGenManager> {
+impl WorldGeneration {
+	pub fn new(thread_pool: Arc<ThreadPool>) -> eyre::Result<WorldGeneration> {
 		let (tx, rx) = unbounded();
-		Ok(WorldGenManager {
+		Ok(WorldGeneration {
 			carrier: None,
 			thread_pool,
 			submitted_chunks: Default::default(),
@@ -47,10 +46,10 @@ impl WorldGenManager {
 			let sender = self.tx.clone();
 			self.thread_pool.spawn(move || {
 				let api = carrier;
-				match world_gen::generate_chunk(&api, pos) {
+				match generate_chunk(&api, pos) {
 					Ok(chunk) => sender.send((chunk, pos)).unwrap(),
 					Err(err) => {
-						error!(target: "misc@rustaria", "Could not generate chunk {err}");
+						error!(target: "misc@rustaria", "Could not generate chunks {err}");
 					}
 				};
 			});
@@ -69,7 +68,7 @@ impl WorldGenManager {
 
 // we should prob convert chunks incase a new entry now exists.
 // that needs world saving logic however sooooo
-impl Reloadable for WorldGenManager {
+impl Reloadable for WorldGeneration {
 	fn reload(&mut self, _: &rustaria_api::Api, carrier: &Carrier) {
 		self.carrier = Some(carrier.clone());
 	}

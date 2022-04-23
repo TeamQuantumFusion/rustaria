@@ -1,25 +1,23 @@
 use std::collections::HashMap;
+use std::ops::{Deref, DerefMut};
 
-use rustaria_network::networking::ServerNetworking;
+use crate::chunk::Chunk;
+use crate::packet::chunk::{ChunkBundlePacket, ServerChunkPacket};
+use crate::packet::ServerPacket;
+use crate::ServerNetwork;
 use rustaria_network::packet::CompressedPacket;
 use rustaria_network::Token;
 use rustaria_util::ty::ChunkPos;
 
-use crate::chunk::Chunk;
-use crate::network::packet::chunk::ServerChunkPacket;
-use crate::network::packet::ChunkBundlePacket;
-use crate::{ClientPacket, PlayerJoinData, ServerPacket};
-
 /// The `NetworkManager` handles networking for the server.
 pub(crate) struct NetworkManager {
-	pub internal: ServerNetworking<ClientPacket, ServerPacket, PlayerJoinData>,
+	internal: ServerNetwork,
 	chunk_buffer: HashMap<Option<Token>, HashMap<ChunkPos, Chunk>>,
 }
 
+// TODO positional api, basically only send stuff if the player is nearby.
 impl NetworkManager {
-	pub fn new(
-		networking: ServerNetworking<ClientPacket, ServerPacket, PlayerJoinData>,
-	) -> NetworkManager {
+	pub fn new(networking: ServerNetwork) -> NetworkManager {
 		NetworkManager {
 			internal: networking,
 			chunk_buffer: Default::default(),
@@ -42,9 +40,23 @@ impl NetworkManager {
 			if let Some(to) = to {
 				self.internal.send(to, packet)?
 			} else {
-				self.internal.distribute(Token::nil(), packet)?;
+				self.internal.send_all(packet)?;
 			}
 		}
 		Ok(())
+	}
+}
+
+impl Deref for NetworkManager {
+	type Target = ServerNetwork;
+
+	fn deref(&self) -> &Self::Target {
+		&self.internal
+	}
+}
+
+impl DerefMut for NetworkManager {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.internal
 	}
 }

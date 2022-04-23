@@ -1,5 +1,5 @@
 use rustaria::api::{prototype::tile::TilePrototype, ty::ConnectionType};
-use rustaria::chunk::Tile;
+use rustaria::tile::Tile;
 use rustaria_api::{registry::Registry, ty::RawId};
 use rustaria_util::math::rect;
 use rustariac_backend::{

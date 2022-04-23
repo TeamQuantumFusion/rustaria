@@ -1,25 +1,22 @@
-use std::collections::hash_map::Entry;
-use std::collections::{HashMap, HashSet};
-
+use crate::RenderingHandler;
 use eyre::Result;
-use rustaria_util::ty::{ChunkPos, Offset, CHUNK_SIZE, CHUNK_SIZE_F};
-
-use crate::{vec2, NetworkHandler};
-use rustaria::chunk::{Chunk, ChunkContainer};
-use rustaria::network::packet::chunk::ClientChunkPacket;
-use rustaria::network::packet::chunk::ServerChunkPacket;
-use rustaria::network::packet::ClientPacket;
+use rustaria::chunk::ChunkStorage;
+use rustaria::packet::chunk::{ClientChunkPacket, ServerChunkPacket};
+use rustaria::packet::ClientPacket;
+use rustaria::ClientNetwork;
 use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_util::ty::Pos;
-use rustaria_util::{info, warn};
+use rustaria_util::math::vec2;
+use rustaria_util::ty::{ChunkPos, Offset, CHUNK_SIZE_F};
+use rustaria_util::warn;
 use rustariac_backend::ty::Camera;
-use rustariac_backend::ClientBackend;
 use rustariac_rendering::chunk_drawer::WorldChunkDrawer;
+use std::collections::HashSet;
+use std::ops::{Deref, DerefMut};
 
 pub(crate) struct ChunkHandler {
-	backend: ClientBackend,
+	rendering: RenderingHandler,
 
-	pub chunks: ChunkContainer,
+	storage: ChunkStorage,
 	stored_chunks: HashSet<ChunkPos>,
 	drawer: WorldChunkDrawer,
 
@@ -28,12 +25,12 @@ pub(crate) struct ChunkHandler {
 }
 
 impl ChunkHandler {
-	pub fn new(backend: &ClientBackend) -> ChunkHandler {
+	pub fn new(rendering: &RenderingHandler) -> ChunkHandler {
 		ChunkHandler {
-			backend: backend.clone(),
-			chunks: Default::default(),
+			rendering: rendering.clone(),
+			storage: Default::default(),
 			stored_chunks: Default::default(),
-			drawer: WorldChunkDrawer::new(backend),
+			drawer: WorldChunkDrawer::new(&rendering.backend),
 			old_chunk: ChunkPos { x: 60, y: 420 },
 			old_zoom: 0.0,
 		}
@@ -45,11 +42,11 @@ impl ChunkHandler {
 				Ok(chunks) => {
 					for (pos, chunk) in chunks.chunks {
 						self.drawer.submit(pos, &chunk)?;
-						self.chunks.put_chunk(pos, chunk);
+						self.storage.put_chunk(pos, chunk);
 					}
 				}
 				Err(chunks) => {
-					warn!(target: "misc@rustariac", "Could not deserialize chunk packet. {chunks}")
+					warn!(target: "misc@rustariac", "Could not deserialize chunks packet. {chunks}")
 				}
 			},
 		}
@@ -57,7 +54,7 @@ impl ChunkHandler {
 		Ok(())
 	}
 
-	pub fn tick(&mut self, camera: &Camera, networking: &mut NetworkHandler) -> Result<()> {
+	pub fn tick(&mut self, camera: &Camera, networking: &mut ClientNetwork) -> Result<()> {
 		if let Ok(chunk) = ChunkPos::try_from(vec2::<_, ()>(camera.position[0], camera.position[1]))
 		{
 			if chunk != self.old_chunk || camera.zoom != self.old_zoom || self.drawer.dirty() {
@@ -94,9 +91,21 @@ impl ChunkHandler {
 
 impl Reloadable for ChunkHandler {
 	fn reload(&mut self, api: &Api, carrier: &Carrier) {
-		self.chunks.clear();
+		self.storage.clear();
 		self.drawer.reload(api, carrier);
 	}
 }
 
-pub type ChunkHolder = Option<Box<Chunk>>;
+impl Deref for ChunkHandler {
+	type Target = ChunkStorage;
+
+	fn deref(&self) -> &Self::Target {
+		&self.storage
+	}
+}
+
+impl DerefMut for ChunkHandler {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.storage
+	}
+}

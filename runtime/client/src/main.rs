@@ -4,35 +4,34 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use clap::Parser;
-use eyre::{Report, Result};
+use eyre::Result;
 use glfw::{ffi, Action, Key, Modifiers, WindowEvent};
 
 use rayon::{ThreadPool, ThreadPoolBuilder};
 use rustaria::api::prototype::entity::EntityPrototype;
-use rustaria::network::packet::entity::{ClientEntityPacket, ServerEntityPacket};
-use rustaria::network::packet::{ClientPacket, ServerPacket};
 use rustaria::SmartError;
 use rustaria::{Server, UPS};
 use rustaria_api::ty::{Prototype, Tag};
 use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_util::ty::Pos;
-use rustaria_util::{debug, info};
+
+use rustaria_util::debug;
 use rustariac_backend::ty::Camera;
 use rustariac_backend::ClientBackend;
 use rustariac_glium_backend::GliumBackend;
 
-use crate::chunk::ChunkHandler;
-use crate::controller::ControllerHandler;
-use crate::entity::EntityHandler;
-
+use crate::args::Args;
+use crate::internal::chunk::ChunkHandler;
+use crate::internal::controller::ControllerHandler;
+use crate::internal::entity::EntityHandler;
+use crate::internal::rendering::RenderingHandler;
 pub use rustaria::prototypes;
 pub use rustaria::pt;
 use rustaria_util::math::vec2;
+use world::ClientWorld;
 
 mod args;
-mod chunk;
-mod controller;
-mod entity;
+mod internal;
+mod world;
 
 const DEBUG_MOD: Modifiers =
 	Modifiers::from_bits_truncate(ffi::MOD_ALT + ffi::MOD_CONTROL + ffi::MOD_SHIFT);
@@ -41,64 +40,78 @@ const UPDATE_TIME: Duration = Duration::from_micros(1000000 / UPS);
 fn main() -> eyre::Result<()> {
 	let args = args::Args::parse();
 	rustaria_util::initialize()?;
-	let backend = ClientBackend::new(GliumBackend::new)?;
 
-	let carrier = Carrier::default();
-	let mut dir = std::env::current_dir()?;
-	dir.push("plugins");
-	let api = Api::new(dir, args.extra_plugin_paths)?;
-
-	let mut client = Client {
-		api,
-		carrier,
-		world: None,
-		control: ControllerHandler::new(),
-		camera: Camera {
-			position: [0.0, 0.0],
-			zoom: 30.0,
-			screen_y_ratio: 0.0,
-		},
-		backend,
-		thread_pool: Arc::new(ThreadPoolBuilder::new().num_threads(12).build().unwrap()),
-	};
-
-	client.reload()?;
+	let mut client = Client::new(args)?;
 	client.join_integrated()?;
-	{
-		let lock = client.carrier.lock();
-		let prototype = lock.get_registry::<EntityPrototype>();
-		let id = prototype
-			.id_from_tag(&Tag::new("rustaria:bunne".to_string()).unwrap())
-			.unwrap();
-		let world = client.world.as_mut().unwrap();
-		let pos = vec2(5.0, 5.0);
-		world
-			.entity
-			.packet(ServerEntityPacket::New(id, pos))
-			.unwrap();
 
-		world
-			.networking
-			.send(ClientPacket::Entity(ClientEntityPacket::Spawn(id, pos)))
-			.unwrap();
-	}
+	//{
+	//	let lock = client.carrier.lock();
+	//	let prototype = lock.get_registry::<EntityPrototype>();
+	//	let id = prototype
+	//		.id_from_tag(&Tag::new("rustaria:bunne".to_string()).unwrap())
+	//		.unwrap();
+	//	let world = client.world.as_mut().unwrap();
+	//	let pos = vec2(5.0, 5.0);
+	//	world
+	//		.entity
+	//		.packet(ServerEntityPacket::New(id, pos))
+	//		.unwrap();
+	//
+	//	world
+	//		.networking
+	//		.send(ClientPacket::Entity(ClientEntityPacket::Spawn(id, pos)))
+	//		.unwrap();
+	//}
 	client.run();
 
 	Ok(())
 }
 
 pub struct Client {
-	thread_pool: Arc<ThreadPool>, // Api
 	api: Api,
 	carrier: Carrier,
-
 	camera: Camera,
+
 	control: ControllerHandler,
+	rendering: RenderingHandler,
 	world: Option<ClientWorld>,
+
+	// just for house keeping
+	thread_pool: Arc<ThreadPool>,
 	backend: ClientBackend,
 }
 
 impl Client {
+	pub fn new(args: Args) -> Result<Client> {
+		let backend = ClientBackend::new(GliumBackend::new)?;
+
+		let carrier = Carrier::default();
+		let mut dir = std::env::current_dir()?;
+		dir.push("plugins");
+		let api = Api::new(dir, args.extra_plugin_paths)?;
+
+		let mut client = Client {
+			api,
+			carrier,
+			world: None,
+			control: ControllerHandler::new(),
+			camera: Camera {
+				position: [0.0, 0.0],
+				zoom: 30.0,
+				screen_y_ratio: 0.0,
+			},
+			rendering: RenderingHandler {
+				backend: backend.clone(),
+			},
+			thread_pool: Arc::new(ThreadPoolBuilder::new().num_threads(12).build().unwrap()),
+			backend,
+		};
+
+		client.reload()?;
+
+		Ok(client)
+	}
+
 	pub fn run(&mut self) {
 		let mut last_tick = Instant::now();
 
@@ -162,8 +175,8 @@ impl Client {
 		let mut server = Server::new(&self.api, self.thread_pool.clone(), None)?;
 		let mut client_world = ClientWorld {
 			networking: server.create_local_connection(),
-			chunk: ChunkHandler::new(&self.backend),
-			entity: EntityHandler::new(&self.backend),
+			chunk: ChunkHandler::new(&self.rendering),
+			entity: EntityHandler::new(&self.rendering),
 			integrated: Some(Box::new(server)),
 		};
 
@@ -211,49 +224,5 @@ impl Client {
 
 		self.backend.instance_mut().backend.draw(&self.camera);
 		Ok(())
-	}
-}
-
-pub type NetworkHandler =
-	rustaria_network::networking::ClientNetworking<ServerPacket, ClientPacket>;
-
-pub struct ClientWorld {
-	networking: NetworkHandler,
-	chunk: ChunkHandler,
-	entity: EntityHandler,
-	integrated: Option<Box<Server>>,
-}
-
-impl ClientWorld {
-	pub fn tick(&mut self, camera: &Camera) -> Result<()> {
-		self.chunk.tick(camera, &mut self.networking)?;
-		self.entity.tick(camera, &self.chunk.chunks)?;
-		if let Some(integrated) = &mut self.integrated {
-			integrated.tick()?;
-		}
-
-		self.networking.poll::<Report, _>(|packet| match packet {
-			ServerPacket::Chunk(packet) => self.chunk.packet(packet),
-			ServerPacket::Entity(packet) => self.entity.packet(packet),
-		})?;
-
-		Ok(())
-	}
-
-	pub fn draw(&mut self, camera: &Camera, delta: f32) -> Result<()> {
-		self.chunk.draw(camera);
-		self.entity.draw(camera, delta)?;
-
-		Ok(())
-	}
-}
-
-impl Reloadable for ClientWorld {
-	fn reload(&mut self, api: &Api, carrier: &Carrier) {
-		self.chunk.reload(api, carrier);
-		self.entity.reload(api, carrier);
-		if let Some(server) = &mut self.integrated {
-			server.reload(api, carrier);
-		}
 	}
 }

@@ -1,4 +1,4 @@
-use crate::entity::pos::PositionComp;
+use crate::entity::component::pos::PositionComp;
 use mlua::{FromLua, Lua, Value};
 use rustaria_util::math::{Vector2D, WorldSpace};
 use rustaria_util::ty::Pos;

@@ -4,7 +4,7 @@
 //! Here are the definitions
 //!
 //! # Naming
-//! When naming a handler or manager. Its always {singular}{type}, so if you are making a handler for networking.
+//! When naming a handler or internal. Its always {singular}{type}, so if you are making a handler for networking.
 //! Its called NetworkHandler.
 //!
 //! SUB LIBS SHOULD NEVER NAME ANYTHING A HANDLER OR A MANAGER.
@@ -13,33 +13,37 @@
 //! ## Managers
 //! Manager are the same as handlers. But for the server.
 
+use std::fmt::Display;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use eyre::{Result, WrapErr};
 use rayon::ThreadPool;
 
-use manager::chunk::ChunkManager;
-use manager::entity::EntityManager;
-use manager::network::NetworkManager;
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_network::networking::{ClientNetworking, ServerNetworking};
 use rustaria_network::{EstablishingInstance, NetworkInterface, Token};
-use std::fmt::Display;
 
-use crate::network::join::PlayerJoinData;
-use crate::network::packet::{ClientPacket, ServerPacket};
+// Internals
+use crate::internal::chunks::ChunkManager;
+use crate::internal::entities::EntityManager;
+use crate::internal::networking::NetworkManager;
+use crate::packet::{ClientPacket, PlayerJoinData, ServerPacket};
 
 pub mod api;
 pub mod chunk;
 pub mod entity;
-mod manager;
-pub mod network;
-mod util;
+pub(crate) mod internal;
+pub mod packet;
+pub mod tile;
+pub mod util;
 
 pub const UPS: u64 = 20;
 
-/// The main data structure for a server.
+pub type ServerNetwork = ServerNetworking<ClientPacket, ServerPacket, PlayerJoinData>;
+pub type ClientNetwork = ClientNetworking<ServerPacket, ClientPacket>;
+
+/// The main object structure for a server.
 /// This is where the world is stored and the information gets distributed across clients.
 pub struct Server {
 	api: Api,
@@ -57,16 +61,17 @@ impl Server {
 		Ok(Server {
 			api: api.clone(),
 			network: NetworkManager::new(ServerNetworking::new(ip_address)?),
-			chunk: ChunkManager::new(thread_pool.clone()),
-			entity: EntityManager::new(thread_pool),
+			chunk: ChunkManager::new(thread_pool),
+			entity: EntityManager::new(),
 		})
 	}
 
 	pub fn tick(&mut self) -> Result<()> {
 		// yes i know there is unsafe here. Check the _todo in poll.
-		self.network
-			.internal
-			.poll(unsafe { (self as *const Server as *mut Server).as_mut().unwrap() });
+		{
+			let interface = unsafe { (self as *const Server as *mut Server).as_mut().unwrap() };
+			self.network.poll(interface);
+		}
 
 		self.api.invoke_hook("rustaria:tick", || ())?;
 
@@ -79,7 +84,7 @@ impl Server {
 	}
 
 	pub fn create_local_connection(&mut self) -> ClientNetworking<ServerPacket, ClientPacket> {
-		ClientNetworking::join_local(&mut self.network.internal)
+		ClientNetworking::join_local(&mut self.network)
 	}
 }
 

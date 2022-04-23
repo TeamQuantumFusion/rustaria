@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+use crate::chunk::Chunk;
 use rustaria_network::packet::CompressedPacket;
 use rustaria_util::ty::ChunkPos;
-
-use super::ChunkBundlePacket;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ServerChunkPacket {
@@ -13,4 +12,9 @@ pub enum ServerChunkPacket {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ClientChunkPacket {
 	Request(Vec<ChunkPos>),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ChunkBundlePacket {
+	pub chunks: Vec<(ChunkPos, Chunk)>,
 }

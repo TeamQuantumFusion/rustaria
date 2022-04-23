@@ -1,6 +1,6 @@
 use eyre::{ContextCompat, Result};
 use rustaria::api::prototype::entity::EntityPrototype;
-use rustaria::entity::EntityContainer;
+use rustaria::entity::world::EntityWorld;
 use rustaria::SmartError::CarrierUnavailable;
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_util::math::{Vector2D, WorldSpace};
@@ -33,12 +33,12 @@ impl WorldEntityDrawer {
 		}
 	}
 
-	pub fn draw(&mut self, camera: &Camera, container: &EntityContainer, delta: f32) -> Result<()> {
+	pub fn draw(&mut self, camera: &Camera, world: &EntityWorld, delta: f32) -> Result<()> {
 		self.carrier.as_ref().wrap_err(CarrierUnavailable)?;
 
 		let mut builder = VertexBuilder::default();
-		for (uuid, id) in &container.entities {
-			if let Some(pos) = container.position.get(uuid) {
+		for (uuid, id) in &world.entities {
+			if let Some(pos) = world.position.get(uuid) {
 				if !self.entities.contains_key(uuid) {
 					self.entities.insert(*uuid, pos.position);
 				}
@@ -56,10 +56,10 @@ impl WorldEntityDrawer {
 		Ok(())
 	}
 
-	pub fn tick(&mut self, camera: &Camera, container: &EntityContainer) -> Result<()> {
+	pub fn tick(&mut self, camera: &Camera, world: &EntityWorld) -> Result<()> {
 		self.carrier.as_ref().wrap_err(CarrierUnavailable)?;
 
-		for (uuid, pos) in &container.position {
+		for (uuid, pos) in &world.position {
 			if !self.entities.contains_key(uuid) {
 				self.entities.insert(*uuid, pos.position);
 			}

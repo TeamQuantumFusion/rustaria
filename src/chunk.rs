@@ -1,10 +1,8 @@
+use crate::tile::Tile;
+use rustaria_util::ty::{ChunkPos, ChunkSubPos, CHUNK_SIZE};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
-
-use serde::{Deserialize, Serialize};
-
-use rustaria_api::ty::RawId;
-use rustaria_util::ty::{ChunkPos, ChunkSubPos, CHUNK_SIZE};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Chunk {
@@ -21,6 +19,7 @@ impl<T> ChunkLayer<T> {
 		ChunkLayer { grid: values }
 	}
 }
+
 impl<T> Index<ChunkSubPos> for ChunkLayer<T> {
 	type Output = T;
 
@@ -28,25 +27,19 @@ impl<T> Index<ChunkSubPos> for ChunkLayer<T> {
 		&self.grid[index.y() as usize][index.x() as usize]
 	}
 }
+
 impl<T> IndexMut<ChunkSubPos> for ChunkLayer<T> {
 	fn index_mut(&mut self, index: ChunkSubPos) -> &mut Self::Output {
 		&mut self.grid[index.y() as usize][index.x() as usize]
 	}
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
-pub struct Tile {
-	pub id: RawId,
-	pub collision: bool,
-	pub opaque: bool,
-}
-
 #[derive(Default)]
-pub struct ChunkContainer {
+pub struct ChunkStorage {
 	chunks: HashMap<ChunkPos, Chunk>,
 }
 
-impl ChunkContainer {
+impl ChunkStorage {
 	pub fn put_chunk(&mut self, pos: ChunkPos, chunk: Chunk) {
 		self.chunks.insert(pos, chunk);
 	}

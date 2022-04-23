@@ -222,8 +222,8 @@ impl<'a> ApiReload<'a> {
 	}
 }
 
+/// # Carrier has arrived!
 /// A carrier of all of the registries and the core hash.
-/// Carrier has arrived!
 #[derive(Clone, Default)]
 pub struct Carrier {
 	data: Arc<RwLock<(TypeMap, Blake3Hash)>>,

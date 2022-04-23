@@ -117,7 +117,7 @@ fn words_from_little_endian_bytes(bytes: &[u8], words: &mut [u32]) {
 	}
 }
 
-// Each chunk or parent node can produce either an 8-word chaining value or, by
+// Each chunks or parent node can produce either an 8-word chaining value or, by
 // setting the ROOT flag, any number of final output bytes. The Output struct
 // captures the state just prior to choosing between those two possibilities.
 struct Output {
@@ -301,7 +301,7 @@ impl Hasher {
 
 	// Section 5.1.2 of the BLAKE3 spec explains this algorithm in more detail.
 	fn add_chunk_chaining_value(&mut self, mut new_cv: [u32; 8], mut total_chunks: u64) {
-		// This chunk might complete some subtrees. For each completed subtree,
+		// This chunks might complete some subtrees. For each completed subtree,
 		// its left child will be the current top entry in the CV stack, and
 		// its right child will be the current value of `new_cv`. Pop each left
 		// child off the stack, merge it with `new_cv`, and overwrite `new_cv`
@@ -318,8 +318,8 @@ impl Hasher {
 	/// Add input to the hash state. This can be called any number of times.
 	pub fn update(&mut self, mut input: &[u8]) {
 		while !input.is_empty() {
-			// If the current chunk is complete, finalize it and reset the
-			// chunk state. More input is coming, so this chunk is not ROOT.
+			// If the current chunks is complete, finalize it and reset the
+			// chunks state. More input is coming, so this chunks is not ROOT.
 			if self.chunk_state.len() == CHUNK_LEN {
 				let chunk_cv = self.chunk_state.output().chaining_value();
 				let total_chunks = self.chunk_state.chunk_counter + 1;
@@ -327,7 +327,7 @@ impl Hasher {
 				self.chunk_state = ChunkState::new(self.key_words, total_chunks, self.flags);
 			}
 
-			// Compress input bytes into the current chunk state.
+			// Compress input bytes into the current chunks state.
 			let want = CHUNK_LEN - self.chunk_state.len();
 			let take = min(want, input.len());
 			self.chunk_state.update(&input[..take]);
@@ -337,7 +337,7 @@ impl Hasher {
 
 	/// Finalize the hash and write any number of output bytes.
 	pub fn finalize(&self) -> Blake3Hash {
-		// Starting with the Output from the current chunk, compute all the
+		// Starting with the Output from the current chunks, compute all the
 		// parent chaining values along the right edge of the tree, until we
 		// have the root Output.
 		let mut output = self.chunk_state.output();

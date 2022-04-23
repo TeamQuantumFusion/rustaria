@@ -25,7 +25,7 @@ pub fn initialize() -> eyre::Result<()> {
 
 	CombinedLogger::init(vec![
 		TermLogger::new(
-			LevelFilter::Debug,
+			LevelFilter::Trace,
 			ConfigBuilder::new()
 				.set_time_format_str("\x1b[37m%T")
 				.set_level_padding(LevelPadding::Off)
