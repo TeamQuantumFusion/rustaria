@@ -8,10 +8,9 @@ use eyre::Result;
 use glfw::{ffi, Action, Key, Modifiers, WindowEvent};
 
 use rayon::{ThreadPool, ThreadPoolBuilder};
-use rustaria::api::prototype::entity::EntityPrototype;
 use rustaria::SmartError;
 use rustaria::{Server, UPS};
-use rustaria_api::ty::{Prototype, Tag};
+use rustaria_api::ty::Prototype;
 use rustaria_api::{Api, Carrier, Reloadable};
 
 use rustaria_util::debug;
@@ -26,7 +25,7 @@ use crate::internal::entity::EntityHandler;
 use crate::internal::rendering::RenderingHandler;
 pub use rustaria::prototypes;
 pub use rustaria::pt;
-use rustaria_util::math::vec2;
+
 use world::ClientWorld;
 
 mod args;
@@ -145,7 +144,7 @@ impl Client {
 			while last_tick.elapsed() >= UPDATE_TIME {
 				if let Err(error) = self.tick() {
 					match error.downcast_ref::<SmartError>() {
-						Some(err @ SmartError::CarrierUnavailable) => {
+						Some(SmartError::CarrierUnavailable) => {
 							reload = true;
 						}
 						_ => Err(error).unwrap(),
@@ -157,7 +156,7 @@ impl Client {
 			let delta = (last_tick.elapsed().as_secs_f32() / UPDATE_TIME.as_secs_f32()).abs();
 			if let Err(error) = self.draw(delta) {
 				match error.downcast_ref::<SmartError>() {
-					Some(err @ SmartError::CarrierUnavailable) => {
+					Some(SmartError::CarrierUnavailable) => {
 						reload = true;
 					}
 					_ => Err(error).unwrap(),
