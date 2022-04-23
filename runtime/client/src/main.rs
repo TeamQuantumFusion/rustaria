@@ -196,21 +196,6 @@ impl Client {
 
 	fn tick(&mut self) -> Result<()> {
 		if let Some(world) = &mut self.world {
-			let lock = self.carrier.lock();
-			let prototype = lock.get_registry::<EntityPrototype>();
-			let id = prototype
-				.id_from_tag(&Tag::new("rustaria:bunne".to_string()).unwrap())
-				.unwrap();
-			let pos = vec2(5.0, 5.0);
-			world
-				.entity
-				.packet(ServerEntityPacket::New(id, pos))
-				.unwrap();
-
-			world
-				.networking
-				.send(ClientPacket::Entity(ClientEntityPacket::Spawn(id, pos)))
-				.unwrap();
 			world.tick(&self.camera)?;
 		}
 

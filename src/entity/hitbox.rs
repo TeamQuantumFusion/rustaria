@@ -1,19 +1,98 @@
+use crate::chunk::ChunkContainer;
+use crate::util::aabb;
 use mlua::{FromLua, Lua, Value};
-use rustaria_util::math::{Rect, WorldSpace};
-use rustaria_util::ty::Rectangle;
+use rustaria_util::info;
+use rustaria_util::math::{vec2, Point2D, Rect, Size2D, Vector2D, WorldSpace};
+use rustaria_util::ty::{Pos, Rectangle, TilePos};
 use serde::Deserialize;
+use std::ops::Index;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct HitboxComp {
 	pub hitbox: Rect<f32, WorldSpace>,
+	pub old_pos: Option<Vector2D<f32, WorldSpace>>,
 }
 
 impl FromLua for HitboxComp {
 	fn from_lua(lua_value: Value, lua: &Lua) -> mlua::Result<Self> {
 		Ok(HitboxComp {
 			hitbox: Rectangle::from_lua(lua_value, lua)?.into(),
+			old_pos: None,
 		})
 	}
+}
+
+pub fn tile_collision(
+	pos: Vector2D<f32, WorldSpace>,
+	hitbox: &mut HitboxComp,
+	chunks: &ChunkContainer,
+) -> Vector2D<f32, WorldSpace> {
+	let mut new_pos = pos;
+	if let Some(old_pos) = hitbox.old_pos {
+		let mut velocity = pos - old_pos;
+		let mut out_velocity = vec2(0.0, 0.0);
+
+		// hitbox is the hitbox so we need to offset it to WorldSpace.
+		let mut new_rect = hitbox.hitbox;
+		new_rect.origin += pos;
+
+		let mut old_rect = new_rect;
+		old_rect.origin -= velocity;
+
+		let x1 = new_rect.min_x().min(old_rect.min_x()).ceil() as i64;
+		let y1 = new_rect.min_y().min(old_rect.min_y()).ceil() as i64;
+		let x2 = new_rect.max_x().max(old_rect.max_x()).floor() as i64;
+		let y2 = new_rect.max_y().max(old_rect.max_y()).floor() as i64;
+
+		let mut collisions = Vec::new();
+		for x in x1..=x2 {
+			for y in y1..=y2 {
+				if let Some((pos, contact_time)) =
+					test_tile(vec2(x as f32, y as f32), velocity, old_rect, chunks)
+				{
+					collisions.push((pos, contact_time));
+				}
+			}
+		}
+
+		collisions.sort_by(|v0, v1| v0.1.total_cmp(&v1.1));
+
+		for (pos, _) in collisions {
+			if let Some(d) = aabb::resolve_dynamic_rect_vs_rect(velocity, old_rect, 1.0, pos) {
+				velocity += d;
+				out_velocity += d;
+			}
+		}
+
+		new_pos += out_velocity;
+	}
+
+	hitbox.old_pos = Some(new_pos);
+	new_pos
+}
+
+fn test_tile(
+	pos: Vector2D<f32, WorldSpace>,
+	vel: Vector2D<f32, WorldSpace>,
+	collision_area: Rect<f32, WorldSpace>,
+	chunks: &ChunkContainer,
+) -> Option<(Rect<f32, WorldSpace>, f32)> {
+	const TILE_SIZE: Size2D<f32, WorldSpace> = Size2D::new(1.0, 1.0);
+
+	let tile_pos = TilePos::try_from(pos).ok()?;
+	let chunk = chunks.get_chunk(tile_pos.chunk)?;
+	if !chunk.tiles.index(tile_pos.sub).collision {
+		// dont move.
+		return None;
+	}
+
+	// 	if (olc::aabb::DynamicRectVsRect(&vRects[0], fElapsedTime, vRects[i], cp, cn, t))
+	// 			{
+	// 				z.push_back({ i, t });
+	// 			}
+	let tile = Rect::new(pos.to_point(), TILE_SIZE);
+	aabb::dynamic_rect_vs_rect(vel, collision_area, 1.0, tile)
+		.map(|collision| (tile, collision.contact_time))
 }
 
 //impl HitboxComp {

@@ -11,7 +11,7 @@ use rustaria_api::ty::RawId;
 use rustaria_api::{Carrier, Reloadable};
 use rustaria_util::math::{Vector2D, WorldSpace};
 
-use rustaria_util::Uuid;
+use rustaria_util::{info, Uuid};
 use velocity::VelocityComp;
 
 use crate::api::prototype::entity::EntityPrototype;
@@ -78,21 +78,13 @@ impl EntityContainer {
 
 		for (id, velocity) in &mut self.velocity {
 			// required
-			if let Some(position) = self.position.get_mut(id) {
-				// optional
-				//if let Some(hitbox) = self.hitbox.get(id) {
-				//	if let Some((pos, hit)) =
-				//		hitbox.calc(hitbox.hitbox, position.position, velocity.velocity, chunks)
-				//	{
-				//		position.position = pos;
-				//		if hit {
-				//			self.dead.insert(*id);
-				//		}
-				//	}
-				//} else {
-				position.position += velocity.velocity;
-				//}
-			}
+			let position = self.position.get_mut(id).unwrap();
+			position.position += velocity.velocity;
+		}
+
+		for (id, hitbox) in &mut self.hitbox {
+			let position = self.position.get_mut(id).unwrap();
+			position.position = hitbox::tile_collision(position.position, hitbox, chunks);
 		}
 	}
 }

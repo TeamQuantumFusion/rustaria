@@ -35,6 +35,7 @@ pub mod chunk;
 pub mod entity;
 mod manager;
 pub mod network;
+mod util;
 
 pub const UPS: u64 = 20;
 

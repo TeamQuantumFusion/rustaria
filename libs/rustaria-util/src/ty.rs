@@ -1,5 +1,6 @@
 //! A collection of types used in Rustaria.
 
+use crate::ty::Error::OutOfBounds;
 use euclid::{rect, vec2, Rect, Vector2D};
 use num::FromPrimitive;
 use serde::Deserialize;
@@ -266,10 +267,11 @@ impl<S> TryFrom<Vector2D<f32, S>> for TilePos {
 	fn try_from(value: Vector2D<f32, S>) -> Result<Self, Self::Error> {
 		Ok(TilePos {
 			chunk: ChunkPos::try_from(value)?,
-			sub: ChunkSubPos::new(
+			sub: ChunkSubPos::try_new(
 				(value.x as i64 % CHUNK_SIZE as i64) as u8,
 				(value.y as i64 % CHUNK_SIZE as i64) as u8,
-			),
+			)
+			.ok_or(OutOfBounds)?,
 		})
 	}
 }
