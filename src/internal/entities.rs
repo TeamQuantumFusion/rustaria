@@ -1,4 +1,5 @@
 use eyre::ContextCompat;
+use std::ops::{Deref, DerefMut};
 
 use rustaria_api::ty::RawId;
 use rustaria_api::{Carrier, Reloadable};
@@ -82,5 +83,19 @@ impl EntityManager {
 impl Reloadable for EntityManager {
 	fn reload(&mut self, api: &rustaria_api::Api, carrier: &Carrier) {
 		self.carrier = Some(carrier.clone());
+	}
+}
+
+impl Deref for EntityManager {
+	type Target = EntityWorld;
+
+	fn deref(&self) -> &Self::Target {
+		&self.world
+	}
+}
+
+impl DerefMut for EntityManager {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.world
 	}
 }

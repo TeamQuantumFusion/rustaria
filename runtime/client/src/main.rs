@@ -8,9 +8,13 @@ use eyre::Result;
 use glfw::{ffi, Action, Key, Modifiers, WindowEvent};
 
 use rayon::{ThreadPool, ThreadPoolBuilder};
+use rustaria::api::prototype::entity::EntityPrototype;
+use rustaria::packet::entity::{ClientEntityPacket, ServerEntityPacket};
+use rustaria::packet::player::ClientPlayerPacket;
+use rustaria::packet::{ClientPacket, PlayerJoinData};
 use rustaria::SmartError;
 use rustaria::{Server, UPS};
-use rustaria_api::ty::Prototype;
+use rustaria_api::ty::{Prototype, Tag};
 use rustaria_api::{Api, Carrier, Reloadable};
 
 use rustaria_util::debug;
@@ -25,6 +29,7 @@ use crate::internal::entity::EntityHandler;
 use crate::internal::rendering::RenderingHandler;
 pub use rustaria::prototypes;
 pub use rustaria::pt;
+use rustaria_util::math::vec2;
 
 use world::ClientWorld;
 
@@ -43,24 +48,20 @@ fn main() -> eyre::Result<()> {
 	let mut client = Client::new(args)?;
 	client.join_integrated()?;
 
-	//{
-	//	let lock = client.carrier.lock();
-	//	let prototype = lock.get_registry::<EntityPrototype>();
-	//	let id = prototype
-	//		.id_from_tag(&Tag::new("rustaria:bunne".to_string()).unwrap())
-	//		.unwrap();
-	//	let world = client.world.as_mut().unwrap();
-	//	let pos = vec2(5.0, 5.0);
-	//	world
-	//		.entity
-	//		.packet(ServerEntityPacket::New(id, pos))
-	//		.unwrap();
-	//
-	//	world
-	//		.networking
-	//		.send(ClientPacket::Entity(ClientEntityPacket::Spawn(id, pos)))
-	//		.unwrap();
-	//}
+	{
+		let lock = client.carrier.lock();
+		let prototype = lock.get_registry::<EntityPrototype>();
+		let id = prototype
+			.id_from_tag(&Tag::new("rustaria:bunne".to_string()).unwrap())
+			.unwrap();
+		let world = client.world.as_mut().unwrap();
+		let pos = vec2(5.0, 5.0);
+
+		world
+			.networking
+			.send(ClientPacket::Entity(ClientEntityPacket::Spawn(id, pos)))
+			.unwrap();
+	}
 	client.run();
 
 	Ok(())
@@ -96,6 +97,7 @@ impl Client {
 			control: ControllerHandler::new(),
 			camera: Camera {
 				position: [0.0, 0.0],
+				velocity: [0.0, 0.0],
 				zoom: 30.0,
 				screen_y_ratio: 0.0,
 			},
@@ -173,8 +175,10 @@ impl Client {
 	pub fn join_integrated(&mut self) -> Result<()> {
 		let mut server = Server::new(&self.api, self.thread_pool.clone(), None)?;
 		let mut client_world = ClientWorld {
-			networking: server.create_local_connection(),
+			networking: server.create_local_connection(PlayerJoinData {}),
 			chunk: ChunkHandler::new(&self.rendering),
+			player_entity: None,
+			player: None,
 			entity: EntityHandler::new(&self.rendering),
 			integrated: Some(Box::new(server)),
 		};
@@ -182,7 +186,12 @@ impl Client {
 		// sync api
 		client_world.reload(&self.api, &self.carrier);
 
+		// join packet
+		client_world
+			.networking
+			.send(ClientPacket::Player(ClientPlayerPacket::Join {}))?;
 		self.world = Some(client_world);
+
 		Ok(())
 	}
 
@@ -208,17 +217,17 @@ impl Client {
 
 	fn tick(&mut self) -> Result<()> {
 		if let Some(world) = &mut self.world {
-			world.tick(&self.camera)?;
+			world.tick(&mut self.camera, &mut self.control)?;
 		}
 
 		Ok(())
 	}
 
 	fn draw(&mut self, delta: f32) -> Result<()> {
-		self.control.tick(&mut self.camera, delta);
+		self.control.draw(&mut self.camera, delta);
 
 		if let Some(world) = &mut self.world {
-			world.draw(&self.camera, delta)?;
+			world.draw(&mut self.camera, delta)?;
 		}
 
 		self.backend.instance_mut().backend.draw(&self.camera);

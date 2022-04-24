@@ -16,6 +16,26 @@ Entities:register {
     ["player"] = {
         health = {
             maximum = 100
+        },
+        hitbox = {
+            x = 0,
+            y = 0,
+            width = 2,
+            height = 3,
+        },
+        gravity = 25.0,
+        velocity = {
+            x = 0.0,
+            y = 0.0,
+        },
+        rendering = {
+            Static = {
+                x_offset = 0,
+                y_offset = 0,
+                width = 2,
+                height = 3,
+                sprite = "glisco.png"
+            }
         }
     },
     ["bunne"] = {

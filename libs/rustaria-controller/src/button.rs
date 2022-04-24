@@ -54,7 +54,7 @@ impl TriggerSubscriber {
 
 impl ButtonSubscriber for TriggerSubscriber {
 	fn event(&mut self, action: Action, _: Modifiers) {
-		if action == Action::Release {
+		if action == Action::Press {
 			self.0.fetch_add(1, Ordering::Relaxed);
 		}
 	}

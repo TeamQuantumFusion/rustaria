@@ -134,11 +134,14 @@ pub fn resolve_dynamic_rect_vs_rect(
 	r_dynamic: Rect,
 	time_step: f32,
 	r_static: Rect,
-) -> Option<Vec2> {
+) -> Option<(Vec2, Vec2)> {
 	dynamic_rect_vs_rect(r_dynamic_vel, r_dynamic, time_step, r_static).map(|result| {
-		result
-			.contact_normal
-			.component_mul(vec2(r_dynamic_vel.x.abs(), r_dynamic_vel.y.abs()))
-			* (1.0 - result.contact_time)
+		(
+			result
+				.contact_normal
+				.component_mul(vec2(r_dynamic_vel.x.abs(), r_dynamic_vel.y.abs()))
+				* (1.0 - result.contact_time),
+			result.contact_normal,
+		)
 	})
 }

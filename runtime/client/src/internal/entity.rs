@@ -8,6 +8,7 @@ use rustaria::SmartError;
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustariac_backend::ty::Camera;
 use rustariac_rendering::entity_drawer::WorldEntityDrawer;
+use std::ops::{Deref, DerefMut};
 
 pub(crate) struct EntityHandler {
 	carrier: Option<Carrier>,
@@ -71,5 +72,19 @@ impl Reloadable for EntityHandler {
 	fn reload(&mut self, api: &Api, carrier: &Carrier) {
 		self.carrier = Some(carrier.clone());
 		self.drawer.reload(api, carrier);
+	}
+}
+
+impl Deref for EntityHandler {
+	type Target = EntityWorld;
+
+	fn deref(&self) -> &Self::Target {
+		&self.world
+	}
+}
+
+impl DerefMut for EntityHandler {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.world
 	}
 }

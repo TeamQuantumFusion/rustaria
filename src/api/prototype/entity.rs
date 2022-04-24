@@ -6,13 +6,15 @@ use serde::Deserialize;
 
 #[cfg(feature = "client")]
 use crate::api::rendering::RenderingSystem;
+use crate::entity::component::gravity::GravityComp;
 use crate::entity::component::hitbox::HitboxComp;
-use crate::entity::component::velocity::VelocityComp;
+use crate::entity::component::velocity::PhysicsComp;
 
 #[derive(Clone, Debug, Deserialize, frogelua::FromLua)]
 pub struct EntityPrototype {
-	pub velocity: Option<VelocityComp>,
+	pub velocity: Option<PhysicsComp>,
 	pub hitbox: Option<HitboxComp>,
+	pub gravity: Option<GravityComp>,
 	#[cfg(feature = "client")]
 	pub rendering: Option<RenderingSystem>,
 }

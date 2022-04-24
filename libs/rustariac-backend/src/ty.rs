@@ -36,6 +36,7 @@ impl<S> Quadable<PosTexture> for (Rect<f32, S>, Rect<f32, AtlasSpace>) {
 #[derive(Debug)]
 pub struct Camera {
 	pub position: [f32; 2],
+	pub velocity: [f32; 2],
 	pub zoom: f32,
 	pub screen_y_ratio: f32,
 }

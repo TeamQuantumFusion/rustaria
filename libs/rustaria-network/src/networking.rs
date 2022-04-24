@@ -171,13 +171,23 @@ pub enum ClientNetworking<I: crate::Packet, O: crate::Packet> {
 }
 
 impl<I: crate::Packet, O: crate::Packet> ClientNetworking<I, O> {
-	pub fn join_local<SJ>(networking: &mut ServerNetworking<O, I, SJ>) -> ClientNetworking<I, O> {
+	pub fn join_local<SJ>(
+		networking: &mut ServerNetworking<O, I, SJ>,
+		join_data: SJ,
+	) -> ClientNetworking<I, O> {
 		let outbound = unbounded();
 		let inbound = unbounded();
 
+		let token = Token::new_v4();
 		networking
 			.local_connections
-			.insert(Token::new_v4(), (inbound.0, outbound.1));
+			.insert(token, (inbound.0, outbound.1));
+		networking
+			.new_players
+			.write()
+			.unwrap()
+			.push((token, join_data));
+
 		ClientNetworking::Local(outbound.0, inbound.1)
 	}
 

@@ -28,6 +28,7 @@ use rustaria_network::{EstablishingInstance, NetworkInterface, Token};
 use crate::internal::chunks::ChunkManager;
 use crate::internal::entities::EntityManager;
 use crate::internal::networking::NetworkManager;
+use crate::internal::players::PlayerManager;
 use crate::packet::{ClientPacket, PlayerJoinData, ServerPacket};
 
 pub mod api;
@@ -35,6 +36,7 @@ pub mod chunk;
 pub mod entity;
 pub(crate) mod internal;
 pub mod packet;
+pub mod player;
 pub mod tile;
 pub mod util;
 
@@ -50,6 +52,7 @@ pub struct Server {
 	network: NetworkManager,
 	chunk: ChunkManager,
 	entity: EntityManager,
+	player: PlayerManager,
 }
 
 impl Server {
@@ -63,6 +66,7 @@ impl Server {
 			network: NetworkManager::new(ServerNetworking::new(ip_address)?),
 			chunk: ChunkManager::new(thread_pool),
 			entity: EntityManager::new(),
+			player: PlayerManager::new(),
 		})
 	}
 
@@ -83,23 +87,33 @@ impl Server {
 		Ok(())
 	}
 
-	pub fn create_local_connection(&mut self) -> ClientNetworking<ServerPacket, ClientPacket> {
-		ClientNetworking::join_local(&mut self.network)
+	pub fn create_local_connection(
+		&mut self,
+		join_data: PlayerJoinData,
+	) -> ClientNetworking<ServerPacket, ClientPacket> {
+		ClientNetworking::join_local(&mut self.network, join_data)
 	}
 }
 
 impl NetworkInterface<ClientPacket, ServerPacket, PlayerJoinData> for Server {
+	// TODO error handling here
+
 	fn receive(&mut self, from: Token, packet: ClientPacket) {
 		match packet {
 			ClientPacket::Chunk(packet) => self.chunk.packet(from, packet),
-			// TODO error handling here
+			ClientPacket::Player(packet) => self
+				.player
+				.packet(from, packet, &mut self.entity, &self.network)
+				.unwrap(),
 			ClientPacket::Entity(packet) => self.entity.packet(from, packet).unwrap(),
 		}
 	}
 
 	fn disconnected(&mut self, _client: Token) {}
 
-	fn connected(&mut self, _client: Token, _connection_data: PlayerJoinData) {}
+	fn connected(&mut self, client: Token, data: PlayerJoinData) {
+		self.player.join(client, data);
+	}
 
 	fn establishing(&mut self) -> Box<dyn EstablishingInstance<PlayerJoinData>> {
 		todo!()
@@ -109,6 +123,7 @@ impl NetworkInterface<ClientPacket, ServerPacket, PlayerJoinData> for Server {
 impl Reloadable for Server {
 	fn reload(&mut self, api: &Api, carrier: &Carrier) {
 		self.chunk.reload(api, carrier);
+		self.player.reload(api, carrier);
 		self.entity.reload(api, carrier);
 	}
 }

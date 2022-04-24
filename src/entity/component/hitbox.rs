@@ -2,6 +2,8 @@ use crate::chunk::ChunkStorage;
 use crate::util::aabb;
 use mlua::{FromLua, Lua, Value};
 
+use crate::entity::component::velocity::PhysicsComp;
+use rustaria_util::info;
 use rustaria_util::math::{vec2, Rect, Size2D, Vector2D, WorldSpace};
 use rustaria_util::ty::{Rectangle, TilePos};
 use serde::Deserialize;
@@ -10,65 +12,65 @@ use std::ops::Index;
 #[derive(Clone, Debug, Deserialize)]
 pub struct HitboxComp {
 	pub hitbox: Rect<f32, WorldSpace>,
-	pub old_pos: Option<Vector2D<f32, WorldSpace>>,
 }
 
 impl FromLua for HitboxComp {
 	fn from_lua(lua_value: Value, lua: &Lua) -> mlua::Result<Self> {
 		Ok(HitboxComp {
 			hitbox: Rectangle::from_lua(lua_value, lua)?.into(),
-			old_pos: None,
 		})
 	}
 }
 
 pub fn tile_collision(
 	pos: Vector2D<f32, WorldSpace>,
+	physics: &mut PhysicsComp,
 	hitbox: &mut HitboxComp,
 	chunks: &ChunkStorage,
-) -> Vector2D<f32, WorldSpace> {
-	let mut new_pos = pos;
-	if let Some(old_pos) = hitbox.old_pos {
-		let mut velocity = pos - old_pos;
-		let mut out_velocity = vec2(0.0, 0.0);
+) {
+	// hitbox is the hitbox so we need to offset it to WorldSpace.
+	let mut old_rect = hitbox.hitbox;
+	old_rect.origin += pos;
 
-		// hitbox is the hitbox so we need to offset it to WorldSpace.
-		let mut new_rect = hitbox.hitbox;
-		new_rect.origin += pos;
+	let mut new_rect = old_rect;
+	new_rect.origin += physics.velocity;
 
-		let mut old_rect = new_rect;
-		old_rect.origin -= velocity;
+	let x1 = new_rect.min_x().min(old_rect.min_x()).floor() as i64;
+	let y1 = new_rect.min_y().min(old_rect.min_y()).floor() as i64;
+	let x2 = new_rect.max_x().max(old_rect.max_x()).ceil() as i64;
+	let y2 = new_rect.max_y().max(old_rect.max_y()).ceil() as i64;
 
-		let x1 = new_rect.min_x().min(old_rect.min_x()).ceil() as i64;
-		let y1 = new_rect.min_y().min(old_rect.min_y()).ceil() as i64;
-		let x2 = new_rect.max_x().max(old_rect.max_x()).floor() as i64;
-		let y2 = new_rect.max_y().max(old_rect.max_y()).floor() as i64;
-
-		let mut collisions = Vec::new();
-		for x in x1..=x2 {
-			for y in y1..=y2 {
-				if let Some((pos, contact_time)) =
-					test_tile(vec2(x as f32, y as f32), velocity, old_rect, chunks)
-				{
-					collisions.push((pos, contact_time));
-				}
+	let mut collisions = Vec::new();
+	for x in x1..=x2 {
+		for y in y1..=y2 {
+			if let Some((pos, contact_time)) =
+				test_tile(vec2(x as f32, y as f32), physics.velocity, old_rect, chunks)
+			{
+				collisions.push((pos, contact_time));
 			}
 		}
-
-		collisions.sort_by(|v0, v1| v0.1.total_cmp(&v1.1));
-
-		for (pos, _) in collisions {
-			if let Some(d) = aabb::resolve_dynamic_rect_vs_rect(velocity, old_rect, 1.0, pos) {
-				velocity += d;
-				out_velocity += d;
-			}
-		}
-
-		new_pos += out_velocity;
 	}
 
-	hitbox.old_pos = Some(new_pos);
-	new_pos
+	collisions.sort_by(|v0, v1| v0.1.total_cmp(&v1.1));
+
+	for (pos, _) in collisions {
+		if let Some((d, contact)) =
+			aabb::resolve_dynamic_rect_vs_rect(physics.velocity, old_rect, 1.0, pos)
+		{
+			physics.velocity += d;
+			physics.acceleration += contact.component_mul(vec2(
+				physics.acceleration.x.abs(),
+				physics.acceleration.y.abs(),
+			));
+			info!(
+				"{contact:?} = {:?}",
+				contact.component_mul(vec2(
+					physics.acceleration.x.abs(),
+					physics.acceleration.y.abs()
+				))
+			);
+		}
+	}
 }
 
 fn test_tile(
