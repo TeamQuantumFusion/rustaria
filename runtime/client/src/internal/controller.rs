@@ -18,6 +18,10 @@ pub(crate) struct ControllerHandler {
 	zoom_out: TriggerSubscriber,
 	controller: Controller,
 	old_delta: f32,
+
+	// player
+	dir_x: f32,
+	dir_y: f32,
 }
 
 impl ControllerHandler {
@@ -59,6 +63,8 @@ impl ControllerHandler {
 			zoom_out,
 			controller,
 			old_delta: 0.0,
+			dir_x: 0.0,
+			dir_y: 0.0,
 		}
 	}
 
@@ -66,25 +72,11 @@ impl ControllerHandler {
 		self.controller.consume(event);
 	}
 
-	pub fn tick(&mut self, physics: &mut PhysicsComp) {
-		const SPEED: f32 = 0.1;
-		if self.up.held() && physics.acceleration.y < 2.0 {
-			physics.acceleration.y += SPEED;
-		}
-		if self.down.held() && physics.acceleration.y > -2.0 {
-			physics.acceleration.y -= SPEED;
-		}
-		if self.right.held() && physics.acceleration.x < 2.0 {
-			physics.acceleration.x += SPEED;
-		}
-
-		if self.left.held() && physics.acceleration.x > -2.0 {
-			physics.acceleration.x -= SPEED;
-		}
-
-		if self.jump.triggered() {
-			physics.acceleration.y += 6.0;
-		}
+	pub fn apply(&mut self, physics: &mut PhysicsComp) {
+		physics.velocity.x += self.dir_x.clamp(0.0, 1.0);
+		physics.velocity.y += self.dir_y.clamp(0.0, 1.0);
+		self.dir_x = 0.0;
+		self.dir_y = 0.0;
 	}
 
 	pub fn draw(&mut self, view: &mut Camera, delta: f32) {
@@ -92,27 +84,21 @@ impl ControllerHandler {
 			self.old_delta = delta;
 		}
 
-		let movement_delta = delta - self.old_delta;
-		let zoom = view.zoom / 30.0;
-		view.velocity = [0.0, 0.0];
+		// trademark this:tm:
+		let delta_delta_tm = delta - self.old_delta;
 		if self.up.held() {
-			view.velocity[1] += 6.0 * movement_delta * zoom;
+			self.dir_y += delta_delta_tm;
 		}
 		if self.down.held() {
-			view.velocity[1] -= 6.0 * movement_delta * zoom;
-		}
-		if self.left.held() {
-			view.velocity[0] -= 6.0 * movement_delta * zoom;
+			self.dir_y -= delta_delta_tm;
 		}
 		if self.right.held() {
-			view.velocity[0] += 6.0 * movement_delta * zoom;
+			self.dir_x += delta_delta_tm;
 		}
-		if self.zoom_in.triggered() {
-			view.zoom += 5.0;
+		if self.left.held() {
+			self.dir_x -= delta_delta_tm;
 		}
-		if self.zoom_out.triggered() {
-			view.zoom -= 5.0;
-		}
+
 		self.old_delta = delta;
 	}
 }

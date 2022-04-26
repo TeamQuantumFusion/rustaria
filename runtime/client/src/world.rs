@@ -39,7 +39,7 @@ impl ClientWorld {
 				.physics
 				.get_mut(player)
 				.wrap_err("Player entity velocity does not exist")?;
-			controller.tick(physics);
+			controller.apply(physics);
 		}
 
 		self.chunk.tick(camera, &mut self.networking)?;
