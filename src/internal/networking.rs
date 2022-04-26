@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
+use rustaria_common::ty::ChunkPos;
 use rustaria_network::packet::CompressedPacket;
 use rustaria_network::Token;
-use rustaria_util::ty::ChunkPos;
 
 use crate::chunk::Chunk;
 use crate::packet::chunk::{ChunkBundlePacket, ServerChunkPacket};

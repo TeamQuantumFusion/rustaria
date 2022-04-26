@@ -3,7 +3,7 @@ use std::ops::{Index, IndexMut};
 
 use serde::{Deserialize, Serialize};
 
-use rustaria_util::ty::{CHUNK_SIZE, ChunkPos, ChunkSubPos};
+use rustaria_common::ty::{ChunkPos, ChunkSubPos, CHUNK_SIZE};
 
 use crate::tile::Tile;
 

@@ -1,4 +1,4 @@
-use rustaria_util::math::{AtlasSpace, rect, Rect, WorldSpace};
+use rustaria_common::math::{rect, AtlasSpace, Rect, WorldSpace};
 
 use crate::builder::Quadable;
 

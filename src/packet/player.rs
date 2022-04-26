@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use rustaria_util::math::{Vector2D, WorldSpace};
-use rustaria_util::Uuid;
+use rustaria_common::math::{Vector2D, WorldSpace};
+use rustaria_common::Uuid;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ServerPlayerPacket {

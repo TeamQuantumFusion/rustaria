@@ -17,7 +17,7 @@ mlua = { git = "https://github.com/alphaqu/mlua", branch = "alphacurseness", fea
 
 
 frogelua = { path = "./libs/frogelua" }
-rustaria-util = { path = "./libs/rustaria-util" }
+rustaria-common = { path = "libs/rustaria-common" }
 rustaria-api = { path = "./libs/rustaria-api" }
 rustaria-network = { path = "./libs/rustaria-network" }
 
@@ -25,7 +25,7 @@ rustaria-network = { path = "./libs/rustaria-network" }
 members = [
     "libs/frogelua",
     "libs/rustaria-network",
-    "libs/rustaria-util",
+    "libs/rustaria-common",
     "libs/rustaria-controller",
     "libs/rustaria-api",
     "libs/rustariac-rendering",

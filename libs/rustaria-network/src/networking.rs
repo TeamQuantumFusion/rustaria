@@ -4,10 +4,11 @@ use std::sync::RwLock;
 use std::time::Instant;
 
 use bimap::BiMap;
-use crossbeam::channel::{Receiver, Sender, unbounded};
+use crossbeam::channel::{unbounded, Receiver, Sender};
 use laminar::{Packet, Socket, SocketEvent};
 
-use rustaria_util::logging::{debug, error, trace, warn};
+use rustaria_common::logging::{debug, error, trace, warn};
+use rustaria_common::Uuid;
 
 use crate::{EstablishingInstance, EstablishingStatus, NetworkInterface, Result, Token};
 
@@ -132,7 +133,7 @@ impl<I: crate::Packet, O: crate::Packet, J> ServerNetworking<I, O, J> {
 										.unwrap();
 								}
 								Ok(EstablishingStatus::Connect(connection_data)) => {
-									let client = rustaria_util::uuid();
+									let client = Uuid::new_v4();
 									interface.connected(client, connection_data);
 									self.remote_clients.insert(client, addr);
 									self.remote_establishing.remove(&addr);

@@ -12,9 +12,9 @@ use type_map::concurrent::TypeMap;
 
 use plugin::Plugin;
 use registry::Registry;
-use rustaria_util::blake3::{Blake3Hash, Hasher};
-use rustaria_util::error::{ContextCompat, Result, WrapErr};
-use rustaria_util::logging::{debug, info, trace, warn};
+use rustaria_common::blake3::{Blake3Hash, Hasher};
+use rustaria_common::error::{ContextCompat, Result, WrapErr};
+use rustaria_common::logging::{debug, info, trace, warn};
 use ty::{PluginId, Prototype, Tag};
 
 use crate::lua::hook::{HookInstance, HookInstanceBuilder};

@@ -1,9 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
 use rustaria_api::ty::RawId;
-use rustaria_util::error::Result;
-use rustaria_util::math::{Vector2D, WorldSpace};
-use rustaria_util::Uuid;
+use rustaria_common::error::Result;
+use rustaria_common::math::{Vector2D, WorldSpace};
+use rustaria_common::Uuid;
 
 use crate::api::prototype::entity::EntityPrototype;
 use crate::chunk::ChunkStorage;

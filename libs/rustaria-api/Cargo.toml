@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 # Base
-rustaria-util = { path = "../rustaria-util" }
+rustaria-common = { path = "../rustaria-common" }
 frogelua = { path = "../frogelua" }
 
 # Lua

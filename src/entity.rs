@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use rustaria_util::Uuid;
+use rustaria_common::Uuid;
 
 pub mod component;
 pub mod world;

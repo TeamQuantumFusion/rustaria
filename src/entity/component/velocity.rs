@@ -1,9 +1,9 @@
 use mlua::{FromLua, Lua, Value};
 use serde::Deserialize;
 
-use rustaria_util::logging::info;
-use rustaria_util::math::{Vector2D, WorldSpace};
-use rustaria_util::ty::Pos;
+use rustaria_common::logging::info;
+use rustaria_common::math::{Vector2D, WorldSpace};
+use rustaria_common::ty::Pos;
 
 use crate::UPS;
 

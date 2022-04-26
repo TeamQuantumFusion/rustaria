@@ -4,24 +4,24 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use clap::Parser;
-use glfw::{Action, ffi, Key, Modifiers, WindowEvent};
+use glfw::{ffi, Action, Key, Modifiers, WindowEvent};
 use rayon::{ThreadPool, ThreadPoolBuilder};
 
-use rustaria::{Server, UPS};
 use rustaria::api::prototype::entity::EntityPrototype;
-use rustaria::packet::{ClientPacket, PlayerJoinData};
 use rustaria::packet::entity::ClientEntityPacket;
 use rustaria::packet::player::ClientPlayerPacket;
+use rustaria::packet::{ClientPacket, PlayerJoinData};
 pub use rustaria::prototypes;
 pub use rustaria::pt;
 use rustaria::SmartError;
-use rustaria_api::{Api, Carrier, Reloadable};
+use rustaria::{Server, UPS};
 use rustaria_api::ty::{Prototype, Tag};
-use rustaria_util::error::Result;
-use rustaria_util::logging::debug;
-use rustaria_util::math::vec2;
-use rustariac_backend::ClientBackend;
+use rustaria_api::{Api, Carrier, Reloadable};
+use rustaria_common::error::Result;
+use rustaria_common::logging::debug;
+use rustaria_common::math::vec2;
 use rustariac_backend::ty::Camera;
+use rustariac_backend::ClientBackend;
 use rustariac_glium_backend::GliumBackend;
 use world::ClientWorld;
 
@@ -41,7 +41,7 @@ const UPDATE_TIME: Duration = Duration::from_micros(1000000 / UPS);
 
 fn main() -> Result<()> {
 	let args = args::Args::parse();
-	rustaria_util::initialize()?;
+	rustaria_common::initialize()?;
 
 	let mut client = Client::new(args)?;
 	client.join_integrated()?;

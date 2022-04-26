@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use rustaria::api::{prototype::tile::TilePrototype, ty::ConnectionType};
 use rustaria::chunk::{Chunk, ChunkLayer};
 use rustaria_api::Carrier;
-use rustaria_util::ty::{CHUNK_SIZE, CHUNK_SIZE_U8, ChunkPos, ChunkSubPos, Direction, Offset};
-use rustariac_backend::{builder::VertexBuilder, ClientBackend, ty::PosTexture};
+use rustaria_common::ty::{ChunkPos, ChunkSubPos, Direction, Offset, CHUNK_SIZE, CHUNK_SIZE_U8};
+use rustariac_backend::{builder::VertexBuilder, ty::PosTexture, ClientBackend};
 
 use super::tile::{BakedTile, TileDrawer};
 

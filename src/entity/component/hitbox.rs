@@ -3,9 +3,9 @@ use std::ops::Index;
 use mlua::{FromLua, Lua, Value};
 use serde::Deserialize;
 
-use rustaria_util::logging::info;
-use rustaria_util::math::{Rect, Size2D, vec2, Vector2D, WorldSpace};
-use rustaria_util::ty::{Rectangle, TilePos};
+use rustaria_common::logging::info;
+use rustaria_common::math::{vec2, Rect, Size2D, Vector2D, WorldSpace};
+use rustaria_common::ty::{Rectangle, TilePos};
 
 use crate::chunk::ChunkStorage;
 use crate::entity::component::velocity::PhysicsComp;

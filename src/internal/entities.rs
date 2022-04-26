@@ -1,17 +1,17 @@
 use std::ops::{Deref, DerefMut};
 
-use rustaria_api::{Carrier, Reloadable};
 use rustaria_api::ty::RawId;
+use rustaria_api::{Carrier, Reloadable};
+use rustaria_common::error::{ContextCompat, Result};
+use rustaria_common::math::{Vector2D, WorldSpace};
+use rustaria_common::Uuid;
 use rustaria_network::Token;
-use rustaria_util::error::{ContextCompat, Result};
-use rustaria_util::math::{Vector2D, WorldSpace};
-use rustaria_util::Uuid;
 
-use crate::{ChunkManager, NetworkManager, SmartError};
 use crate::api::prototype::entity::EntityPrototype;
 use crate::entity::world::EntityWorld;
 use crate::packet::entity::{ClientEntityPacket, ServerEntityPacket};
 use crate::packet::ServerPacket;
+use crate::{ChunkManager, NetworkManager, SmartError};
 
 pub(crate) struct EntityManager {
 	carrier: Option<Carrier>,

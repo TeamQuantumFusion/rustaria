@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use rustaria_util::math::{Vector2D, WorldSpace};
+use rustaria_common::math::{Vector2D, WorldSpace};
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct PositionComp {

@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rustaria-util = { path = "../rustaria-util" }
+rustaria-common = { path = "../rustaria-common" }
 rustaria-api = { path = "../rustaria-api" }
 rectangle-pack = "0.4"
 glfw = "0.44"

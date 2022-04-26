@@ -1,6 +1,6 @@
 use mlua::Lua;
 
-use rustaria_util::logging::{Level, log};
+use rustaria_common::logging::{log, Level};
 
 use crate::lua::PluginLua;
 

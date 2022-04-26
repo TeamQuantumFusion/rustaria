@@ -3,8 +3,8 @@
 use std::mem::swap;
 use std::ops::Mul;
 
-use rustaria_util::math;
-use rustaria_util::math::{rect, vec2};
+use rustaria_common::math;
+use rustaria_common::math::{rect, vec2};
 
 type Vec2 = math::Vector2D<f32, math::WorldSpace>;
 type Rect = math::Rect<f32, math::WorldSpace>;

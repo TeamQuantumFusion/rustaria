@@ -1,5 +1,5 @@
 use rustaria_api::{Api, Carrier};
-use rustaria_util::error::Result;
+use rustaria_common::error::Result;
 
 use crate::api::prototype::entity::EntityPrototype;
 use crate::api::prototype::tile::TilePrototype;

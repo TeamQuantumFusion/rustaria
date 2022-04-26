@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::slice::Iter;
 
-use rustaria_util::blake3::Hasher;
-use rustaria_util::error::Result;
+use rustaria_common::blake3::Hasher;
+use rustaria_common::error::Result;
 
 use crate::trace;
 use crate::ty::{Prototype, RawId, Tag};

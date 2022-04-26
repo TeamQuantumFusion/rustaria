@@ -4,7 +4,7 @@ use crossbeam::channel::SendError;
 use serde::{de::DeserializeOwned, Serialize};
 use thiserror::Error;
 
-use rustaria_util::Uuid;
+use rustaria_common::Uuid;
 
 pub mod networking;
 pub mod packet;

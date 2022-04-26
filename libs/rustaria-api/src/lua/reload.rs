@@ -3,9 +3,9 @@ use std::sync::{Arc, Mutex};
 
 use mlua::{UserData, UserDataMethods, Value};
 
-use rustaria_util::blake3::Hasher;
-use rustaria_util::error::Result;
-use rustaria_util::logging::debug;
+use rustaria_common::blake3::Hasher;
+use rustaria_common::error::Result;
+use rustaria_common::logging::debug;
 
 use crate::{Prototype, Registry, RegistryBuilder, Tag};
 

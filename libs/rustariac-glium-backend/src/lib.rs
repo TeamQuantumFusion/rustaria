@@ -2,20 +2,20 @@ use std::{rc::Rc, sync::mpsc::Receiver};
 
 use glfw::{Glfw, Window, WindowEvent};
 use glium::{
-	Frame,
-	Rect, Surface, texture::{self, RawImage2d, SrgbTexture2d}, uniform,
+	texture::{self, RawImage2d, SrgbTexture2d},
+	uniform, Frame, Rect, Surface,
 };
-use image::{DynamicImage, imageops::FilterType};
+use image::{imageops::FilterType, DynamicImage};
 
 use engine::{GlfwBackendEngine, GliumBackendEngine};
 use pipeline::LayerPipeline;
-use rustaria_util::error::Result;
-use rustaria_util::logging::trace;
+use rustaria_common::error::Result;
+use rustaria_common::logging::trace;
+use rustariac_backend::ty::AtlasLocation;
 use rustariac_backend::{
 	layer::LayerChannel,
 	ty::{Camera, PosTexture},
 };
-use rustariac_backend::ty::AtlasLocation;
 
 pub mod engine;
 mod pipeline;

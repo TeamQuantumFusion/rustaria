@@ -20,9 +20,9 @@ use std::sync::Arc;
 use rayon::ThreadPool;
 
 use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_network::{EstablishingInstance, NetworkInterface, Token};
+use rustaria_common::error::{Result, WrapErr};
 use rustaria_network::networking::{ClientNetworking, ServerNetworking};
-use rustaria_util::error::{Result, WrapErr};
+use rustaria_network::{EstablishingInstance, NetworkInterface, Token};
 
 // Internals
 use crate::internal::chunks::ChunkManager;

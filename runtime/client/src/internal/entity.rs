@@ -6,7 +6,7 @@ use rustaria::entity::world::EntityWorld;
 use rustaria::packet::entity::ServerEntityPacket;
 use rustaria::SmartError;
 use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_util::error::{ContextCompat, Result};
+use rustaria_common::error::{ContextCompat, Result};
 use rustariac_backend::ty::Camera;
 use rustariac_rendering::entity_drawer::WorldEntityDrawer;
 

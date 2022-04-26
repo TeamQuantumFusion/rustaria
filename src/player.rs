@@ -1,4 +1,4 @@
-use rustaria_util::Uuid;
+use rustaria_common::Uuid;
 
 pub struct Player {
 	pub name: String,
