@@ -1,14 +1,15 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use crossbeam::channel::{unbounded, Receiver, Sender};
-use eyre::ContextCompat;
+use crossbeam::channel::{Receiver, Sender, unbounded};
 use rayon::ThreadPool;
 
-use rustaria_api::ty::{Prototype, Tag};
 use rustaria_api::{Carrier, Reloadable};
-use rustaria_util::error;
-use rustaria_util::ty::{ChunkPos, ChunkSubPos, CHUNK_SIZE};
+use rustaria_api::ty::{Prototype, Tag};
+use rustaria_util::error::ContextCompat;
+use rustaria_util::error::Result;
+use rustaria_util::logging::error;
+use rustaria_util::ty::{CHUNK_SIZE, ChunkPos, ChunkSubPos};
 
 use crate::api::prototype::tile::TilePrototype;
 use crate::chunk::{Chunk, ChunkLayer};
@@ -24,7 +25,7 @@ pub struct WorldGeneration {
 }
 
 impl WorldGeneration {
-	pub fn new(thread_pool: Arc<ThreadPool>) -> eyre::Result<WorldGeneration> {
+	pub fn new(thread_pool: Arc<ThreadPool>) -> Result<WorldGeneration> {
 		let (tx, rx) = unbounded();
 		Ok(WorldGeneration {
 			carrier: None,
@@ -35,7 +36,7 @@ impl WorldGeneration {
 		})
 	}
 
-	pub fn request_chunk(&mut self, pos: ChunkPos) -> eyre::Result<()> {
+	pub fn request_chunk(&mut self, pos: ChunkPos) -> Result<()> {
 		if !self.submitted_chunks.contains(&pos) {
 			self.submitted_chunks.insert(pos);
 			let carrier = self
@@ -74,7 +75,7 @@ impl Reloadable for WorldGeneration {
 	}
 }
 
-fn generate_chunk(stack: &Carrier, pos: ChunkPos) -> eyre::Result<Chunk> {
+fn generate_chunk(stack: &Carrier, pos: ChunkPos) -> Result<Chunk> {
 	let instance = stack.lock();
 	let tiles = instance.get_registry::<TilePrototype>();
 

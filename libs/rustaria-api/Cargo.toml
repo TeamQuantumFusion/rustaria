@@ -15,7 +15,6 @@ mlua = { git = "https://github.com/alphaqu/mlua", branch = "alphacurseness", fea
 
 # Error
 thiserror = "1.0.30"
-eyre = "0.6.8"
 
 # Plugins
 serde = { version = "1.0", features = ["derive"] }

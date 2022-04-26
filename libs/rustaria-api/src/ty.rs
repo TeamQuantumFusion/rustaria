@@ -1,13 +1,13 @@
-use mlua::{Error, FromLua, Lua, ToLua, UserData, Value};
-use std::hash::Hash;
 use std::{
 	collections::HashSet,
 	fmt::{Debug, Display},
 };
+use std::hash::Hash;
+
+use mlua::{Error, FromLua, Lua, ToLua, Value};
+use serde::{Deserialize, Serialize};
 
 use crate::lua::PluginLua;
-
-use serde::{Deserialize, Serialize};
 
 // Raw Ids
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, PartialOrd)]

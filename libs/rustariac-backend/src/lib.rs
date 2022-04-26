@@ -1,16 +1,18 @@
 use std::collections::HashSet;
-use std::sync::{mpsc::Receiver, Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::{Arc, mpsc::Receiver, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use crate::ty::AtlasLocation;
-use atlas::Atlas;
-use eyre::{ContextCompat, Result};
 use glfw::{
 	Context, Glfw, OpenGlProfileHint, SwapInterval, Window, WindowEvent, WindowHint, WindowMode,
 };
 use image::DynamicImage;
+
+use atlas::Atlas;
 use layer::LayerChannel;
-use rustaria_api::{ty::Tag, Api};
+use rustaria_api::{Api, ty::Tag};
+use rustaria_util::error::{ContextCompat, Result};
 use ty::{Camera, PosTexture};
+
+use crate::ty::AtlasLocation;
 
 pub mod atlas;
 pub mod builder;

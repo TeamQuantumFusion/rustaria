@@ -1,13 +1,15 @@
-use crate::chunk::ChunkStorage;
-use crate::util::aabb;
-use mlua::{FromLua, Lua, Value};
-
-use crate::entity::component::velocity::PhysicsComp;
-use rustaria_util::info;
-use rustaria_util::math::{vec2, Rect, Size2D, Vector2D, WorldSpace};
-use rustaria_util::ty::{Rectangle, TilePos};
-use serde::Deserialize;
 use std::ops::Index;
+
+use mlua::{FromLua, Lua, Value};
+use serde::Deserialize;
+
+use rustaria_util::logging::info;
+use rustaria_util::math::{Rect, Size2D, vec2, Vector2D, WorldSpace};
+use rustaria_util::ty::{Rectangle, TilePos};
+
+use crate::chunk::ChunkStorage;
+use crate::entity::component::velocity::PhysicsComp;
+use crate::util::aabb;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct HitboxComp {

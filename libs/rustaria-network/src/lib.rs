@@ -2,9 +2,9 @@ use std::fmt::Debug;
 
 use crossbeam::channel::SendError;
 use serde::{de::DeserializeOwned, Serialize};
+use thiserror::Error;
 
 use rustaria_util::Uuid;
-use thiserror::Error;
 
 pub mod networking;
 pub mod packet;

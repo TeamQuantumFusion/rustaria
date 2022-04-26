@@ -1,6 +1,6 @@
 use proc_macro2::{Ident, Literal, Span};
 use quote::{quote, ToTokens};
-use syn::{parse_macro_input, Attribute, Item, ItemStruct, Meta};
+use syn::{Attribute, Item, ItemStruct, Meta, parse_macro_input};
 
 #[proc_macro_derive(FromLua, attributes(use_default))]
 pub fn from_lua(item: proc_macro::TokenStream) -> proc_macro::TokenStream {

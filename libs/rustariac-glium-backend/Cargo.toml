@@ -9,7 +9,6 @@ edition = "2021"
 rustaria-util = { path = "../rustaria-util" }
 rustariac-backend = { path = "../rustariac-backend" }
 glfw = "0.44"
-eyre = "0.6"
 
 
 # Custom version with textures set to Nearest. Yes i needed to fork just for that.

@@ -1,6 +1,6 @@
-use rustaria_util::math::{Vector2D, WorldSpace};
 use serde::{Deserialize, Serialize};
 
+use rustaria_util::math::{Vector2D, WorldSpace};
 use rustaria_util::Uuid;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

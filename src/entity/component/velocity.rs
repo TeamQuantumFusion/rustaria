@@ -1,10 +1,11 @@
-use crate::entity::component::pos::PositionComp;
-use crate::UPS;
 use mlua::{FromLua, Lua, Value};
-use rustaria_util::info;
+use serde::Deserialize;
+
+use rustaria_util::logging::info;
 use rustaria_util::math::{Vector2D, WorldSpace};
 use rustaria_util::ty::Pos;
-use serde::Deserialize;
+
+use crate::UPS;
 
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct PhysicsComp {

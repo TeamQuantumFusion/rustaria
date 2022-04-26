@@ -1,6 +1,5 @@
-use eyre::Result;
-
 use rustaria_api::{Api, Carrier};
+use rustaria_util::error::Result;
 
 use crate::api::prototype::entity::EntityPrototype;
 use crate::api::prototype::tile::TilePrototype;
@@ -12,20 +11,6 @@ pub mod prototype;
 pub mod rendering;
 pub mod ty;
 
-macro_rules! register {
-    ($($TAG:literal: $PROTOTYPE:expr),*) => {
-	     {
-		     let mut builder = RegistryBuilder::new();
-		     $(
-		     builder.register(
-			     Tag::new($TAG)?,
-			     $PROTOTYPE,
-		     );
-		     )*
-	        builder
-	     }
-    };
-}
 // Register everything
 pub fn reload(api: &mut Api, carrier: &mut Carrier) -> Result<()> {
 	let mut reload = api.reload(carrier);

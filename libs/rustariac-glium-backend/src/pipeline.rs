@@ -1,9 +1,10 @@
 use std::sync::{Arc, RwLock, Weak};
 
 use glium::{
-	index::PrimitiveType, program::ProgramCreationInput, uniforms::Uniforms, DrawParameters, Frame,
-	IndexBuffer, Program, Surface, Vertex, VertexBuffer,
+	DrawParameters, Frame, index::PrimitiveType, IndexBuffer, Program,
+	program::ProgramCreationInput, Surface, uniforms::Uniforms, Vertex, VertexBuffer,
 };
+
 use rustariac_backend::layer::{LayerChannel, LayerChannelData};
 
 use crate::engine::GliumBackendEngine;

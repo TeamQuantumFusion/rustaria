@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 
-use rustaria_api::ty::Tag;
-use rustaria_api::ty::{Prototype, RawId};
 use serde::Deserialize;
+
+use rustaria_api::ty::{Prototype, RawId};
+use rustaria_api::ty::Tag;
 
 #[cfg(feature = "client")]
 use crate::api::rendering::RenderingSystem;

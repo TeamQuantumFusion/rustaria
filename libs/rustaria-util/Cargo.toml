@@ -15,6 +15,7 @@ frogelua = { path = "../frogelua" }
 mlua = { git = "https://github.com/alphaqu/mlua", branch = "alphacurseness", features = ["lua54", "vendored", "serialize", "send"] }
 
 # Errors
+thiserror = "1.0.30"
 eyre = "0.6"
 color-eyre = { version = "0.6", default-features = false }
 

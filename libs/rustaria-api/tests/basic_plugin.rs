@@ -1,11 +1,12 @@
-use mlua::{FromLua, Lua, Value};
 use std::env::current_dir;
 
-use rustaria_api::{
-	ty::{LuaConvertableCar, Prototype, Tag},
-	Api, Carrier,
-};
+use mlua::{FromLua, Lua, Value};
 use serde::{Deserialize, Serialize};
+
+use rustaria_api::{
+	Api,
+	Carrier, ty::{LuaConvertableCar, Prototype, Tag},
+};
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct TilePrototype {

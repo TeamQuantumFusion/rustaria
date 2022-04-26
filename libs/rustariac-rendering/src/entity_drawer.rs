@@ -1,15 +1,15 @@
-use eyre::{ContextCompat, Result};
+use std::collections::HashMap;
+
 use rustaria::api::prototype::entity::EntityPrototype;
 use rustaria::entity::world::EntityWorld;
 use rustaria::SmartError::CarrierUnavailable;
 use rustaria_api::{Api, Carrier, Reloadable};
+use rustaria_util::error::{ContextCompat, Result};
 use rustaria_util::math::{Vector2D, WorldSpace};
-use rustaria_util::ty::Pos;
 use rustaria_util::Uuid;
+use rustariac_backend::{ClientBackend, layer::LayerChannel, ty::PosTexture};
 use rustariac_backend::builder::VertexBuilder;
 use rustariac_backend::ty::Camera;
-use rustariac_backend::{layer::LayerChannel, ty::PosTexture, ClientBackend};
-use std::collections::HashMap;
 
 use crate::BakedRenderingSystem;
 

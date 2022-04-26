@@ -1,8 +1,11 @@
-use crate::tile::Tile;
-use rustaria_util::ty::{ChunkPos, ChunkSubPos, CHUNK_SIZE};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
+
+use serde::{Deserialize, Serialize};
+
+use rustaria_util::ty::{CHUNK_SIZE, ChunkPos, ChunkSubPos};
+
+use crate::tile::Tile;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Chunk {

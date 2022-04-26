@@ -1,14 +1,16 @@
-use crate::RenderingHandler;
-use eyre::{ContextCompat, Result};
+use std::ops::{Deref, DerefMut};
+
 use rustaria::api::prototype::entity::EntityPrototype;
 use rustaria::chunk::ChunkStorage;
 use rustaria::entity::world::EntityWorld;
 use rustaria::packet::entity::ServerEntityPacket;
 use rustaria::SmartError;
 use rustaria_api::{Api, Carrier, Reloadable};
+use rustaria_util::error::{ContextCompat, Result};
 use rustariac_backend::ty::Camera;
 use rustariac_rendering::entity_drawer::WorldEntityDrawer;
-use std::ops::{Deref, DerefMut};
+
+use crate::RenderingHandler;
 
 pub(crate) struct EntityHandler {
 	carrier: Option<Carrier>,

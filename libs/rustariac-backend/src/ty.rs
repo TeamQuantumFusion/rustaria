@@ -1,5 +1,6 @@
+use rustaria_util::math::{AtlasSpace, rect, Rect, WorldSpace};
+
 use crate::builder::Quadable;
-use rustaria_util::math::{rect, AtlasSpace, Rect, WorldSpace};
 
 pub type AtlasLocation = Rect<f32, AtlasSpace>;
 

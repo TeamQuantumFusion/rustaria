@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use glfw::WindowEvent;
 
-use rustaria_util::warn;
+use rustaria_util::logging::warn;
 
 use crate::button::{ButtonKey, ButtonSubscriber};
 

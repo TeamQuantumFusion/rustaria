@@ -1,15 +1,16 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-use eyre::Result;
 use image::{DynamicImage, ImageFormat};
 use rectangle_pack::{
-	contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert,
-	RectanglePackError, TargetBin,
+	contains_smallest_box, GroupedRectsToPlace, pack_rects, RectanglePackError, RectToInsert,
+	TargetBin, volume_heuristic,
 };
-use rustaria_api::ty::Tag;
+
 use rustaria_api::{Api, AssetKind};
+use rustaria_api::ty::Tag;
+use rustaria_util::error::Result;
+use rustaria_util::logging::warn;
 use rustaria_util::math::rect;
-use rustaria_util::warn;
 
 use crate::ty::AtlasLocation;
 

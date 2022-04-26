@@ -1,22 +1,33 @@
 #![feature(negative_impls)]
+
 use std::fs::File;
 
+use log::{Level, LevelFilter};
 // Imports
-pub use log::*;
 use simplelog::{
 	Color, ColorChoice, CombinedLogger, Config, ConfigBuilder, LevelPadding, TargetPadding,
-	TermLogger, TerminalMode, WriteLogger,
+	TerminalMode, TermLogger, WriteLogger,
 };
 pub use uuid::Uuid;
 
 pub mod blake3;
 pub mod rcl;
 pub mod ty;
+
+pub mod logging {
+	pub use log::*;
+}
+
+pub mod error {
+	pub use eyre::*;
+}
+
 pub mod math {
+	pub use euclid::*;
+
 	pub struct WorldSpace;
 	pub struct ScreenSpace;
 	pub struct AtlasSpace;
-	pub use euclid::*;
 }
 
 pub fn initialize() -> eyre::Result<()> {

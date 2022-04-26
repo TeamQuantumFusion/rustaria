@@ -4,10 +4,10 @@ use std::sync::RwLock;
 use std::time::Instant;
 
 use bimap::BiMap;
-use crossbeam::channel::{unbounded, Receiver, Sender};
+use crossbeam::channel::{Receiver, Sender, unbounded};
 use laminar::{Packet, Socket, SocketEvent};
 
-use rustaria_util::{debug, error, trace, warn};
+use rustaria_util::logging::{debug, error, trace, warn};
 
 use crate::{EstablishingInstance, EstablishingStatus, NetworkInterface, Result, Token};
 

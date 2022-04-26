@@ -1,8 +1,8 @@
-use crate::lua::PluginLua;
-
-use crate::Tag;
 use mlua::Lua;
-use rustaria_util::{log, Level};
+
+use rustaria_util::logging::{Level, log};
+
+use crate::lua::PluginLua;
 
 pub fn register(lua: &Lua) -> mlua::Result<()> {
 	let globals = lua.globals();

@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
 use glfw::{Key, WindowEvent};
-use rustaria::entity::component::velocity::PhysicsComp;
-use rustaria::UPS;
 
+use rustaria::entity::component::velocity::PhysicsComp;
 use rustaria_controller::button::{ButtonKey, HoldSubscriber, TriggerSubscriber};
 use rustaria_controller::Controller;
 use rustariac_backend::ty::Camera;

@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use serde::de::DeserializeOwned;
 
 use crate::Result;
 

@@ -1,17 +1,16 @@
-use eyre::{ContextCompat, Report};
-
-use crate::ControllerHandler;
+use rustaria::{ClientNetwork, Server, SmartError};
 use rustaria::api::prototype::entity::EntityPrototype;
+use rustaria::packet::{ClientPacket, ServerPacket};
 use rustaria::packet::entity::ServerEntityPacket;
 use rustaria::packet::player::{ClientPlayerPacket, ServerPlayerPacket};
-use rustaria::packet::{ClientPacket, ServerPacket};
-use rustaria::{ClientNetwork, Server, SmartError};
-use rustaria_api::ty::{RawId, Tag};
 use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_util::math::Vector2D;
+use rustaria_api::ty::{RawId, Tag};
+use rustaria_util::error::{ContextCompat, Report};
+use rustaria_util::error::Result;
 use rustaria_util::Uuid;
 use rustariac_backend::ty::Camera;
 
+use crate::ControllerHandler;
 use crate::internal::chunk::ChunkHandler;
 use crate::internal::entity::EntityHandler;
 
@@ -33,7 +32,7 @@ impl ClientWorld {
 		&mut self,
 		camera: &mut rustariac_backend::ty::Camera,
 		controller: &mut ControllerHandler,
-	) -> eyre::Result<()> {
+	) -> Result<()> {
 		if let Some(player) = &self.player {
 			let physics = self
 				.entity
@@ -83,7 +82,7 @@ impl ClientWorld {
 		Ok(())
 	}
 
-	pub fn draw(&mut self, camera: &mut Camera, delta: f32) -> eyre::Result<()> {
+	pub fn draw(&mut self, camera: &mut Camera, delta: f32) -> Result<()> {
 		if let Some(player) = &self.player {
 			//self.entity
 			//	.physics

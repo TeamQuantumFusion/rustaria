@@ -1,6 +1,7 @@
-use crate::plugin::Manifest;
-use crate::{debug, Api, AssetKind, Tag};
 use mlua::{Lua, Result, Table, UserData};
+
+use crate::{Api, AssetKind, debug, Tag};
+use crate::plugin::Manifest;
 
 pub mod core;
 pub mod hook;

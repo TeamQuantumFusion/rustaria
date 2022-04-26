@@ -1,12 +1,13 @@
-use crate::{info, Prototype, Registry, RegistryBuilder, Tag};
-use eyre::eyre;
-use mlua::{LuaSerdeExt, UserData, UserDataMethods, Value};
-use rustaria_util::blake3::Hasher;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use eyre::Result;
-use rustaria_util::debug;
+use mlua::{UserData, UserDataMethods, Value};
+
+use rustaria_util::blake3::Hasher;
+use rustaria_util::error::Result;
+use rustaria_util::logging::debug;
+
+use crate::{Prototype, Registry, RegistryBuilder, Tag};
 
 #[derive(Clone, Default)]
 pub struct RegistryBuilderLua<P: Prototype>(Arc<Mutex<RegistryBuilder<P>>>);

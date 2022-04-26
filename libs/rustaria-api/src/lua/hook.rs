@@ -1,8 +1,9 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, RwLock, Weak};
+use std::sync::{Arc, Mutex, Weak};
 
-use crate::{info, Tag};
-use mlua::{FromLua, Function, ToLuaMulti, UserData, UserDataFields, UserDataMethods, Value};
+use mlua::{Function, ToLuaMulti, UserData, UserDataMethods};
+
+use crate::Tag;
 
 #[derive(Default)]
 pub struct HookInstance {

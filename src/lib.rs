@@ -17,12 +17,12 @@ use std::fmt::Display;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use eyre::{Result, WrapErr};
 use rayon::ThreadPool;
 
 use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_network::networking::{ClientNetworking, ServerNetworking};
 use rustaria_network::{EstablishingInstance, NetworkInterface, Token};
+use rustaria_network::networking::{ClientNetworking, ServerNetworking};
+use rustaria_util::error::{Result, WrapErr};
 
 // Internals
 use crate::internal::chunks::ChunkManager;

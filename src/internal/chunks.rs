@@ -1,17 +1,20 @@
-mod world_generation;
-
-use rayon::ThreadPool;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
-use crate::chunk::ChunkStorage;
-use crate::internal::chunks::world_generation::WorldGeneration;
-use crate::packet::chunk::ClientChunkPacket;
-use crate::NetworkManager;
+use rayon::ThreadPool;
+
 use rustaria_api::{Carrier, Reloadable};
 use rustaria_network::Token;
+use rustaria_util::error::Result;
 use rustaria_util::ty::ChunkPos;
+
+use crate::chunk::ChunkStorage;
+use crate::internal::chunks::world_generation::WorldGeneration;
+use crate::NetworkManager;
+use crate::packet::chunk::ClientChunkPacket;
+
+mod world_generation;
 
 pub(crate) struct ChunkManager {
 	generator: WorldGeneration,
@@ -33,7 +36,7 @@ impl ChunkManager {
 		}
 	}
 
-	pub fn tick(&mut self, network: &mut NetworkManager) -> eyre::Result<()> {
+	pub fn tick(&mut self, network: &mut NetworkManager) -> Result<()> {
 		for (pos, from) in self.chunk_queue.drain(..) {
 			if let Some(chunk) = self.storage.get_chunk(pos) {
 				network.send_chunk(Some(from), pos, chunk.clone());

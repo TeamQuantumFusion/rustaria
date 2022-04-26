@@ -1,13 +1,14 @@
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
+use rustaria_network::packet::CompressedPacket;
+use rustaria_network::Token;
+use rustaria_util::ty::ChunkPos;
+
 use crate::chunk::Chunk;
 use crate::packet::chunk::{ChunkBundlePacket, ServerChunkPacket};
 use crate::packet::ServerPacket;
 use crate::ServerNetwork;
-use rustaria_network::packet::CompressedPacket;
-use rustaria_network::Token;
-use rustaria_util::ty::ChunkPos;
 
 /// The `NetworkManager` handles networking for the server.
 pub(crate) struct NetworkManager {

@@ -1,11 +1,10 @@
-use crate::trace;
-use eyre::Result;
-use mlua::UserData;
-use rustaria_util::blake3::Hasher;
 use std::collections::HashMap;
 use std::slice::Iter;
-use std::sync::{Arc, RwLock};
 
+use rustaria_util::blake3::Hasher;
+use rustaria_util::error::Result;
+
+use crate::trace;
 use crate::ty::{Prototype, RawId, Tag};
 
 #[derive(Default)]

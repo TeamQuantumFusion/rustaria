@@ -1,8 +1,10 @@
+use serde::{Deserialize, Serialize};
+
+use rustaria_network::{EstablishingInstance, EstablishingStatus, Packet, Result};
+
 use crate::packet::chunk::{ClientChunkPacket, ServerChunkPacket};
 use crate::packet::entity::{ClientEntityPacket, ServerEntityPacket};
 use crate::packet::player::{ClientPlayerPacket, ServerPlayerPacket};
-use rustaria_network::{EstablishingInstance, EstablishingStatus, Packet, Result};
-use serde::{Deserialize, Serialize};
 
 pub mod chunk;
 pub mod entity;

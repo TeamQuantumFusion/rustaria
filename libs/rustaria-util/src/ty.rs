@@ -1,11 +1,13 @@
 //! A collection of types used in Rustaria.
 
-use crate::ty::Error::OutOfBounds;
-use euclid::{rect, vec2, Rect, Vector2D};
-use num::FromPrimitive;
-use serde::Deserialize;
 use std::fmt::{Display, Formatter};
 use std::ops::Add;
+
+use euclid::{rect, Rect, vec2, Vector2D};
+use num::FromPrimitive;
+use serde::Deserialize;
+
+use crate::ty::Error::OutOfBounds;
 
 pub enum Error {
 	OutOfBounds,

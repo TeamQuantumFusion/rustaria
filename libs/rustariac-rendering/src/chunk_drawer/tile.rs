@@ -4,8 +4,8 @@ use rustaria_api::{registry::Registry, ty::RawId};
 use rustaria_util::math::rect;
 use rustariac_backend::{
 	builder::VertexBuilder,
-	ty::{AtlasLocation, PosTexture},
 	ClientBackend,
+	ty::{AtlasLocation, PosTexture},
 };
 
 pub struct TileDrawer {

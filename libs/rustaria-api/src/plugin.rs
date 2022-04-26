@@ -1,11 +1,15 @@
-use crate::lua::new_lua;
-use crate::{archive::Archive, Api, Reloadable};
-use crate::{lua, PluginId};
+use std::{collections::HashMap, path::PathBuf};
+
 use mlua::Lua;
 use semver::Version;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, path::PathBuf};
 use thiserror::Error;
+
+use rustaria_util::error::Result;
+
+use crate::{Api, archive::Archive};
+use crate::lua::new_lua;
+use crate::PluginId;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -43,7 +47,7 @@ impl Plugin {
 		})
 	}
 
-	pub fn reload(&self) -> eyre::Result<()> {
+	pub fn reload(&self) -> Result<()> {
 		if let Some(entry) = &self.manifest.common_entry {
 			let lua_file = self.archive.get_asset(&("./src/".to_owned() + entry))?;
 			self.lua_state.load(&lua_file).exec()?;

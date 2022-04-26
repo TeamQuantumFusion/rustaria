@@ -1,8 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
-use eyre::Result;
-
 use rustaria_api::ty::RawId;
+use rustaria_util::error::Result;
 use rustaria_util::math::{Vector2D, WorldSpace};
 use rustaria_util::Uuid;
 
