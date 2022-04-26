@@ -1,7 +1,7 @@
 use mlua::{Lua, Result, Table, UserData};
 
-use crate::{Api, AssetKind, debug, Tag};
 use crate::plugin::Manifest;
+use crate::{debug, Api, AssetKind, Tag};
 
 pub mod core;
 pub mod hook;
@@ -21,7 +21,7 @@ pub fn new_lua(manifest: &Manifest, api: &Api) -> Result<Lua> {
 
 	// Overwrite module loading
 	let package: Table = globals.get("package")?;
-	let searchers: Table = package.get("searchers")?;
+	let searchers: Table = package.get("loaders")?;
 	searchers.raw_insert(
 		2,
 		lua_state.create_function(|lua, location: Tag| {

@@ -11,7 +11,7 @@ rustaria-common = { path = "../rustaria-common" }
 frogelua = { path = "../frogelua" }
 
 # Lua
-mlua = { git = "https://github.com/alphaqu/mlua", branch = "alphacurseness", features = ["lua54", "vendored", "serialize", "send"] }
+mlua = { git = "https://github.com/alphaqu/mlua", branch = "alphacurseness", features = ["luajit", "vendored", "serialize", "send"] }
 
 # Error
 thiserror = "1.0.30"

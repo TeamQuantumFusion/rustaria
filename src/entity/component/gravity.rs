@@ -8,12 +8,16 @@ pub struct GravityComp {
 
 impl FromLua for GravityComp {
 	fn from_lua(lua_value: Value, _: &Lua) -> mlua::Result<Self> {
-		if let Value::Number(number) = lua_value {
+		if let Value::Integer(number) = lua_value {
+			Ok(GravityComp {
+				speed: number as f32,
+			})
+		} else if let Value::Number(number) = lua_value {
 			Ok(GravityComp {
 				speed: number as f32,
 			})
 		} else {
-			Err(Error::RuntimeError("wrong type".to_string()))
+			Err(Error::RuntimeError(format!("Invalid type {lua_value:?}")))
 		}
 	}
 }
