@@ -11,17 +11,17 @@ use crate::api::prototype::entity::EntityPrototype;
 use crate::entity::world::EntityWorld;
 use crate::packet::entity::{ClientEntityPacket, ServerEntityPacket};
 use crate::packet::ServerPacket;
-use crate::{ChunkManager, NetworkManager, SmartError};
+use crate::{ChunkSystem, NetworkSystem, SmartError};
 
-pub(crate) struct EntityManager {
+pub(crate) struct EntitySystem {
 	carrier: Option<Carrier>,
 	world: EntityWorld,
 	new_entities: Vec<(Uuid, RawId, Vector2D<f32, WorldSpace>)>,
 }
 
-impl EntityManager {
-	pub fn new() -> EntityManager {
-		EntityManager {
+impl EntitySystem {
+	pub fn new() -> EntitySystem {
+		EntitySystem {
 			carrier: None,
 			new_entities: vec![],
 			world: EntityWorld::default(),
@@ -52,7 +52,7 @@ impl EntityManager {
 		Ok(uuid)
 	}
 
-	pub fn tick(&mut self, chunks: &ChunkManager, network: &mut NetworkManager) -> Result<()> {
+	pub fn tick(&mut self, chunks: &ChunkSystem, network: &mut NetworkSystem) -> Result<()> {
 		for id in &self.world.dead {
 			network.send_all(ServerPacket::Entity(ServerEntityPacket::Kill(*id)))?;
 		}
@@ -76,13 +76,13 @@ impl EntityManager {
 	}
 }
 
-impl Reloadable for EntityManager {
+impl Reloadable for EntitySystem {
 	fn reload(&mut self, api: &rustaria_api::Api, carrier: &Carrier) {
 		self.carrier = Some(carrier.clone());
 	}
 }
 
-impl Deref for EntityManager {
+impl Deref for EntitySystem {
 	type Target = EntityWorld;
 
 	fn deref(&self) -> &Self::Target {
@@ -90,7 +90,7 @@ impl Deref for EntityManager {
 	}
 }
 
-impl DerefMut for EntityManager {
+impl DerefMut for EntitySystem {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		&mut self.world
 	}

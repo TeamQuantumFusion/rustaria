@@ -12,11 +12,11 @@ use rustaria_network::Token;
 use crate::chunk::ChunkStorage;
 use crate::internal::chunks::world_generation::WorldGeneration;
 use crate::packet::chunk::ClientChunkPacket;
-use crate::NetworkManager;
+use crate::NetworkSystem;
 
 mod world_generation;
 
-pub(crate) struct ChunkManager {
+pub(crate) struct ChunkSystem {
 	generator: WorldGeneration,
 	storage: ChunkStorage,
 	chunk_queue: VecDeque<(ChunkPos, Token)>,
@@ -25,9 +25,9 @@ pub(crate) struct ChunkManager {
 	dirty_chunks: HashSet<ChunkPos>,
 }
 
-impl ChunkManager {
-	pub fn new(thread_pool: Arc<ThreadPool>) -> ChunkManager {
-		ChunkManager {
+impl ChunkSystem {
+	pub fn new(thread_pool: Arc<ThreadPool>) -> ChunkSystem {
+		ChunkSystem {
 			generator: WorldGeneration::new(thread_pool).unwrap(),
 			storage: Default::default(),
 			chunk_queue: Default::default(),
@@ -36,7 +36,7 @@ impl ChunkManager {
 		}
 	}
 
-	pub fn tick(&mut self, network: &mut NetworkManager) -> Result<()> {
+	pub fn tick(&mut self, network: &mut NetworkSystem) -> Result<()> {
 		for (pos, from) in self.chunk_queue.drain(..) {
 			if let Some(chunk) = self.storage.get_chunk(pos) {
 				network.send_chunk(Some(from), pos, chunk.clone());
@@ -77,13 +77,13 @@ impl ChunkManager {
 	}
 }
 
-impl Reloadable for ChunkManager {
+impl Reloadable for ChunkSystem {
 	fn reload(&mut self, api: &rustaria_api::Api, carrier: &Carrier) {
 		self.generator.reload(api, carrier);
 	}
 }
 
-impl Deref for ChunkManager {
+impl Deref for ChunkSystem {
 	type Target = ChunkStorage;
 
 	fn deref(&self) -> &Self::Target {
@@ -91,7 +91,7 @@ impl Deref for ChunkManager {
 	}
 }
 
-impl DerefMut for ChunkManager {
+impl DerefMut for ChunkSystem {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		&mut self.storage
 	}

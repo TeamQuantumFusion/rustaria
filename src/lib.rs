@@ -7,11 +7,11 @@
 //! When naming a handler or internal. Its always {singular}{type}, so if you are making a handler for networking.
 //! Its called NetworkHandler.
 //!
-//! SUB LIBS SHOULD NEVER NAME ANYTHING A HANDLER OR A MANAGER.
+//! SUB LIBS SHOULD NEVER NAME ANYTHING A HANDLER OR A SYSTEM.
 //! ## Handlers
 //! Handler are for the client and are a module of logic. Normally wraps one of our libraries.
-//! ## Managers
-//! Manager are the same as handlers. But for the server.
+//! ## Systems
+//! Systems are the same as handlers. But for the server.
 
 use std::fmt::Display;
 use std::net::SocketAddr;
@@ -25,10 +25,10 @@ use rustaria_network::networking::{ClientNetworking, ServerNetworking};
 use rustaria_network::{EstablishingInstance, NetworkInterface, Token};
 
 // Internals
-use crate::internal::chunks::ChunkManager;
-use crate::internal::entities::EntityManager;
-use crate::internal::networking::NetworkManager;
-use crate::internal::players::PlayerManager;
+use crate::internal::chunks::ChunkSystem;
+use crate::internal::entities::EntitySystem;
+use crate::internal::networking::NetworkSystem;
+use crate::internal::players::PlayerSystem;
 use crate::packet::{ClientPacket, PlayerJoinData, ServerPacket};
 
 pub mod api;
@@ -49,10 +49,10 @@ pub type ClientNetwork = ClientNetworking<ServerPacket, ClientPacket>;
 /// This is where the world is stored and the information gets distributed across clients.
 pub struct Server {
 	api: Api,
-	network: NetworkManager,
-	chunk: ChunkManager,
-	entity: EntityManager,
-	player: PlayerManager,
+	network: NetworkSystem,
+	chunk: ChunkSystem,
+	entity: EntitySystem,
+	player: PlayerSystem,
 }
 
 impl Server {
@@ -63,10 +63,10 @@ impl Server {
 	) -> Result<Server> {
 		Ok(Server {
 			api: api.clone(),
-			network: NetworkManager::new(ServerNetworking::new(ip_address)?),
-			chunk: ChunkManager::new(thread_pool),
-			entity: EntityManager::new(),
-			player: PlayerManager::new(),
+			network: NetworkSystem::new(ServerNetworking::new(ip_address)?),
+			chunk: ChunkSystem::new(thread_pool),
+			entity: EntitySystem::new(),
+			player: PlayerSystem::new(),
 		})
 	}
 

@@ -10,16 +10,16 @@ use rustaria_network::Token;
 use crate::api::prototype::entity::EntityPrototype;
 use crate::packet::player::{ClientPlayerPacket, ServerPlayerPacket};
 use crate::player::Player;
-use crate::{EntityManager, NetworkManager, PlayerJoinData, ServerPacket, SmartError};
+use crate::{EntitySystem, NetworkSystem, PlayerJoinData, ServerPacket, SmartError};
 
-pub(crate) struct PlayerManager {
+pub(crate) struct PlayerSystem {
 	player_entity: Option<RawId>,
 	players: HashMap<Token, Player>,
 }
 
-impl PlayerManager {
-	pub fn new() -> PlayerManager {
-		PlayerManager {
+impl PlayerSystem {
+	pub fn new() -> PlayerSystem {
+		PlayerSystem {
 			player_entity: None,
 			players: Default::default(),
 		}
@@ -40,8 +40,8 @@ impl PlayerManager {
 		&mut self,
 		from: Token,
 		packet: ClientPlayerPacket,
-		entities: &mut EntityManager,
-		network: &NetworkManager,
+		entities: &mut EntitySystem,
+		network: &NetworkSystem,
 	) -> Result<()> {
 		if let Some(player) = self.players.get_mut(&from) {
 			match packet {
@@ -75,7 +75,7 @@ impl PlayerManager {
 	}
 }
 
-impl Reloadable for PlayerManager {
+impl Reloadable for PlayerSystem {
 	fn reload(&mut self, api: &Api, carrier: &Carrier) {
 		let access = carrier.lock();
 		self.player_entity = access

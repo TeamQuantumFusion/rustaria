@@ -11,15 +11,15 @@ use crate::packet::ServerPacket;
 use crate::ServerNetwork;
 
 /// The `NetworkManager` handles networking for the server.
-pub(crate) struct NetworkManager {
+pub(crate) struct NetworkSystem {
 	internal: ServerNetwork,
 	chunk_buffer: HashMap<Option<Token>, HashMap<ChunkPos, Chunk>>,
 }
 
 // TODO positional api, basically only send stuff if the player is nearby.
-impl NetworkManager {
-	pub fn new(networking: ServerNetwork) -> NetworkManager {
-		NetworkManager {
+impl NetworkSystem {
+	pub fn new(networking: ServerNetwork) -> NetworkSystem {
+		NetworkSystem {
 			internal: networking,
 			chunk_buffer: Default::default(),
 		}
@@ -48,7 +48,7 @@ impl NetworkManager {
 	}
 }
 
-impl Deref for NetworkManager {
+impl Deref for NetworkSystem {
 	type Target = ServerNetwork;
 
 	fn deref(&self) -> &Self::Target {
@@ -56,7 +56,7 @@ impl Deref for NetworkManager {
 	}
 }
 
-impl DerefMut for NetworkManager {
+impl DerefMut for NetworkSystem {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		&mut self.internal
 	}
