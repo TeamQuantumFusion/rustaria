@@ -2,6 +2,7 @@ use rustaria::api::prototype::entity::EntityPrototype;
 use rustaria::packet::entity::ServerEntityPacket;
 use rustaria::packet::player::{ClientPlayerPacket, ServerPlayerPacket};
 use rustaria::packet::{ClientPacket, ServerPacket};
+use rustaria::player::Player;
 use rustaria::{ClientNetwork, Server, SmartError};
 use rustaria_api::ty::{RawId, Tag};
 use rustaria_api::{Api, Carrier, Reloadable};
@@ -20,8 +21,8 @@ pub(crate) struct ClientWorld {
 	pub networking: ClientNetwork,
 	pub chunk: ChunkHandler,
 
-	pub player_entity: Option<RawId>,
-	pub player: Option<Uuid>,
+	pub player_entity_id: Option<RawId>,
+	pub player: Player,
 	pub entity: EntityHandler,
 
 	pub integrated: Option<Box<Server>>,
@@ -33,19 +34,26 @@ impl ClientWorld {
 		camera: &mut rustariac_backend::ty::Camera,
 		controller: &mut ControllerHandler,
 	) -> Result<()> {
-		if let Some(player) = &self.player {
+		if let Some(player) = &self.player.entity {
+			let hitbox = self
+				.entity
+				.hitbox
+				.get(player)
+				.wrap_err("Player entity velocity does not exist")?
+				.touches_ground;
 			let physics = self
 				.entity
 				.physics
 				.get_mut(player)
 				.wrap_err("Player entity velocity does not exist")?;
-			controller.apply(physics);
+
+			controller.apply(physics, hitbox, &self.player);
 		}
 
 		self.chunk.tick(camera, &mut self.networking)?;
 		self.entity.tick(camera, &self.chunk)?;
 
-		if let Some(player) = &self.player {
+		if let Some(player) = &self.player.entity {
 			let position = self
 				.entity
 				.position
@@ -67,10 +75,10 @@ impl ClientWorld {
 			ServerPacket::Entity(packet) => self.entity.packet(packet),
 			ServerPacket::Player(packet) => match packet {
 				ServerPlayerPacket::Attach { entity, pos } => {
-					self.player = Some(entity);
+					self.player.entity = Some(entity);
 					self.entity.packet(ServerEntityPacket::New(
 						entity,
-						self.player_entity
+						self.player_entity_id
 							.wrap_err(SmartError::CarrierUnavailable)?,
 						pos,
 					))?;
@@ -83,20 +91,12 @@ impl ClientWorld {
 	}
 
 	pub fn draw(&mut self, camera: &mut Camera, delta: f32) -> Result<()> {
-		if let Some(player) = &self.player {
-			//self.entity
-			//	.physics
-			//	.get_mut(player)
-			//	.wrap_err("Player entity velocity does not exist")?
-			//	.velocity = Vector2D::from(camera.velocity);
-			//
-			camera.position = self
+		if let Some(player) = &self.player.entity {
+			let pos = self
 				.entity
-				.position
-				.get(player)
-				.wrap_err("Player entity position does not exist")?
-				.position
-				.to_array();
+				.drawer
+				.get_entity_pos(player, &self.entity.world, delta);
+			camera.position = pos.to_array();
 		}
 		self.chunk.draw(camera);
 		self.entity.draw(camera, delta)?;
@@ -108,7 +108,7 @@ impl ClientWorld {
 impl Reloadable for ClientWorld {
 	fn reload(&mut self, api: &Api, carrier: &Carrier) {
 		let access = carrier.lock();
-		self.player_entity = access
+		self.player_entity_id = access
 			.get_registry::<EntityPrototype>()
 			.id_from_tag(&Tag::new("rustaria:player").unwrap());
 

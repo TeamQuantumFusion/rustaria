@@ -5,6 +5,7 @@ use rustaria_network::{EstablishingInstance, EstablishingStatus, Packet, Result}
 use crate::packet::chunk::{ClientChunkPacket, ServerChunkPacket};
 use crate::packet::entity::{ClientEntityPacket, ServerEntityPacket};
 use crate::packet::player::{ClientPlayerPacket, ServerPlayerPacket};
+use crate::player::Player;
 
 pub mod chunk;
 pub mod entity;
@@ -35,4 +36,6 @@ impl EstablishingInstance<PlayerJoinData> for PlayerJoinInstance {
 	}
 }
 
-pub struct PlayerJoinData {}
+pub struct PlayerJoinData {
+	pub player: Player,
+}

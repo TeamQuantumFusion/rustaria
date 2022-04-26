@@ -23,7 +23,7 @@ Entities:register {
             width = 2,
             height = 3,
         },
-        gravity = 25.0,
+        gravity = 20.0,
         velocity = {
             x = 0.0,
             y = 0.0,

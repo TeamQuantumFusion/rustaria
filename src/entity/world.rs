@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use rustaria_api::ty::RawId;
 use rustaria_common::error::Result;
+use rustaria_common::logging::info;
 use rustaria_common::math::{Vector2D, WorldSpace};
 use rustaria_common::Uuid;
 
@@ -77,19 +78,19 @@ impl EntityWorld {
 
 		for (id, gravity) in &self.gravity {
 			if let Some(physics) = self.physics.get_mut(id) {
-				physics.acceleration.y -= gravity.speed / UPS as f32;
-				physics.acceleration.y = physics.acceleration.y.max(-37.5 / UPS as f32);
+				physics.velocity.y -= 1.6 / UPS as f32;
 			}
 		}
 
 		for (id, physics) in &mut self.physics {
-			physics.tick();
+			physics.velocity.y = physics.velocity.y.max(-40.0 / UPS as f32);
 
 			let position = self.position.get_mut(id).unwrap();
 			if let Some(hitbox) = self.hitbox.get_mut(id) {
 				hitbox::tile_collision(position.position, physics, hitbox, chunks);
 			}
 
+			info!("{:?}", physics.velocity);
 			position.position += physics.velocity;
 		}
 

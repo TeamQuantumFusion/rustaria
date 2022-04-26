@@ -11,6 +11,7 @@ use rustaria::api::prototype::entity::EntityPrototype;
 use rustaria::packet::entity::ClientEntityPacket;
 use rustaria::packet::player::ClientPlayerPacket;
 use rustaria::packet::{ClientPacket, PlayerJoinData};
+use rustaria::player::Player;
 pub use rustaria::prototypes;
 pub use rustaria::pt;
 use rustaria::SmartError;
@@ -172,11 +173,14 @@ impl Client {
 
 	pub fn join_integrated(&mut self) -> Result<()> {
 		let mut server = Server::new(&self.api, self.thread_pool.clone(), None)?;
+		let player = Player::new("testing testing".to_string());
 		let mut client_world = ClientWorld {
-			networking: server.create_local_connection(PlayerJoinData {}),
+			networking: server.create_local_connection(PlayerJoinData {
+				player: player.clone(),
+			}),
 			chunk: ChunkHandler::new(&self.rendering),
-			player_entity: None,
-			player: None,
+			player_entity_id: None,
+			player,
 			entity: EntityHandler::new(&self.rendering),
 			integrated: Some(Box::new(server)),
 		};

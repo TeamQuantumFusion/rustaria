@@ -27,13 +27,7 @@ impl PlayerSystem {
 
 	pub fn join(&mut self, player: Token, data: PlayerJoinData) {
 		info!("Player joined {}", player);
-		self.players.insert(
-			player,
-			Player {
-				name: "Youyr nmom".to_string(),
-				entity: None,
-			},
-		);
+		self.players.insert(player, data.player);
 	}
 
 	pub fn packet(

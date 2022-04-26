@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use glfw::{Key, WindowEvent};
 
 use rustaria::entity::component::velocity::PhysicsComp;
+use rustaria::player::Player;
+use rustaria::UPS;
 use rustaria_controller::button::{ButtonKey, HoldSubscriber, TriggerSubscriber};
 use rustaria_controller::Controller;
 use rustariac_backend::ty::Camera;
@@ -13,15 +15,14 @@ pub(crate) struct ControllerHandler {
 	down: HoldSubscriber,
 	left: HoldSubscriber,
 	right: HoldSubscriber,
-	jump: TriggerSubscriber,
-	zoom_in: TriggerSubscriber,
-	zoom_out: TriggerSubscriber,
+	jump: HoldSubscriber,
 	controller: Controller,
 	old_delta: f32,
 
 	// player
 	dir_x: f32,
 	dir_y: f32,
+	jump_frames_remaining: u32,
 }
 
 impl ControllerHandler {
@@ -31,8 +32,6 @@ impl ControllerHandler {
 		bindings.insert("down".to_string(), ButtonKey::Keyboard(Key::S));
 		bindings.insert("left".to_string(), ButtonKey::Keyboard(Key::A));
 		bindings.insert("right".to_string(), ButtonKey::Keyboard(Key::D));
-		bindings.insert("zoom_in".to_string(), ButtonKey::Keyboard(Key::R));
-		bindings.insert("zoom_out".to_string(), ButtonKey::Keyboard(Key::F));
 		bindings.insert("jump".to_string(), ButtonKey::Keyboard(Key::Space));
 
 		let up = HoldSubscriber::new();
@@ -41,15 +40,13 @@ impl ControllerHandler {
 		let right = HoldSubscriber::new();
 		let zoom_in = TriggerSubscriber::new();
 		let zoom_out = TriggerSubscriber::new();
-		let jump = TriggerSubscriber::new();
+		let jump = HoldSubscriber::new();
 
 		let mut controller = Controller::new(bindings);
 		controller.subscribe(Box::new(up.clone()), "up".to_string());
 		controller.subscribe(Box::new(down.clone()), "down".to_string());
 		controller.subscribe(Box::new(left.clone()), "left".to_string());
 		controller.subscribe(Box::new(right.clone()), "right".to_string());
-		controller.subscribe(Box::new(zoom_in.clone()), "zoom_in".to_string());
-		controller.subscribe(Box::new(zoom_out.clone()), "zoom_out".to_string());
 		controller.subscribe(Box::new(jump.clone()), "jump".to_string());
 		controller.apply();
 
@@ -59,12 +56,11 @@ impl ControllerHandler {
 			left,
 			right,
 			jump,
-			zoom_in,
-			zoom_out,
 			controller,
 			old_delta: 0.0,
 			dir_x: 0.0,
 			dir_y: 0.0,
+			jump_frames_remaining: 0,
 		}
 	}
 
@@ -72,11 +68,36 @@ impl ControllerHandler {
 		self.controller.consume(event);
 	}
 
-	pub fn apply(&mut self, physics: &mut PhysicsComp) {
-		physics.velocity.x += self.dir_x.clamp(0.0, 1.0);
-		physics.velocity.y += self.dir_y.clamp(0.0, 1.0);
+	pub fn apply(&mut self, physics: &mut PhysicsComp, touches_ground: bool, player: &Player) {
+		physics.velocity.x += self.dir_x.clamp(-1.0, 1.0) * (player.run_acceleration / UPS as f32);
+		physics.velocity.y += self.dir_y.clamp(-1.0, 1.0) * (player.run_acceleration / UPS as f32);
 		self.dir_x = 0.0;
 		self.dir_y = 0.0;
+
+		if physics.velocity.x > player.run_max_speed / UPS as f32 {
+			physics.velocity.x = player.run_max_speed / UPS as f32;
+		} else if physics.velocity.x < -(player.run_max_speed / UPS as f32) {
+			physics.velocity.x = -player.run_max_speed / UPS as f32;
+		}
+
+		if touches_ground {
+			if physics.velocity.x > player.run_slowdown / UPS as f32 {
+				physics.velocity.x -= player.run_slowdown / UPS as f32;
+			} else if physics.velocity.x < -(player.run_slowdown / UPS as f32) {
+				physics.velocity.x += player.run_slowdown / UPS as f32;
+			} else {
+				physics.velocity.x = 0.0;
+			}
+
+			if self.jump.held() {
+				self.jump_frames_remaining = player.jump_frames;
+			}
+		}
+
+		if self.jump_frames_remaining > 0 && self.jump.held() {
+			physics.velocity.y = player.jump_speed / UPS as f32;
+			self.jump_frames_remaining -= 1;
+		}
 	}
 
 	pub fn draw(&mut self, view: &mut Camera, delta: f32) {

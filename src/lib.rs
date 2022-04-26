@@ -40,7 +40,7 @@ pub mod player;
 pub mod tile;
 pub mod util;
 
-pub const UPS: u64 = 20;
+pub const UPS: u64 = 60;
 
 pub type ServerNetwork = ServerNetworking<ClientPacket, ServerPacket, PlayerJoinData>;
 pub type ClientNetwork = ClientNetworking<ServerPacket, ClientPacket>;

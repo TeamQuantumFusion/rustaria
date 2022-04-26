@@ -14,8 +14,8 @@ use crate::RenderingHandler;
 
 pub(crate) struct EntityHandler {
 	carrier: Option<Carrier>,
-	world: EntityWorld,
-	drawer: WorldEntityDrawer,
+	pub world: EntityWorld,
+	pub drawer: WorldEntityDrawer,
 }
 
 impl EntityHandler {
@@ -63,8 +63,8 @@ impl EntityHandler {
 	}
 
 	pub fn tick(&mut self, camera: &Camera, chunks: &ChunkStorage) -> Result<()> {
-		self.world.tick(chunks)?;
 		self.drawer.tick(camera, &self.world)?;
+		self.world.tick(chunks)?;
 
 		Ok(())
 	}

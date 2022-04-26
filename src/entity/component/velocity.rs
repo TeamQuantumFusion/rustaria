@@ -16,9 +16,6 @@ pub struct PhysicsComp {
 impl PhysicsComp {
 	pub fn tick(&mut self) {
 		self.velocity += self.acceleration / UPS as f32;
-		let velocity = self.velocity;
-		let acceleration = self.acceleration;
-		info!("{velocity:?}:{acceleration:?}");
 	}
 }
 

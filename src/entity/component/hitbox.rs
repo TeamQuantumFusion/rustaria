@@ -14,12 +14,14 @@ use crate::util::aabb;
 #[derive(Clone, Debug, Deserialize)]
 pub struct HitboxComp {
 	pub hitbox: Rect<f32, WorldSpace>,
+	pub touches_ground: bool,
 }
 
 impl FromLua for HitboxComp {
 	fn from_lua(lua_value: Value, lua: &Lua) -> mlua::Result<Self> {
 		Ok(HitboxComp {
 			hitbox: Rectangle::from_lua(lua_value, lua)?.into(),
+			touches_ground: false,
 		})
 	}
 }
@@ -30,6 +32,8 @@ pub fn tile_collision(
 	hitbox: &mut HitboxComp,
 	chunks: &ChunkStorage,
 ) {
+	hitbox.touches_ground = false;
+
 	// hitbox is the hitbox so we need to offset it to WorldSpace.
 	let mut old_rect = hitbox.hitbox;
 	old_rect.origin += pos;
@@ -64,13 +68,10 @@ pub fn tile_collision(
 				physics.acceleration.x.abs(),
 				physics.acceleration.y.abs(),
 			));
-			info!(
-				"{contact:?} = {:?}",
-				contact.component_mul(vec2(
-					physics.acceleration.x.abs(),
-					physics.acceleration.y.abs()
-				))
-			);
+
+			if contact == vec2(0.0, 1.0) {
+				hitbox.touches_ground = true;
+			}
 		}
 	}
 }

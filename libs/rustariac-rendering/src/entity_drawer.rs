@@ -5,7 +5,8 @@ use rustaria::entity::world::EntityWorld;
 use rustaria::SmartError::CarrierUnavailable;
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_common::error::{ContextCompat, Result};
-use rustaria_common::math::{Vector2D, WorldSpace};
+use rustaria_common::logging::info;
+use rustaria_common::math::{vec2, Vector2D, WorldSpace};
 use rustaria_common::Uuid;
 use rustariac_backend::builder::VertexBuilder;
 use rustariac_backend::ty::Camera;
@@ -38,22 +39,33 @@ impl WorldEntityDrawer {
 
 		let mut builder = VertexBuilder::default();
 		for (uuid, id) in &world.entities {
-			if let Some(pos) = world.position.get(uuid) {
-				if !self.entities.contains_key(uuid) {
-					self.entities.insert(*uuid, pos.position);
-				}
-				let old_pos = self.entities.get_mut(uuid).unwrap();
-				let pos = pos.position.lerp(*old_pos, delta);
-
-				if let Some(Some(system)) = self.entity_drawers.get(id.index()) {
-					system.push(&mut builder, camera, pos.x, pos.y);
-				}
+			let pos = self.get_entity_pos(uuid, world, delta);
+			if let Some(Some(system)) = self.entity_drawers.get(id.index()) {
+				system.push(&mut builder, camera, pos.x, pos.y);
 			}
 		}
 
 		self.layer.supply(builder);
 
 		Ok(())
+	}
+
+	pub fn get_entity_pos(
+		&mut self,
+		uuid: &Uuid,
+		world: &EntityWorld,
+		delta: f32,
+	) -> Vector2D<f32, WorldSpace> {
+		if let Some(pos) = world.position.get(uuid) {
+			if !self.entities.contains_key(uuid) {
+				self.entities.insert(*uuid, pos.position);
+			}
+			let old_pos = self.entities.get_mut(uuid).unwrap();
+			let new_position = pos.position;
+			old_pos.lerp(new_position, delta)
+		} else {
+			vec2(0.0, 0.0)
+		}
 	}
 
 	pub fn tick(&mut self, camera: &Camera, world: &EntityWorld) -> Result<()> {

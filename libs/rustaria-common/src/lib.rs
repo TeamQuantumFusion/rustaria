@@ -6,7 +6,7 @@ use log::{Level, LevelFilter};
 // Imports
 use simplelog::{
 	Color, ColorChoice, CombinedLogger, Config, ConfigBuilder, LevelPadding, TargetPadding,
-	TerminalMode, TermLogger, WriteLogger,
+	TermLogger, TerminalMode, WriteLogger,
 };
 pub use uuid::Uuid;
 
@@ -28,6 +28,10 @@ pub mod math {
 	pub struct WorldSpace;
 	pub struct ScreenSpace;
 	pub struct AtlasSpace;
+
+	pub fn limit(value: f32, limit: f32) -> f32 {
+		value.clamp(-limit, limit)
+	}
 }
 
 pub fn initialize() -> eyre::Result<()> {
