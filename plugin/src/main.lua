@@ -5,7 +5,7 @@ stuff.test();
 info "Registering tiles."
 Tiles:register {
     ["dirt"] = {
-        sprite = "lab.png",
+        sprite = "sprite/tile/dirt.png",
         collision = true
     },
     ["air"] = {}

@@ -26,6 +26,7 @@ members = [
     "libs/frogelua",
     "libs/rustaria-network",
     "libs/rustaria-common",
+    "libs/rustaria-gen",
     "libs/rustaria-controller",
     "libs/rustaria-api",
     "libs/rustariac-rendering",

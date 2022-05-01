@@ -54,6 +54,7 @@
       <sourceFolder url="file://$MODULE_DIR$/libs/frogelua/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-math/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-common/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-gen/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/runtime/client/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rustaria-client/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rustaria-server/src" isTestSource="false" />

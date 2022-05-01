@@ -58,6 +58,13 @@ impl Tag {
 		Self::new_internal(tag, colon_index)
 	}
 
+	pub fn builtin(tag: &str) -> Tag {
+		Tag {
+			inner: "builtin:".to_owned() + tag,
+			colon_index: 7
+		}
+	}
+
 	pub fn as_bytes(&self) -> &[u8] {
 		self.inner.as_bytes()
 	}
