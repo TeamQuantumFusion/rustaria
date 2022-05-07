@@ -36,6 +36,20 @@ pub enum Direction {
 }
 
 impl Direction {
+	pub fn vertical(self) -> bool  {
+		match self {
+			Direction::Up | Direction::Down => true,
+			Direction::Left | Direction::Right => false
+		}
+	}
+
+	pub fn horizontal(self) -> bool  {
+		match self {
+			Direction::Up | Direction::Down => false,
+			Direction::Left | Direction::Right => true
+		}
+	}
+
 	pub fn offset(self) -> (i8, i8) {
 		(self.offset_x(), self.offset_y())
 	}

@@ -6,9 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+image = "0.24.2"
 rustaria-common = { path = "../rustaria-common" }
 rustaria-api = { path = "../rustaria-api" }
-opensimplex_noise_rs = "0.3.0"
+
+opensimplex_noise_rs = { git = "https://github.com/alphaqu/opensimplex_noise_rust" }
+simdnoise = "3.1.6"
 rand = { version = "0.8.5", features = ["small_rng"] }
 rand_xoshiro = "0.6.0"
 

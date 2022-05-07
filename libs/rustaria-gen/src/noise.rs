@@ -1,73 +1,98 @@
-use std::mem::transmute;
+use crate::sweep::sampler::Sampler;
+use crate::util::pass::WorldPass;
+use opensimplex_noise_rs::OpenSimplexNoise;
+use rand::Rng;
+use rand_xoshiro::rand_core::SeedableRng;
+use rand_xoshiro::Xoshiro128StarStar;
+use rustaria_common::ty::Direction;
+use std::cell::UnsafeCell;
 use std::ops::Range;
 
-use opensimplex_noise_rs::OpenSimplexNoise;
+pub struct NoiseGenerator {
+	pub simplex: OpenSimplexNoise,
+	pub rng: UnsafeCell<Xoshiro128StarStar>,
+}
 
+impl NoiseGenerator {
+	pub fn new(seed: u32) -> NoiseGenerator {
+		NoiseGenerator {
+			// leo i felt like it.
+			simplex: OpenSimplexNoise::new(Some(seed)),
+			rng: UnsafeCell::new(Xoshiro128StarStar::seed_from_u64(seed as u64)),
+		}
+	}
+
+	pub fn rng(&self) -> &mut Xoshiro128StarStar {
+		unsafe { &mut *self.rng.get() }
+	}
+}
+
+#[derive(Clone)]
 pub enum Noise {
-	Sample(Box<SampleNoise>),
-	Layered(Vec<(Noise, f32)>),
+	/// Returns {0} no matter where on the world the point is sampled.
+	Const(f32),
+	/// Clamped extends the inner samplers range.
+	/// - anything below `start` will be 0,
+	/// - anything above `end` will be 1,
+	/// - anything between `start`..`end` will be scaled to those values. so a inner of 0.5 will give the value that is between `start` and `end`
+	Clamped(Range<f32>, Box<Noise>),
+
+	Gradient(f32, f32, f32),
+	// only really works 0..1 x and y
+	// 0 is fully noise while 1 is fully 1.
+	FadeTo(Direction, Range<f32>, f32, Box<Noise>),
+	Y,
+	X,
+	Random,
 }
 
 impl Noise {
-	pub fn new(seed: u64, scale: f32) -> Noise {
-		Noise::Sample(Box::new(SampleNoise::new(seed, scale)))
+	pub fn constant(value: f32) -> Noise {
+		Noise::Const(value)
 	}
 
-	pub fn octave(seed: u64, scale: f32, octaves: u8) -> Noise{
-		let mut layers = Vec::new();
-		for i in 0..octaves {
-			layers.push((Self::new(seed + i as u64, scale / (1 << i) as f32), 1.0 / octaves as f32));
-		}
-		Noise::Layered(layers)
+	pub fn simplex(scale_x: f32, scale_y: f32) -> Noise {
+		Noise::Gradient(scale_x, scale_y, 0.0)
 	}
 
-
-	pub fn biome_sample(&self, x: f32, y: f32, height_range: Range<f32>, transition: f32) -> f32 {
-		let bias = if height_range.contains(&y) {
-			1.0
-		} else {
-			let height = height_range.end - height_range.start;
-			let middle = height_range.start + (height / 2.0);
-			let middle_distance = (y - middle).abs();
-			let distance = (middle_distance - (height / 2.0)).max(0.0);
-			1.0 - (distance.clamp(0.0, transition) / transition)
-		};
-
-		self.sample(x, y) * bias
+	pub fn simplex_offset(scale: f32, offset: f32) -> Noise {
+		Noise::Gradient(scale, scale, offset)
 	}
 
-	pub fn sample(&self, x: f32, y: f32) -> f32 {
-		match self {
-			Noise::Sample(noise) => noise.sample(x, y),
-			Noise::Layered(layers) => {
-				let mut total = 0.0;
-				for (noise, amount) in layers {
-					total += noise.sample(x, y) * amount;
-				}
-				total.clamp(0.0, 1.0)
-			},
-		}
+	pub fn clamp(range: Range<f32>, noise: Noise) -> Noise {
+		Noise::Clamped(range, Box::new(noise))
+	}
+
+	pub fn fade(dir: Direction, range: Range<f32>, to: f32, from: Noise) -> Noise {
+		Noise::FadeTo(dir, range, to, Box::new(from))
 	}
 }
 
-pub struct SampleNoise {
-	scale: f32,
-	noise: OpenSimplexNoise,
+#[macro_export]
+macro_rules! noise {
+    (literal $VALUE:literal) => {
+		Noise::Static($VALUE)
+    };
+	(random) => {
+		Noise::Random
+    };
+	(gradient $SCALE:literal$(@$OFFSET:literal)?) => {
+		Noise::Gradient($SCALE, $SCALE, 0.0 $(+ $OFFSET)?)
+    };
+	(clamp $CLAMP:expr => $NOISE:expr) => {
+		Noise::Clamped($CLAMP, Box::new($NOISE))
+	};
+	(fade [$DIR:expr => $TO:literal] => $NOISE:expr) => {
+		Noise::FadeTo($DIR, 0.0..1.0, $TO, Box::new($NOISE))
+	};
+	(fade [$RANGE:expr, $DIR:expr => $TO:literal] => $NOISE:expr) => {
+		Noise::FadeTo($DIR, $RANGE, $TO, Box::new($NOISE))
+	};
 }
 
-impl SampleNoise {
-	pub fn new(seed: u64, scale: f32) -> SampleNoise {
-		SampleNoise {
-			scale,
-			// leo i felt like it.
-			noise: OpenSimplexNoise::new(Some(unsafe { transmute(seed) })),
-		}
-	}
+#[cfg(test)]
+mod fuck_off {
 
-	pub fn sample(&self, x: f32, y: f32) -> f32 {
-		((self
-			.noise
-			.eval_2d((x / self.scale) as f64, (y / self.scale) as f64) as f32)
-			+ 1.0) / 2.0
-	}
+	#[test]
+	pub fn test() {}
 }

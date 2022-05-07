@@ -42,3 +42,10 @@ client = []
 panic = "abort"
 opt-level = 3
 lto = "thin"
+
+[profile.dev]
+opt-level = 1
+
+[profile.test]
+opt-level = 1
+
