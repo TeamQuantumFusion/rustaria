@@ -1,3 +1,5 @@
+use crate::Sweep;
+
 pub struct TableMap<T> {
 	pub data: Vec<T>,
 	pub width: u32,

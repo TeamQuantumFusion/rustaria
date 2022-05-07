@@ -1,4 +1,4 @@
-use crate::sweep::sampler::Sampler;
+use crate::sweep::sampler::{BakedSampler, Sampler};
 use crate::Sweep;
 use rustaria_common::ty::Direction;
 
@@ -26,5 +26,17 @@ impl FadeSampler {
 		let from = self.from.get(sweep, x, y);
 		let to = self.to.get(sweep, x, y);
 		(from * pos) + (to * (1.0 - pos))
+	}
+
+	pub fn bake<'a, T: Clone + Default>(&'a self, sweep: Sweep<'a, T>) -> BakedSampler<'a> {
+		let from = self.from.bake(sweep.clone());
+		let to = self.to.bake(sweep.clone());
+		Box::new(move |x, y| {
+			let pos = sweep.local_dir(x, y, self.direction);
+
+			let from = from(x, y);
+			let to = to(x, y);
+			(from * pos) + (to * (1.0 - pos))
+		})
 	}
 }

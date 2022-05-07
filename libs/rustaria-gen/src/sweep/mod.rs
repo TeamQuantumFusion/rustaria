@@ -1,9 +1,11 @@
 use crate::{Climate, Generator, Zone};
 use std::ops::Range;
 use rustaria_common::ty::Direction;
+use crate::sweep::sampler::{Sampler};
 
 pub mod sampler;
 
+#[derive(Clone)]
 pub struct Sweep<'a, T: Clone + Default> {
 	pub generator: &'a Generator<T>,
 	pub x_range: Range<u32>,
@@ -36,8 +38,17 @@ impl<'a, T: Clone + Default> Sweep<'a, T> {
 		}
 	}
 
+	pub fn apply_sampler(self, sampler: &Sampler, mut func: impl FnMut(&Self, u32, u32, f32)) {
+		let baked = sampler.bake(self.clone());
+		for y in self.y_range.clone() {
+			for x in self.x_range.clone() {
+				func(&self, x, y, baked(x, y));
+			}
+		}
+	}
+
 	// Extends this sweep by creating a new sweep with a new inner area to scan.
-	pub fn extend(&self, width: Range<f32>, height: Range<f32>) -> Sweep<T> {
+	pub fn extend(&self, width: Range<f32>, height: Range<f32>) -> Sweep<'a, T> {
 		Sweep {
 			generator: self.generator,
 			x_range: (self.min_x() + (self.width() as f32 * width.start) as u32)

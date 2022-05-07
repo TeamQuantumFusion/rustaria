@@ -1,22 +1,25 @@
 use std::ops::Range;
 
-use rand::Rng;
 use fade::FadeSampler;
 use graph::GraphSampler;
 use noise::NoiseSampler;
+use rand::Rng;
 
+use crate::sweep::sampler::layer::LayerSampler;
 use split::SplitSampler;
 use zoom::ZoomSampler;
-use crate::sweep::sampler::layer::LayerSampler;
 
 use crate::sweep::Sweep;
+use crate::TableMap;
 
-pub mod zoom;
 pub mod fade;
-pub mod split;
 pub mod graph;
-pub mod noise;
 pub mod layer;
+pub mod noise;
+pub mod split;
+pub mod zoom;
+
+pub type BakedSampler<'a> = Box<dyn Fn(u32, u32) -> f32 + 'a>;
 
 /// A Sampler returns a value between 0.0..1.0 at a given world coordinate.
 /// These may be heavily layered to create advanced and unique value output.
@@ -38,8 +41,6 @@ pub enum Sampler {
 	Graph(Box<GraphSampler>),
 
 	// Random
-	/// Returns a value between the range using the world generation noise function.
-	Random(Range<f32>),
 	Noise(NoiseSampler),
 }
 
@@ -49,6 +50,29 @@ pub enum NoiseKind {
 }
 
 impl Sampler {
+	pub fn bake<'a, T: Clone + Default>(&'a self, sweep: Sweep<'a, T>) -> BakedSampler<'a> {
+		match self {
+			Sampler::X => {
+				let width = sweep.width() as f32;
+				Box::new(move | x, _| x as f32 / width)
+			}
+			Sampler::Y => {
+				let height = sweep.height() as f32;
+				Box::new(move |_, y| y as f32 / height)
+			}
+			Sampler::Const(value) => {
+				let value = *value;
+				Box::new(move |_, _| value)
+			}
+			Sampler::Layered(sampler) => sampler.bake(sweep),
+			Sampler::Zoom(sampler) => sampler.bake(sweep),
+			Sampler::Fade(sampler) => sampler.bake(sweep),
+			Sampler::Split(sampler) => sampler.bake(sweep),
+			Sampler::Graph(sampler) => sampler.bake(sweep),
+			Sampler::Noise(sampler) => sampler.bake(sweep),
+		}
+	}
+
 	pub fn get<T: Clone + Default>(&self, sweep: &Sweep<T>, x: u32, y: u32) -> f32 {
 		match self {
 			// Simple values
@@ -64,27 +88,6 @@ impl Sampler {
 			Sampler::Layered(sampler) => sampler.get(sweep, x, y),
 
 			// Noise
-			Sampler::Random(range) => sweep.generator.noiser.rng().gen_range(range.clone()),
-			Sampler::Noise(sampler) => sampler.get(sweep, x, y),
-		}
-	}
-
-	pub fn get_sweep<T: Clone + Default>(&self, sweep: &Sweep<T>, x: u32, y: u32) -> f32 {
-		match self {
-			// Simple values
-			Sampler::X => x as f32 / sweep.width() as f32,
-			Sampler::Y => y as f32 / sweep.height() as f32,
-			Sampler::Const(value) => *value,
-
-			// Processing
-			Sampler::Zoom(sampler) => sampler.get(sweep, x, y),
-			Sampler::Fade(sampler) => sampler.get(sweep, x, y),
-			Sampler::Graph(sampler) => sampler.get(sweep, x, y),
-			Sampler::Split(sampler) => sampler.get(sweep, x, y),
-			Sampler::Layered(sampler) => sampler.get(sweep, x, y),
-
-			// Noise
-			Sampler::Random(range) => sweep.generator.noiser.rng().gen_range(range.clone()),
 			Sampler::Noise(sampler) => sampler.get(sweep, x, y),
 		}
 	}

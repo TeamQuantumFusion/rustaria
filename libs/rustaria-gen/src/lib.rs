@@ -1,3 +1,4 @@
+use futures::executor::{ThreadPool, ThreadPoolBuilder};
 use rand::prelude::SliceRandom;
 
 use settings::biome::BiomeSettings;
@@ -33,6 +34,7 @@ pub struct Generator<T: Clone + Default> {
 	pub height: u32,
 
 	noiser: NoiseGenerator,
+	thread_pool: ThreadPool
 }
 
 impl<T: Clone + Default> Generator<T> {
@@ -102,6 +104,7 @@ impl<T: Clone + Default> Generator<T> {
 			width: settings.width,
 			height: settings.height,
 			noiser: NoiseGenerator::new(settings.seed),
+			thread_pool: ThreadPoolBuilder::new().create().unwrap()
 		}
 	}
 
@@ -127,7 +130,7 @@ impl<T: Clone + Default> Generator<T> {
 		// Wizord™™ Wizard© algorithm©®™
 		let cluster_width = (1.0 - self.spawn_size) / 2.0;
 		for zone in &mut self.zones {
-			zone.child_climates.shuffle(self.noiser.rng());
+			zone.child_climates.shuffle(&mut self.noiser.rng);
 
 			let left_size = self.climates.len() / 2;
 			let size = [left_size, self.climates.len() - (left_size)];

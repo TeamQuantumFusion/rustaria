@@ -1,5 +1,5 @@
 use crate::Sweep;
-use crate::sweep::sampler::Sampler;
+use crate::sweep::sampler::{BakedSampler, Sampler};
 
 /// Merges multiple samplers together. Supports weighing.
 #[derive(Clone)]
@@ -24,6 +24,21 @@ impl LayerSampler {
 
 		Sampler::Layered(LayerSampler {
 			layers
+		})
+	}
+
+	pub fn bake<'a, T: Clone + Default>(&'a self, sweep: Sweep<'a, T>) -> BakedSampler<'a> {
+		let mut functions = Vec::new();
+		for (bias, sampler) in &self.layers {
+			functions.push((*bias, sampler.bake(sweep.clone())));
+		}
+
+		Box::new(move |x, y| {
+			let mut out = 0.0;
+			for (bias, func) in &functions {
+				out += func(x, y) * *bias;
+			}
+			out
 		})
 	}
 

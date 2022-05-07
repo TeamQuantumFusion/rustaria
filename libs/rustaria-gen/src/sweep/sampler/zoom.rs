@@ -1,6 +1,6 @@
 use std::ops::Range;
-use crate::Sweep;
-use crate::sweep::sampler::Sampler;
+use crate::{Sweep, TableMap};
+use crate::sweep::sampler::{BakedSampler, Sampler};
 
 #[derive(Clone)]
 /// Extends the inner samplers range.
@@ -21,5 +21,14 @@ impl ZoomSampler {
 		let low = (self.sampler.get(sweep, x, y) - self.range.start).max(0.0);
 		(low / (self.range.end - self.range.start)).clamp(0.0, 1.0)
 	}
-}
 
+	pub fn bake<'a, T: Clone + Default>(&'a self, sweep: Sweep<'a, T>) -> BakedSampler<'a> {
+		let sampler = self.sampler.bake(sweep);
+		let range = self.range.clone();
+
+		Box::new(move |x, y| {
+			let low = (sampler(x, y) - range.start).max(0.0);
+			(low / (range.end - range.start)).clamp(0.0, 1.0)
+		})
+	}
+}

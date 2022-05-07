@@ -10,7 +10,7 @@ use std::ops::Range;
 
 pub struct NoiseGenerator {
 	pub simplex: OpenSimplexNoise,
-	pub rng: UnsafeCell<Xoshiro128StarStar>,
+	pub rng: Xoshiro128StarStar,
 }
 
 impl NoiseGenerator {
@@ -18,12 +18,8 @@ impl NoiseGenerator {
 		NoiseGenerator {
 			// leo i felt like it.
 			simplex: OpenSimplexNoise::new(Some(seed)),
-			rng: UnsafeCell::new(Xoshiro128StarStar::seed_from_u64(seed as u64)),
+			rng:Xoshiro128StarStar::seed_from_u64(seed as u64),
 		}
-	}
-
-	pub fn rng(&self) -> &mut Xoshiro128StarStar {
-		unsafe { &mut *self.rng.get() }
 	}
 }
 
