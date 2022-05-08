@@ -67,7 +67,7 @@ impl NoiseSampler {
 
 		let values = match self.kind {
 			NoiseKind::Simplex => {
-				let (mut values, min, max) = NoiseBuilder::gradient_2d_offset(min_x as f32 + (self.offset * ctx.generator.width as f32),
+				let (mut values, _, _) = NoiseBuilder::gradient_2d_offset(min_x as f32 + (self.offset * ctx.generator.width as f32),
 				                                          width as usize,
 				                                          min_y as f32 + (self.offset * ctx.generator.height as f32),
 				                                          height as usize).with_freq(

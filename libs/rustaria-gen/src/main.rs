@@ -1,5 +1,4 @@
 use rand::prelude::SliceRandom;
-use rayon::{ThreadPool, ThreadPoolBuilder};
 use std::time::Instant;
 
 use settings::biome::BiomeSettings;
@@ -8,12 +7,10 @@ use settings::zone::ZoneSettings;
 use table_map::TableMap;
 
 use crate::biome_map::BiomeMap;
-use crate::noise::NoiseGenerator;
 use crate::settings::GenerationSettings;
 use crate::ty::{Biome, BiomeId, Climate, ClimateId, Zone, ZoneId};
 
 pub mod biome_map;
-pub mod noise;
 pub mod pipeline;
 pub mod settings;
 pub mod ty;
@@ -34,8 +31,7 @@ pub struct Generator<T: Clone + Default + Send + Sync> {
 	pub width: u32,
 	pub height: u32,
 
-	noiser: NoiseGenerator,
-	thread_pool: ThreadPool,
+	rng: Xoshiro128StarStar,
 }
 
 impl<T: Clone + Default + Send + Sync> Generator<T> {
@@ -103,8 +99,7 @@ impl<T: Clone + Default + Send + Sync> Generator<T> {
 			seed: settings.seed,
 			width: settings.width,
 			height: settings.height,
-			noiser: NoiseGenerator::new(settings.seed),
-			thread_pool: ThreadPoolBuilder::new().build().unwrap()
+			rng: Xoshiro128StarStar::seed_from_u64(settings.seed as u64),
 		}
 	}
 
@@ -130,7 +125,7 @@ impl<T: Clone + Default + Send + Sync> Generator<T> {
 		// Wizord™™ Wizard© algorithm©®™
 		let cluster_width = (1.0 - self.spawn_size) / 2.0;
 		for zone in &mut self.zones {
-			zone.child_climates.shuffle(&mut self.noiser.rng);
+			zone.child_climates.shuffle(&mut self.rng);
 
 			let left_size = self.climates.len() / 2;
 			let size = [left_size, self.climates.len() - (left_size)];
@@ -206,7 +201,9 @@ impl<T: Clone + Default + Send + Sync> Generator<T> {
 	}
 }
 
-use image::{Rgb, RgbImage};
+use image::{RgbImage};
+use rand::SeedableRng;
+use rand_xoshiro::Xoshiro128StarStar;
 
 use rustaria_api::ty::Tag;
 use rustaria_common::ty::Direction;
@@ -223,7 +220,6 @@ use crate::ty::ClimateShape;
 use table_map::TableMapSlice;
 use pipeline::brush::Brush;
 use pipeline::sampler::{NoiseKind, Sampler};
-use crate::pipeline::pass::Pass;
 
 fn main() {
 
@@ -481,7 +477,7 @@ fn main() {
 	println!("Exporting map");
 
 	let vec1: Vec<u8> = terrain_map.data.into_iter().flatten().collect();
-	let mut image = RgbImage::from_vec(generator.width, generator.height, vec1).unwrap();
+	let image = RgbImage::from_vec(generator.width, generator.height, vec1).unwrap();
 	println!("Saving");
 	image.save("terrain.png").unwrap();
 }

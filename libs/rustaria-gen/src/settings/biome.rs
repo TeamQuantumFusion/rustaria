@@ -3,8 +3,6 @@ use rustaria_api::ty::Tag;
 use crate::pipeline::brush::Brush;
 
 // docs
-#[allow(unused_imports)]
-use crate::noise::Noise;
 use crate::pipeline::sampler::Sampler;
 
 pub struct BiomeSettings<T: Clone> {

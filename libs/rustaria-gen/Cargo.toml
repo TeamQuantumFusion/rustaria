@@ -12,9 +12,7 @@ rustaria-api = { path = "../rustaria-api" }
 
 rayon = "1.5.1"
 
-opensimplex_noise_rs = { git = "https://github.com/alphaqu/opensimplex_noise_rust" }
 simdnoise = "3.1.6"
-simdeez = "1.0.3"
 rand = { version = "0.8.5", features = ["small_rng"] }
 rand_xoshiro = "0.6.0"
 
