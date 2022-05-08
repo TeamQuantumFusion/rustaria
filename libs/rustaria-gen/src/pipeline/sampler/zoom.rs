@@ -14,8 +14,8 @@ pub struct ZoomSampler {
 }
 
 impl ZoomSampler {
-	pub fn new(range: Range<f32>, sampler: Sampler) -> Box<ZoomSampler> {
-		Box::new(ZoomSampler { range, sampler })
+	pub fn new(range: Range<f32>, sampler: Sampler) -> Sampler {
+		Sampler::Zoom(	Box::new(ZoomSampler { range, sampler }))
 	}
 
 	pub fn bake<'a, T:  Clone + Default + Send + Sync>(&'a self, ctx: Context<'a, T>, pass: &Pass) -> BakedSampler<'a> {

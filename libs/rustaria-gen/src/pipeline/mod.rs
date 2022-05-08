@@ -10,7 +10,7 @@ use std::ops::Range;
 
 use crate::pipeline::context::Context;
 use crate::{Climate, Generator, TableMap, Zone, BATCH_SIZE};
-use crate::table_map::TableMapSlice;
+use crate::table_map::{TableMapMutSlice, TableMapSlice};
 
 #[must_use = "You must call complete()."]
 pub struct Pipeline<'a, T, V>
@@ -63,7 +63,7 @@ where
 	pub fn apply<O: Sync>(
 		self,
 		map: &'a mut TableMap<O>,
-		func: impl Fn(u32, u32, &Pass, Context<'a, T>, &mut O, &V) + Sync,
+		func: impl Fn(u32, u32, &Pass, Context<'a, T>, &V, &mut TableMapMutSlice<'a, O>) + Sync,
 	) -> Pipeline<'a, T, V> {
 		let map = &*map;
 		self.passes.par_iter().for_each(|(value, pass)| {
@@ -71,6 +71,8 @@ where
 			// The range ensures only the intended pass area can be changed so data races are not a thing
 			// because they are modifying distinct areas of the table-map.
 			let table = unsafe { &mut *(map as *const TableMap<O> as *mut TableMap<O>) };
+			let mut slice = table.slice_mut(pass.x_range.clone(), pass.y_range.clone());
+
 			for y in pass.y_range.clone() {
 				for x in pass.x_range.clone() {
 					func(
@@ -78,8 +80,8 @@ where
 						y,
 						pass,
 						self.context.clone(),
-						table.get_mut(x, y),
 						value,
+						&mut slice
 					);
 				}
 			}

@@ -38,11 +38,6 @@ pub enum Sampler {
 	Noise(NoiseSampler),
 }
 
-#[derive(Clone)]
-pub enum NoiseKind {
-	Simplex,
-}
-
 impl Sampler {
 	pub fn bake<'a, T:  Clone + Default + Send + Sync>(&'a self, ctx: Context<'a, T>, pass: &Pass) -> BakedSampler<'a> {
 		match self {

@@ -1,6 +1,7 @@
 use crate::pipeline::context::Context;
 use crate::pipeline::pass::Pass;
 use crate::pipeline::sampler::Sampler;
+use crate::table_map::TableMapMutSlice;
 
 // Places stuff down
 #[derive(Clone)]
@@ -21,7 +22,7 @@ pub enum Brush<T: Clone> {
 impl<T: Clone + Default + Send + Sync> Brush<T> {
 	pub fn bake<'a>(&'a self, ctx: Context<'a, T>, pass: &Pass) -> BakedBrush<'a, T> {
 		match self {
-			Brush::Fill(value) => BakedBrush::new(|_, _, v| *v = value.clone()),
+			Brush::Fill(value) => BakedBrush::new(|x, y, slice| slice.insert(x,y, value.clone())),
 			Brush::Selector { sampler, values } => {
 				let sampler = sampler.bake(ctx.clone(), pass);
 				let mut out = Vec::new();
@@ -29,11 +30,11 @@ impl<T: Clone + Default + Send + Sync> Brush<T> {
 					out.push((*threshold, brush.bake(ctx.clone(), pass)))
 				}
 
-				BakedBrush::new(move |x, y, v| {
+				BakedBrush::new(move |x, y, slice| {
 					let value: f32 = sampler.get(x, y);
 					for (threshold, brush) in &out {
 						if *threshold > value {
-							return brush.apply(x, y, v);
+							return brush.apply(x, y, slice);
 						}
 					}
 
@@ -45,9 +46,9 @@ impl<T: Clone + Default + Send + Sync> Brush<T> {
 					out.push(brush.bake(ctx.clone(), pass))
 				}
 
-				BakedBrush::new(move |x, y, v| {
+				BakedBrush::new(move |x, y, slice| {
 					for brush in &out {
-						brush.apply(x, y, v)
+						brush.apply(x, y, slice)
 					}
 				})
 			}
@@ -90,15 +91,15 @@ impl<T: Clone> Brush<T> {
 	}
 }
 
-pub struct BakedBrush<'a, T>(Box<dyn Fn(u32, u32, &mut T) + 'a + Send + Sync>);
+pub struct BakedBrush<'a, T>(Box<dyn Fn(u32, u32, &mut TableMapMutSlice<T>) + 'a + Send + Sync>);
 
 impl<'a, T> BakedBrush<'a, T> {
-	pub fn new<F: Fn(u32, u32, &mut T) + 'a + Send + Sync>(func: F) -> Self {
+	pub fn new<F: Fn(u32, u32, &mut TableMapMutSlice<T>) + 'a + Send + Sync>(func: F) -> Self {
 		BakedBrush(Box::new(func))
 	}
 
-	pub fn apply(&self, x: u32, y: u32, value: &mut T) {
-	self.0(x, y, value)
+	pub fn apply(&self, x: u32, y: u32, value: &mut TableMapMutSlice<T>) {
+		self.0(x, y, value)
 	}
 
 }

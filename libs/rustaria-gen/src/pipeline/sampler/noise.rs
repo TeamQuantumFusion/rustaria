@@ -1,7 +1,7 @@
 use simdnoise::NoiseBuilder;
 use crate::pipeline::context::Context;
 use crate::pipeline::pass::Pass;
-use crate::pipeline::sampler::{BakedSampler, NoiseKind, Sampler};
+use crate::pipeline::sampler::{BakedSampler, Sampler};
 
 /// Samples a noise map at x and y coordinates. The scaling will affect where those x, y coordinates are sampled.
 #[derive(Clone)]
@@ -88,5 +88,10 @@ impl NoiseSampler {
 		})
 	}
 
+}
+
+#[derive(Clone)]
+pub enum NoiseKind {
+	Simplex,
 }
 

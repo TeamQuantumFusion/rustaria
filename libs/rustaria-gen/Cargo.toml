@@ -11,6 +11,7 @@ rustaria-common = { path = "../rustaria-common" }
 rustaria-api = { path = "../rustaria-api" }
 
 rayon = "1.5.1"
+indicatif = "0.16.2"
 
 simdnoise = "3.1.6"
 rand = { version = "0.8.5", features = ["small_rng"] }

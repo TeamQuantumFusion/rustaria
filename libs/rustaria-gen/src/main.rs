@@ -13,8 +13,8 @@ use crate::ty::{Biome, BiomeId, Climate, ClimateId, Zone, ZoneId};
 pub mod biome_map;
 pub mod pipeline;
 pub mod settings;
-pub mod ty;
 pub mod table_map;
+pub mod ty;
 
 pub const BATCH_SIZE: usize = 128;
 
@@ -151,7 +151,7 @@ impl<T: Clone + Default + Send + Sync> Generator<T> {
 	}
 
 	pub fn generate_terrain_map(&mut self, biome_map: &BiomeMap) -> TableMap<T> {
-		let mut map = TableMap::new_default(self.width, self.height);
+		let mut map = TableMap::new_default(self.width, self.height, false);
 
 		for zone in &self.zones {
 			if zone.terrain_size != 0.0 {
@@ -186,12 +186,15 @@ impl<T: Clone + Default + Send + Sync> Generator<T> {
 						pass_value
 					})
 					// Create the terrain
-					.apply(&mut map, |x, y, _, _, value, pass_value| {
+					.apply(&mut map, |x, y, _, _, pass_value, slice| {
+						for _ in pass_value.baked.iter().flatten() {
+							slice.inc(x, y);
+						}
 
 						let option = pass_value.baked[pass_value.slice.get(x, y).0 as usize]
 							.as_ref()
 							.unwrap();
-						option.apply(x, y, value)
+						option.apply(x, y, slice)
 					})
 					.complete();
 			}
@@ -201,7 +204,7 @@ impl<T: Clone + Default + Send + Sync> Generator<T> {
 	}
 }
 
-use image::{RgbImage};
+use image::RgbImage;
 use rand::SeedableRng;
 use rand_xoshiro::Xoshiro128StarStar;
 
@@ -217,12 +220,13 @@ use crate::pipeline::sampler::split::SplitSampler;
 use crate::pipeline::Pipeline;
 use crate::settings::BiomeProducerSettings;
 use crate::ty::ClimateShape;
-use table_map::TableMapSlice;
 use pipeline::brush::Brush;
-use pipeline::sampler::{NoiseKind, Sampler};
+use pipeline::sampler::Sampler;
+use pipeline::sampler::noise::NoiseKind;
+use table_map::TableMapSlice;
+use crate::pipeline::sampler::zoom::ZoomSampler;
 
 fn main() {
-
 	fn zone_biome(
 		color: [u8; 3],
 		name: &str,
@@ -239,7 +243,7 @@ fn main() {
 				painter: Brush::layered(vec![
 					// Ground
 					Brush::noise(
-						SplitSampler::new(Direction::Down, 0.0..0.2,
+						SplitSampler::new(Direction::Down, 0.0..0.1,
 							GraphSampler::new(Direction::Up,
 								LayerSampler::new_weighted(vec![
 									(10.0, NoiseSampler::new_offset(200.0, NoiseKind::Simplex, 1.0)),
@@ -256,17 +260,21 @@ fn main() {
 					// Caves
 					Brush::noise_weighted(
 						FadeSampler::new(Direction::Down,
-							LayerSampler::new_weighted(vec![
-								(5.0, NoiseSampler::new(50.0, NoiseKind::Simplex)),
-								(1.5, NoiseSampler::new(20.0, NoiseKind::Simplex)),
-								(1.0, Sampler::Const(0.0)),
-							]),
-							LayerSampler::new_weighted(vec![
-								(5.0, NoiseSampler::new(50.0, NoiseKind::Simplex)),
-								(1.5, NoiseSampler::new(20.0, NoiseKind::Simplex)),
-							]),
+							ZoomSampler::new(0.325..1.0, LayerSampler::new_weighted(vec![
+								(10.0, NoiseSampler::new(100.0, NoiseKind::Simplex)),
+								(7.5, NoiseSampler::new(50.0, NoiseKind::Simplex)),
+								(5.0, NoiseSampler::new(25.0, NoiseKind::Simplex)),
+								(1.5, NoiseSampler::new(5.0, NoiseKind::Simplex)),
+								(4.0, Sampler::Const(0.0)),
+							])),
+							ZoomSampler::new(0.325..1.0, LayerSampler::new_weighted(vec![
+								(10.0, NoiseSampler::new(100.0, NoiseKind::Simplex)),
+								(7.5, NoiseSampler::new(50.0, NoiseKind::Simplex)),
+								(5.0, NoiseSampler::new(25.0, NoiseKind::Simplex)),
+								(1.5, NoiseSampler::new(5.0, NoiseKind::Simplex)),
+							])),
 						),
-						vec![(1.5, Brush::Ignore), (1.0, Brush::Fill([0, 0, 0]))],
+						vec![(1.5, Brush::Ignore), (2.5, Brush::Fill([0, 0, 0]))],
 					),
 				]),
 				height_range: Default::default(),
@@ -284,7 +292,7 @@ fn main() {
 				priority: 0.0,
 				terrain_size: 0.0,
 				biome_producer: BiomeProducerSettings {
-					surface_size: 0.0,
+					surface_size: 0.1,
 					surface_transition: 0.0,
 					surface_biome: Tag::builtin("sky"),
 					cave_biome: Tag::builtin("sky"),
@@ -298,7 +306,7 @@ fn main() {
 				priority: 0.0,
 				terrain_size: 0.1,
 				biome_producer: BiomeProducerSettings {
-					surface_size: 0.0,
+					surface_size: 0.1,
 					surface_transition: 0.3,
 					surface_biome: Tag::builtin("surface"),
 					cave_biome: Tag::builtin("cave"),
@@ -330,7 +338,7 @@ fn main() {
 				terrain_size: 0.2,
 				depth: 0.3,
 				biome_producer: BiomeProducerSettings {
-					surface_size: 0.0,
+					surface_size: 0.1,
 					surface_transition: 0.3,
 					surface_biome: Tag::builtin("desert_surface"),
 					cave_biome: Tag::builtin("desert"),
@@ -346,7 +354,7 @@ fn main() {
 				terrain_size: 0.2,
 				depth: 0.6,
 				biome_producer: BiomeProducerSettings {
-					surface_size: 0.0,
+					surface_size: 0.1,
 					surface_transition: 0.3,
 					surface_biome: Tag::builtin("ice_surface"),
 					cave_biome: Tag::builtin("ice"),
@@ -362,7 +370,7 @@ fn main() {
 				terrain_size: 0.2,
 				depth: 1.0,
 				biome_producer: BiomeProducerSettings {
-					surface_size: 0.0,
+					surface_size: 0.1,
 					surface_transition: 0.3,
 					surface_biome: Tag::builtin("jungle_surface"),
 					cave_biome: Tag::builtin("jungle"),
@@ -461,23 +469,48 @@ fn main() {
 	let biome_map = BiomeMap::new(&mut generator);
 	println!("[Biome Map] {}ms", start_biome.elapsed().as_millis());
 
-//let mut image = RgbImage::new(generator.width, generator.height);
+	//let mut image = RgbImage::new(generator.width, generator.height);
 
-//biome_map.data.for_each(|x, y, value| {
-//	image.put_pixel(x, y, Rgb(generator.biomes[value.0 as usize].color));
-//});
+	//biome_map.data.for_each(|x, y, value| {
+	//	image.put_pixel(x, y, Rgb(generator.biomes[value.0 as usize].color));
+	//});
 
-//image.save("biomes.png").unwrap();
+	//image.save("biomes.png").unwrap();
 
 	let start_biome = Instant::now();
-	let terrain_map = generator.generate_terrain_map(&biome_map);
+	let mut terrain_map = generator.generate_terrain_map(&biome_map);
 	println!("[Terrain Map] {}ms", start_biome.elapsed().as_millis());
 	println!("[Total] {}ms", start.elapsed().as_millis());
 
 	println!("Exporting map");
 
-	let vec1: Vec<u8> = terrain_map.data.into_iter().flatten().collect();
+	let vec1: Vec<u8> = terrain_map.data.iter().flatten().copied().collect();
 	let image = RgbImage::from_vec(generator.width, generator.height, vec1).unwrap();
 	println!("Saving");
 	image.save("terrain.png").unwrap();
+
+	if let Some(history) = &mut terrain_map.change_history {
+		for (idx, value) in biome_map.data.change_history.unwrap().iter().enumerate() {
+			history[idx] = history[idx].saturating_add(*value);
+		}
+
+		let mut highest = 0;
+		for value in history.iter() {
+			if *value > highest {
+				highest = *value;
+			}
+		}
+
+		let data: Vec<u8> = history
+			.iter()
+			.flat_map(|val| {
+				let brightness = ((*val as f32 / highest as f32) * 255.0) as u8;
+				[brightness, brightness, brightness]
+			})
+			.collect();
+
+		let image = RgbImage::from_vec(generator.width, generator.height, data).unwrap();
+
+		image.save("terrain_usage.png").unwrap();
+	}
 }

@@ -1,8 +1,9 @@
 use crate::pipeline::context::Context;
-use crate::pipeline::sampler::{BakedSampler, NoiseKind};
+use crate::pipeline::sampler::BakedSampler;
 use crate::pipeline::Pipeline;
 use crate::settings::BiomeProducer;
 use crate::{Biome, BiomeId, Generator, NoiseSampler, TableMap};
+use crate::pipeline::sampler::noise::NoiseKind;
 
 pub struct BiomeMap {
 	pub data: TableMap<BiomeId>,
@@ -13,7 +14,7 @@ impl BiomeMap {
 		gen.compute_zone_heights();
 		gen.compute_climate_widths();
 		let mut out = BiomeMap {
-			data: TableMap::new_default(gen.width, gen.height),
+			data: TableMap::new_default(gen.width, gen.height, false),
 		};
 
 		for zone in &gen.zones {
@@ -22,8 +23,8 @@ impl BiomeMap {
 
 			Pipeline::for_zone(gen, zone)
 				.map(|pass, ctx, _| biome_transition_sampler.bake(ctx, pass))
-				.apply(&mut out.data, |x, y, _, ctx, value, sampler| {
-					*value = Self::get_y_biome(&ctx, x, y, sampler, &zone.biome_producer);
+				.apply(&mut out.data, |x, y, _, ctx, sampler, slice| {
+					slice.insert(x, y, Self::get_y_biome(&ctx, x, y, sampler, &zone.biome_producer));
 				})
 				.complete();
 
@@ -32,9 +33,9 @@ impl BiomeMap {
 				let biome = &gen.biomes[biome_id.0 as usize];
 				Pipeline::for_zone(gen, zone)
 					.map(|pass, ctx, _| biome.selection_sampler.bake(ctx, pass))
-					.apply(&mut out.data, |x, y, _, ctx, value, sampler| {
+					.apply(&mut out.data, |x, y, _, ctx, sampler, slice| {
 						if Self::sample_biome(&ctx, x, y, sampler, biome) {
-							*value = *biome_id;
+							slice.insert(x, y, *biome_id);
 						}
 					})
 					.complete();
@@ -52,13 +53,12 @@ impl BiomeMap {
 				// Generate the default biome.
 				Pipeline::for_climate(gen, zone, climate, climate_x_range)
 					.map(|pass, ctx, _| biome_transition_sampler.bake(ctx, pass))
-					.apply(&mut out.data, |x, y, _, ctx, value, sampler| {
+					.apply(&mut out.data, |x, y, _, ctx, sampler, slice| {
 						if climate.shape.inside(
 							(x - x_offset) as f32 / width as f32,
 							(y - y_offset) as f32 / height as f32,
 						) {
-							*value =
-								Self::get_y_biome(&ctx, x, y, sampler, &climate.biome_producer);
+							slice.insert(x, y, Self::get_y_biome(&ctx, x, y, sampler, &climate.biome_producer));
 						}
 					})
 					.complete();
@@ -68,14 +68,14 @@ impl BiomeMap {
 					let biome = &gen.biomes[biome_id.0 as usize];
 					Pipeline::for_climate(gen, zone, climate, climate_x_range)
 						.map(|pass, ctx, _| biome.selection_sampler.bake(ctx, pass))
-						.apply(&mut out.data, |x, y, _, ctx, value, sampler| {
+						.apply(&mut out.data, |x, y, _, ctx, sampler, slice| {
 
 							let y_f = (y - y_offset) as f32 / height as f32;
 							let x_f = (x - x_offset) as f32 / width as f32;
 							if climate.shape.inside(x_f, y_f)
 								&& Self::sample_biome(&ctx, x, y, sampler, biome)
 							{
-								*value = *biome_id;
+								slice.insert(x, y, *biome_id);
 							}
 						})
 						.complete();
