@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::ops::Range;
 use rustaria_api::ty::Tag;
-use crate::{ClimateSettings, Noise, ZoneSettings};
-use crate::painter::brush::Brush;
+use crate::{ClimateSettings, ZoneSettings};
+use crate::pipeline::brush::Brush;
 use crate::settings::BiomeProducer;
-use crate::sweep::sampler::Sampler;
+use crate::pipeline::sampler::Sampler;
 
 #[derive(Copy, Clone, Default)]
 pub struct BiomeId(pub u16);
@@ -81,8 +81,7 @@ pub struct Biome<T: Clone> {
 	pub height_range: Range<f32>,
 	pub selection_sampler: Sampler,
 
-	pub ground_painter: Brush<T>,
-	pub cave_painter: Brush<T>,
+	pub painter: Brush<T>,
 
 	// Locations
 	pub zones: Vec<ZoneId>,

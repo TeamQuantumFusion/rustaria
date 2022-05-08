@@ -1,5 +1,6 @@
-use crate::Sweep;
-use crate::sweep::sampler::{BakedSampler, Sampler};
+use crate::pipeline::context::Context;
+use crate::pipeline::pass::Pass;
+use crate::pipeline::sampler::{BakedSampler, Sampler};
 
 /// Merges multiple samplers together. Supports weighing.
 #[derive(Clone)]
@@ -27,26 +28,19 @@ impl LayerSampler {
 		})
 	}
 
-	pub fn bake<'a, T: Clone + Default>(&'a self, sweep: Sweep<'a, T>) -> BakedSampler<'a> {
+	pub fn bake<'a, T:  Clone + Default + Send + Sync>(&'a self, ctx: Context<'a, T>, pass: &Pass) -> BakedSampler<'a> {
 		let mut functions = Vec::new();
 		for (bias, sampler) in &self.layers {
-			functions.push((*bias, sampler.bake(sweep.clone())));
+			functions.push((*bias, sampler.bake(ctx.clone(), pass)));
 		}
 
-		Box::new(move |x, y| {
+		BakedSampler::new(move |x, y| {
 			let mut out = 0.0;
 			for (bias, func) in &functions {
-				out += func(x, y) * *bias;
+				out += func.get(x, y) * *bias;
 			}
 			out
 		})
 	}
 
-	pub fn get<T: Clone + Default>(&self, sweep: &Sweep<T>, x: u32, y: u32) -> f32 {
-		let mut out = 0.0;
-		for (bias, sampler) in &self.layers {
-			out += sampler.get(sweep, x, y) * bias;
-		}
-		out
-	}
 }

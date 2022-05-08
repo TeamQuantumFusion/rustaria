@@ -1,7 +1,6 @@
-use crate::util::pass::WorldPass;
-use crate::{Generator, Noise, TableMap};
-use crate::sweep::sampler::Sampler;
-use crate::sweep::Sweep;
+use crate::pipeline::context::Context;
+use crate::pipeline::pass::Pass;
+use crate::pipeline::sampler::Sampler;
 
 // Places stuff down
 #[derive(Clone)]
@@ -16,43 +15,48 @@ pub enum Brush<T: Clone> {
 		values: Vec<(f32, Brush<T>)>,
 	},
 	/// Runs all of these layers on top of each other
-	Layered {
-		layers: Vec<Brush<T>>
-	}
+	Layered { layers: Vec<Brush<T>> },
 }
 
-impl<T: Clone + Default> Brush<T> {
-	pub fn apply(
-		&self,
-		sweep: &Sweep<T>,
-		x: u32,
-		y: u32,
-		map: &mut TableMap<T>,
-	) {
+impl<T: Clone + Default + Send + Sync> Brush<T> {
+	pub fn bake<'a>(&'a self, ctx: Context<'a, T>, pass: &Pass) -> BakedBrush<'a, T> {
 		match self {
-			Brush::Fill(value) => {
-				map.insert(x, y, value.clone());
-			},
+			Brush::Fill(value) => BakedBrush::new(|_, _, v| *v = value.clone()),
 			Brush::Selector { sampler, values } => {
-				let value = sampler.get(sweep, x, y);
+				let sampler = sampler.bake(ctx.clone(), pass);
+				let mut out = Vec::new();
 				for (threshold, brush) in values {
-					if *threshold > value {
-						return brush.apply(sweep, x, y, map);
-					}
+					out.push((*threshold, brush.bake(ctx.clone(), pass)))
 				}
+
+				BakedBrush::new(move |x, y, v| {
+					let value: f32 = sampler.get(x, y);
+					for (threshold, brush) in &out {
+						if *threshold > value {
+							return brush.apply(x, y, v);
+						}
+					}
+
+				})
 			}
 			Brush::Layered { layers } => {
+				let mut out = Vec::new();
 				for brush in layers {
-					brush.apply(sweep,  x, y, map);
+					out.push(brush.bake(ctx.clone(), pass))
 				}
+
+				BakedBrush::new(move |x, y, v| {
+					for brush in &out {
+						brush.apply(x, y, v)
+					}
+				})
 			}
-			_ => {}
+			_ => BakedBrush::new(|_, _, _| ()),
 		}
 	}
 }
 
 impl<T: Clone> Brush<T> {
-
 	pub fn set(value: T) -> Brush<T> {
 		Brush::Fill(value)
 	}
@@ -62,9 +66,7 @@ impl<T: Clone> Brush<T> {
 	}
 
 	pub fn layered(layers: Vec<Brush<T>>) -> Brush<T> {
-		Brush::Layered {
-			layers
-		}
+		Brush::Layered { layers }
 	}
 
 	pub fn noise(noise: Sampler, values: Vec<Brush<T>>) -> Brush<T> {
@@ -86,4 +88,17 @@ impl<T: Clone> Brush<T> {
 
 		Brush::Selector { sampler, values }
 	}
+}
+
+pub struct BakedBrush<'a, T>(Box<dyn Fn(u32, u32, &mut T) + 'a + Send + Sync>);
+
+impl<'a, T> BakedBrush<'a, T> {
+	pub fn new<F: Fn(u32, u32, &mut T) + 'a + Send + Sync>(func: F) -> Self {
+		BakedBrush(Box::new(func))
+	}
+
+	pub fn apply(&self, x: u32, y: u32, value: &mut T) {
+	self.0(x, y, value)
+	}
+
 }

@@ -1,13 +1,7 @@
-use std::sync::mpsc::sync_channel;
-use futures::executor;
-use crate::sweep::sampler::{NoiseKind, Sampler};
-use crate::Sweep;
-use simdeez::avx2::Avx2;
-use simdeez::scalar::Scalar;
-use simdeez::sse2::Sse2;
-use simdeez::sse41::Sse41;
-use simdeez::Simd;
 use simdnoise::NoiseBuilder;
+use crate::pipeline::context::Context;
+use crate::pipeline::pass::Pass;
+use crate::pipeline::sampler::{BakedSampler, NoiseKind, Sampler};
 
 /// Samples a noise map at x and y coordinates. The scaling will affect where those x, y coordinates are sampled.
 #[derive(Clone)]
@@ -60,42 +54,39 @@ impl NoiseSampler {
 		})
 	}
 
-	pub fn bake<'a, T: Clone + Default>(
+	pub fn bake<'a, T: Clone + Default + Send + Sync>(
 		&'a self,
-		sweep: Sweep<'a, T>,
-	) -> Box<dyn Fn(u32, u32) -> f32 + 'a> {
-		let width = sweep.width();
-		let height = sweep.height();
-		let min_x = sweep.min_x();
-		let min_y = sweep.min_y();
+		ctx: Context<'a, T>,
+		pass: &Pass
+	) -> BakedSampler<'a> {
+		let width = pass.width();
+		let height = pass.height();
+		let min_x = pass.min_x();
+		let min_y = pass.min_y();
 
 
 		let values = match self.kind {
 			NoiseKind::Simplex => {
-				NoiseBuilder::gradient_2d_offset(min_x as f32 + (self.offset * sweep.generator.width as f32),
-				                                 width as usize,
-				                                 min_y as f32 + (self.offset * sweep.generator.height as f32),
-				                                 height as usize).with_freq(
+				let (mut values, min, max) = NoiseBuilder::gradient_2d_offset(min_x as f32 + (self.offset * ctx.generator.width as f32),
+				                                          width as usize,
+				                                          min_y as f32 + (self.offset * ctx.generator.height as f32),
+				                                          height as usize).with_freq(
 					1.0 / self.scale_x
-				).with_seed(sweep.generator.seed as i32).generate_scaled(0.0, 1.0)
+				).with_seed(ctx.generator.seed as i32).generate();
+
+				for value in &mut values {
+					*value = (((*value * 40.0) + 1.0) / 2.0).clamp(0.0, 1.0)
+				}
+
+				values
 			}
 		};
 
 
-		Box::new(move |x, y| {
-
+		BakedSampler::new(move |x, y| {
 			values[((x - min_x) + ((y - min_y) * width)) as usize]
 		})
 	}
 
-	pub fn get<T: Clone + Default>(&self, sweep: &Sweep<T>, x: u32, y: u32) -> f32 {
-		match self.kind {
-			NoiseKind::Simplex => {
-				let x = (x as f32 / self.scale_x) + (self.offset * sweep.generator.width as f32);
-				let y = (y as f32 / self.scale_y) + (self.offset * sweep.generator.height as f32);
-				(sweep.generator.noiser.simplex.eval_2d(x, y) + 1.0) / 2.0
-			}
-		}
-	}
 }
 

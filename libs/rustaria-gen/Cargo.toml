@@ -11,7 +11,6 @@ rustaria-common = { path = "../rustaria-common" }
 rustaria-api = { path = "../rustaria-api" }
 
 rayon = "1.5.1"
-futures = { version = "0.3.21", features = ["executor", "thread-pool"] }
 
 opensimplex_noise_rs = { git = "https://github.com/alphaqu/opensimplex_noise_rust" }
 simdnoise = "3.1.6"

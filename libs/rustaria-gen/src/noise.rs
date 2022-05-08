@@ -1,11 +1,7 @@
-use crate::sweep::sampler::Sampler;
-use crate::util::pass::WorldPass;
 use opensimplex_noise_rs::OpenSimplexNoise;
-use rand::Rng;
 use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro128StarStar;
 use rustaria_common::ty::Direction;
-use std::cell::UnsafeCell;
 use std::ops::Range;
 
 pub struct NoiseGenerator {

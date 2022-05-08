@@ -1,55 +1,17 @@
-use crate::{Climate, Generator, Zone};
 use std::ops::Range;
 use rustaria_common::ty::Direction;
-use crate::sweep::sampler::{Sampler};
-
-pub mod sampler;
+use crate::Generator;
 
 #[derive(Clone)]
-pub struct Sweep<'a, T: Clone + Default> {
+pub struct Context<'a, T: Clone + Default + Send + Sync> {
 	pub generator: &'a Generator<T>,
 	pub x_range: Range<u32>,
 	pub y_range: Range<u32>,
 }
-impl<'a, T: Clone + Default> Sweep<'a, T> {
-	pub fn zone(gen: &'a Generator<T>, zone: &Zone) -> Sweep<'a, T> {
-		Sweep {
-			generator: gen,
-			x_range: 0..gen.width,
-			y_range: zone.world_range.clone(),
-		}
-	}
-
-	pub fn climate(gen: &'a Generator<T>, zone: &Zone, climate: &Climate, climate_x_range: &Range<u32>) -> Sweep<'a, T> {
-		let y_offset = zone.world_range.start;
-		let height = ((zone.world_range.end - y_offset) as f32 * climate.depth) as u32;
-		Sweep {
-			generator: gen,
-			x_range: climate_x_range.clone(),
-			y_range: y_offset..(y_offset + height),
-		}
-	}
-
-	pub fn apply(self, mut func: impl FnMut(&Self, u32, u32)) {
-		for y in self.y_range.clone() {
-			for x in self.x_range.clone() {
-				func(&self, x, y);
-			}
-		}
-	}
-
-	pub fn apply_sampler(self, sampler: &Sampler, mut func: impl FnMut(&Self, u32, u32, f32)) {
-		let baked = sampler.bake(self.clone());
-		for y in self.y_range.clone() {
-			for x in self.x_range.clone() {
-				func(&self, x, y, baked(x, y));
-			}
-		}
-	}
-
-	// Extends this sweep by creating a new sweep with a new inner area to scan.
-	pub fn extend(&self, width: Range<f32>, height: Range<f32>) -> Sweep<'a, T> {
-		Sweep {
+impl<'a, T: Clone + Default + Send + Sync> Context<'a, T> {
+	// Extends this context by creating a new sampler with a new inner area to scan.
+	pub fn extend(&self, width: Range<f32>, height: Range<f32>) -> Context<'a, T> {
+		Context {
 			generator: self.generator,
 			x_range: (self.min_x() + (self.width() as f32 * width.start) as u32)
 				..(self.min_x() + (self.width() as f32 * width.end) as u32),

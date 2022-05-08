@@ -1,11 +1,11 @@
 use std::ops::Range;
 use rustaria_api::ty::Tag;
-use crate::painter::brush::Brush;
+use crate::pipeline::brush::Brush;
 
 // docs
 #[allow(unused_imports)]
 use crate::noise::Noise;
-use crate::sweep::sampler::Sampler;
+use crate::pipeline::sampler::Sampler;
 
 pub struct BiomeSettings<T: Clone> {
 	// Debugging
@@ -32,8 +32,7 @@ pub struct BiomeSettings<T: Clone> {
 	/// Used for painting the ground area.
 	/// # Warning
 	/// You probably dont want to generate noise like caves.
-	/// To get your noise to more ground generation levels, you can use a [Noise::FillGradient] downwards
+	/// To get your noise to more ground generation levels, you can use a [Sampler::Graph] downwards
 	/// to make a gradient down which will more and more fix the value to 1.
-	pub ground_painter: Brush<T>,
-	pub cave_painter: Brush<T>,
+	pub painter: Brush<T>,
 }
