@@ -96,7 +96,18 @@ impl ClientWorld {
 				.entity
 				.drawer
 				.get_entity_pos(player, &self.entity.world, delta);
-			camera.position = pos.to_array();
+
+			let mut pos = pos.to_array();
+			if let Some(hitbox) = self
+				.entity
+				.hitbox
+				.get(player) {
+				pos[0] += hitbox.hitbox.min_x() + (hitbox.hitbox.width() / 2.0);
+				pos[1] += hitbox.hitbox.min_y() + (hitbox.hitbox.height() / 2.0);
+			}
+
+			camera.position = pos;
+
 		}
 		self.chunk.draw(camera);
 		self.entity.draw(camera, delta)?;
