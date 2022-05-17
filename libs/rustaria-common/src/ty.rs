@@ -6,6 +6,7 @@ use std::ops::Add;
 use euclid::{rect, Rect, vec2, Vector2D};
 use num::FromPrimitive;
 use serde::Deserialize;
+use crate::settings::CHUNK_SIZE;
 
 use crate::ty::Error::OutOfBounds;
 
@@ -13,10 +14,9 @@ pub enum Error {
 	OutOfBounds,
 }
 
-pub const CHUNK_SIZE: usize = CHUNK_SIZE_U8 as usize;
-pub const CHUNK_SIZE_U8: u8 = 16;
-pub const CHUNK_SIZE_MASK: u8 = 0xf;
-pub const CHUNK_SIZE_F: f32 = 16.0;
+pub const CHUNK_SIZE_U8: u8 = CHUNK_SIZE as u8;
+pub const CHUNK_SIZE_MASK: u8 = (CHUNK_SIZE - 1) as u8;
+pub const CHUNK_SIZE_F: f32 = CHUNK_SIZE as f32;
 
 // lets later implement corner directions.
 pub trait Offset<D>: Sized {

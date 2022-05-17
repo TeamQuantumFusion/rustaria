@@ -73,6 +73,15 @@ impl Internals {
 		window.set_framebuffer_size_polling(true);
 		glfw.set_swap_interval(SwapInterval::Sync(1));
 		window.set_size(1920 / 2, 1080 / 2);
+		window.set_icon(
+			vec![
+				image::load_from_memory(include_bytes!("icon/rustaria-dev-16.png"))?.to_rgba8(),
+				image::load_from_memory(include_bytes!("icon/rustaria-dev-24.png"))?.to_rgba8(),
+				image::load_from_memory(include_bytes!("icon/rustaria-dev-32.png"))?.to_rgba8(),
+				image::load_from_memory(include_bytes!("icon/rustaria-dev-48.png"))?.to_rgba8(),
+				image::load_from_memory(include_bytes!("icon/rustaria-dev-64.png"))?.to_rgba8(),
+			]
+		);
 
 		Ok(Internals {
 			backend: Box::new(func(glfw, window, events)?),

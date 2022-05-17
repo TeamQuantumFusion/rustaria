@@ -6,7 +6,8 @@ use rustaria::SmartError::CarrierUnavailable;
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_common::error::{ContextCompat, Result};
 use rustaria_common::math::rect;
-use rustaria_common::ty::{ChunkPos, CHUNK_SIZE};
+use rustaria_common::settings::CHUNK_SIZE;
+use rustaria_common::ty::{ChunkPos};
 use rustariac_backend::{
 	builder::VertexBuilder,
 	layer::LayerChannel,

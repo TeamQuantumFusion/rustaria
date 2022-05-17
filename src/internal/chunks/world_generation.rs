@@ -9,7 +9,8 @@ use rustaria_api::{Carrier, Reloadable};
 use rustaria_common::error::ContextCompat;
 use rustaria_common::error::Result;
 use rustaria_common::logging::error;
-use rustaria_common::ty::{ChunkPos, ChunkSubPos, CHUNK_SIZE};
+use rustaria_common::settings::CHUNK_SIZE;
+use rustaria_common::ty::{ChunkPos, ChunkSubPos};
 
 use crate::api::prototype::tile::TilePrototype;
 use crate::chunk::{Chunk, ChunkLayer};

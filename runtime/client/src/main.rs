@@ -15,12 +15,13 @@ use rustaria::player::Player;
 pub use rustaria::prototypes;
 pub use rustaria::pt;
 use rustaria::SmartError;
-use rustaria::{Server, UPS};
+use rustaria::{Server};
 use rustaria_api::ty::{Prototype, Tag};
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_common::error::Result;
 use rustaria_common::logging::debug;
 use rustaria_common::math::vec2;
+use rustaria_common::settings::UPS;
 use rustariac_backend::ty::Camera;
 use rustariac_backend::ClientBackend;
 use rustariac_glium_backend::GliumBackend;
@@ -38,7 +39,7 @@ mod world;
 
 const DEBUG_MOD: Modifiers =
 	Modifiers::from_bits_truncate(ffi::MOD_ALT + ffi::MOD_CONTROL + ffi::MOD_SHIFT);
-const UPDATE_TIME: Duration = Duration::from_micros(1000000 / UPS);
+const UPDATE_TIME: Duration = Duration::from_micros((1000000 / UPS) as u64);
 
 fn main() -> Result<()> {
 	let args = args::Args::parse();

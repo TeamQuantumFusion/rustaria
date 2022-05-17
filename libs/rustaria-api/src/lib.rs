@@ -6,6 +6,8 @@ use std::{
 	path::PathBuf,
 	sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
+use std::marker::PhantomData;
+use std::ops::{Add, AddAssign, Sub};
 
 use mlua::{ToLuaMulti, UserData, Value};
 use type_map::concurrent::TypeMap;

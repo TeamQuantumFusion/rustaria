@@ -4,6 +4,7 @@ use rustaria_api::ty::RawId;
 use rustaria_common::error::Result;
 use rustaria_common::logging::info;
 use rustaria_common::math::{Vector2D, WorldSpace};
+use rustaria_common::settings::UPS;
 use rustaria_common::Uuid;
 
 use crate::api::prototype::entity::EntityPrototype;
@@ -13,7 +14,6 @@ use crate::entity::component::hitbox;
 use crate::entity::component::hitbox::HitboxComp;
 use crate::entity::component::pos::PositionComp;
 use crate::entity::component::velocity::PhysicsComp;
-use crate::UPS;
 
 /// An entity world holds all of the entities and simulates them.
 #[derive(Default)]
@@ -90,7 +90,6 @@ impl EntityWorld {
 				hitbox::tile_collision(position.position, physics, hitbox, chunks);
 			}
 
-			info!("{:?}", physics.velocity);
 			position.position += physics.velocity;
 		}
 

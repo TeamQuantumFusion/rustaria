@@ -13,6 +13,7 @@ pub use uuid::Uuid;
 pub mod blake3;
 pub mod rcl;
 pub mod ty;
+pub mod settings;
 
 pub mod logging {
 	pub use log::*;

@@ -40,7 +40,6 @@ pub mod player;
 pub mod tile;
 pub mod util;
 
-pub const UPS: u64 = 60;
 
 pub type ServerNetwork = ServerNetworking<ClientPacket, ServerPacket, PlayerJoinData>;
 pub type ClientNetwork = ClientNetworking<ServerPacket, ClientPacket>;
@@ -73,7 +72,7 @@ impl Server {
 	pub fn tick(&mut self) -> Result<()> {
 		// yes i know there is unsafe here. Check the _todo in poll.
 		{
-			let interface = unsafe { (self as *const Server as *mut Server).as_mut().unwrap() };
+			let interface = unsafe { (self as *mut Server).as_mut().unwrap() };
 			self.network.poll(interface);
 		}
 

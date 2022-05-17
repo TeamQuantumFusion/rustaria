@@ -2,8 +2,9 @@ use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
 
 use serde::{Deserialize, Serialize};
+use rustaria_common::settings::CHUNK_SIZE;
 
-use rustaria_common::ty::{ChunkPos, ChunkSubPos, CHUNK_SIZE};
+use rustaria_common::ty::{ChunkPos, ChunkSubPos};
 
 use crate::tile::Tile;
 

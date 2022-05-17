@@ -9,5 +9,5 @@ edition = "2021"
 rustaria-common = { path = "../rustaria-common" }
 rustaria-api = { path = "../rustaria-api" }
 rectangle-pack = "0.4"
-glfw = "0.44"
+glfw = { version = "0.44", features = ["image"] }
 image = { version = "0.24", default-features = false, features = ["png"] }
