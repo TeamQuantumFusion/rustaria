@@ -11,7 +11,7 @@ use crate::api::prototype::entity::EntityPrototype;
 use crate::entity::world::EntityWorld;
 use crate::packet::entity::{ClientEntityPacket, ServerEntityPacket};
 use crate::packet::ServerPacket;
-use crate::{ChunkSystem, NetworkSystem, SmartError};
+use crate::{ChunkSystem, NetworkSystem, Server, SmartError};
 
 pub(crate) struct EntitySystem {
 	carrier: Option<Carrier>,
@@ -52,14 +52,15 @@ impl EntitySystem {
 		Ok(uuid)
 	}
 
-	pub fn tick(&mut self, chunks: &ChunkSystem, network: &mut NetworkSystem) -> Result<()> {
-		for id in &self.world.dead {
-			network.send_all(ServerPacket::Entity(ServerEntityPacket::Kill(*id)))?;
+	#[macro_module::module(server.entity)]
+	pub fn tick(this: &mut EntitySystem, server: &mut Server) -> Result<()> {
+		for id in &this.world.dead {
+			server.network.send_all(ServerPacket::Entity(ServerEntityPacket::Kill(*id)))?;
 		}
 
-		self.world.tick(chunks)?;
-		for (uuid, id, pos) in self.new_entities.drain(..) {
-			network.send_all(ServerPacket::Entity(ServerEntityPacket::New(uuid, id, pos)))?;
+		this.world.tick(&server.chunk)?;
+		for (uuid, id, pos) in this.new_entities.drain(..) {
+			server.network.send_all(ServerPacket::Entity(ServerEntityPacket::New(uuid, id, pos)))?;
 		}
 
 		Ok(())

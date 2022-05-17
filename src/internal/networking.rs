@@ -8,7 +8,7 @@ use rustaria_network::Token;
 use crate::chunk::Chunk;
 use crate::packet::chunk::{ChunkBundlePacket, ServerChunkPacket};
 use crate::packet::ServerPacket;
-use crate::ServerNetwork;
+use crate::{Server, ServerNetwork};
 
 /// The `NetworkManager` handles networking for the server.
 pub(crate) struct NetworkSystem {
@@ -30,8 +30,9 @@ impl NetworkSystem {
 		self.chunk_buffer.get_mut(&to).unwrap().insert(pos, chunk);
 	}
 
-	pub fn tick(&mut self) -> rustaria_network::Result<()> {
-		for (to, chunks) in self.chunk_buffer.drain() {
+	#[macro_module::module(server.network)]
+	pub fn tick(this: &mut NetworkSystem, server: &mut Server) -> rustaria_network::Result<()> {
+		for (to, chunks) in this.chunk_buffer.drain() {
 			let packet = ServerPacket::Chunk(ServerChunkPacket::Provide(CompressedPacket::new(
 				&ChunkBundlePacket {
 					chunks: chunks.into_iter().collect(),
@@ -39,9 +40,9 @@ impl NetworkSystem {
 			)?));
 
 			if let Some(to) = to {
-				self.internal.send(to, packet)?
+				this.internal.send(to, packet)?
 			} else {
-				self.internal.send_all(packet)?;
+				this.internal.send_all(packet)?;
 			}
 		}
 		Ok(())

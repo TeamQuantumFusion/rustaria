@@ -13,7 +13,7 @@
 //! ## Systems
 //! Systems are the same as handlers. But for the server.
 
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -39,7 +39,6 @@ pub mod packet;
 pub mod player;
 pub mod tile;
 pub mod util;
-
 
 pub type ServerNetwork = ServerNetworking<ClientPacket, ServerPacket, PlayerJoinData>;
 pub type ClientNetwork = ClientNetworking<ServerPacket, ClientPacket>;
@@ -69,6 +68,7 @@ impl Server {
 		})
 	}
 
+	//noinspection ALL
 	pub fn tick(&mut self) -> Result<()> {
 		// yes i know there is unsafe here. Check the _todo in poll.
 		{
@@ -78,11 +78,9 @@ impl Server {
 
 		self.api.invoke_hook("rustaria:tick", || ())?;
 
-		self.chunk.tick(&mut self.network).wrap_err("Chunk error")?;
-		self.entity
-			.tick(&self.chunk, &mut self.network)
-			.wrap_err("Entity error")?;
-		self.network.tick().wrap_err("Networking error")?;
+		ChunkSystem::tick(self).wrap_err(SmartError::SystemFailure(SystemType::Chunk))?;
+		EntitySystem::tick(self).wrap_err(SmartError::SystemFailure(SystemType::Entity))?;
+		NetworkSystem::tick(self).wrap_err(SmartError::SystemFailure(SystemType::Network))?;
 		Ok(())
 	}
 
@@ -130,6 +128,7 @@ impl Reloadable for Server {
 #[derive(Debug)]
 pub enum SmartError {
 	CarrierUnavailable,
+	SystemFailure(SystemType),
 }
 
 impl Display for SmartError {
@@ -138,6 +137,18 @@ impl Display for SmartError {
 			SmartError::CarrierUnavailable => {
 				f.write_str("Carrier is unavailable, Force reloading instance.")
 			}
+			SmartError::SystemFailure(name) => {
+				name.fmt(f)?;
+				f.write_str(" system failure.")
+			}
 		}
 	}
+}
+
+#[derive(Debug)]
+pub enum SystemType {
+	Entity,
+	Chunk,
+	Network,
+	Player,
 }

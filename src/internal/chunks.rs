@@ -13,7 +13,7 @@ use rustaria_network::Token;
 use crate::chunk::ChunkStorage;
 use crate::internal::chunks::world_generation::WorldGeneration;
 use crate::packet::chunk::ClientChunkPacket;
-use crate::NetworkSystem;
+use crate::{Server};
 
 mod world_generation;
 
@@ -37,30 +37,32 @@ impl ChunkSystem {
 		}
 	}
 
-	pub fn tick(&mut self, network: &mut NetworkSystem) -> Result<()> {
-		for (pos, from) in self.chunk_queue.drain(..) {
-			if let Some(chunk) = self.storage.get_chunk(pos) {
-				network.send_chunk(Some(from), pos, chunk.clone());
+
+	#[macro_module::module(server.chunk)]
+	pub fn tick(this: &mut ChunkSystem, server: &mut Server) -> Result<()> {
+		for (pos, from) in this.chunk_queue.drain(..) {
+			if let Some(chunk) = this.storage.get_chunk(pos) {
+				server.network.send_chunk(Some(from), pos, chunk.clone());
 			} else {
-				self.generator.request_chunk(pos)?;
-				self.chunk_gen_queue.entry(pos).or_insert_with(HashSet::new);
-				self.chunk_gen_queue.get_mut(&pos).unwrap().insert(from);
+				this.generator.request_chunk(pos)?;
+				this.chunk_gen_queue.entry(pos).or_insert_with(HashSet::new);
+				this.chunk_gen_queue.get_mut(&pos).unwrap().insert(from);
 			}
 		}
 
-		self.generator.poll_chunks(|chunk, pos| {
-			if let Some(targets) = self.chunk_gen_queue.remove(&pos) {
+		this.generator.poll_chunks(|chunk, pos| {
+			if let Some(targets) = this.chunk_gen_queue.remove(&pos) {
 				for to in targets {
-					network.send_chunk(Some(to), pos, chunk.clone());
+					server.network.send_chunk(Some(to), pos, chunk.clone());
 				}
 			}
 
-			self.storage.put_chunk(pos, chunk);
+			this.storage.put_chunk(pos, chunk);
 		});
 
-		for pos in self.dirty_chunks.drain() {
-			if let Some(chunk) = self.storage.get_chunk(pos) {
-				network.send_chunk(None, pos, chunk.clone());
+		for pos in this.dirty_chunks.drain() {
+			if let Some(chunk) = this.storage.get_chunk(pos) {
+				server.network.send_chunk(None, pos, chunk.clone());
 			}
 		}
 
