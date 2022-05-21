@@ -11,13 +11,13 @@ use rustaria_common::ty::ChunkPos;
 use rustaria_network::Token;
 
 use crate::chunk::ChunkStorage;
-use crate::internal::chunks::world_generation::WorldGeneration;
+use crate::module::chunks::world_generation::WorldGeneration;
 use crate::packet::chunk::ClientChunkPacket;
 use crate::{Server};
 
 mod world_generation;
 
-pub(crate) struct ChunkSystem {
+pub struct ChunkSystem {
 	generator: WorldGeneration,
 	storage: ChunkStorage,
 	chunk_queue: VecDeque<(ChunkPos, Token)>,
@@ -69,7 +69,7 @@ impl ChunkSystem {
 		Ok(())
 	}
 
-	pub fn packet(&mut self, from: Token, packet: ClientChunkPacket) {
+	pub fn packet(&mut self, from: Token, packet: ClientChunkPacket) -> Result<()> {
 		match packet {
 			ClientChunkPacket::Request(chunks) => {
 				for pos in chunks {
@@ -77,6 +77,8 @@ impl ChunkSystem {
 				}
 			}
 		}
+
+		Ok(())
 	}
 }
 

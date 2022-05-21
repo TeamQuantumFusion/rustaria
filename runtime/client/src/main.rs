@@ -10,7 +10,7 @@ use rayon::{ThreadPool, ThreadPoolBuilder};
 use rustaria::api::prototype::entity::EntityPrototype;
 use rustaria::packet::entity::ClientEntityPacket;
 use rustaria::packet::player::ClientPlayerPacket;
-use rustaria::packet::{ClientPacket, PlayerJoinData};
+use rustaria::packet::{ClientPacket};
 use rustaria::player::Player;
 pub use rustaria::prototypes;
 pub use rustaria::pt;
@@ -22,19 +22,20 @@ use rustaria_common::error::Result;
 use rustaria_common::logging::debug;
 use rustaria_common::math::vec2;
 use rustaria_common::settings::UPS;
+use rustaria_network::client::ClientNetwork;
 use rustariac_backend::ty::Camera;
 use rustariac_backend::ClientBackend;
 use rustariac_glium_backend::GliumBackend;
 use world::ClientWorld;
 
 use crate::args::Args;
-use crate::internal::chunk::ChunkHandler;
-use crate::internal::controller::ControllerHandler;
-use crate::internal::entity::EntityHandler;
-use crate::internal::rendering::RenderingHandler;
+use crate::module::chunk::ChunkHandler;
+use crate::module::controller::ControllerHandler;
+use crate::module::entity::EntityHandler;
+use crate::module::rendering::RenderingHandler;
 
 mod args;
-mod internal;
+mod module;
 mod world;
 
 const DEBUG_MOD: Modifiers =
@@ -173,12 +174,12 @@ impl Client {
 	}
 
 	pub fn join_integrated(&mut self) -> Result<()> {
-		let mut server = Server::new(&self.api, self.thread_pool.clone(), None)?;
+		let mut server = Server::new(&self.api, self.thread_pool.clone())?;
 		let player = Player::new("testing testing".to_string());
+
+		let networking = ClientNetwork::new_integrated(server.network.integrated.as_mut().unwrap())?;
 		let mut client_world = ClientWorld {
-			networking: server.create_local_connection(PlayerJoinData {
-				player: player.clone(),
-			}),
+			networking,
 			chunk: ChunkHandler::new(&self.rendering),
 			player_entity_id: None,
 			player,

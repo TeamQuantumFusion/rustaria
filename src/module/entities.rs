@@ -13,7 +13,7 @@ use crate::packet::entity::{ClientEntityPacket, ServerEntityPacket};
 use crate::packet::ServerPacket;
 use crate::{ChunkSystem, NetworkSystem, Server, SmartError};
 
-pub(crate) struct EntitySystem {
+pub struct EntitySystem {
 	carrier: Option<Carrier>,
 	world: EntityWorld,
 	new_entities: Vec<(Uuid, RawId, Vector2D<f32, WorldSpace>)>,

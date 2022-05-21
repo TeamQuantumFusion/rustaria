@@ -1,17 +1,19 @@
+use rustaria_common::logging::info;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
 use rustaria_common::ty::ChunkPos;
-use rustaria_network::packet::CompressedPacket;
+use rustaria_common::error::Result;
+use rustaria_network::packet::compress::Compress;
 use rustaria_network::Token;
 
 use crate::chunk::Chunk;
 use crate::packet::chunk::{ChunkBundlePacket, ServerChunkPacket};
 use crate::packet::ServerPacket;
-use crate::{Server, ServerNetwork};
+use crate::{ClientPacket, Server, ServerNetwork};
 
 /// The `NetworkManager` handles networking for the server.
-pub(crate) struct NetworkSystem {
+pub struct NetworkSystem {
 	internal: ServerNetwork,
 	chunk_buffer: HashMap<Option<Token>, HashMap<ChunkPos, Chunk>>,
 }
@@ -31,9 +33,9 @@ impl NetworkSystem {
 	}
 
 	#[macro_module::module(server.network)]
-	pub fn tick(this: &mut NetworkSystem, server: &mut Server) -> rustaria_network::Result<()> {
+	pub fn tick(this: &mut NetworkSystem, server: &mut Server) -> Result<()> {
 		for (to, chunks) in this.chunk_buffer.drain() {
-			let packet = ServerPacket::Chunk(ServerChunkPacket::Provide(CompressedPacket::new(
+			let packet = ServerPacket::Chunk(ServerChunkPacket::Provide(Compress::new(
 				&ChunkBundlePacket {
 					chunks: chunks.into_iter().collect(),
 				},
@@ -45,6 +47,30 @@ impl NetworkSystem {
 				this.internal.send_all(packet)?;
 			}
 		}
+
+		let data = this.internal.tick()?;
+
+		for token in data.to_connect {
+			info!("{} connected", token);
+			server.player.join(token);
+		}
+
+		for (from, packet) in data.received {
+			match packet {
+				ClientPacket::Chunk(packet) => server.chunk.packet(from, packet)?,
+				ClientPacket::Player(packet) => {
+					server
+						.player
+						.packet(from, packet, &mut server.entity, &server.network)?
+				}
+				ClientPacket::Entity(packet) => server.entity.packet(from, packet)?,
+			}
+		}
+
+		for token in data.to_disconnect {
+			info!("{} disconnected", token);
+		}
+
 		Ok(())
 	}
 }

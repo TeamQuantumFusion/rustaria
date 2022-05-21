@@ -1,13 +1,13 @@
 use serde::{Deserialize, Serialize};
 
 use rustaria_common::ty::ChunkPos;
-use rustaria_network::packet::CompressedPacket;
+use rustaria_network::packet::compress::Compress;
 
 use crate::chunk::Chunk;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ServerChunkPacket {
-	Provide(CompressedPacket<ChunkBundlePacket>),
+	Provide(Compress<ChunkBundlePacket>),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

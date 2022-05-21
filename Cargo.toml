@@ -15,12 +15,11 @@ rayon = "1.5.1"
 crossbeam = "0.8.1"
 mlua = { git = "https://github.com/alphaqu/mlua", branch = "alphacurseness", features = ["serialize", "send"] }
 
-
 frogelua = { path = "./libs/frogelua" }
 macro-module = { path = "./libs/macro-module" }
 rustaria-common = { path = "libs/rustaria-common" }
 rustaria-api = { path = "./libs/rustaria-api" }
-rustaria-network = { path = "./libs/rustaria-network" }
+rustaria-network = { path = "libs/rustaria-network" }
 
 [workspace]
 members = [

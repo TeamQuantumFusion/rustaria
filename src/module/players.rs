@@ -10,9 +10,9 @@ use rustaria_network::Token;
 use crate::api::prototype::entity::EntityPrototype;
 use crate::packet::player::{ClientPlayerPacket, ServerPlayerPacket};
 use crate::player::Player;
-use crate::{EntitySystem, NetworkSystem, PlayerJoinData, ServerPacket, SmartError};
+use crate::{EntitySystem, NetworkSystem, ServerPacket, SmartError};
 
-pub(crate) struct PlayerSystem {
+pub struct PlayerSystem {
 	player_entity: Option<RawId>,
 	players: HashMap<Token, Player>,
 }
@@ -25,9 +25,9 @@ impl PlayerSystem {
 		}
 	}
 
-	pub fn join(&mut self, player: Token, data: PlayerJoinData) {
-		info!("Player joined {}", player);
-		self.players.insert(player, data.player);
+	pub fn join(&mut self, token: Token) {
+		info!("Player joined {}", token);
+		self.players.insert(token, Player::new(token.to_string()));
 	}
 
 	pub fn packet(

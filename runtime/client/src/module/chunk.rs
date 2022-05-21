@@ -15,7 +15,7 @@ use rustariac_rendering::chunk_drawer::WorldChunkDrawer;
 
 use crate::RenderingHandler;
 
-pub(crate) struct ChunkHandler {
+pub struct ChunkHandler {
 	rendering: RenderingHandler,
 
 	storage: ChunkStorage,

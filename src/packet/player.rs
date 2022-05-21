@@ -14,8 +14,6 @@ pub enum ServerPlayerPacket {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ClientPlayerPacket {
 	/// Creates a Player Entity
-	Join {
-		// inventory and stuff
-	},
+	Join(),
 	SetPos(Vector2D<f32, WorldSpace>),
 }

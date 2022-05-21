@@ -12,7 +12,7 @@ use rustariac_rendering::entity_drawer::WorldEntityDrawer;
 
 use crate::RenderingHandler;
 
-pub(crate) struct EntityHandler {
+pub struct EntityHandler {
 	carrier: Option<Carrier>,
 	pub world: EntityWorld,
 	pub drawer: WorldEntityDrawer,

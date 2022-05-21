@@ -9,10 +9,11 @@ use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_common::error::Result;
 use rustaria_common::error::{ContextCompat, Report};
 use rustaria_common::Uuid;
+use rustaria_network::client::ClientTickData;
 use rustariac_backend::ty::Camera;
 
-use crate::internal::chunk::ChunkHandler;
-use crate::internal::entity::EntityHandler;
+use crate::module::chunk::ChunkHandler;
+use crate::module::entity::EntityHandler;
 use crate::ControllerHandler;
 
 /// Only exists in Client if it has joined a server.
@@ -70,22 +71,31 @@ impl ClientWorld {
 			integrated.tick()?;
 		}
 
-		self.networking.poll::<Report, _>(|packet| match packet {
-			ServerPacket::Chunk(packet) => self.chunk.packet(packet),
-			ServerPacket::Entity(packet) => self.entity.packet(packet),
-			ServerPacket::Player(packet) => match packet {
-				ServerPlayerPacket::Attach { entity, pos } => {
-					self.player.entity = Some(entity);
-					self.entity.packet(ServerEntityPacket::New(
-						entity,
-						self.player_entity_id
-							.wrap_err(SmartError::CarrierUnavailable)?,
-						pos,
-					))?;
-					Ok(())
+		match self.networking.tick()? {
+			ClientTickData::Received(packets) => {
+				for packet in packets {
+					match packet {
+						ServerPacket::Chunk(packet) => self.chunk.packet(packet)?,
+						ServerPacket::Entity(packet) => self.entity.packet(packet)?,
+						ServerPacket::Player(packet) => match packet {
+							ServerPlayerPacket::Attach { entity, pos } => {
+								self.player.entity = Some(entity);
+								self.entity.packet(ServerEntityPacket::New(
+									entity,
+									self.player_entity_id
+										.wrap_err(SmartError::CarrierUnavailable)?,
+									pos,
+								))?;
+
+							}
+						},
+					}
 				}
-			},
-		})?;
+			}
+			ClientTickData::Disconnected => {
+				todo!("Disconnecting sequence")
+			}
+		}
 
 		Ok(())
 	}

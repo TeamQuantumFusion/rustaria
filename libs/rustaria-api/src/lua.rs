@@ -29,7 +29,7 @@ pub fn new_lua(manifest: &Manifest, api: &Api) -> Result<Lua> {
 			let api: Api = lua
 				.globals()
 				.get("_api")
-				.expect("Api internal global is missing.");
+				.expect("Api module global is missing.");
 
 			let asset = api.get_asset(AssetKind::Source, &location)?;
 			lua.load(&asset).into_function()

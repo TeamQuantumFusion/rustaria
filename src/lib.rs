@@ -4,7 +4,7 @@
 //! Here are the definitions
 //!
 //! # Naming
-//! When naming a handler or internal. Its always {singular}{type}, so if you are making a handler for networking.
+//! When naming a handler or module. Its always {singular}{type}, so if you are making a handler for networking.
 //! Its called NetworkHandler.
 //!
 //! SUB LIBS SHOULD NEVER NAME ANYTHING A HANDLER OR A SYSTEM.
@@ -21,47 +21,48 @@ use rayon::ThreadPool;
 
 use rustaria_api::{Api, Carrier, Reloadable};
 use rustaria_common::error::{Result, WrapErr};
-use rustaria_network::networking::{ClientNetworking, ServerNetworking};
-use rustaria_network::{EstablishingInstance, NetworkInterface, Token};
+use rustaria_network::server::integrated::Integrated;
 
 // Internals
-use crate::internal::chunks::ChunkSystem;
-use crate::internal::entities::EntitySystem;
-use crate::internal::networking::NetworkSystem;
-use crate::internal::players::PlayerSystem;
-use crate::packet::{ClientPacket, PlayerJoinData, ServerPacket};
+use crate::module::chunks::ChunkSystem;
+use crate::module::entities::EntitySystem;
+use crate::module::networking::NetworkSystem;
+use crate::module::players::PlayerSystem;
+use crate::packet::{ClientPacket, ServerPacket};
 
 pub mod api;
 pub mod chunk;
 pub mod entity;
-pub(crate) mod internal;
+pub(crate) mod module;
 pub mod packet;
 pub mod player;
 pub mod tile;
 pub mod util;
 
-pub type ServerNetwork = ServerNetworking<ClientPacket, ServerPacket, PlayerJoinData>;
-pub type ClientNetwork = ClientNetworking<ServerPacket, ClientPacket>;
+pub type ServerNetwork = rustaria_network::server::ServerNetwork<ClientPacket, ServerPacket>;
+pub type ClientNetwork = rustaria_network::client::ClientNetwork<ServerPacket, ClientPacket>;
 
 /// The main object structure for a server.
 /// This is where the world is stored and the information gets distributed across clients.
 pub struct Server {
-	api: Api,
-	network: NetworkSystem,
-	chunk: ChunkSystem,
-	entity: EntitySystem,
-	player: PlayerSystem,
+	pub api: Api,
+	pub network: NetworkSystem,
+	pub chunk: ChunkSystem,
+	pub entity: EntitySystem,
+	pub player: PlayerSystem,
 }
 
 impl Server {
 	pub fn new(
 		api: &Api,
 		thread_pool: Arc<ThreadPool>,
-		ip_address: Option<SocketAddr>,
 	) -> Result<Server> {
 		Ok(Server {
 			api: api.clone(),
-			network: NetworkSystem::new(ServerNetworking::new(ip_address)?),
+			network: NetworkSystem::new(ServerNetwork {
+				integrated: Some(Integrated::new()?),
+				remote: None
+			}),
 			chunk: ChunkSystem::new(thread_pool),
 			entity: EntitySystem::new(),
 			player: PlayerSystem::new(),
@@ -70,50 +71,11 @@ impl Server {
 
 	//noinspection ALL
 	pub fn tick(&mut self) -> Result<()> {
-		// yes i know there is unsafe here. Check the _todo in poll.
-		{
-			let interface = unsafe { (self as *mut Server).as_mut().unwrap() };
-			self.network.poll(interface);
-		}
-
 		self.api.invoke_hook("rustaria:tick", || ())?;
-
 		ChunkSystem::tick(self).wrap_err(SmartError::SystemFailure(SystemType::Chunk))?;
 		EntitySystem::tick(self).wrap_err(SmartError::SystemFailure(SystemType::Entity))?;
 		NetworkSystem::tick(self).wrap_err(SmartError::SystemFailure(SystemType::Network))?;
 		Ok(())
-	}
-
-	pub fn create_local_connection(
-		&mut self,
-		join_data: PlayerJoinData,
-	) -> ClientNetworking<ServerPacket, ClientPacket> {
-		ClientNetworking::join_local(&mut self.network, join_data)
-	}
-}
-
-impl NetworkInterface<ClientPacket, ServerPacket, PlayerJoinData> for Server {
-	// TODO error handling here
-
-	fn receive(&mut self, from: Token, packet: ClientPacket) {
-		match packet {
-			ClientPacket::Chunk(packet) => self.chunk.packet(from, packet),
-			ClientPacket::Player(packet) => self
-				.player
-				.packet(from, packet, &mut self.entity, &self.network)
-				.unwrap(),
-			ClientPacket::Entity(packet) => self.entity.packet(from, packet).unwrap(),
-		}
-	}
-
-	fn disconnected(&mut self, _client: Token) {}
-
-	fn connected(&mut self, client: Token, data: PlayerJoinData) {
-		self.player.join(client, data);
-	}
-
-	fn establishing(&mut self) -> Box<dyn EstablishingInstance<PlayerJoinData>> {
-		todo!()
 	}
 }
 

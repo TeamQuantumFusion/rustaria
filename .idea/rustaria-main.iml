@@ -58,6 +58,7 @@
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-gen/testing-gen/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/macro-module/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-input/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-network-old/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/runtime/client/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rustaria-client/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rustaria-server/src" isTestSource="false" />

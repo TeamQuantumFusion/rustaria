@@ -1,5 +1,5 @@
 use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 
 use glfw::{Action, Key, WindowEvent};
@@ -7,15 +7,13 @@ use glfw::{Action, Key, WindowEvent};
 use rustaria::entity::component::velocity::PhysicsComp;
 use rustaria::player::Player;
 use rustaria_api::ty::Tag;
-use rustaria_common::logging::{error, info};
 use rustaria_common::settings::UPS;
 use rustaria_input::event::{Event, EventKind, KeyboardEvent};
 use rustaria_input::InputSystem;
 use rustaria_input::subscriber::{HoldSubscriber, Subscriber, TriggerSubscriber};
 use rustariac_backend::ty::Camera;
 
-// TODO remake this
-pub(crate) struct ControllerHandler {
+pub struct ControllerHandler {
 	up: VelocitySubscriber,
 	down: VelocitySubscriber,
 	left: VelocitySubscriber,
