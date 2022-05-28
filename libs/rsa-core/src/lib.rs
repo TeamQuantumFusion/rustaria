@@ -15,7 +15,6 @@ pub mod api;
 pub mod blake3;
 pub mod lua;
 pub mod plugin;
-pub mod rcl;
 pub mod registry;
 pub mod settings;
 pub mod ty;
