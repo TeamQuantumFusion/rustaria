@@ -74,7 +74,7 @@ impl EntityWorld {
 			self.hitbox.remove(&uuid);
 		}
 
-		for (id, gravity) in &self.gravity {
+		for (id, _gravity) in &self.gravity {
 			if let Some(physics) = self.physics.get_mut(id) {
 				physics.velocity.y -= 1.6 / UPS as f32;
 			}

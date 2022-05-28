@@ -23,7 +23,7 @@ pub struct Pane {
 }
 
 impl FromLua for Pane {
-	fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
+	fn from_lua(value: Value, _lua: &Lua) -> mlua::Result<Self> {
 		if let Value::Table(table) = value {
 			Ok(Pane {
 				x_offset: table.get("x_offset")?,

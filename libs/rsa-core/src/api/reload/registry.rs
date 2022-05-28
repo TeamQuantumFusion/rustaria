@@ -1,7 +1,10 @@
 use std::collections::HashMap;
-use apollo::{lua_impl, lua_method};
+
 use mlua::{Lua, Result as LuaResult, Table};
-use crate::api::carrier::{Carrier, CarrierData};
+
+use apollo::{lua_impl, lua_method};
+
+use crate::api::carrier::{Carrier};
 use crate::blake3::Hasher;
 use crate::registry::{AnyRegistryBuilder, Registry, RegistryBuilder};
 use crate::ty::{Prototype, Tag};
@@ -46,7 +49,6 @@ impl LuaRegistryBuilder {
 	pub fn finish(self, carrier: Carrier) {
 		carrier.data.write().hash = self.hasher.finalize();
 	}
-
 }
 
 #[lua_impl]

@@ -5,10 +5,9 @@ mod util;
 use crate::field::FieldType;
 use method::MethodType;
 use proc_macro2::{Ident, Literal, Span, TokenStream};
-use quote::{quote, ToTokens, TokenStreamExt};
+use quote::{quote, TokenStreamExt};
 use syn::parse::{Parse, ParseStream};
-use syn::{parse_macro_input, ImplItem, ItemFn, ItemImpl, Token, ImplItemMethod};
-use syn::token::Paren;
+use syn::{parse_macro_input, ImplItem, ItemImpl, ImplItemMethod};
 
 macro_rules! import {
     ($NAME:literal) => {

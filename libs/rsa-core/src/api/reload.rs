@@ -1,23 +1,19 @@
-mod registry;
-mod hook;
-
 use eyre::Context;
 use log::{info, trace};
-
+use mlua::{Value};
 use mlua::prelude::LuaResult;
-use mlua::{Lua, Table, Value};
-use parking_lot::RwLockWriteGuard;
 
-use crate::api::carrier::{Carrier, CarrierData};
-use crate::api::Api;
 use apollo::*;
 use registry::LuaRegistryBuilder;
-use crate::api::reload::hook::LuaHookBuilder;
 
-use crate::registry::{AnyRegistryBuilder, Registry, RegistryBuilder};
-use crate::ty::{Prototype};
-use crate::error::Result;
+use crate::api::Api;
 use crate::api::lua::glue::Glue;
+use crate::api::reload::hook::LuaHookBuilder;
+use crate::error::Result;
+use crate::ty::Prototype;
+
+mod hook;
+mod registry;
 
 #[macro_export]
 macro_rules! reload {
@@ -44,7 +40,7 @@ impl<'a> Reload<'a> {
 		carrier.hash = [0; 32];
 		Reload {
 			api,
-			reload: LuaReload::new()
+			reload: LuaReload::new(),
 		}
 	}
 
@@ -55,10 +51,7 @@ impl<'a> Reload<'a> {
 	pub fn reload(&mut self) -> Result<()> {
 		for (id, plugin) in &self.api.internals.read().unwrap().plugins {
 			let glue = Glue::new(&mut self.reload);
-			plugin
-				.lua_state
-				.globals()
-				.set("reload", glue.clone())?;
+			plugin.lua_state.globals().set("reload", glue.clone())?;
 
 			trace!(target: "reload@rustaria.api", "Reloading {id}");
 			plugin
@@ -66,7 +59,7 @@ impl<'a> Reload<'a> {
 				.wrap_err(format!("Error while reloading plugin {id}"))?;
 
 			plugin.lua_state.globals().set("reload", Value::Nil)?;
-		};
+		}
 
 		Ok(())
 	}
@@ -76,10 +69,12 @@ impl<'a> Reload<'a> {
 		self.reload.registries.end_prototype::<P>(carrier);
 	}
 
-	pub fn finish(mut self) {
+	pub fn finish(self) {
 		let carrier = self.api.get_carrier();
 		self.reload.registries.finish(carrier);
-		self.reload.hooks.finish(&mut self.api.write().hook_instance);
+		self.reload
+			.hooks
+			.finish(&mut self.api.write().hook_instance);
 	}
 }
 
@@ -92,7 +87,7 @@ impl LuaReload {
 	pub fn new() -> LuaReload {
 		LuaReload {
 			registries: LuaRegistryBuilder::new(),
-			hooks: LuaHookBuilder::new()
+			hooks: LuaHookBuilder::new(),
 		}
 	}
 }

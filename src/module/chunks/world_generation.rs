@@ -6,7 +6,7 @@ use rayon::ThreadPool;
 use rsa_core::api::carrier::Carrier;
 use rsa_core::api::{Api, Reloadable};
 
-use rsa_core::ty::{ChunkPos, ChunkSubPos, Prototype, Tag};
+use rsa_core::ty::{ChunkPos, ChunkSubPos, Tag};
 use rsa_core::error::ContextCompat;
 use rsa_core::error::Result;
 use rsa_core::logging::error;
@@ -87,8 +87,8 @@ fn generate_chunk(stack: &Carrier, pos: ChunkPos) -> Result<Chunk> {
 
 	for y in 0..CHUNK_SIZE {
 		for x in 0..CHUNK_SIZE {
-			let x_world = (x + (pos.x as usize * CHUNK_SIZE));
-			let y_world = (y + (pos.y as usize * CHUNK_SIZE));
+			let x_world = x + (pos.x as usize * CHUNK_SIZE);
+			let y_world = y + (pos.y as usize * CHUNK_SIZE);
 			if x_world > 50 || y_world < 4 {
 				let pos = ChunkSubPos::new(x as u8, y as u8);
 				chunk.tiles[pos] = dirt;

@@ -11,7 +11,6 @@ use rsa_core::settings::UPS;
 use rsa_input::event::{Event, EventKind, KeyboardEvent};
 use rsa_input::subscriber::{HoldSubscriber, Subscriber, TriggerSubscriber};
 use rsa_input::InputSystem;
-use rsac_backend::ty::Camera;
 
 pub struct ControllerHandler {
 	up: VelocitySubscriber,
@@ -20,7 +19,6 @@ pub struct ControllerHandler {
 	right: VelocitySubscriber,
 	jump: JumpSubscriber,
 	system: InputSystem,
-	old_delta: f32,
 
 	// player
 	dir_x: f32,
@@ -83,7 +81,6 @@ impl ControllerHandler {
 			right,
 			jump,
 			system: input,
-			old_delta: 0.0,
 			dir_x: 0.0,
 			dir_y: 0.0,
 			jump_frames_remaining: 0,
@@ -150,29 +147,6 @@ impl ControllerHandler {
 		*self.down.0.lock().unwrap() = 0.0;
 		*self.left.0.lock().unwrap() = 0.0;
 		*self.right.0.lock().unwrap() = 0.0;
-	}
-
-	pub fn draw(&mut self, view: &mut Camera, delta: f32) {
-		if self.old_delta > delta {
-			self.old_delta = delta;
-		}
-
-		// trademark this:tm:
-		//let delta_delta_tm = delta - self.old_delta;
-		//if self.up.held() {
-		//	self.dir_y += delta_delta_tm;
-		//}
-		//if self.down.held() {
-		//	self.dir_y -= delta_delta_tm;
-		//}
-		//if self.right.held() {
-		//	self.dir_x += delta_delta_tm;
-		//}
-		//if self.left.held() {
-		//	self.dir_x -= delta_delta_tm;
-		//}
-
-		self.old_delta = delta;
 	}
 }
 

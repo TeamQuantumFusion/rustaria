@@ -1,16 +1,10 @@
-use std::ops::Index;
 
-use proc_macro2::{Ident, Literal, Span, TokenStream};
-use quote::{quote, TokenStreamExt, ToTokens};
+use proc_macro2::{Ident, Literal, Span};
+use quote::{quote, ToTokens};
 use syn::{
-	Attribute, FnArg, ImplItem, ImplItemMethod, Item, ItemFn, ItemImpl, ItemStruct,
-	Meta, parse_macro_input, parse_quote, Pat, Token, Type,
-};
-use syn::punctuated::Punctuated;
+	Attribute, Item, ItemStruct,
+	Meta, parse_macro_input};
 
-use crate::util::get_method_register;
-
-mod util;
 
 macro_rules! import {
     ($NAME:literal) => {

@@ -34,7 +34,7 @@ impl<I: Packet, O: Packet> ClientNetwork<I, O> {
 		})
 	}
 
-	pub fn new_remote(addr: SocketAddr) -> crate::Result<ClientNetwork<I, O>> {
+	pub fn new_remote(_addr: SocketAddr) -> crate::Result<ClientNetwork<I, O>> {
 		todo!()
 	}
 

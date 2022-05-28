@@ -1,13 +1,13 @@
-use rustaria::api::{prototype::tile::TilePrototype, ty::ConnectionType};
-use rustaria::tile::Tile;
-use rsa_core::{registry::Registry, ty::RawId};
 use rsa_core::api::carrier::RegistryLock;
 use rsa_core::math::rect;
+use rsa_core::ty::RawId;
 use rsac_backend::{
 	builder::VertexBuilder,
-	ty::{AtlasLocation, PosTexture},
 	ClientBackend,
+	ty::{AtlasLocation, PosTexture},
 };
+use rustaria::api::{prototype::tile::TilePrototype, ty::ConnectionType};
+use rustaria::tile::Tile;
 
 pub struct TileDrawer {
 	image: AtlasLocation,
@@ -73,7 +73,6 @@ impl BakedTile {
 			id: tile.id,
 			connection: prototype.connection,
 		}
-
 	}
 }
 

@@ -8,22 +8,19 @@ use std::{
 };
 
 use log::{info, warn};
-use mlua::{Lua, ToLuaMulti, UserData};
-use type_map::TypeMap;
+use mlua::{ToLuaMulti, UserData};
 
-use crate::api::reload::{LuaReload, Reload};
-use carrier::{Carrier, CarrierData};
+use carrier::Carrier;
 
-
+use crate::api::reload::Reload;
 use crate::error::Result;
 use crate::hook::HookInstance;
-use crate::plugin::archive::{Archive};
 use crate::plugin::Plugin;
 use crate::ty::{PluginId, Tag};
 
 pub mod carrier;
-pub mod reload;
 pub mod lua;
+pub mod reload;
 
 #[derive(Clone)]
 pub struct Api {
@@ -167,12 +164,13 @@ impl Api {
 
 #[cfg(any(feature = "test-utils", test))]
 mod test_utils {
+	use apollo::*;
+
 	#[derive(Ord, PartialOrd, Eq, PartialEq, Clone)]
 	pub struct Counter {
 		pub count: u32,
 	}
 
-	use apollo::*;
 	#[lua_impl]
 	impl Counter {
 		pub fn new() -> Counter {
@@ -188,13 +186,13 @@ mod test_utils {
 
 #[cfg(test)]
 mod tests {
+	use crate::api::lua::glue::ToGlue;
+	use crate::api::lua::FromLua;
 	use crate::api::test_utils::Counter;
 	use crate::api::Api;
 	use crate::error::Result;
-	use crate::api::lua::glue::ToGlue;
 	use crate::ty::{Prototype, RawId, Tag};
 	use crate::{initialize, reload};
-	use crate::api::lua::FromLua;
 
 	#[test]
 	pub fn test_registry() -> Result<()> {

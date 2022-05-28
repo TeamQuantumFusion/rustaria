@@ -8,7 +8,6 @@ use glfw::{Action, ffi, Key, Modifiers, WindowEvent};
 use rayon::{ThreadPool, ThreadPoolBuilder};
 
 use rsa_core::api::{Api, Reloadable};
-use rsa_core::api::carrier::Carrier;
 use rsa_core::error::Result;
 use rsa_core::logging::debug;
 use rsa_core::math::vec2;
@@ -227,8 +226,6 @@ impl Client {
 	}
 
 	fn draw(&mut self, delta: f32) -> Result<()> {
-		self.control.draw(&mut self.camera, delta);
-
 		if let Some(world) = &mut self.world {
 			world.draw(&mut self.camera, delta)?;
 		}

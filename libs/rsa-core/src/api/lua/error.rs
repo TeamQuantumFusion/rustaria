@@ -1,4 +1,3 @@
-use color_eyre::owo_colors::colors::{Cyan, Red};
 use color_eyre::owo_colors::OwoColorize;
 use color_eyre::{IndentedSection, Section, SectionExt};
 use eyre::{ErrReport, Report, Result};

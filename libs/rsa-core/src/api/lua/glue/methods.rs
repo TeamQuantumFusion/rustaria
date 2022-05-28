@@ -1,4 +1,4 @@
-use crate::api::lua::glue::{Glue, LuaGlue};
+use crate::api::lua::glue::{LuaGlue};
 use mlua::{FromLuaMulti, Lua, MetaMethod, ToLuaMulti, UserData, UserDataMethods};
 use std::marker::PhantomData;
 

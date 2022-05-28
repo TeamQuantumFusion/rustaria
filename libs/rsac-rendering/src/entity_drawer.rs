@@ -68,7 +68,7 @@ impl WorldEntityDrawer {
 		}
 	}
 
-	pub fn tick(&mut self, camera: &Camera, world: &EntityWorld) -> Result<()> {
+	pub fn tick(&mut self, _camera: &Camera, world: &EntityWorld) -> Result<()> {
 		self.carrier.as_ref().wrap_err(CarrierUnavailable)?;
 
 		for (uuid, pos) in &world.position {

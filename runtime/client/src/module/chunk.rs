@@ -16,7 +16,6 @@ use rsac_rendering::chunk_drawer::WorldChunkDrawer;
 use crate::RenderingHandler;
 
 pub struct ChunkHandler {
-	rendering: RenderingHandler,
 
 	storage: ChunkStorage,
 	stored_chunks: HashSet<ChunkPos>,
@@ -29,7 +28,6 @@ pub struct ChunkHandler {
 impl ChunkHandler {
 	pub fn new(rendering: &RenderingHandler) -> ChunkHandler {
 		ChunkHandler {
-			rendering: rendering.clone(),
 			storage: Default::default(),
 			stored_chunks: Default::default(),
 			drawer: WorldChunkDrawer::new(&rendering.backend),

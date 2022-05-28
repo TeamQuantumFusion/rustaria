@@ -1,11 +1,10 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, Weak};
-use log::trace;
 
-use crate::ty::Tag;
-use crate::error::Result;
-use mlua::{Function, ToLuaMulti, UserData, UserDataMethods};
+use mlua::{Function, ToLuaMulti};
+
 use crate::api::lua::error::LuaError;
+use crate::error::Result;
+use crate::ty::Tag;
 
 #[derive(Default)]
 pub struct HookInstance {

@@ -3,16 +3,8 @@ use quote::{quote, ToTokens};
 use std::iter::Peekable;
 use syn::punctuated::{Iter, Punctuated};
 use syn::token::Comma;
-use syn::{parse_quote, AngleBracketedGenericArguments, FnArg, Pat, PatType, PathArguments, ReturnType, Signature, Token, Type, GenericArgument};
+use syn::{parse_quote, FnArg, Pat, PatType, PathArguments, ReturnType, Signature, Token, Type, GenericArgument};
 use crate::import;
-
-pub fn get_overwrite_name(sig: &Signature, attr: &proc_macro::TokenStream) -> String {
-	if attr.is_empty() {
-		sig.ident.to_string()
-	} else {
-		attr.to_string()
-	}
-}
 
 // "var1: Ty1, var2: Ty2, var3: Ty3" -> ("var1, var2, var3", "Ty1, Ty2, Ty3")
 pub fn compile_reg_args(
@@ -49,7 +41,6 @@ pub fn filter_self_lua(iter: Iter<FnArg>) -> (bool, Peekable<Iter<FnArg>>) {
 				peekable.next();
 				continue;
 			}
-			_ => {}
 		}
 
 		break;

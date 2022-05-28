@@ -69,7 +69,7 @@ pub fn build_atlas(
 	// Setup packing
 	let mut packing_setup: GroupedRectsToPlace<Tag, Option<u8>> = GroupedRectsToPlace::new();
 
-	for (id, (tag, image)) in images.iter().enumerate() {
+	for (_, (tag, image)) in images.iter().enumerate() {
 		packing_setup.push_rect(
 			tag.clone(),
 			None,

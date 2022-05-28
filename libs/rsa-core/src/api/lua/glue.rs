@@ -58,20 +58,10 @@ pub struct LuaGlue<V: UserData> {
 	value: *mut V,
 }
 impl<V: UserData> LuaGlue<V> {
-	pub unsafe fn new(value: &V) -> LuaGlue<V> {
-		LuaGlue {
-			value: value as *const V as *mut V
-		}
-	}
-
 	pub fn new_raw(value: *mut V) -> LuaGlue<V> {
 		LuaGlue {
 			value
 		}
-	}
-
-	pub unsafe fn get_mut(&mut self) -> &mut V {
-		&mut *self.value
 	}
 }
 

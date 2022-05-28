@@ -14,12 +14,10 @@
 //! Systems are the same as handlers. But for the server.
 
 use std::fmt::{Debug, Display};
-use std::net::SocketAddr;
 use std::sync::Arc;
 
 use rayon::ThreadPool;
 use rsa_core::api::{Api, Reloadable};
-use rsa_core::api::carrier::Carrier;
 use rsa_core::error::{Result, WrapErr};
 use rsa_core::ty::Tag;
 use rsa_network::server::integrated::Integrated;

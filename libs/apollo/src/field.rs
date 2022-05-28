@@ -4,10 +4,8 @@
 // fn add_field_function_set    F: FnMut(&Lua, AnyUserData, A) -> Result<()>;
 // fn add_meta_field_with       F: Fn   (&Lua) -> Result<R>,
 
-use proc_macro2::{Ident, Span, TokenStream};
-use syn::{FnArg, parse_quote, Pat, Receiver, Signature, Type};
-use syn::punctuated::Punctuated;
-use syn::token::Comma;
+use proc_macro2::{Ident, Span};
+use syn::{FnArg, Signature};
 
 use crate::FieldKind;
 use crate::util::SelfArg;
