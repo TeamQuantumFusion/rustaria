@@ -121,7 +121,9 @@ impl<P: Prototype> RegistryBuilder<P> {
 		let mut entries = Vec::new();
 
 		for (id, (tag, prototype)) in data.into_iter().enumerate() {
-			tag_to_id.insert(tag.clone(), RawId(id as u32));
+			tag_to_id.insert(tag.clone(), unsafe {
+				RawId::new(id as u32)
+			});
 			id_to_tag.push(tag);
 			entries.push(prototype);
 		}
