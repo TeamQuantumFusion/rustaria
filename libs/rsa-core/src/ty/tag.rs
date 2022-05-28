@@ -1,6 +1,6 @@
-use crate::lua::PluginLua;
 use mlua::{Error, FromLua, Lua, ToLua, Value};
 use std::fmt::Display;
+use crate::api::lua::{get_meta, Metadata};
 
 #[derive(
 	Clone,
@@ -35,10 +35,10 @@ impl Tag {
 		match Self::new(tag.clone()) {
 			Ok(tag) => Ok(tag),
 			Err(TagCreationError::ColonMissing) => {
-				let mut new_tag = PluginLua::import(lua).id;
-				new_tag.push(':');
-				new_tag.push_str(&tag);
-				Self::new(new_tag)
+				let mut meta = get_meta(lua).plugin_id;
+				meta.push(':');
+				meta.push_str(&tag);
+				Self::new(meta)
 			}
 			Err(err) => Err(err),
 		}

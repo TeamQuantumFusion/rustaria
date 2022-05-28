@@ -1,15 +1,16 @@
-use mlua::{Lua, MetaMethod, Value};
+use mlua::{Lua, MetaMethod, Table, Value};
+use crate::api::lua::get_meta;
 
 use crate::logging::{log, Level};
-use crate::lua::PluginLua;
 
-pub fn register(lua: &Lua) -> mlua::Result<()> {
-	let globals = lua.globals();
-	globals.set("trace", lua.create_function(trace)?)?;
-	globals.set("debug", lua.create_function(debug)?)?;
-	globals.set("info", lua.create_function(info)?)?;
-	globals.set("warn", lua.create_function(warn)?)?;
-	globals.set("error", lua.create_function(error)?)?;
+pub fn register(lua: &Lua, globals: &Table) -> mlua::Result<()> {
+	let log = lua.create_table()?;
+	log.set("trace", lua.create_function(trace)?)?;
+	log.set("debug", lua.create_function(debug)?)?;
+	log.set("info", lua.create_function(info)?)?;
+	log.set("warn", lua.create_function(warn)?)?;
+	log.set("error", lua.create_function(error)?)?;
+	globals.set("log", log)?;
 	Ok(())
 }
 
@@ -49,7 +50,9 @@ fn event(lua: &Lua, level: Level, msg: Value) -> mlua::Result<()> {
 		}
 		_ => "unknown".to_string(),
 	};
-	let log_target = "plugin_log@".to_owned() + &*PluginLua::import(lua).id;
+	let meta = get_meta(lua);
+
+	let log_target = "plugin_log@".to_owned() + &meta.plugin_id;
 	let log_target: &str = &log_target;
 	log!(target: log_target, level, "{msg}");
 	Ok(())

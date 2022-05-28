@@ -35,9 +35,9 @@ mod tests {
 	use rsa_core::plugin::Plugin;
 	use rsa_core::reload;
 	use rsa_core::error::Result;
-	use rsa_core::lua::glue::{Glue};
+	use rsa_core::api::lua::glue::{Glue};
 	use rsa_core::lua::{LuaResult};
-	use rsa_core::lua::error::LuaError;
+	use rsa_core::api::lua::error::LuaError;
 	use crate::ItemSystem;
 	use apollo::*;
 	use crate::item::ItemPrototype;

@@ -4,7 +4,7 @@ use mlua::{
 	UserData, UserDataFields, UserDataMethods,
 };
 use fields::GlueUserDataFields;
-use crate::lua::glue::methods::GlueUserDataMethods;
+use crate::api::lua::glue::methods::GlueUserDataMethods;
 
 mod fields;
 mod methods;

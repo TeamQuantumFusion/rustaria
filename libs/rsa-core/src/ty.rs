@@ -12,6 +12,7 @@ mod tile_pos;
 
 use std::collections::HashSet;
 use std::fmt::Debug;
+use crate::api::lua::FromLua;
 // Reexport
 pub use {
 	chunk_pos::ChunkPos, chunk_sub_pos::ChunkSubPos, direction::Direction, plugin_id::PluginId,
@@ -33,7 +34,7 @@ pub trait Offset<D>: Sized {
 	fn checked_offset(self, displacement: D) -> Option<Self>;
 }
 
-pub trait Prototype: Send + Clone + Sync + crate::lua::FromLua + 'static + Debug {
+pub trait Prototype: Send + Clone + Sync + FromLua + 'static + Debug {
 	type Item;
 
 	fn create(&self, id: RawId) -> Self::Item;

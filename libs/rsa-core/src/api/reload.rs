@@ -16,7 +16,7 @@ use crate::api::reload::hook::LuaHooks;
 use crate::registry::{AnyRegistryBuilder, Registry, RegistryBuilder};
 use crate::ty::{Prototype};
 use crate::error::Result;
-use crate::lua::glue::Glue;
+use crate::api::lua::glue::Glue;
 
 #[macro_export]
 macro_rules! reload {

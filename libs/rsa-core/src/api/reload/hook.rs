@@ -5,8 +5,8 @@ use mlua::{Function, Lua};
 use mlua::prelude::LuaResult;
 use crate::ty::Tag;
 use apollo::*;
-use crate::lua::{get_api, PluginLua};
-use crate::lua::def::hook::HookInstance;
+use crate::hook::HookInstance;
+use crate::api::lua::get_meta;
 
 pub struct LuaHooks {
 	builders: HashMap<Tag, LuaHookBuilder>
@@ -38,7 +38,7 @@ impl LuaHooks {
 		match self.builders.entry(key.clone()) {
 			Entry::Occupied(mut _entry) => {
 			}
-			Entry::Vacant(mut entry) => {
+			Entry::Vacant(entry) => {
 				entry.insert(LuaHookBuilder {
 					subscribers: Default::default()
 				});
@@ -57,7 +57,8 @@ impl LuaHookBuilder {
 	#[lua_method]
 	pub fn subscribe(&mut self, lua: &Lua, name: Tag, function: Function) -> LuaResult<()> {
 		if let Some(_) = self.subscribers.insert(name.clone(), function) {
-			warn!("Plugin {} overwrote {name} hook.", PluginLua::import(lua).id)
+			let meta = get_meta(lua);
+			warn!("Plugin {} overwrote {name} hook.", meta.plugin_id)
 		}
 
 		Ok(())

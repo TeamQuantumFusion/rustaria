@@ -68,7 +68,7 @@ pub fn compile_invoke_return(sig: &Signature, invoke: TokenStream) -> TokenStrea
 		let core = import!("rsa-core");
 		if is_ref(ty) {
 			quote!(
-			#invoke.map(|res| #core::lua::glue::LuaGlue::new_raw(res))
+			#invoke.map(|res| #core::api::lua::glue::LuaGlue::new_raw(res))
 		)
 		} else {
 			invoke
@@ -157,7 +157,7 @@ pub fn compile_args(
 			for ty in &mut types {
 				if let Type::Reference(reference) = ty {
 					let elem = reference.elem.clone();
-					*ty = parse_quote!(#core::lua::glue::LuaGlue<#elem>);
+					*ty = parse_quote!(#core::api::lua::glue::LuaGlue<#elem>);
 				}
 			}
 

@@ -3,7 +3,7 @@ use mlua::prelude::LuaUserData;
 use mlua::{UserDataFields, UserDataMethods};
 use rsa_core::api::Api;
 use rsa_core::api::carrier::Carrier;
-use rsa_core::lua::glue::{Glue, LuaGlue};
+use rsa_core::api::lua::glue::{Glue, LuaGlue};
 use rsa_core::plugin::archive::{Archive, TestAsset};
 use rsa_core::plugin::Plugin;
 use rsa_core::reload;

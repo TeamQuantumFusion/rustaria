@@ -16,13 +16,14 @@ use carrier::{Carrier, CarrierData};
 
 use crate::blake3::Hasher;
 use crate::error::Result;
-use crate::lua::def::hook::HookInstance;
+use crate::hook::HookInstance;
 use crate::plugin::archive::{Archive, TestAsset};
 use crate::plugin::Plugin;
 use crate::ty::{PluginId, Tag};
 
 pub mod carrier;
 pub mod reload;
+pub mod lua;
 
 #[derive(Clone)]
 pub struct Api {
@@ -202,12 +203,10 @@ mod tests {
 	use crate::api::test_utils::Counter;
 	use crate::api::Api;
 	use crate::error::Result;
-	use crate::lua::glue::{Glue, ToGlue};
-	use crate::lua::util::FromLua;
-	use crate::plugin::archive::{Archive, TestAsset};
-	use crate::plugin::Plugin;
+	use crate::api::lua::glue::ToGlue;
 	use crate::ty::{Prototype, RawId, Tag};
 	use crate::{initialize, reload};
+	use crate::api::lua::FromLua;
 
 	#[test]
 	pub fn test_registry() -> Result<()> {

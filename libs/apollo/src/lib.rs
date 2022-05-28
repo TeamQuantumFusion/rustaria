@@ -187,11 +187,11 @@ pub fn lua_impl(
 	let generics = &item.generics;
 	quote!(
 		#item
-		impl #generics #core::lua::LuaUserData for #ty {
-			fn add_methods<M: #core::lua::LuaUserDataMethods<Self>>(methods: &mut M) {
+		impl #generics #core::api::lua::LuaUserData for #ty {
+			fn add_methods<M: #core::api::lua::LuaUserDataMethods<Self>>(methods: &mut M) {
 				#methods
 			}
-			fn add_fields<M: #core::lua::LuaUserDataFields<Self>>(fields: &mut M) {
+			fn add_fields<M: #core::api::lua::LuaUserDataFields<Self>>(fields: &mut M) {
 				#fields
 			}
 		}

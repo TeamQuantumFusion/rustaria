@@ -5,7 +5,7 @@ use log::trace;
 use crate::ty::Tag;
 use crate::error::Result;
 use mlua::{Function, ToLuaMulti, UserData, UserDataMethods};
-use crate::lua::error::LuaError;
+use crate::api::lua::error::LuaError;
 
 #[derive(Default)]
 pub struct HookInstance {

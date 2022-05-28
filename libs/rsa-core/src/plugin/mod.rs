@@ -5,8 +5,8 @@ use mlua::Lua;
 use thiserror::Error;
 use serde::{Serialize, Deserialize};
 use crate::api::Api;
-use crate::lua::error::LuaError;
-use crate::lua::new_lua;
+use crate::api::lua::error::LuaError;
+use crate::api::lua::new_lua_state;
 use crate::plugin::archive::Archive;
 use crate::ty::PluginId;
 
@@ -42,7 +42,7 @@ impl Plugin {
 		let manifest: Manifest = serde_json::from_slice(&manifest_binary)?;
 
 		Ok(Plugin {
-			lua_state: new_lua(&manifest, api)?,
+			lua_state: new_lua_state(&manifest, api)?,
 			manifest,
 			archive,
 		})
@@ -70,7 +70,7 @@ impl Plugin {
 			recommendations: Default::default()
 		};
 		Plugin {
-			lua_state: new_lua(&manifest, api).unwrap(),
+			lua_state: new_lua_state(&manifest, api).unwrap(),
 			manifest,
 			archive,
 		}

@@ -1,6 +1,6 @@
 use mlua::{AnyUserData, FromLua, Lua, MetaMethod, ToLua, UserData, UserDataFields};
 use std::marker::PhantomData;
-use crate::lua::glue::LuaGlue;
+use crate::api::lua::glue::LuaGlue;
 
 pub struct GlueUserDataFields<'a, V: UserData, F: UserDataFields<LuaGlue<V>>> {
 	pub(crate) fields: &'a mut F,
