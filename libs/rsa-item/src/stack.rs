@@ -1,9 +1,9 @@
 use rsa_core::api::carrier::Carrier;
 #[allow(unused_imports)]
-use rsa_core::lua::{Lua, LuaMetaMethod, LuaResult, LuaUserData, LuaUserDataMethods};
-use rsa_core::lua::get_api;
+use rsa_core::api::lua::{Lua, LuaMetaMethod, LuaResult, LuaUserData, LuaUserDataMethods};
 use crate::item::Item;
 use apollo::{lua_method, lua_impl};
+use rsa_core::api::lua::get_meta;
 use crate::ItemPrototype;
 
 
@@ -38,7 +38,7 @@ impl ItemStack {
 impl ItemStack {
 	#[lua_method(increase)]
 	pub fn lua_increase(&mut self, lua: &Lua, amount: u32) -> LuaResult<Option<u32>> {
-		Ok(self.increase(&get_api(lua).get_carrier(), amount))
+		Ok(self.increase(&get_meta(lua).api.get_carrier(), amount))
 	}
 
 	#[lua_method]

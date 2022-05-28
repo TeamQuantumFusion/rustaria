@@ -2,18 +2,8 @@ local stuff = require "test.lua";
 stuff.test();
 
 
--- reload.registry:add("items", {
---     ["dirt"] = {
---         sprite = "sprite/tile/dirt.png",
---         collision = true
---     },
--- })
-
-hook:subscribe("tick", function()
-end)
-
-info "Registering tiles."
-Tiles:register {
+log.info "Registering tiles."
+reload.registry["tile"]:insert {
     ["dirt"] = {
         sprite = "sprite/tile/dirt.png",
         collision = true
@@ -21,8 +11,8 @@ Tiles:register {
     ["air"] = {}
 }
 
-info "Registering entities."
-Entities:register {
+log.info "Registering entities."
+reload.registry["entity"]:insert {
     ["player"] = {
         health = {
             maximum = 100

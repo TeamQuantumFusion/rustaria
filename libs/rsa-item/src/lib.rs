@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use item::{Item, ItemPrototype};
 
 use rsa_core::api::carrier::Carrier;
-use rsa_core::lua::{LuaUserData, LuaUserDataMethods};
+use rsa_core::api::lua::{LuaUserData, LuaUserDataMethods};
 use rsa_core::ty::{Prototype, Tag};
 
 pub mod stack;
@@ -35,11 +35,12 @@ mod tests {
 	use rsa_core::plugin::Plugin;
 	use rsa_core::reload;
 	use rsa_core::error::Result;
-	use rsa_core::api::lua::glue::{Glue};
-	use rsa_core::lua::{LuaResult};
+	use rsa_core::api::lua::glue::{Glue, ToGlue};
 	use rsa_core::api::lua::error::LuaError;
 	use crate::ItemSystem;
 	use apollo::*;
+	use rsa_core::api::lua::LuaResult;
+	use rsa_core::ty::Tag;
 	use crate::item::ItemPrototype;
 
 	pub struct Game {
@@ -72,29 +73,26 @@ mod tests {
 			Archive::new_test(vec![TestAsset::lua(
 				"entry", r#"
 -- register
-item:register {
+reload.registry["item"]:insert {
 	["stick"] = {
 		max_stack = 10
 	}
 }
 
 -- hook
-hook:subscribe("rustaria:test", function(game)
-	info("getting stick")
+reload.hook["r:test"]:subscribe("stick_getting", function(game)
+	log.info("getting stick")
 	local system = game.item;
-
-	system:thing(69)
-
 	local stick = system:get("stick")
 
 	stick:thing(69)
 
 	if stick then
-		info "creating stack"
+		log.info "creating stack"
 		local one_stick = stick:to_stack()
 		local two_sticks = stick:to_stack(2)
-		info(one_stick)
-		info(tostring(two_sticks))
+		log.info(one_stick)
+		log.info(tostring(two_sticks))
 	end
 end)"#,
 			)]),
@@ -102,13 +100,9 @@ end)"#,
 		)]);
 		reload!((ItemPrototype) => api);
 
-		Glue::scope(&mut game, |glue| {
-			api.invoke_hook("rustaria:test", || {
-				glue
-			}).lua_err().unwrap();
-		});
-
-
+		api.invoke_hook(&Tag::rsa("test"), || {
+			game.glue().lua()
+		}).unwrap();
 		Ok(())
 	}
 }

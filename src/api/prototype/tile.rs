@@ -41,6 +41,6 @@ impl Prototype for TilePrototype {
 	}
 
 	fn lua_registry_name() -> &'static str {
-		"Tiles"
+		"tile"
 	}
 }

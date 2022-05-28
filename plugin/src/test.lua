@@ -1,5 +1,5 @@
 return {
     test = function()
-        info "Lol things work"
+        log.info "Lol things work"
     end
 }

@@ -1,5 +1,5 @@
-use rsa_core::lua::{Lua, LuaResult};
 use apollo::{lua_method, lua_field, lua_impl};
+use rsa_core::api::lua::{Lua, LuaResult};
 use crate::stack::ItemStack;
 
 pub struct Test {

@@ -42,6 +42,6 @@ impl Prototype for EntityPrototype {
 	}
 
 	fn lua_registry_name() -> &'static str {
-		"Entities"
+		"entity"
 	}
 }

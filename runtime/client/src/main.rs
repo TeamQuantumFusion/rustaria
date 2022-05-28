@@ -12,6 +12,7 @@ use rsa_core::api::carrier::Carrier;
 use rsa_core::error::Result;
 use rsa_core::logging::debug;
 use rsa_core::math::vec2;
+use rsa_core::reload;
 use rsa_core::settings::UPS;
 use rsa_core::ty::{Prototype, Tag};
 use rsa_network::client::ClientNetwork;
@@ -19,6 +20,7 @@ use rsac_backend::ClientBackend;
 use rsac_backend::ty::Camera;
 use rsac_glium_backend::GliumBackend;
 use rustaria::api::prototype::entity::EntityPrototype;
+use rustaria::api::prototype::tile::TilePrototype;
 use rustaria::packet::ClientPacket;
 use rustaria::packet::entity::ClientEntityPacket;
 use rustaria::packet::player::ClientPlayerPacket;
@@ -53,7 +55,7 @@ fn main() -> Result<()> {
 	{
 		let carrier = client.api.get_carrier();
 		let prototype = carrier.get::<EntityPrototype>();
-		let id = prototype.id_from_tag(&Tag::rsa("bunne")).unwrap();
+		let id = prototype.id_from_tag(&Tag::rsa("bunne")).expect("where bunne");
 		let world = client.world.as_mut().unwrap();
 		let pos = vec2(5.0, 5.0);
 
@@ -198,7 +200,7 @@ impl Client {
 
 	fn reload(&mut self) -> Result<()> {
 		debug!(target: "reload@rustariac", "Reloading Client");
-		rustaria::api::reload(&mut self.api)?;
+		reload!((TilePrototype, EntityPrototype) => &mut self.api);
 
 		let mut sprites = HashSet::new();
 		let carrier = self.api.get_carrier();
