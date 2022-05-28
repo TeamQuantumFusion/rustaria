@@ -260,7 +260,7 @@ mod tests {
 		let mut api = Api::new_test();
 		api.load_simple_plugin(
 			r#"
-			reload.hook["rustaria:love_froge"]:subscribe("our_hook", function(var)
+			reload.hook["r:love_froge"]:subscribe("our_hook", function(var)
 				var:inc()
 			end)
 			"#,

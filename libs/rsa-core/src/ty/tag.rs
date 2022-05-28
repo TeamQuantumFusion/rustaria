@@ -45,7 +45,14 @@ impl Tag {
 	}
 
 	pub fn new<S: Into<String>>(tag: S) -> Result<Tag, TagCreationError> {
-		let tag = tag.into();
+		let mut tag = tag.into();
+		if &tag[0..2] == "r:" {
+			return Ok(Tag {
+				inner: "rustaria:".to_owned() + &tag[2..],
+				colon_index: 8,
+			})
+		}
+
 		let colon_index = tag.find(':').ok_or(TagCreationError::ColonMissing)?;
 		Self::new_internal(tag, colon_index)
 	}
@@ -99,4 +106,34 @@ pub enum TagCreationError {
 	CharacterLimit,
 	#[error("Illegal characters were found")]
 	IllegalCharacters,
+}
+
+
+#[cfg(test)]
+mod tests {
+	use crate::ty::Tag;
+
+	#[test]
+	pub fn basic_tag() {
+		assert_eq!(Tag::new("mod_id:path").unwrap(), Tag {
+			inner: "mod_id:path".to_string(),
+			colon_index: 6
+		})
+	}
+
+	#[test]
+	pub fn shorthand_tag() {
+		assert_eq!(Tag::new("r:path").unwrap(), Tag {
+			inner: "rustaria:path".to_string(),
+			colon_index: 8
+		})
+	}
+
+	#[test]
+	pub fn internal_tag() {
+		assert_eq!(Tag::rsa("path"), Tag {
+			inner: "rustaria:path".to_string(),
+			colon_index: 8
+		})
+	}
 }
