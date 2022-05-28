@@ -1,3 +1,4 @@
+use std::fmt::Write;
 use crate::api::{Api, AssetKind};
 use crate::plugin::Manifest;
 use crate::ty::Tag;
@@ -42,7 +43,8 @@ pub fn new_lua_state(manifest: &Manifest, api: &Api) -> mlua::Result<Lua> {
 	let searchers: LuaTable = package.get("loaders")?;
 	searchers.raw_insert(
 		2,
-		lua_state.create_function(|lua, location: Tag| {
+		lua_state.create_function(|lua, mut location: Tag| {
+			location.inner.write_str(".lua").map_err(|io| LuaError::external(io))?;
 			debug!(target: "misc@rustaria.api", "Loading {}", location);
 			let meta = get_meta(lua);
 			let asset = meta.api.get_asset(AssetKind::Source, &location)?;

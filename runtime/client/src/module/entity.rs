@@ -34,10 +34,9 @@ impl EntityHandler {
 			.as_ref()
 			.wrap_err(SmartError::CarrierUnavailable)?;
 
-		let registry = carrier.get::<EntityPrototype>();
 		match packet {
 			ServerEntityPacket::New(uuid, id, pos) => {
-				let prototype = registry
+				let prototype = carrier.get::<EntityPrototype>()
 					.prototype_from_id(id);
 				self.world.insert(uuid, id, pos, prototype);
 			}

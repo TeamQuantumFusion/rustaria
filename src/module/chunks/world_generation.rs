@@ -78,17 +78,8 @@ impl Reloadable for WorldGeneration {
 
 fn generate_chunk(stack: &Carrier, pos: ChunkPos) -> Result<Chunk> {
 	let tiles = stack.get::<TilePrototype>();
-
-	// We do a touch of unwrapping.
-	let id = tiles
-		.id_from_tag(&Tag::rsa("air"))
-		.wrap_err("lol")?;
-	let air = tiles.prototype_from_id(id).create(id);
-
-	let id = tiles
-		.id_from_tag(&Tag::rsa("dirt"))
-		.wrap_err("lol")?;
-	let dirt = tiles.prototype_from_id(id).create(id);
+	let air = tiles.create_from_tag(&Tag::rsa("air"))?;
+	let dirt = tiles.create_from_tag(&Tag::rsa("dirt"))?;
 
 	let mut chunk = Chunk {
 		tiles: ChunkLayer::new([[air; CHUNK_SIZE]; CHUNK_SIZE]),

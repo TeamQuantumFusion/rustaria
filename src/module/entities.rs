@@ -43,8 +43,7 @@ impl EntitySystem {
 		// Get prototype
 		let prototype = carrier
 			.get::<EntityPrototype>()
-			.prototype_from_id(id)
-			;
+			.prototype_from_id(id);
 
 		self.world.insert(uuid, id, position, prototype);
 		self.new_entities.push((uuid, id, position));

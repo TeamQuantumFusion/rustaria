@@ -17,7 +17,7 @@ use carrier::{Carrier, CarrierData};
 use crate::blake3::Hasher;
 use crate::error::Result;
 use crate::hook::HookInstance;
-use crate::plugin::archive::{Archive};
+use crate::plugin::archive::{Archive, TestAsset};
 use crate::plugin::Plugin;
 use crate::ty::{PluginId, Tag};
 

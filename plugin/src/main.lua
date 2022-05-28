@@ -1,9 +1,8 @@
-local stuff = require "test.lua";
+local stuff = require "test";
 stuff.test();
 
-
 log.info "Registering tiles."
-reload.registry["tile"]:insert {
+reload.registry[""]:insert {
     ["dirt"] = {
         sprite = "sprite/tile/dirt.png",
         collision = true

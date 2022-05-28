@@ -10,8 +10,8 @@ use mlua::{Lua, Table, Value};
 use crate::api::carrier::CarrierData;
 use crate::api::Api;
 use apollo::*;
-use registry::LuaRegistries;
-use crate::api::reload::hook::LuaHooks;
+use registry::LuaRegistryBuilder;
+use crate::api::reload::hook::LuaHookBuilder;
 
 use crate::registry::{AnyRegistryBuilder, Registry, RegistryBuilder};
 use crate::ty::{Prototype};
@@ -70,15 +70,15 @@ impl<'a> Reload<'a> {
 }
 
 pub struct LuaReload {
-	pub(crate) registries: LuaRegistries,
-	pub(crate) hooks: LuaHooks,
+	pub(crate) registries: LuaRegistryBuilder,
+	pub(crate) hooks: LuaHookBuilder,
 }
 
 impl LuaReload {
 	pub fn new() -> LuaReload {
 		LuaReload {
-			registries: LuaRegistries::new(),
-			hooks: LuaHooks::new()
+			registries: LuaRegistryBuilder::new(),
+			hooks: LuaHookBuilder::new()
 		}
 	}
 }
@@ -86,12 +86,12 @@ impl LuaReload {
 #[lua_impl]
 impl LuaReload {
 	#[lua_field]
-	pub fn get_registry(&mut self) -> LuaResult<&mut LuaRegistries> {
+	pub fn get_registry(&mut self) -> LuaResult<&mut LuaRegistryBuilder> {
 		Ok(&mut self.registries)
 	}
 
 	#[lua_field]
-	pub fn get_hook(&mut self) -> LuaResult<&mut LuaHooks> {
+	pub fn get_hook(&mut self) -> LuaResult<&mut LuaHookBuilder> {
 		Ok(&mut self.hooks)
 	}
 }

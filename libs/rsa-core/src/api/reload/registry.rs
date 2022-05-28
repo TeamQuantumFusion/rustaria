@@ -11,14 +11,14 @@ use crate::ty::{Prototype, Tag};
 /// ```lua
 /// reload.registry["prototype-name"] -> LuaRegistryBuilder
 /// ```
-pub struct LuaRegistries {
-	builders: HashMap<String, LuaRegistryBuilder>,
+pub struct LuaRegistryBuilder {
+	builders: HashMap<String, LuaRegistryDataBuilder>,
 	hasher: Hasher,
 }
 
-impl LuaRegistries {
-	pub fn new() -> LuaRegistries {
-		LuaRegistries {
+impl LuaRegistryBuilder {
+	pub fn new() -> LuaRegistryBuilder {
+		LuaRegistryBuilder {
 			builders: Default::default(),
 			hasher: Default::default(),
 		}
@@ -26,7 +26,7 @@ impl LuaRegistries {
 
 	pub fn start_prototype<P: Prototype>(&mut self) {
 		let name = P::lua_registry_name().to_string();
-		let builder = LuaRegistryBuilder(Box::new(RegistryBuilder::<P>::new()));
+		let builder = LuaRegistryDataBuilder(Box::new(RegistryBuilder::<P>::new()));
 		self.builders.insert(name, builder);
 	}
 
@@ -50,9 +50,9 @@ impl LuaRegistries {
 }
 
 #[lua_impl]
-impl LuaRegistries {
+impl LuaRegistryBuilder {
 	#[lua_method]
-	pub fn __index(&mut self, key: String) -> LuaResult<&mut LuaRegistryBuilder> {
+	pub fn __index(&mut self, key: String) -> LuaResult<&mut LuaRegistryDataBuilder> {
 		Ok(self
 			.builders
 			.get_mut(&key)
@@ -61,10 +61,10 @@ impl LuaRegistries {
 }
 
 /// A RegistryBuilder allows you to insert and extend prototypes in rustaria.
-pub struct LuaRegistryBuilder(Box<dyn AnyRegistryBuilder>);
+pub struct LuaRegistryDataBuilder(Box<dyn AnyRegistryBuilder>);
 
 #[lua_impl]
-impl LuaRegistryBuilder {
+impl LuaRegistryDataBuilder {
 	#[lua_method]
 	pub fn insert(&mut self, lua: &Lua, values: Table) -> LuaResult<()> {
 		for res in values.pairs() {

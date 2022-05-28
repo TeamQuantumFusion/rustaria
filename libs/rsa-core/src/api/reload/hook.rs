@@ -8,13 +8,13 @@ use apollo::*;
 use crate::hook::HookInstance;
 use crate::api::lua::get_meta;
 
-pub struct LuaHooks {
-	builders: HashMap<Tag, LuaHookBuilder>
+pub struct LuaHookBuilder {
+	builders: HashMap<Tag, LuaHookDataBuilder>
 }
 
-impl LuaHooks {
-	pub fn new() -> LuaHooks {
-		LuaHooks {
+impl LuaHookBuilder {
+	pub fn new() -> LuaHookBuilder {
+		LuaHookBuilder {
 			builders: Default::default()
 		}
 	}
@@ -32,14 +32,14 @@ impl LuaHooks {
 }
 
 #[lua_impl]
-impl LuaHooks {
+impl LuaHookBuilder {
 	#[lua_method]
-	pub fn __index(&mut self, key: Tag) -> LuaResult<&mut LuaHookBuilder> {
+	pub fn __index(&mut self, key: Tag) -> LuaResult<&mut LuaHookDataBuilder> {
 		match self.builders.entry(key.clone()) {
 			Entry::Occupied(mut _entry) => {
 			}
 			Entry::Vacant(entry) => {
-				entry.insert(LuaHookBuilder {
+				entry.insert(LuaHookDataBuilder {
 					subscribers: Default::default()
 				});
 			}
@@ -48,12 +48,12 @@ impl LuaHooks {
 	}
 }
 
-pub struct LuaHookBuilder {
+pub struct LuaHookDataBuilder {
 	subscribers: HashMap<Tag, Function>
 }
 
 #[lua_impl]
-impl LuaHookBuilder {
+impl LuaHookDataBuilder {
 	#[lua_method]
 	pub fn subscribe(&mut self, lua: &Lua, name: Tag, function: Function) -> LuaResult<()> {
 		if let Some(_) = self.subscribers.insert(name.clone(), function) {
