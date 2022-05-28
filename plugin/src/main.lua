@@ -2,7 +2,7 @@ local stuff = require "test";
 stuff.test();
 
 log.info "Registering tiles."
-reload.registry[""]:insert {
+reload.registry["tile"]:insert {
     ["dirt"] = {
         sprite = "sprite/tile/dirt.png",
         collision = true

@@ -122,8 +122,8 @@ impl ClientWorld {
 
 impl Reloadable for ClientWorld {
 	fn reload(&mut self, api: &Api) {
-		self.player_entity_id = api.get_carrier().get::<EntityPrototype>()
-			.id_from_tag(&Tag::rsa("player"));
+		self.player_entity_id = Some(api.get_carrier().get::<EntityPrototype>()
+			.id_from_tag(&Tag::rsa("player")).unwrap());
 
 		self.chunk.reload(api);
 		self.entity.reload(api);

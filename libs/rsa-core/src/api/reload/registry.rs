@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use apollo::{lua_impl, lua_method};
 use mlua::{Lua, Result as LuaResult, Table};
-use crate::api::carrier::CarrierData;
+use crate::api::carrier::{Carrier, CarrierData};
 use crate::blake3::Hasher;
 use crate::registry::{AnyRegistryBuilder, Registry, RegistryBuilder};
 use crate::ty::{Prototype, Tag};
@@ -30,8 +30,8 @@ impl LuaRegistryBuilder {
 		self.builders.insert(name, builder);
 	}
 
-	pub fn end_prototype<P: Prototype>(&mut self, carrier: &mut CarrierData) {
-		carrier.registries.insert::<Registry<P>>(
+	pub fn end_prototype<P: Prototype>(&mut self, carrier: Carrier) {
+		carrier.data.write().registries.insert::<Registry<P>>(
 			*self
 				.builders
 				.get(P::lua_registry_name())
@@ -43,8 +43,8 @@ impl LuaRegistryBuilder {
 		);
 	}
 
-	pub fn finish(self, carrier: &mut CarrierData) {
-		carrier.hash = self.hasher.finalize();
+	pub fn finish(self, carrier: Carrier) {
+		carrier.data.write().hash = self.hasher.finalize();
 	}
 
 }
@@ -56,7 +56,7 @@ impl LuaRegistryBuilder {
 		Ok(self
 			.builders
 			.get_mut(&key)
-			.expect(&format!("Could not find registry named {key}")))
+			.unwrap_or_else(|| panic!("Could not find registry named {key}")))
 	}
 }
 

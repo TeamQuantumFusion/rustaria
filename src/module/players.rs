@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use rsa_core::ty::{RawId, Tag};
 use rsa_core::api::{Api, Reloadable};
 use rsa_core::error::{ContextCompat, Result};
 use rsa_core::logging::{info, warn};
 use rsa_core::math::vec2;
+use rsa_core::ty::{RawId, Tag};
 use rsa_network::Token;
 
 use crate::api::prototype::entity::EntityPrototype;
@@ -71,8 +71,11 @@ impl PlayerSystem {
 
 impl Reloadable for PlayerSystem {
 	fn reload(&mut self, api: &Api) {
-		self.player_entity = api.get_carrier()
-			.get::<EntityPrototype>()
-			.id_from_tag(&Tag::rsa("player"))
+		self.player_entity = Some(
+			api.get_carrier()
+				.get::<EntityPrototype>()
+				.id_from_tag(&Tag::rsa("player"))
+				.unwrap(),
+		);
 	}
 }

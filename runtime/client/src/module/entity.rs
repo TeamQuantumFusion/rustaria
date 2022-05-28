@@ -36,9 +36,9 @@ impl EntityHandler {
 
 		match packet {
 			ServerEntityPacket::New(uuid, id, pos) => {
-				let prototype = carrier.get::<EntityPrototype>()
-					.prototype_from_id(id);
-				self.world.insert(uuid, id, pos, prototype);
+
+				self.world.insert(uuid, id, pos, carrier.get::<EntityPrototype>()
+					.prototype_from_id(id));
 			}
 			ServerEntityPacket::Kill(uuid) => {
 				self.world.remove(uuid);

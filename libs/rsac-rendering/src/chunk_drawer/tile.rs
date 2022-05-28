@@ -1,6 +1,7 @@
 use rustaria::api::{prototype::tile::TilePrototype, ty::ConnectionType};
 use rustaria::tile::Tile;
 use rsa_core::{registry::Registry, ty::RawId};
+use rsa_core::api::carrier::RegistryLock;
 use rsa_core::math::rect;
 use rsac_backend::{
 	builder::VertexBuilder,
@@ -65,7 +66,7 @@ pub struct BakedTile {
 }
 
 impl BakedTile {
-	pub fn new(registry: &Registry<TilePrototype>, tile: &Tile) -> BakedTile {
+	pub fn new(registry: &RegistryLock<TilePrototype>, tile: &Tile) -> BakedTile {
 		let prototype = registry.prototype_from_id(tile.id);
 
 		BakedTile {

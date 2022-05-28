@@ -2,12 +2,13 @@ mod registry;
 mod hook;
 
 use eyre::Context;
-use log::trace;
+use log::{info, trace};
 
 use mlua::prelude::LuaResult;
 use mlua::{Lua, Table, Value};
+use parking_lot::RwLockWriteGuard;
 
-use crate::api::carrier::CarrierData;
+use crate::api::carrier::{Carrier, CarrierData};
 use crate::api::Api;
 use apollo::*;
 use registry::LuaRegistryBuilder;
@@ -31,11 +32,22 @@ macro_rules! reload {
 
 pub struct Reload<'a> {
 	pub(crate) api: &'a mut Api,
-	pub(crate) carrier: &'a mut CarrierData,
 	pub(crate) reload: LuaReload,
 }
 
 impl<'a> Reload<'a> {
+	pub fn new(api: &'a mut Api) -> Reload<'a> {
+		info!(target: "reload@rustaria.api", "Freezing carrier.");
+		let carrier = api.get_carrier();
+		let mut carrier = carrier.data.write();
+		carrier.registries.clear();
+		carrier.hash = [0; 32];
+		Reload {
+			api,
+			reload: LuaReload::new()
+		}
+	}
+
 	pub fn start_prototype<P: Prototype>(&mut self) {
 		self.reload.registries.start_prototype::<P>();
 	}
@@ -60,11 +72,13 @@ impl<'a> Reload<'a> {
 	}
 
 	pub fn end_prototype<P: Prototype>(&mut self) {
-		self.reload.registries.end_prototype::<P>(&mut self.carrier);
+		let carrier = self.api.get_carrier();
+		self.reload.registries.end_prototype::<P>(carrier);
 	}
 
 	pub fn finish(mut self) {
-		self.reload.registries.finish(&mut self.carrier);
+		let carrier = self.api.get_carrier();
+		self.reload.registries.finish(carrier);
 		self.reload.hooks.finish(&mut self.api.write().hook_instance);
 	}
 }

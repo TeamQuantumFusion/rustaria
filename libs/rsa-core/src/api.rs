@@ -14,10 +14,10 @@ use type_map::TypeMap;
 use crate::api::reload::{LuaReload, Reload};
 use carrier::{Carrier, CarrierData};
 
-use crate::blake3::Hasher;
+
 use crate::error::Result;
 use crate::hook::HookInstance;
-use crate::plugin::archive::{Archive, TestAsset};
+use crate::plugin::archive::{Archive};
 use crate::plugin::Plugin;
 use crate::ty::{PluginId, Tag};
 
@@ -107,19 +107,7 @@ impl Api {
 	}
 
 	pub fn reload(&mut self) -> Reload {
-		info!(target: "init@rustaria.api", "Freezing carrier.");
-		let carrier = unsafe {
-			&mut *(self.get_carrier().data.get() as *const CarrierData as *mut CarrierData)
-		};
-
-		carrier.registries.clear();
-		carrier.hash = Default::default();
-
-		Reload {
-			api: self,
-			carrier,
-			reload: LuaReload::new(),
-		}
+		Reload::new(self)
 	}
 }
 
@@ -171,7 +159,7 @@ impl Api {
 	pub fn load_simple_plugin(&mut self, code: &str) {
 		self.load_test_plugins(vec![Plugin::new_test(
 			"hello",
-			Archive::new_test(vec![TestAsset::lua("entry", code)]),
+			Archive::new_test(vec![crate::plugin::archive::TestAsset::lua("entry", code)]),
 			&self,
 		)])
 	}

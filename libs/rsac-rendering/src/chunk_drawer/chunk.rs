@@ -24,7 +24,7 @@ impl BakedChunk {
 			let baked_row = &mut tiles.grid[y];
 			let row = &chunk.tiles.grid[y];
 			for x in 0..CHUNK_SIZE {
-				baked_row[x] = Some(BakedTile::new(registry, &row[x]));
+				baked_row[x] = Some(BakedTile::new(&registry, &row[x]));
 			}
 		}
 

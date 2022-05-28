@@ -1,11 +1,12 @@
 use crate::blake3::Hasher;
-use crate::error::Result;
+
 use log::trace;
 use mlua::prelude::LuaResult;
 use mlua::{Lua, Table, Value};
 use std::any::Any;
 use std::collections::HashMap;
 use std::slice::Iter;
+use crate::registry::RegistryError::MissingPrototype;
 
 use crate::ty::{Prototype, RawId, Tag};
 
@@ -16,21 +17,34 @@ pub struct Registry<P: Prototype> {
 	pub(crate) entries: Vec<P>,
 }
 
+#[derive(thiserror::Error, Debug)]
+pub enum RegistryError {
+	#[error("Could not find prototype on tag {0}")]
+	MissingPrototype(Tag)
+}
+
 impl<P: Prototype> Registry<P> {
 	pub fn iter(&self) -> Iter<P> {
 		self.entries.iter()
 	}
 
-	pub fn id_from_tag(&self, tag: &Tag) -> Option<RawId> {
-		self.tag_to_id.get(tag).copied()
+	pub fn id_from_tag(&self, tag: &Tag) -> Result<RawId, RegistryError> {
+		match self.tag_to_id.get(tag).copied() {
+			None => {
+				Err(MissingPrototype(tag.clone()))
+			}
+			Some(id) => {
+				Ok(id)
+			}
+		}
 	}
 
-	pub fn prototype_from_tag(&self, tag: &Tag) -> Option<&P> {
-		Some(self.prototype_from_id(self.id_from_tag(tag)?))
+	pub fn prototype_from_tag(&self, tag: &Tag) -> Result<&P, RegistryError> {
+		Ok(self.prototype_from_id(self.id_from_tag(tag)?))
 	}
 
-	pub fn create_from_tag(&self, tag: &Tag) -> Option<P::Item> {
-		Some(self.create_from_id(self.id_from_tag(tag)?))
+	pub fn create_from_tag(&self, tag: &Tag) -> Result<P::Item, RegistryError> {
+		Ok(self.create_from_id(self.id_from_tag(tag)?))
 	}
 
 	#[inline(always)]
