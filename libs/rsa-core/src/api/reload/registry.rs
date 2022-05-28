@@ -1,0 +1,77 @@
+use std::collections::HashMap;
+use apollo::{lua_impl, lua_method};
+use mlua::{Lua, Result as LuaResult, Table};
+use crate::api::carrier::CarrierData;
+use crate::blake3::Hasher;
+use crate::registry::{AnyRegistryBuilder, Registry, RegistryBuilder};
+use crate::ty::{Prototype, Tag};
+
+/// LuaRegistries contains all of the registry builders that this reload requires.
+/// You can access a builder by the use of the `__index` meta-method which you can access like this.
+/// ```lua
+/// reload.registry["prototype-name"] -> LuaRegistryBuilder
+/// ```
+pub struct LuaRegistries {
+	builders: HashMap<String, LuaRegistryBuilder>,
+	hasher: Hasher,
+}
+
+impl LuaRegistries {
+	pub fn new() -> LuaRegistries {
+		LuaRegistries {
+			builders: Default::default(),
+			hasher: Default::default(),
+		}
+	}
+
+	pub fn start_prototype<P: Prototype>(&mut self) {
+		let name = P::lua_registry_name().to_string();
+		let builder = LuaRegistryBuilder(Box::new(RegistryBuilder::<P>::new()));
+		self.builders.insert(name, builder);
+	}
+
+	pub fn end_prototype<P: Prototype>(&mut self, carrier: &mut CarrierData) {
+		carrier.registries.insert::<Registry<P>>(
+			*self
+				.builders
+				.get(P::lua_registry_name())
+				.expect("Prototypes builder missing, registration missing.")
+				.0
+				.finish(&mut self.hasher)
+				.downcast::<Registry<P>>()
+				.expect("wrong output type"),
+		);
+	}
+
+	pub fn finish(self, carrier: &mut CarrierData) {
+		carrier.hash = self.hasher.finalize();
+	}
+
+}
+
+#[lua_impl]
+impl LuaRegistries {
+	#[lua_method]
+	pub fn __index(&mut self, key: String) -> LuaResult<&mut LuaRegistryBuilder> {
+		Ok(self
+			.builders
+			.get_mut(&key)
+			.expect(&format!("Could not find registry named {key}")))
+	}
+}
+
+/// A RegistryBuilder allows you to insert and extend prototypes in rustaria.
+pub struct LuaRegistryBuilder(Box<dyn AnyRegistryBuilder>);
+
+#[lua_impl]
+impl LuaRegistryBuilder {
+	#[lua_method]
+	pub fn insert(&mut self, lua: &Lua, values: Table) -> LuaResult<()> {
+		for res in values.pairs() {
+			let (tag, table): (Tag, Table) = res?;
+			self.0.register(lua, tag, table)?;
+		}
+
+		Ok(())
+	}
+}

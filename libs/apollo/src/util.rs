@@ -22,8 +22,8 @@ pub fn compile_reg_args(
 	let mut patterns: Punctuated<Pat, Token!(,)> = Punctuated::new();
 	for arg in args {
 		if let FnArg::Typed(ty) = arg {
-			types.push_value(*ty.ty.clone());
-			patterns.push_value(*ty.pat.clone());
+			types.push(*ty.ty.clone());
+			patterns.push(*ty.pat.clone());
 		}
 	}
 
@@ -59,16 +59,20 @@ pub fn filter_self_lua(iter: Iter<FnArg>) -> (bool, Peekable<Iter<FnArg>>) {
 }
 
 pub fn compile_invoke_return(sig: &Signature, invoke: TokenStream) -> TokenStream {
-	let ty = get_return_type(&sig.output);
+	if let ReturnType::Default = sig.output {
+		quote!(#invoke; Ok(()))
+	} else {
+		let ty = get_return_type(&sig.output);
 
-	// glue
-	let core = import!("rsa-core");
-	if is_ref(ty) {
-		quote!(
+		// glue
+		let core = import!("rsa-core");
+		if is_ref(ty) {
+			quote!(
 			#invoke.map(|res| #core::lua::glue::LuaGlue::new_raw(res))
 		)
-	} else {
-		invoke
+		} else {
+			invoke
+		}	
 	}
 }
 

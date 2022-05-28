@@ -9,23 +9,35 @@ use crate::lua::glue::methods::GlueUserDataMethods;
 mod fields;
 mod methods;
 
+pub trait ToGlue where Self: UserData {
+	fn glue(&mut self) -> Glue<Self>;
+}
+
+impl<V: UserData> ToGlue for V  {
+	fn glue(&mut self) -> Glue<Self> {
+		Glue::new(self)
+	}
+}
+
+#[derive(Clone)]
 pub struct Glue<'a, V: UserData> {
 	raw: LuaGlue<V>,
 	_value: PhantomData<&'a mut V>,
 }
 
 impl<'a, V: UserData> Glue<'a, V>  {
-	pub fn scope(data: &'a mut V, func: impl FnOnce(LuaGlue<V>)) {
-		let glue = Glue {
+	pub fn new(data: &'a mut V) -> Glue<'a, V>  {
+		Glue {
 			raw: LuaGlue {
 				value: data
 			},
 			_value: PhantomData::default()
-		};
-
-		func((&*glue).clone())
+		}
 	}
 
+	pub fn lua(self) -> LuaGlue<V> {
+		self.raw
+	}
 }
 
 impl<'a, V: UserData> Deref for Glue<'a, V> {

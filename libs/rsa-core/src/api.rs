@@ -8,17 +8,18 @@ use std::{
 };
 
 use log::{info, warn};
-use mlua::{ToLuaMulti, UserData};
+use mlua::{Lua, ToLuaMulti, UserData};
 use type_map::TypeMap;
 
+use crate::api::reload::{LuaReload, Reload};
 use carrier::{Carrier, CarrierData};
-use reload::ApiReload;
 
 use crate::blake3::Hasher;
+use crate::error::Result;
 use crate::lua::def::hook::HookInstance;
+use crate::plugin::archive::{Archive, TestAsset};
 use crate::plugin::Plugin;
 use crate::ty::{PluginId, Tag};
-use crate::error::Result;
 
 pub mod carrier;
 pub mod reload;
@@ -104,19 +105,19 @@ impl Api {
 		instance.trigger(name, args_func)
 	}
 
-	pub fn reload(&mut self) -> ApiReload {
+	pub fn reload(&mut self) -> Reload {
 		info!(target: "init@rustaria.api", "Freezing carrier.");
-		let carrier = unsafe { &mut *(self.get_carrier().data.get() as *const CarrierData as *mut CarrierData) };
+		let carrier = unsafe {
+			&mut *(self.get_carrier().data.get() as *const CarrierData as *mut CarrierData)
+		};
 
 		carrier.registries.clear();
 		carrier.hash = Default::default();
 
-		ApiReload {
+		Reload {
 			api: self,
 			carrier,
-			registry_builders: TypeMap::new(),
-			hook_builder: Default::default(),
-			hasher: Hasher::new(),
+			reload: LuaReload::new(),
 		}
 	}
 }
@@ -165,28 +166,112 @@ impl Api {
 			.map(|plugin| (plugin.manifest.id.clone(), plugin))
 			.collect();
 	}
+
+	pub fn load_simple_plugin(&mut self, code: &str) {
+		self.load_test_plugins(vec![Plugin::new_test(
+			"hello",
+			Archive::new_test(vec![TestAsset::lua("entry", code)]),
+			&self,
+		)])
+	}
+}
+
+#[cfg(any(feature = "test-utils", test))]
+mod test_utils {
+	#[derive(Ord, PartialOrd, Eq, PartialEq, Clone)]
+	pub struct Counter {
+		pub count: u32,
+	}
+
+	use apollo::*;
+	#[lua_impl]
+	impl Counter {
+		pub fn new() -> Counter {
+			Counter { count: 0 }
+		}
+
+		#[lua_method]
+		pub fn inc(&mut self) {
+			self.count += 1;
+		}
+	}
 }
 
 #[cfg(test)]
 mod tests {
+	use crate::api::test_utils::Counter;
 	use crate::api::Api;
+	use crate::error::Result;
+	use crate::lua::glue::{Glue, ToGlue};
+	use crate::lua::util::FromLua;
 	use crate::plugin::archive::{Archive, TestAsset};
 	use crate::plugin::Plugin;
+	use crate::ty::{Prototype, RawId, Tag};
+	use crate::{initialize, reload};
 
 	#[test]
-	pub fn test() {
+	pub fn test_registry() -> Result<()> {
+		initialize()?;
+
+		#[derive(Clone, PartialEq, Debug, FromLua)]
+		pub struct FrogePrototype {
+			cool: bool,
+		}
+
+		impl Prototype for FrogePrototype {
+			type Item = Froge;
+
+			fn create(&self, id: RawId) -> Self::Item {
+				Froge { cool: self.cool }
+			}
+
+			fn lua_registry_name() -> &'static str {
+				"froge"
+			}
+		}
+
+		pub struct Froge {
+			cool: bool,
+		}
+
 		let mut api = Api::new_test();
-		api.load_test_plugins(vec![Plugin::new_test(
-			"hello",
-			Archive::new_test(vec![TestAsset::lua(
-				"entry",
-				r#"
-				-- entry stuff
+		api.load_simple_plugin(
+			r#"
+			reload.registry["froge"]:insert {
+				["frog"] = {
+					cool = true
+				}
+			}
+			"#,
+		);
 
+		reload!((FrogePrototype) => api);
 
-				"#,
-			)]),
-			&api,
-		)]);
+		assert_eq!(
+			api.get_carrier().get::<FrogePrototype>().entries[0],
+			FrogePrototype { cool: true }
+		);
+		Ok(())
+	}
+
+	#[test]
+	pub fn test_hook() -> Result<()> {
+		initialize()?;
+		let mut api = Api::new_test();
+		api.load_simple_plugin(
+			r#"
+			reload.hook["rustaria:love_froge"]:subscribe("our_hook", function(var)
+				var:inc()
+			end)
+			"#,
+		);
+
+		reload!(() => api);
+
+		let mut counter = Counter::new();
+		api.invoke_hook(&Tag::rsa("love_froge"), || counter.glue().lua())?;
+
+		assert_eq!(counter.count, 1);
+		Ok(())
 	}
 }

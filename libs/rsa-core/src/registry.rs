@@ -1,6 +1,9 @@
 use crate::blake3::Hasher;
 use crate::error::Result;
 use log::trace;
+use mlua::prelude::LuaResult;
+use mlua::{Lua, Table, Value};
+use std::any::Any;
 use std::collections::HashMap;
 use std::slice::Iter;
 
@@ -32,12 +35,16 @@ impl<P: Prototype> Registry<P> {
 
 	#[inline(always)]
 	pub fn tag_from_id(&self, id: RawId) -> &Tag {
-		self.id_to_tag.get(id.index()).expect("RawId guideline failure")
+		self.id_to_tag
+			.get(id.index())
+			.expect("RawId guideline failure")
 	}
 
 	#[inline(always)]
 	pub fn prototype_from_id(&self, id: RawId) -> &P {
-		self.entries.get(id.index()).expect("RawId guideline failure")
+		self.entries
+			.get(id.index())
+			.expect("RawId guideline failure")
 	}
 
 	#[inline(always)]
@@ -49,6 +56,22 @@ impl<P: Prototype> Registry<P> {
 		self.tag_to_id.clear();
 		self.id_to_tag.clear();
 		self.entries.clear();
+	}
+}
+
+pub trait AnyRegistryBuilder {
+	fn register(&mut self, lua: &Lua, tag: Tag, prototype: Table) -> LuaResult<()>;
+	fn finish(&self, hasher: &mut Hasher) -> Box<dyn Any>;
+}
+
+impl<P: Prototype> AnyRegistryBuilder for RegistryBuilder<P> {
+	fn register(&mut self, lua: &Lua, tag: Tag, prototype: Table) -> LuaResult<()> {
+		self.register(tag, lua.unpack(Value::Table(prototype))?);
+		Ok(())
+	}
+
+	fn finish(&self, hasher: &mut Hasher) -> Box<dyn Any> {
+		Box::new(self.finish(hasher))
 	}
 }
 
@@ -69,7 +92,7 @@ impl<P: Prototype> RegistryBuilder<P> {
 		self.entries.insert(tag, prototype);
 	}
 
-	pub fn finish(&self, hasher: &mut Hasher) -> Result<Registry<P>> {
+	pub fn finish(&self, hasher: &mut Hasher) -> Registry<P> {
 		let mut data: Vec<_> = self.entries.clone().into_iter().collect();
 
 		data.sort_by(|(i1, _), (i2, _)| i1.cmp(i2));
@@ -89,10 +112,10 @@ impl<P: Prototype> RegistryBuilder<P> {
 			entries.push(prototype);
 		}
 
-		Ok(Registry {
+		Registry {
 			tag_to_id,
 			id_to_tag,
 			entries,
-		})
+		}
 	}
 }

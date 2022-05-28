@@ -12,6 +12,7 @@ log = "0.4.*"
 
 # Lua
 frogelua = { path = "../frogelua" }
+apollo = { path = "../apollo" }
 mlua = { git = "https://github.com/alphaqu/mlua", branch = "alphacurseness", features = ["luajit", "vendored", "serialize", "send"] }
 
 # Errors

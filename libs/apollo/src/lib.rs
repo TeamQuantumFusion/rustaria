@@ -71,9 +71,10 @@ fn lua_method_reg(item: &ImplItemMethod, attr: MethodAttr) -> TokenStream {
 
 	let (closure_args, rust_args) =
 		util::compile_args(method_type.self_arg(), lua_arg, true, names, types);
-
+	
+	let ret = util::compile_invoke_return(&item.sig, quote!(Self::#rust_ident(#rust_args)));
 	quote!(methods.#lua_reg_method(#lua_name, |#closure_args| unsafe {
-		Self::#rust_ident(#rust_args)
+		#ret
 	});)
 }
 
@@ -183,9 +184,10 @@ pub fn lua_impl(
 	}
 
 	let ty = &item.self_ty;
+	let generics = &item.generics;
 	quote!(
 		#item
-		impl #core::lua::LuaUserData for #ty {
+		impl #generics #core::lua::LuaUserData for #ty {
 			fn add_methods<M: #core::lua::LuaUserDataMethods<Self>>(methods: &mut M) {
 				#methods
 			}

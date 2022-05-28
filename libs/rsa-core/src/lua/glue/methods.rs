@@ -1,8 +1,8 @@
-use crate::lua::glue::LuaGlue;
+use crate::lua::glue::{Glue, LuaGlue};
 use mlua::{FromLuaMulti, Lua, MetaMethod, ToLuaMulti, UserData, UserDataMethods};
 use std::marker::PhantomData;
 
-pub struct GlueUserDataMethods<'a, V: UserData, F: UserDataMethods<LuaGlue<V>>> {
+pub struct GlueUserDataMethods<'a, V: UserData, F: UserDataMethods<LuaGlue< V>>> {
 	pub(crate) methods: &'a mut F,
 	pub(crate) data: PhantomData<V>,
 }
