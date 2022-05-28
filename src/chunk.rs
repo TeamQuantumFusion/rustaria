@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
 
+use rsa_core::settings::CHUNK_SIZE;
 use serde::{Deserialize, Serialize};
-use rustaria_common::settings::CHUNK_SIZE;
+use rsa_core::ty::{ChunkPos, ChunkSubPos};
 
-use rustaria_common::ty::{ChunkPos, ChunkSubPos};
 
 use crate::tile::Tile;
 

@@ -1,16 +1,15 @@
+use rsa_core::api::{Api, Reloadable};
+use rsa_core::error::ContextCompat;
+use rsa_core::ty::{RawId, Tag};
+use rsa_network::client::ClientTickData;
+use rsac_backend::ty::Camera;
 use rustaria::api::prototype::entity::EntityPrototype;
 use rustaria::packet::entity::ServerEntityPacket;
 use rustaria::packet::player::{ClientPlayerPacket, ServerPlayerPacket};
 use rustaria::packet::{ClientPacket, ServerPacket};
 use rustaria::player::Player;
 use rustaria::{ClientNetwork, Server, SmartError};
-use rustaria_api::ty::{RawId, Tag};
-use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_common::error::Result;
-use rustaria_common::error::{ContextCompat, Report};
-use rustaria_common::Uuid;
-use rustaria_network::client::ClientTickData;
-use rustariac_backend::ty::Camera;
+use rsa_core::error::Result;
 
 use crate::module::chunk::ChunkHandler;
 use crate::module::entity::EntityHandler;
@@ -32,7 +31,7 @@ pub(crate) struct ClientWorld {
 impl ClientWorld {
 	pub fn tick(
 		&mut self,
-		camera: &mut rustariac_backend::ty::Camera,
+		camera: &mut Camera,
 		controller: &mut ControllerHandler,
 	) -> Result<()> {
 		if let Some(player) = &self.player.entity {
@@ -86,7 +85,6 @@ impl ClientWorld {
 										.wrap_err(SmartError::CarrierUnavailable)?,
 									pos,
 								))?;
-
 							}
 						},
 					}
@@ -108,16 +106,12 @@ impl ClientWorld {
 				.get_entity_pos(player, &self.entity.world, delta);
 
 			let mut pos = pos.to_array();
-			if let Some(hitbox) = self
-				.entity
-				.hitbox
-				.get(player) {
+			if let Some(hitbox) = self.entity.hitbox.get(player) {
 				pos[0] += hitbox.hitbox.min_x() + (hitbox.hitbox.width() / 2.0);
 				pos[1] += hitbox.hitbox.min_y() + (hitbox.hitbox.height() / 2.0);
 			}
 
 			camera.position = pos;
-
 		}
 		self.chunk.draw(camera);
 		self.entity.draw(camera, delta)?;
@@ -127,16 +121,14 @@ impl ClientWorld {
 }
 
 impl Reloadable for ClientWorld {
-	fn reload(&mut self, api: &Api, carrier: &Carrier) {
-		let access = carrier.lock();
-		self.player_entity_id = access
-			.get_registry::<EntityPrototype>()
-			.id_from_tag(&Tag::new("rustaria:player").unwrap());
+	fn reload(&mut self, api: &Api) {
+		self.player_entity_id = api.get_carrier().get::<EntityPrototype>()
+			.id_from_tag(&Tag::rsa("player"));
 
-		self.chunk.reload(api, carrier);
-		self.entity.reload(api, carrier);
+		self.chunk.reload(api);
+		self.entity.reload(api);
 		if let Some(server) = &mut self.integrated {
-			server.reload(api, carrier);
+			server.reload(api);
 		}
 	}
 }

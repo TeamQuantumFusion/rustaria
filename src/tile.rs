@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
+use rsa_core::ty::RawId;
 
-use rustaria_api::ty::RawId;
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct Tile {

@@ -1,8 +1,8 @@
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
 use quote::{quote, ToTokens};
-use syn::{Expr, ItemFn, parse_macro_input, Stmt, Token};
 use syn::parse::{Parse, ParseStream};
+use syn::{parse_macro_input, Expr, ItemFn, Stmt, Token};
 
 #[proc_macro_attribute]
 pub fn module(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -11,16 +11,25 @@ pub fn module(attr: TokenStream, item: TokenStream) -> TokenStream {
 
 	// Remove first item.
 
-	item.sig.inputs = item.sig.inputs.into_iter().enumerate().filter(|(id, v)| *id != 0).map(|(_, v)| v).collect();
+	item.sig.inputs = item
+		.sig
+		.inputs
+		.into_iter()
+		.enumerate()
+		.filter(|(id, v)| *id != 0)
+		.map(|(_, v)| v)
+		.collect();
 
 	let parent = attr.parent;
 	let self_field = attr.self_field;
 	let stream: TokenStream = quote!(
 		let this = &mut #parent.#self_field;
-	).into();
+	)
+	.into();
 
-
-	item.block.stmts.insert(0, parse_macro_input!(stream as Stmt));
+	item.block
+		.stmts
+		.insert(0, parse_macro_input!(stream as Stmt));
 
 	item.into_token_stream().into()
 }
@@ -39,7 +48,7 @@ impl Parse for ItemAttr {
 		Ok(ItemAttr {
 			parent: parent,
 			thing,
-			self_field: field
+			self_field: field,
 		})
 	}
 }

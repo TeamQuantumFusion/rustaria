@@ -2,8 +2,8 @@ use std::collections::HashSet;
 
 use serde::Deserialize;
 
-use rustaria_api::ty::{Prototype, RawId};
-use rustaria_api::ty::Tag;
+use rsa_core::ty::Tag;
+use rsa_core::ty::{Prototype, RawId};
 
 #[cfg(feature = "client")]
 use crate::api::rendering::RenderingSystem;

@@ -1,17 +1,17 @@
-use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use glfw::{Action, Key, WindowEvent};
 
 use rustaria::entity::component::velocity::PhysicsComp;
 use rustaria::player::Player;
-use rustaria_api::ty::Tag;
-use rustaria_common::settings::UPS;
-use rustaria_input::event::{Event, EventKind, KeyboardEvent};
-use rustaria_input::InputSystem;
-use rustaria_input::subscriber::{HoldSubscriber, Subscriber, TriggerSubscriber};
-use rustariac_backend::ty::Camera;
+use rsa_core::ty::Tag;
+use rsa_core::settings::UPS;
+use rsa_input::event::{Event, EventKind, KeyboardEvent};
+use rsa_input::subscriber::{HoldSubscriber, Subscriber, TriggerSubscriber};
+use rsa_input::InputSystem;
+use rsac_backend::ty::Camera;
 
 pub struct ControllerHandler {
 	up: VelocitySubscriber,
@@ -38,31 +38,43 @@ impl ControllerHandler {
 
 		let mut input = InputSystem::new();
 		input.register_binding(
-			Tag::builtin("up"),
+			Tag::rsa("up"),
 			vec![EventKind::Keyboard(KeyboardEvent::new(Key::W))],
 		);
 		input.register_binding(
-			Tag::builtin("down"),
+			Tag::rsa("down"),
 			vec![EventKind::Keyboard(KeyboardEvent::new(Key::S))],
 		);
 		input.register_binding(
-			Tag::builtin("left"),
+			Tag::rsa("left"),
 			vec![EventKind::Keyboard(KeyboardEvent::new(Key::A))],
 		);
 		input.register_binding(
-			Tag::builtin("right"),
+			Tag::rsa("right"),
 			vec![EventKind::Keyboard(KeyboardEvent::new(Key::D))],
 		);
 		input.register_binding(
-			Tag::builtin("jump"),
+			Tag::rsa("jump"),
 			vec![EventKind::Keyboard(KeyboardEvent::new(Key::Space))],
 		);
 
-		input.register_subscriber(Tag::builtin("up"), Subscriber::Hold(Box::new(up.clone())));
-		input.register_subscriber(Tag::builtin("down"), Subscriber::Hold(Box::new(down.clone())));
-		input.register_subscriber(Tag::builtin("left"), Subscriber::Hold(Box::new(left.clone())));
-		input.register_subscriber(Tag::builtin("right"), Subscriber::Hold(Box::new(right.clone())));
-		input.register_subscriber(Tag::builtin("jump"), Subscriber::Trigger(Box::new(jump.clone())));
+		input.register_subscriber(Tag::rsa("up"), Subscriber::Hold(Box::new(up.clone())));
+		input.register_subscriber(
+			Tag::rsa("down"),
+			Subscriber::Hold(Box::new(down.clone())),
+		);
+		input.register_subscriber(
+			Tag::rsa("left"),
+			Subscriber::Hold(Box::new(left.clone())),
+		);
+		input.register_subscriber(
+			Tag::rsa("right"),
+			Subscriber::Hold(Box::new(right.clone())),
+		);
+		input.register_subscriber(
+			Tag::rsa("jump"),
+			Subscriber::Trigger(Box::new(jump.clone())),
+		);
 
 		ControllerHandler {
 			up,
@@ -97,8 +109,10 @@ impl ControllerHandler {
 	pub fn apply(&mut self, physics: &mut PhysicsComp, touches_ground: bool, player: &Player) {
 		self.system.tick();
 
-		physics.velocity.x += (*self.right.0.lock().unwrap() - *self.left.0.lock().unwrap()) * (player.run_acceleration / UPS as f32);
-		physics.velocity.y += (*self.up.0.lock().unwrap() - *self.down.0.lock().unwrap()) * (player.run_acceleration / UPS as f32);
+		physics.velocity.x += (*self.right.0.lock().unwrap() - *self.left.0.lock().unwrap())
+			* (player.run_acceleration / UPS as f32);
+		physics.velocity.y += (*self.up.0.lock().unwrap() - *self.down.0.lock().unwrap())
+			* (player.run_acceleration / UPS as f32);
 		self.dir_x = 0.0;
 		self.dir_y = 0.0;
 
@@ -123,7 +137,7 @@ impl ControllerHandler {
 			}
 		}
 
-		if self.jump_frames_remaining > 0  {
+		if self.jump_frames_remaining > 0 {
 			if jumped {
 				physics.velocity.y = player.jump_speed / UPS as f32;
 				self.jump_frames_remaining -= 1;
@@ -161,8 +175,6 @@ impl ControllerHandler {
 		self.old_delta = delta;
 	}
 }
-
-
 
 #[derive(Clone)]
 struct VelocitySubscriber(Arc<Mutex<f32>>);

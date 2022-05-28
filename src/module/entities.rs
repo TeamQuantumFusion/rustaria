@@ -1,17 +1,17 @@
 use std::ops::{Deref, DerefMut};
+use rsa_core::api::{Api, Reloadable};
 
-use rustaria_api::ty::RawId;
-use rustaria_api::{Carrier, Reloadable};
-use rustaria_common::error::{ContextCompat, Result};
-use rustaria_common::math::{Vector2D, WorldSpace};
-use rustaria_common::Uuid;
-use rustaria_network::Token;
+use rsa_core::ty::{RawId, Uuid};
+use rsa_core::api::carrier::Carrier;
+use rsa_core::error::{ContextCompat, Result};
+use rsa_core::math::{Vector2D, WorldSpace};
+use rsa_network::Token;
 
 use crate::api::prototype::entity::EntityPrototype;
 use crate::entity::world::EntityWorld;
 use crate::packet::entity::{ClientEntityPacket, ServerEntityPacket};
 use crate::packet::ServerPacket;
-use crate::{ChunkSystem, NetworkSystem, Server, SmartError};
+use crate::{Server, SmartError};
 
 pub struct EntitySystem {
 	carrier: Option<Carrier>,
@@ -32,8 +32,7 @@ impl EntitySystem {
 		let carrier = self
 			.carrier
 			.as_ref()
-			.wrap_err(SmartError::CarrierUnavailable)?
-			.lock();
+			.wrap_err(SmartError::CarrierUnavailable)?;
 
 		// Get uuid and handle conflicts by re-rolling until you find a spot.
 		let mut uuid = Uuid::new_v4();
@@ -43,9 +42,9 @@ impl EntitySystem {
 
 		// Get prototype
 		let prototype = carrier
-			.get_registry::<EntityPrototype>()
+			.get::<EntityPrototype>()
 			.prototype_from_id(id)
-			.wrap_err("Could not find entity_manager")?;
+			;
 
 		self.world.insert(uuid, id, position, prototype);
 		self.new_entities.push((uuid, id, position));
@@ -55,12 +54,16 @@ impl EntitySystem {
 	#[macro_module::module(server.entity)]
 	pub fn tick(this: &mut EntitySystem, server: &mut Server) -> Result<()> {
 		for id in &this.world.dead {
-			server.network.send_all(ServerPacket::Entity(ServerEntityPacket::Kill(*id)))?;
+			server
+				.network
+				.send_all(ServerPacket::Entity(ServerEntityPacket::Kill(*id)))?;
 		}
 
 		this.world.tick(&server.chunk)?;
 		for (uuid, id, pos) in this.new_entities.drain(..) {
-			server.network.send_all(ServerPacket::Entity(ServerEntityPacket::New(uuid, id, pos)))?;
+			server
+				.network
+				.send_all(ServerPacket::Entity(ServerEntityPacket::New(uuid, id, pos)))?;
 		}
 
 		Ok(())
@@ -78,8 +81,8 @@ impl EntitySystem {
 }
 
 impl Reloadable for EntitySystem {
-	fn reload(&mut self, api: &rustaria_api::Api, carrier: &Carrier) {
-		self.carrier = Some(carrier.clone());
+	fn reload(&mut self, api: &Api) {
+		self.carrier = Some(api.get_carrier());
 	}
 }
 

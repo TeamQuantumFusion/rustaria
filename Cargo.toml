@@ -17,22 +17,22 @@ mlua = { git = "https://github.com/alphaqu/mlua", branch = "alphacurseness", fea
 
 frogelua = { path = "./libs/frogelua" }
 macro-module = { path = "./libs/macro-module" }
-rustaria-common = { path = "libs/rustaria-common" }
-rustaria-api = { path = "./libs/rustaria-api" }
-rustaria-network = { path = "libs/rustaria-network" }
+rsa-core = { path = "libs/rsa-core" }
+rsa-network = { path = "libs/rsa-network" }
 
 [workspace]
 members = [
     "libs/frogelua",
+    "libs/apollo",
     "libs/macro-module",
-    "libs/rustaria-network",
-    "libs/rustaria-common",
-    "libs/rustaria-gen",
-    "libs/rustaria-input",
-    "libs/rustaria-api",
-    "libs/rustariac-rendering",
-    "libs/rustariac-backend",
-    "libs/rustariac-glium-backend",
+    "libs/rsa-network",
+    "libs/rsa-core",
+    "libs/rsa-gen",
+    "libs/rsa-input",
+    "libs/rsa-item",
+    "libs/rsac-rendering",
+    "libs/rsac-backend",
+    "libs/rsac-glium-backend",
     "runtime/client",
 ]
 

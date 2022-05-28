@@ -5,10 +5,11 @@ use rustaria::chunk::ChunkStorage;
 use rustaria::entity::world::EntityWorld;
 use rustaria::packet::entity::ServerEntityPacket;
 use rustaria::SmartError;
-use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_common::error::{ContextCompat, Result};
-use rustariac_backend::ty::Camera;
-use rustariac_rendering::entity_drawer::WorldEntityDrawer;
+use rsa_core::api::{Api, Reloadable};
+use rsa_core::api::carrier::Carrier;
+use rsa_core::error::{ContextCompat, Result};
+use rsac_backend::ty::Camera;
+use rsac_rendering::entity_drawer::WorldEntityDrawer;
 
 use crate::RenderingHandler;
 
@@ -33,13 +34,11 @@ impl EntityHandler {
 			.as_ref()
 			.wrap_err(SmartError::CarrierUnavailable)?;
 
-		let access = carrier.lock();
-		let registry = access.get_registry::<EntityPrototype>();
+		let registry = carrier.get::<EntityPrototype>();
 		match packet {
 			ServerEntityPacket::New(uuid, id, pos) => {
 				let prototype = registry
-					.prototype_from_id(id)
-					.wrap_err("Server Entity prototype does not exist.")?;
+					.prototype_from_id(id);
 				self.world.insert(uuid, id, pos, prototype);
 			}
 			ServerEntityPacket::Kill(uuid) => {
@@ -71,9 +70,9 @@ impl EntityHandler {
 }
 
 impl Reloadable for EntityHandler {
-	fn reload(&mut self, api: &Api, carrier: &Carrier) {
-		self.carrier = Some(carrier.clone());
-		self.drawer.reload(api, carrier);
+	fn reload(&mut self, api: &Api) {
+		self.carrier = Some(api.get_carrier());
+		self.drawer.reload(api);
 	}
 }
 

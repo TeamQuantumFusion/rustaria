@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use mlua::{Error, FromLua, Lua, Value};
 use serde::{Deserialize, Serialize};
 
-use rustaria_api::ty::Tag;
+use rsa_core::ty::Tag;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum RenderingSystem {

@@ -1,5 +1,6 @@
-use rustaria_api::{Api, Carrier};
-use rustaria_common::error::Result;
+use rsa_core::api::{Api};
+use rsa_core::api::carrier::Carrier;
+use rsa_core::error::Result;
 
 use crate::api::prototype::entity::EntityPrototype;
 use crate::api::prototype::tile::TilePrototype;
@@ -12,8 +13,8 @@ pub mod rendering;
 pub mod ty;
 
 // Register everything
-pub fn reload(api: &mut Api, carrier: &mut Carrier) -> Result<()> {
-	let mut reload = api.reload(carrier);
+pub fn reload(api: &mut Api) -> Result<()> {
+	let mut reload = api.reload();
 	reload.register::<TilePrototype>()?;
 	reload.register::<EntityPrototype>()?;
 	reload.reload()?;

@@ -2,6 +2,16 @@ local stuff = require "test.lua";
 stuff.test();
 
 
+-- reload.registry:add("items", {
+--     ["dirt"] = {
+--         sprite = "sprite/tile/dirt.png",
+--         collision = true
+--     },
+-- })
+
+hook:subscribe("tick", function()
+end)
+
 info "Registering tiles."
 Tiles:register {
     ["dirt"] = {

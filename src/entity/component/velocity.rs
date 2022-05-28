@@ -1,10 +1,9 @@
 use mlua::{FromLua, Lua, Value};
 use serde::Deserialize;
 
-use rustaria_common::math::{Vector2D, WorldSpace};
-use rustaria_common::settings::UPS;
-use rustaria_common::ty::Pos;
-
+use rsa_core::math::{Vector2D, WorldSpace};
+use rsa_core::settings::UPS;
+use rsa_core::ty::Pos;
 
 #[derive(Clone, Debug, Deserialize, Default)]
 pub struct PhysicsComp {

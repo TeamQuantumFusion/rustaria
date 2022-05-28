@@ -4,28 +4,29 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use clap::Parser;
-use glfw::{ffi, Action, Key, Modifiers, WindowEvent};
+use glfw::{Action, ffi, Key, Modifiers, WindowEvent};
 use rayon::{ThreadPool, ThreadPoolBuilder};
 
+use rsa_core::api::{Api, Reloadable};
+use rsa_core::api::carrier::Carrier;
+use rsa_core::error::Result;
+use rsa_core::logging::debug;
+use rsa_core::math::vec2;
+use rsa_core::settings::UPS;
+use rsa_core::ty::{Prototype, Tag};
+use rsa_network::client::ClientNetwork;
+use rsac_backend::ClientBackend;
+use rsac_backend::ty::Camera;
+use rsac_glium_backend::GliumBackend;
 use rustaria::api::prototype::entity::EntityPrototype;
+use rustaria::packet::ClientPacket;
 use rustaria::packet::entity::ClientEntityPacket;
 use rustaria::packet::player::ClientPlayerPacket;
-use rustaria::packet::{ClientPacket};
 use rustaria::player::Player;
 pub use rustaria::prototypes;
 pub use rustaria::pt;
+use rustaria::Server;
 use rustaria::SmartError;
-use rustaria::{Server};
-use rustaria_api::ty::{Prototype, Tag};
-use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_common::error::Result;
-use rustaria_common::logging::debug;
-use rustaria_common::math::vec2;
-use rustaria_common::settings::UPS;
-use rustaria_network::client::ClientNetwork;
-use rustariac_backend::ty::Camera;
-use rustariac_backend::ClientBackend;
-use rustariac_glium_backend::GliumBackend;
 use world::ClientWorld;
 
 use crate::args::Args;
@@ -44,17 +45,15 @@ const UPDATE_TIME: Duration = Duration::from_micros((1000000 / UPS) as u64);
 
 fn main() -> Result<()> {
 	let args = args::Args::parse();
-	rustaria_common::initialize()?;
+	rsa_core::initialize()?;
 
 	let mut client = Client::new(args)?;
 	client.join_integrated()?;
 
 	{
-		let lock = client.carrier.lock();
-		let prototype = lock.get_registry::<EntityPrototype>();
-		let id = prototype
-			.id_from_tag(&Tag::new("rustaria:bunne".to_string()).unwrap())
-			.unwrap();
+		let carrier = client.api.get_carrier();
+		let prototype = carrier.get::<EntityPrototype>();
+		let id = prototype.id_from_tag(&Tag::rsa("bunne")).unwrap();
 		let world = client.world.as_mut().unwrap();
 		let pos = vec2(5.0, 5.0);
 
@@ -70,7 +69,6 @@ fn main() -> Result<()> {
 
 pub struct Client {
 	api: Api,
-	carrier: Carrier,
 	camera: Camera,
 
 	control: ControllerHandler,
@@ -86,14 +84,12 @@ impl Client {
 	pub fn new(args: Args) -> Result<Client> {
 		let backend = ClientBackend::new(GliumBackend::new)?;
 
-		let carrier = Carrier::default();
 		let mut dir = std::env::current_dir()?;
 		dir.push("plugins");
 		let api = Api::new(dir, args.extra_plugin_paths)?;
 
 		let mut client = Client {
 			api,
-			carrier,
 			world: None,
 			control: ControllerHandler::new(),
 			camera: Camera {
@@ -177,7 +173,8 @@ impl Client {
 		let mut server = Server::new(&self.api, self.thread_pool.clone())?;
 		let player = Player::new("testing testing".to_string());
 
-		let networking = ClientNetwork::new_integrated(server.network.integrated.as_mut().unwrap())?;
+		let networking =
+			ClientNetwork::new_integrated(server.network.integrated.as_mut().unwrap())?;
 		let mut client_world = ClientWorld {
 			networking,
 			chunk: ChunkHandler::new(&self.rendering),
@@ -188,7 +185,7 @@ impl Client {
 		};
 
 		// sync api
-		client_world.reload(&self.api, &self.carrier);
+		client_world.reload(&self.api);
 
 		// join packet
 		client_world
@@ -201,19 +198,19 @@ impl Client {
 
 	fn reload(&mut self) -> Result<()> {
 		debug!(target: "reload@rustariac", "Reloading Client");
-		rustaria::api::reload(&mut self.api, &mut self.carrier)?;
+		rustaria::api::reload(&mut self.api)?;
 
-		let carrier = self.carrier.lock();
 		let mut sprites = HashSet::new();
+		let carrier = self.api.get_carrier();
 		prototypes!({
-			for prototype in carrier.get_registry::<P>().iter() {
+			for prototype in carrier.get::<P>().iter() {
 				prototype.get_sprites(&mut sprites);
 			}
 		});
 		self.backend.instance_mut().supply_atlas(&self.api, sprites);
 
 		if let Some(world) = &mut self.world {
-			world.reload(&self.api, &self.carrier);
+			world.reload(&self.api);
 		}
 
 		Ok(())

@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 
 use frogelua::FromLua;
-use rustaria_api::ty::{Prototype, RawId, Tag};
+use rsa_core::ty::{Prototype, RawId, Tag};
 
 use crate::api::ty::ConnectionType;
 use crate::tile::Tile;

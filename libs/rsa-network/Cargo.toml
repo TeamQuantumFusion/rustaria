@@ -1,0 +1,21 @@
+[package]
+name = "rsa-network"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rsa-core = { path = "../rsa-core" }
+
+serde = { version = "1.0", features = ["derive"] }
+lz4_flex = { version = "0.9.0", default-features = false, features = ["checked-decode", "std"] }
+
+thiserror = "1.0.30"
+
+# Local
+crossbeam = "0.8"
+# Remote
+bimap = "0.6"
+laminar = "0.5"
+bincode = "1.3"

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
+use rsa_core::ty::Uuid;
 
-use rustaria_common::Uuid;
 
 pub mod component;
 pub mod world;

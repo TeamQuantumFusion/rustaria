@@ -5,13 +5,13 @@ use rustaria::chunk::ChunkStorage;
 use rustaria::packet::chunk::{ClientChunkPacket, ServerChunkPacket};
 use rustaria::packet::ClientPacket;
 use rustaria::ClientNetwork;
-use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_common::error::Result;
-use rustaria_common::logging::warn;
-use rustaria_common::math::vec2;
-use rustaria_common::ty::{ChunkPos, Offset, CHUNK_SIZE_F};
-use rustariac_backend::ty::Camera;
-use rustariac_rendering::chunk_drawer::WorldChunkDrawer;
+use rsa_core::api::{Api, Reloadable};
+use rsa_core::error::Result;
+use rsa_core::logging::warn;
+use rsa_core::math::vec2;
+use rsa_core::ty::{Offset, CHUNK_SIZE_F, ChunkPos};
+use rsac_backend::ty::Camera;
+use rsac_rendering::chunk_drawer::WorldChunkDrawer;
 
 use crate::RenderingHandler;
 
@@ -92,9 +92,9 @@ impl ChunkHandler {
 }
 
 impl Reloadable for ChunkHandler {
-	fn reload(&mut self, api: &Api, carrier: &Carrier) {
+	fn reload(&mut self, api: &Api) {
 		self.storage.clear();
-		self.drawer.reload(api, carrier);
+		self.drawer.reload(api);
 	}
 }
 

@@ -1,5 +1,5 @@
+use rsa_network::packet::{Packet, PacketDesc};
 use serde::{Deserialize, Serialize};
-use rustaria_network::packet::{Packet, PacketDesc};
 
 use crate::packet::chunk::{ClientChunkPacket, ServerChunkPacket};
 use crate::packet::entity::{ClientEntityPacket, ServerEntityPacket};

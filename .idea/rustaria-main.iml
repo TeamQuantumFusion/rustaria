@@ -24,6 +24,7 @@
       <sourceFolder url="file://$MODULE_DIR$/libs/rsa-common/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rsa-comps/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rsa-network/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rsa-network/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rsa-todo/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rsa-world/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/opengl-render/opengl-raw/src" isTestSource="false" />
@@ -33,7 +34,6 @@
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-ecs/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-framework/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-api/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-network/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-world/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-graphics/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-graphics-backend/src" isTestSource="false" />
@@ -44,20 +44,24 @@
       <sourceFolder url="file://$MODULE_DIR$/libs/pogfiler/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-generation/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-rendering/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/libs/rustariac-backend/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/libs/rustariac-glium-backend/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-lua/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-lua/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-api/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/libs/serluade/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/libs/rustariac-rendering/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/frogelua/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-math/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-common/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-gen/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-gen/testing-gen/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/macro-module/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-input/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rsa-core/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rsa-gen/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rsa-gen/testing-gen/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rsa-input/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rsa-item/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rsac-backend/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rsac-glium-backend/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rsa-core/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rsac-rendering/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/apollo/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/satellite/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-network-old/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/runtime/client/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rustaria-client/src" isTestSource="false" />

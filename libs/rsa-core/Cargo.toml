@@ -1,0 +1,42 @@
+[package]
+name = "rsa-core"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Logging
+simplelog = "0.11.2"
+log = "0.4.*"
+
+# Lua
+frogelua = { path = "../frogelua" }
+mlua = { git = "https://github.com/alphaqu/mlua", branch = "alphacurseness", features = ["luajit", "vendored", "serialize", "send"] }
+
+# Errors
+thiserror = "1.0.30"
+eyre = "0.6"
+color-eyre = { version = "0.6", default-features = false }
+regex = "1.5.5"
+
+
+# Plugins
+serde_json = "1.0"
+semver = { version = "1.0", features = ["serde"] }
+zip = { version = "0.6.2", default-features = false, features = ["deflate"] }
+
+# Tags
+uuid = { version = "0.8", features = ["v4", "serde"] }
+
+# Types
+serde = { version = "1.0", features = ["derive"] }
+num = "0.4"
+
+# Util
+euclid = { version = "0.22.7", features = ["serde"] }
+type-map = "0.5"
+
+[features]
+test-utils = []
+

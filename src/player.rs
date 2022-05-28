@@ -1,4 +1,4 @@
-use rustaria_common::Uuid;
+use rsa_core::ty::Uuid;
 
 #[derive(Clone)]
 pub struct Player {

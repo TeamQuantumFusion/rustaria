@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use rustaria_api::ty::{RawId, Tag};
-use rustaria_api::{Api, Carrier, Reloadable};
-use rustaria_common::error::{ContextCompat, Result};
-use rustaria_common::logging::{info, warn};
-use rustaria_common::math::vec2;
-use rustaria_network::Token;
+use rsa_core::ty::{RawId, Tag};
+use rsa_core::api::{Api, Reloadable};
+use rsa_core::error::{ContextCompat, Result};
+use rsa_core::logging::{info, warn};
+use rsa_core::math::vec2;
+use rsa_network::Token;
 
 use crate::api::prototype::entity::EntityPrototype;
 use crate::packet::player::{ClientPlayerPacket, ServerPlayerPacket};
@@ -70,10 +70,9 @@ impl PlayerSystem {
 }
 
 impl Reloadable for PlayerSystem {
-	fn reload(&mut self, api: &Api, carrier: &Carrier) {
-		let access = carrier.lock();
-		self.player_entity = access
-			.get_registry::<EntityPrototype>()
-			.id_from_tag(&Tag::new("rustaria:player").unwrap())
+	fn reload(&mut self, api: &Api) {
+		self.player_entity = api.get_carrier()
+			.get::<EntityPrototype>()
+			.id_from_tag(&Tag::rsa("player"))
 	}
 }

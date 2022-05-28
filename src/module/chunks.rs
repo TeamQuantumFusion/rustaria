@@ -5,15 +5,15 @@ use std::sync::Arc;
 
 use rayon::ThreadPool;
 
-use rustaria_api::{Carrier, Reloadable};
-use rustaria_common::error::Result;
-use rustaria_common::ty::ChunkPos;
-use rustaria_network::Token;
+use rsa_core::api::{Api, Reloadable};
+use rsa_core::error::Result;
+use rsa_core::ty::ChunkPos;
+use rsa_network::Token;
 
 use crate::chunk::ChunkStorage;
 use crate::module::chunks::world_generation::WorldGeneration;
 use crate::packet::chunk::ClientChunkPacket;
-use crate::{Server};
+use crate::Server;
 
 mod world_generation;
 
@@ -36,7 +36,6 @@ impl ChunkSystem {
 			dirty_chunks: Default::default(),
 		}
 	}
-
 
 	#[macro_module::module(server.chunk)]
 	pub fn tick(this: &mut ChunkSystem, server: &mut Server) -> Result<()> {
@@ -83,8 +82,8 @@ impl ChunkSystem {
 }
 
 impl Reloadable for ChunkSystem {
-	fn reload(&mut self, api: &rustaria_api::Api, carrier: &Carrier) {
-		self.generator.reload(api, carrier);
+	fn reload(&mut self, api: &Api) {
+		self.generator.reload(api);
 	}
 }
 

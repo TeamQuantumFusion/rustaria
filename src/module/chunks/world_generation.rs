@@ -3,14 +3,14 @@ use std::sync::Arc;
 
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use rayon::ThreadPool;
+use rsa_core::api::carrier::Carrier;
+use rsa_core::api::{Api, Reloadable};
 
-use rustaria_api::ty::{Prototype, Tag};
-use rustaria_api::{Carrier, Reloadable};
-use rustaria_common::error::ContextCompat;
-use rustaria_common::error::Result;
-use rustaria_common::logging::error;
-use rustaria_common::settings::CHUNK_SIZE;
-use rustaria_common::ty::{ChunkPos, ChunkSubPos};
+use rsa_core::ty::{ChunkPos, ChunkSubPos, Prototype, Tag};
+use rsa_core::error::ContextCompat;
+use rsa_core::error::Result;
+use rsa_core::logging::error;
+use rsa_core::settings::CHUNK_SIZE;
 
 use crate::api::prototype::tile::TilePrototype;
 use crate::chunk::{Chunk, ChunkLayer};
@@ -71,25 +71,24 @@ impl WorldGeneration {
 // we should prob convert chunks incase a new entry now exists.
 // that needs world saving logic however sooooo
 impl Reloadable for WorldGeneration {
-	fn reload(&mut self, _: &rustaria_api::Api, carrier: &Carrier) {
-		self.carrier = Some(carrier.clone());
+	fn reload(&mut self, api: &Api) {
+		self.carrier = Some(api.get_carrier());
 	}
 }
 
 fn generate_chunk(stack: &Carrier, pos: ChunkPos) -> Result<Chunk> {
-	let instance = stack.lock();
-	let tiles = instance.get_registry::<TilePrototype>();
+	let tiles = stack.get::<TilePrototype>();
 
 	// We do a touch of unwrapping.
 	let id = tiles
-		.id_from_tag(&Tag::new("rustaria:air".to_string())?)
+		.id_from_tag(&Tag::rsa("air"))
 		.wrap_err("lol")?;
-	let air = tiles.prototype_from_id(id).unwrap().create(id);
+	let air = tiles.prototype_from_id(id).create(id);
 
 	let id = tiles
-		.id_from_tag(&Tag::new("rustaria:dirt".to_string())?)
+		.id_from_tag(&Tag::rsa("dirt"))
 		.wrap_err("lol")?;
-	let dirt = tiles.prototype_from_id(id).wrap_err("lmao")?.create(id);
+	let dirt = tiles.prototype_from_id(id).create(id);
 
 	let mut chunk = Chunk {
 		tiles: ChunkLayer::new([[air; CHUNK_SIZE]; CHUNK_SIZE]),

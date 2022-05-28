@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
+use rsa_core::ty::ChunkPos;
+use rsa_network::packet::compress::Compress;
 
-use rustaria_common::ty::ChunkPos;
-use rustaria_network::packet::compress::Compress;
 
 use crate::chunk::Chunk;
 
