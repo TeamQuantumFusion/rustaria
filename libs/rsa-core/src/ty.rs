@@ -15,8 +15,8 @@ use std::fmt::Debug;
 use crate::api::lua::FromLua;
 // Reexport
 pub use {
-	chunk_pos::ChunkPos, chunk_sub_pos::ChunkSubPos, direction::Direction, plugin_id::PluginId,
-	pos::Pos, raw_id::RawId, rectangle::Rectangle, tag::Tag, tile_pos::TilePos, uuid::Uuid,
+	chunk_pos::ChunkPos, chunk_sub_pos::ChunkSubPos, direction::Direction, direction::DirMap,  plugin_id::PluginId,
+	pos::Pos, raw_id::RawId, raw_id::KernelIdentifier, rectangle::Rectangle, tag::Tag, tile_pos::TilePos, uuid::Uuid,
 };
 
 pub enum Error {

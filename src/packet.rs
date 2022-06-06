@@ -1,12 +1,10 @@
 use rsa_network::packet::{Packet, PacketDesc};
 use serde::{Deserialize, Serialize};
-
+use crate::entity::packet::{ClientEntityPacket, ServerEntityPacket};
 use crate::packet::chunk::{ClientChunkPacket, ServerChunkPacket};
-use crate::packet::entity::{ClientEntityPacket, ServerEntityPacket};
 use crate::packet::player::{ClientPlayerPacket, ServerPlayerPacket};
 
 pub mod chunk;
-pub mod entity;
 pub mod player;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

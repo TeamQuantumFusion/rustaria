@@ -25,6 +25,7 @@ pub mod logging {
 
 pub mod error {
 	pub use eyre::*;
+	pub use thiserror::Error;
 }
 
 pub mod math {
@@ -40,7 +41,7 @@ pub mod math {
 }
 
 static mut INITIALIZED: bool = false;
-pub fn initialize() -> eyre::Result<()> {
+pub fn initialize(level: LevelFilter) -> eyre::Result<()> {
 	if unsafe { !INITIALIZED } {
 		unsafe {
 			INITIALIZED = true;
@@ -72,9 +73,9 @@ pub fn initialize() -> eyre::Result<()> {
 
 		CombinedLogger::init(vec![
 			TermLogger::new(
-				LevelFilter::Trace,
+				level,
 				ConfigBuilder::new()
-					.set_time_format_str("\x1b[37m%T")
+					//.set_time_format_str("\x1b[37m%T")
 					.set_level_padding(LevelPadding::Off)
 					.set_target_level(LevelFilter::Error)
 					.set_target_padding(TargetPadding::Left(2))

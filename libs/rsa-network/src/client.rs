@@ -6,7 +6,7 @@ use laminar::{Socket, SocketEvent};
 use crate::packet::Packet;
 use crate::Token;
 
-// the reason the enum is wrapped is because i think having an enum for client and a struct for server is cringe in highlighting because of my theme.
+// the reason the enum is wrapped is because i think having an enum for client-old and a struct for server is cringe in highlighting because of my theme.
 // So ehm deal with it i guess?
 // -- EDIT, actually this also makes the inner fields private so i guess this is another point.
 pub struct ClientNetwork<I: Packet, O: Packet> {

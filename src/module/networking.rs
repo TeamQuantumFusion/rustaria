@@ -10,18 +10,18 @@ use rsa_network::Token;
 use crate::chunk::Chunk;
 use crate::packet::chunk::{ChunkBundlePacket, ServerChunkPacket};
 use crate::packet::ServerPacket;
-use crate::{ClientPacket, Server, ServerNetwork};
+use crate::{ClientPacket, EntityModule, Server, ServerNetwork};
 
 /// The `NetworkManager` handles networking for the server.
-pub struct NetworkSystem {
+pub struct NetworkModule {
 	internal: ServerNetwork,
 	chunk_buffer: HashMap<Option<Token>, HashMap<ChunkPos, Chunk>>,
 }
 
 // TODO positional api, basically only send stuff if the player is nearby.
-impl NetworkSystem {
-	pub fn new(networking: ServerNetwork) -> NetworkSystem {
-		NetworkSystem {
+impl NetworkModule {
+	pub fn new(networking: ServerNetwork) -> NetworkModule {
+		NetworkModule {
 			internal: networking,
 			chunk_buffer: Default::default(),
 		}
@@ -33,7 +33,7 @@ impl NetworkSystem {
 	}
 
 	#[macro_module::module(server.network)]
-	pub fn tick(this: &mut NetworkSystem, server: &mut Server) -> Result<()> {
+	pub fn tick(this: &mut NetworkModule, server: &mut Server) -> Result<()> {
 		for (to, chunks) in this.chunk_buffer.drain() {
 			let packet = ServerPacket::Chunk(ServerChunkPacket::Provide(Compress::new(
 				&ChunkBundlePacket {
@@ -63,7 +63,7 @@ impl NetworkSystem {
 						.player
 						.packet(from, packet, &mut server.entity, &server.network)?
 				}
-				ClientPacket::Entity(packet) => server.entity.packet(from, packet)?,
+				ClientPacket::Entity(packet) => EntityModule::packet(server, from, packet)?,
 			}
 		}
 
@@ -75,7 +75,7 @@ impl NetworkSystem {
 	}
 }
 
-impl Deref for NetworkSystem {
+impl Deref for NetworkModule {
 	type Target = ServerNetwork;
 
 	fn deref(&self) -> &Self::Target {
@@ -83,7 +83,7 @@ impl Deref for NetworkSystem {
 	}
 }
 
-impl DerefMut for NetworkSystem {
+impl DerefMut for NetworkModule {
 	fn deref_mut(&mut self) -> &mut Self::Target {
 		&mut self.internal
 	}

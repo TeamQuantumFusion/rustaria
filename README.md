@@ -39,7 +39,7 @@ Now you have the Terraria assets in the plugin directory.
 To compile rustaria you will need to be able to build GLFW if you are compiling the Client as we use that for our windowing. You can find compile instructions for you system [here](https://www.glfw.org/docs/3.3/compile.html).
 
 ```bash
-# We are in ./rustaria. the (type) is either "client" or "server". 
+# We are in ./rustaria. the (type) is either "client-old" or "server". 
 cd ./runtime/(type)/run/
 # If you are planning to rapidly develop rustaria remove the --release tag as that heavily increases build times. 
 cargo build --release

@@ -1,6 +1,6 @@
 /target
 Cargo.lock
-/runtime/client/run/
+/runtime/client-old/run/
 run/
 
 # OS weirdness

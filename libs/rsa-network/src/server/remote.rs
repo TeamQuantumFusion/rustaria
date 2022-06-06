@@ -33,7 +33,7 @@ pub struct RemoteSettings {
 	/// The port to use on the address.
 	/// - default: 42069
 	pub port: Option<u16>,
-	/// The timeout is the time required for the client to be disconnected without a response.
+	/// The timeout is the time required for the client-old to be disconnected without a response.
 	/// - default: 60s
 	pub timeout: Duration,
 }

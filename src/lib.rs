@@ -1,103 +1,111 @@
 #![allow(clippy::new_without_default)]
 
-//! Ok can we please stop calling everything handler. There are a ton of conlicts.
-//! Here are the definitions
+//! # Welcome!
+//! Welcome to the rustaria codebase. Here you will find the code for the game Rustaria
+//! which is a rework of Terraria which is designed for easy modality and speed.
 //!
-//! # Naming
-//! When naming a handler or module. Its always {singular}{type}, so if you are making a handler for networking.
-//! Its called NetworkHandler.
+//! # Notice
+//! 1. This is made in rust which may be a hard language to learn and write in.
+//! We cannot help you learn rust as it is a difficult thing to do, if you want to contribute please learn the basics of rust beforehand.
+//! 2. The comments in this project may contain swear words and other funnies.
+//! This project permits the use of funny words along as it does not directly hurt an individual.
+//! Saying "This code is fucking pain" is good, saying "fuck germans" is not.
 //!
-//! SUB LIBS SHOULD NEVER NAME ANYTHING A HANDLER OR A SYSTEM.
-//! ## Handlers
-//! Handler are for the client and are a module of logic. Normally wraps one of our libraries.
-//! ## Systems
-//! Systems are the same as handlers. But for the server.
+
 
 use std::fmt::{Debug, Display};
 use std::sync::Arc;
 
 use rayon::ThreadPool;
-use rsa_core::api::{Api, Reloadable};
+
+use rsa_core::api::Api;
 use rsa_core::error::{Result, WrapErr};
 use rsa_core::ty::Tag;
 use rsa_network::server::integrated::Integrated;
 
 // Internals
-use crate::module::chunks::ChunkSystem;
-use crate::module::entities::EntitySystem;
-use crate::module::networking::NetworkSystem;
-use crate::module::players::PlayerSystem;
+use crate::module::chunks::ChunkModule;
+use crate::module::entities::EntityModule;
+use crate::module::networking::NetworkModule;
+use crate::module::players::PlayerModule;
 use crate::packet::{ClientPacket, ServerPacket};
+use crate::world::World;
 
 pub mod api;
-pub mod chunk;
 pub mod entity;
 pub(crate) mod module;
 pub mod packet;
 pub mod player;
-pub mod tile;
 pub mod util;
+pub mod chunk;
+pub mod world;
 
 pub type ServerNetwork = rsa_network::server::ServerNetwork<ClientPacket, ServerPacket>;
+pub type ServerTunnel<'a, C> = rsa_network::tunnel::MappedTunnel<'a, ServerPacket, C>;
 pub type ClientNetwork = rsa_network::client::ClientNetwork<ServerPacket, ClientPacket>;
+pub type ClientTunnel<'a, C> = rsa_network::tunnel::MappedTunnel<'a, ClientPacket, C>;
 
 /// The main object structure for a server.
 /// This is where the world is stored and the information gets distributed across clients.
 pub struct Server {
 	pub api: Api,
-	pub network: NetworkSystem,
-	pub chunk: ChunkSystem,
-	pub entity: EntitySystem,
-	pub player: PlayerSystem,
+	pub network: NetworkModule,
+	pub chunk: ChunkModule,
+	pub entity: EntityModule,
+	pub player: PlayerModule,
+
+	// Holds the actual data
+	pub world: World,
 }
 
 impl Server {
 	pub fn new(api: &Api, thread_pool: Arc<ThreadPool>) -> Result<Server> {
 		Ok(Server {
 			api: api.clone(),
-			network: NetworkSystem::new(ServerNetwork {
+			network: NetworkModule::new(ServerNetwork {
 				integrated: Some(Integrated::new()?),
 				remote: None,
 			}),
-			chunk: ChunkSystem::new(thread_pool),
-			entity: EntitySystem::new(),
-			player: PlayerSystem::new(),
+			chunk: ChunkModule::new(thread_pool),
+			entity: EntityModule::new(),
+			player: PlayerModule::new(),
+			world: World::new()
 		})
 	}
 
 	//noinspection ALL
 	pub fn tick(&mut self) -> Result<()> {
 		self.api.invoke_hook(&Tag::rsa("tick"), || ())?;
-		ChunkSystem::tick(self).wrap_err(SmartError::SystemFailure(SystemType::Chunk))?;
-		EntitySystem::tick(self).wrap_err(SmartError::SystemFailure(SystemType::Entity))?;
-		NetworkSystem::tick(self).wrap_err(SmartError::SystemFailure(SystemType::Network))?;
+		self.world.tick()?;
+		ChunkModule::tick(self).wrap_err(RichError::SystemFailure(SystemType::Chunk))?;
+		EntityModule::tick(self).wrap_err(RichError::SystemFailure(SystemType::Entity))?;
+		NetworkModule::tick(self).wrap_err(RichError::SystemFailure(SystemType::Network))?;
 		Ok(())
 	}
-}
 
-impl Reloadable for Server {
-	fn reload(&mut self, api: &Api) {
+	pub fn reload(&mut self, api: &Api) {
 		self.chunk.reload(api);
 		self.player.reload(api);
 		self.entity.reload(api);
 	}
-}
+ }
+
 
 #[derive(Debug)]
-pub enum SmartError {
+pub enum RichError {
 	CarrierUnavailable,
 	SystemFailure(SystemType),
 }
 
-impl Display for SmartError {
+impl Display for RichError {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			SmartError::CarrierUnavailable => {
+			RichError::CarrierUnavailable => {
 				f.write_str("Carrier is unavailable, Force reloading instance.")
 			}
-			SmartError::SystemFailure(name) => {
+			RichError::SystemFailure(name) => {
 				name.fmt(f)?;
-				f.write_str(" system failure.")
+				f.write_str(" systems failure.")
 			}
 		}
 	}

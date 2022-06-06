@@ -1,4 +1,5 @@
 use std::sync::RwLock;
+use log::LevelFilter;
 use mlua::prelude::LuaUserData;
 use mlua::{UserDataFields, UserDataMethods};
 use rsa_core::api::Api;
@@ -35,7 +36,7 @@ pub fn basic() -> rsa_core::error::Result<()> {
 	};
 
 
-	rsa_core::initialize().unwrap();
+	rsa_core::initialize(LevelFilter::Off)?;
 	let mut api = Api::new_test();
 	let mut carrier = api.get_carrier();
 	api.load_test_plugins(vec![Plugin::new_test(
@@ -43,8 +44,8 @@ pub fn basic() -> rsa_core::error::Result<()> {
 		Archive::new_test(vec![TestAsset::lua(
 			"entry", r#"
 				-- hello there
-				hook:subscribe("rustaria:test", function(system)
-					system:egg_inc(1);
+				hook:subscribe("rustaria:test", function(systems)
+					systems:egg_inc(1);
 				end)
 				"#,
 		)]),

@@ -9,7 +9,7 @@ use rsa_core::ty::Tag;
 pub enum RenderingSystem {
 	Static(Pane),
 	State(HashMap<String, Pane>),
-	// More implementations for dynamic lua rendering.
+	// More implementations for dynlib lua rendering.
 	// Advanced(stuff)
 }
 

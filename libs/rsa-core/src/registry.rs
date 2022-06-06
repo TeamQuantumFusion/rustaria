@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::slice::Iter;
 use crate::registry::RegistryError::MissingPrototype;
 
-use crate::ty::{Prototype, RawId, Tag};
+use crate::ty::{KernelIdentifier, Prototype, RawId, Tag};
 
 #[derive(Default)]
 pub struct Registry<P: Prototype> {

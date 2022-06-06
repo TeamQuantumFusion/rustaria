@@ -2,7 +2,7 @@ local stuff = require "test";
 stuff.test();
 
 log.info "Registering tiles."
-reload.registry["tile"]:insert {
+reload.registry.tile:insert {
     ["dirt"] = {
         sprite = "sprite/tile/dirt.png",
         collision = true
@@ -11,7 +11,7 @@ reload.registry["tile"]:insert {
 }
 
 log.info "Registering entities."
-reload.registry["entity"]:insert {
+reload.registry.entity:insert {
     ["player"] = {
         health = {
             maximum = 100

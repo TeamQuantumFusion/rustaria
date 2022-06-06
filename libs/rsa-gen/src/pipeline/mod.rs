@@ -1,4 +1,4 @@
-//! This is the third time i remake our entire pass system. This time its sick.
+//! This is the third time i remake our entire pass systems. This time its sick.
 pub mod brush;
 pub mod context;
 pub mod pass;

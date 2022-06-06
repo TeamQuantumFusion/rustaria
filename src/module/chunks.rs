@@ -9,27 +9,24 @@ use rsa_core::error::Result;
 use rsa_core::ty::ChunkPos;
 use rsa_network::Token;
 
-use crate::chunk::ChunkStorage;
 use crate::module::chunks::world_generation::WorldGeneration;
 use crate::packet::chunk::ClientChunkPacket;
 use crate::Server;
 
 mod world_generation;
 
-pub struct ChunkSystem {
+pub struct ChunkModule {
 	generator: WorldGeneration,
-	storage: ChunkStorage,
 	chunk_queue: VecDeque<(ChunkPos, Token)>,
 	chunk_gen_queue: HashMap<ChunkPos, HashSet<Token>>,
 	// Chunks that updated and need to be resent
 	dirty_chunks: HashSet<ChunkPos>,
 }
 
-impl ChunkSystem {
-	pub fn new(thread_pool: Arc<ThreadPool>) -> ChunkSystem {
-		ChunkSystem {
+impl ChunkModule {
+	pub fn new(thread_pool: Arc<ThreadPool>) -> ChunkModule {
+		ChunkModule {
 			generator: WorldGeneration::new(thread_pool).unwrap(),
-			storage: Default::default(),
 			chunk_queue: Default::default(),
 			chunk_gen_queue: Default::default(),
 			dirty_chunks: Default::default(),
@@ -37,9 +34,9 @@ impl ChunkSystem {
 	}
 
 	#[macro_module::module(server.chunk)]
-	pub fn tick(this: &mut ChunkSystem, server: &mut Server) -> Result<()> {
+	pub fn tick(this: &mut ChunkModule, server: &mut Server) -> Result<()> {
 		for (pos, from) in this.chunk_queue.drain(..) {
-			if let Some(chunk) = this.storage.get_chunk(pos) {
+			if let Some(chunk) = server.world.chunks.get_chunk(pos) {
 				server.network.send_chunk(Some(from), pos, chunk.clone());
 			} else {
 				this.generator.request_chunk(pos)?;
@@ -55,11 +52,11 @@ impl ChunkSystem {
 				}
 			}
 
-			this.storage.put_chunk(pos, chunk);
+			server.world.chunks.put_chunk(pos, chunk);
 		});
 
 		for pos in this.dirty_chunks.drain() {
-			if let Some(chunk) = this.storage.get_chunk(pos) {
+			if let Some(chunk) = server.world.chunks.get_chunk(pos) {
 				server.network.send_chunk(None, pos, chunk.clone());
 			}
 		}
@@ -78,24 +75,8 @@ impl ChunkSystem {
 
 		Ok(())
 	}
-}
 
-impl Reloadable for ChunkSystem {
-	fn reload(&mut self, api: &Api) {
+	pub fn reload(&mut self, api: &Api) {
 		self.generator.reload(api);
-	}
-}
-
-impl Deref for ChunkSystem {
-	type Target = ChunkStorage;
-
-	fn deref(&self) -> &Self::Target {
-		&self.storage
-	}
-}
-
-impl DerefMut for ChunkSystem {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.storage
 	}
 }

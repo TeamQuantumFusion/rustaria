@@ -15,6 +15,7 @@ use carrier::Carrier;
 use crate::api::reload::Reload;
 use crate::error::Result;
 use crate::hook::HookInstance;
+use crate::plugin::archive::Archive;
 use crate::plugin::Plugin;
 use crate::ty::{PluginId, Tag};
 
@@ -186,6 +187,7 @@ mod test_utils {
 
 #[cfg(test)]
 mod tests {
+	use log::LevelFilter;
 	use crate::api::lua::glue::ToGlue;
 	use crate::api::lua::FromLua;
 	use crate::api::test_utils::Counter;
@@ -196,7 +198,7 @@ mod tests {
 
 	#[test]
 	pub fn test_registry() -> Result<()> {
-		initialize()?;
+		initialize(LevelFilter::Off)?;
 
 		#[derive(Clone, PartialEq, Debug, FromLua)]
 		pub struct FrogePrototype {
@@ -241,7 +243,7 @@ mod tests {
 
 	#[test]
 	pub fn test_hook() -> Result<()> {
-		initialize()?;
+		initialize(LevelFilter::Off)?;
 		let mut api = Api::new_test();
 		api.load_simple_plugin(
 			r#"

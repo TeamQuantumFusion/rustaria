@@ -2,9 +2,9 @@
 #[derive(
 	Copy,
 	Clone,
-	Ord,
 	PartialOrd,
 	PartialEq,
+	Ord,
 	Eq,
 	Debug,
 	Hash,
@@ -19,6 +19,7 @@ pub enum Direction {
 	Right,
 }
 
+use std::ops::{Index, IndexMut};
 use Direction::*;
 impl Direction {
 	pub fn vertical(self) -> bool {
@@ -94,5 +95,50 @@ impl Direction {
 
 	pub fn values() -> [Direction; 4] {
 		[Up, Left, Down, Right]
+	}
+}
+
+pub struct DirMap<V>([V; 4]);
+
+impl<V> DirMap<V> {
+	pub const fn new(value: [V; 4])  -> DirMap<V> {
+		DirMap(value)
+	}
+
+	pub fn get_inner(self) -> [V; 4] {
+		self.0
+	}
+
+	fn idx(dir: Direction) -> usize {
+		match dir {
+			Up => 0,
+			Left => 1,
+			Down => 2,
+			Right => 3,
+		}
+	}
+}
+
+impl<V: Clone> Clone for DirMap<V> {
+	fn clone(&self) -> Self {
+		DirMap::new(self.0.clone())
+	}
+}
+
+impl<V: Copy> Copy for DirMap<V> {
+
+}
+
+impl<V> Index<Direction> for DirMap<V> {
+	type Output = V;
+
+	fn index(&self, index: Direction) -> &Self::Output {
+		&self.0[Self::idx(index)]
+	}
+}
+
+impl<V> IndexMut<Direction> for DirMap<V> {
+	fn index_mut(&mut self, index: Direction) -> &mut Self::Output {
+		&mut self.0[Self::idx(index)]
 	}
 }

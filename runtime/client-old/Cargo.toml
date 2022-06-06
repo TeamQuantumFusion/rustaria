@@ -1,0 +1,18 @@
+[package]
+name = "client"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rustaria = { path = "../../", features = ["client"] }
+rsa-core = { path = "../../libs/rsa-core" }
+rsa-network = { path = "../../libs/rsa-network" }
+rsa-input = { path = "../../libs/rsa-input" }
+rsac-rendering = { path = "../../libs/rsac-rendering" }
+rsac-backend = { path = "../../libs/rsac-backend" }
+rsac-glium-backend = { path = "../../libs/rsac-glium-backend" }
+rayon = "1.5.1"
+glfw = "0.44.0"
+clap = { version = "3.1.9", features = ["derive"] }

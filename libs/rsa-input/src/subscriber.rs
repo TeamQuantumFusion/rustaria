@@ -1,18 +1,49 @@
 pub enum Subscriber {
-	Trigger(Box<dyn TriggerSubscriber>),
-	Toggle(Box<dyn ToggleSubscriber>, bool),
-	Hold(Box<dyn HoldSubscriber>),
+	Trigger {
+		press: Box<dyn FnMut()>,
+		release: Box<dyn FnMut()>,
+	},
+	Toggle {
+		value: bool,
+		toggle: Box<dyn FnMut(bool)>
+	},
+	Hold {
+		hold: Box<dyn FnMut(f32)>
+	},
 }
 
-pub trait TriggerSubscriber {
-	fn pressed(&mut self);
-	fn released(&mut self);
-}
+impl Subscriber {
+	pub fn press(press: impl FnMut() + 'static) -> Subscriber {
+		Subscriber::Trigger {
+			press: Box::new(press),
+			release: Box::new(|| {}),
+		}
+	}
 
-pub trait ToggleSubscriber {
-	fn toggle(&mut self, state: bool);
-}
+	pub fn release(release: impl FnMut() + 'static) -> Subscriber {
+		Subscriber::Trigger {
+			release: Box::new(release),
+			press: Box::new(|| {}),
+		}
+	}
 
-pub trait HoldSubscriber {
-	fn hold(&mut self, delta: f32);
+	pub fn trigger(release: impl FnMut() + 'static, press: impl FnMut() + 'static) -> Subscriber {
+		Subscriber::Trigger {
+			release: Box::new(release),
+			press: Box::new(press),
+		}
+	}
+
+	pub fn toggle(default: bool, toggle: impl FnMut(bool) + 'static) -> Subscriber {
+		Subscriber::Toggle {
+			value: default,
+			toggle: Box::new(toggle)
+		}
+	}
+
+	pub fn hold(hold: impl FnMut(f32) + 'static) -> Subscriber {
+		Subscriber::Hold {
+			hold: Box::new(hold)
+		}
+	}
 }

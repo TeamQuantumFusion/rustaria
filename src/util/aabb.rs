@@ -103,7 +103,7 @@ pub fn dynamic_rect_vs_rect(
 	time_step: f32,
 	r_static: Rect,
 ) -> Option<RayRectCollision> {
-	// Check if dynamic rectangle is actually moving - we assume rectangles are NOT in collision to start
+	// Check if dynlib rectangle is actually moving - we assume rectangles are NOT in collision to start
 	if r_dynamic_vel.x == 0.0 && r_dynamic_vel.y == 0.0 {
 		return None;
 	}

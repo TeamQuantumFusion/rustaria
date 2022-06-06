@@ -40,6 +40,7 @@ mod tests {
 	use crate::ItemSystem;
 	use apollo::*;
 	use rsa_core::api::lua::LuaResult;
+	use rsa_core::logging::LevelFilter;
 	use rsa_core::ty::Tag;
 	use crate::item::ItemPrototype;
 
@@ -57,7 +58,7 @@ mod tests {
 
 	#[test]
 	fn it_works() -> Result<()> {
-		rsa_core::initialize().unwrap();
+		rsa_core::initialize(LevelFilter::Off)?;
 		let mut api = Api::new_test();
 		let carrier = api.get_carrier();
 
@@ -82,8 +83,8 @@ reload.registry["item"]:insert {
 -- hook
 reload.hook["r:test"]:subscribe("stick_getting", function(game)
 	log.info("getting stick")
-	local system = game.item;
-	local stick = system:get("stick")
+	local systems = game.item;
+	local stick = systems:get("stick")
 
 	stick:thing(69)
 

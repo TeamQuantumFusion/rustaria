@@ -35,6 +35,10 @@ impl Default for ConnectionType {
 	}
 }
 
+pub trait NeighborAware {
+	fn connection_ty(&self) -> ConnectionType;
+}
+
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BreakResistance {

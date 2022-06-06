@@ -1,3 +1,8 @@
+pub mod controller_button;
+pub mod keyboard;
+pub mod modifier;
+pub mod mouse;
+
 #[cfg(test)]
 use mock_instant::Instant;
 use rsa_core::ty::Direction;
@@ -6,6 +11,9 @@ use std::time::Duration;
 #[cfg(not(test))]
 use std::time::Instant;
 
+use crate::event::controller_button::ControllerButtonEvent;
+use crate::event::keyboard::KeyboardEvent;
+use crate::event::mouse::{MouseEvent, ScrollEvent};
 use rsa_core::settings::UPS;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -26,8 +34,17 @@ pub struct EventRecord {
 pub enum EventKind {
 	Keyboard(KeyboardEvent),
 	Mouse(MouseEvent),
-	Gamepad(GamepadEvent),
-	Scroll(Direction),
+	ControllerButton(ControllerButtonEvent),
+	Scroll(ScrollEvent),
+}
+
+impl EventKind {
+	pub fn sustained(&self) -> bool {
+		match self {
+			EventKind::Keyboard(_) | EventKind::Mouse(_) | EventKind::ControllerButton(_) => true,
+			EventKind::Scroll(_) => false,
+		}
+	}
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Copy, Default)]
@@ -68,40 +85,6 @@ impl EventRecord {
 		match self.duration {
 			Some(duration) => ((duration.as_secs_f32() * UPS as f32) % 1.0).clamp(0.0, 1.0),
 			None => 1.0,
-		}
-	}
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct KeyboardEvent {
-	pub key: glfw::Key,
-	pub modifier: glfw::Modifiers,
-}
-
-impl KeyboardEvent {
-	pub fn new(key: glfw::Key) -> KeyboardEvent {
-		KeyboardEvent {
-			key,
-			modifier: glfw::Modifiers::empty(),
-		}
-	}
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct MouseEvent {
-	pub button: glfw::MouseButton,
-	pub modifier: glfw::Modifiers,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct GamepadEvent {
-	pub button: glfw::GamepadButton,
-}
-impl EventKind {
-	pub fn sustained(&self) -> bool {
-		match self {
-			EventKind::Keyboard(_) | EventKind::Mouse(_) | EventKind::Gamepad(_) => true,
-			EventKind::Scroll(_) => false,
 		}
 	}
 }

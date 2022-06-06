@@ -6,15 +6,16 @@ use rayon::ThreadPool;
 use rsa_core::api::carrier::Carrier;
 use rsa_core::api::{Api, Reloadable};
 
-use rsa_core::ty::{ChunkPos, ChunkSubPos, Tag};
 use rsa_core::error::ContextCompat;
 use rsa_core::error::Result;
 use rsa_core::logging::error;
 use rsa_core::settings::CHUNK_SIZE;
+use rsa_core::ty::{ChunkPos, ChunkSubPos, Tag};
 
-use crate::api::prototype::tile::TilePrototype;
-use crate::chunk::{Chunk, ChunkLayer};
-use crate::SmartError;
+use crate::chunk::layer::tile::TilePrototype;
+use crate::chunk::layer::ChunkLayer;
+use crate::chunk::Chunk;
+use crate::RichError;
 
 pub struct WorldGeneration {
 	carrier: Option<Carrier>,
@@ -43,7 +44,7 @@ impl WorldGeneration {
 			let carrier = self
 				.carrier
 				.clone()
-				.wrap_err(SmartError::CarrierUnavailable)?;
+				.wrap_err(RichError::CarrierUnavailable)?;
 
 			let sender = self.tx.clone();
 			self.thread_pool.spawn(move || {
@@ -66,12 +67,10 @@ impl WorldGeneration {
 			func(chunk, pos);
 		}
 	}
-}
 
-// we should prob convert chunks incase a new entry now exists.
-// that needs world saving logic however sooooo
-impl Reloadable for WorldGeneration {
-	fn reload(&mut self, api: &Api) {
+	// we should prob convert chunks incase a new entry now exists.
+	// that needs world saving logic however sooooo
+	pub fn reload(&mut self, api: &Api) {
 		self.carrier = Some(api.get_carrier());
 	}
 }

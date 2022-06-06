@@ -11,3 +11,14 @@ impl RawId {
 		self.0 as usize
 	}
 }
+
+
+pub trait KernelIdentifier {
+	fn id(&self) -> RawId;
+}
+
+impl KernelIdentifier for RawId {
+	fn id(&self) -> RawId {
+		*self
+	}
+}

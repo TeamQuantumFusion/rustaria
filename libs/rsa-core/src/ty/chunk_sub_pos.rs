@@ -4,7 +4,17 @@ use crate::ty::{Offset, CHUNK_SIZE_MASK, CHUNK_SIZE_U8};
 use mlua::{Error, FromLua, Lua, Value};
 
 #[derive(
-	Copy, Clone, PartialOrd, PartialEq, Debug, Default, serde::Serialize, serde::Deserialize,
+	Copy,
+	Clone,
+	PartialOrd,
+	Ord,
+	PartialEq,
+	Eq,
+	Hash,
+	Debug,
+	Default,
+	serde::Serialize,
+	serde::Deserialize,
 )]
 pub struct ChunkSubPos(u8);
 

@@ -1,236 +1,166 @@
-use std::collections::HashSet;
-use std::ops::AddAssign;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
-
-use clap::Parser;
-use glfw::{Action, ffi, Key, Modifiers, WindowEvent};
-use rayon::{ThreadPool, ThreadPoolBuilder};
-
-use rsa_core::api::{Api, Reloadable};
-use rsa_core::error::Result;
-use rsa_core::logging::debug;
-use rsa_core::math::vec2;
+use rsa_core::api::Api;
+use rsa_core::error::{Context, Report, Result};
+use rsa_core::logging::info;
 use rsa_core::reload;
 use rsa_core::settings::UPS;
-use rsa_core::ty::{Prototype, Tag};
-use rsa_network::client::ClientNetwork;
-use rsac_backend::ClientBackend;
-use rsac_backend::ty::Camera;
-use rsac_glium_backend::GliumBackend;
-use rustaria::api::prototype::entity::EntityPrototype;
-use rustaria::api::prototype::tile::TilePrototype;
-use rustaria::packet::ClientPacket;
-use rustaria::packet::entity::ClientEntityPacket;
-use rustaria::packet::player::ClientPlayerPacket;
-use rustaria::player::Player;
-pub use rustaria::prototypes;
-pub use rustaria::pt;
-use rustaria::Server;
-use rustaria::SmartError;
-use world::ClientWorld;
+use rsac_graphic::GraphicSystem;
+use rustaria::chunk::layer::tile::TilePrototype;
+use rustaria::entity::prototype::EntityPrototype;
+use rustaria::world::World;
+use rustaria::RichError;
+use std::time::{Duration, Instant};
+use rsa_core::math::vec2;
+use rsa_core::ty::{ChunkPos, Tag};
+use rsac_graphic::camera::Camera;
+use rustaria::chunk::Chunk;
+use rustaria::chunk::layer::ChunkLayer;
 
-use crate::args::Args;
-use crate::module::chunk::ChunkHandler;
-use crate::module::controller::ControllerHandler;
-use crate::module::entity::EntityHandler;
-use crate::module::rendering::RenderingHandler;
+use crate::args::{ClientMode, ClientOptions};
+use crate::input::InputModule;
 
 mod args;
-mod module;
 mod world;
+mod input;
 
-const DEBUG_MOD: Modifiers =
-	Modifiers::from_bits_truncate(ffi::MOD_ALT + ffi::MOD_CONTROL + ffi::MOD_SHIFT);
-const UPDATE_TIME: Duration = Duration::from_micros((1000000 / UPS) as u64);
+const TICK_DURATION: Duration = Duration::from_nanos((1000000000 / UPS) as u64);
 
 fn main() -> Result<()> {
-	let args = args::Args::parse();
-	rsa_core::initialize()?;
+	let mut client = Client::new().wrap_err("Failed to initialize core systems")?;
+	client.reload()?;
 
-	let mut client = Client::new(args)?;
-	client.join_integrated()?;
+	let carrier = client.api.get_carrier();
+	let result = carrier.get::<TilePrototype>().create_from_tag(&Tag::rsa("dirt"))?;
+	let pos = ChunkPos {
+		x: 0,
+		y: 0,
+	};
+	client.world.chunks.put_chunk(pos, Chunk {
+		tiles: ChunkLayer::new_copy(result)
+	});
+	client.graphics.world_renderer.notify_chunk(pos);
 
-	{
-		let carrier = client.api.get_carrier();
-		let prototype = carrier.get::<EntityPrototype>();
-		let id = prototype.id_from_tag(&Tag::rsa("bunne")).expect("where bunne");
-		let world = client.world.as_mut().unwrap();
-		let pos = vec2(5.0, 5.0);
-
-		world
-			.networking
-			.send(ClientPacket::Entity(ClientEntityPacket::Spawn(id, pos)))
-			.unwrap();
+	// If the loop fails we try to recover it. Else we nuke the client-old and go on with our day.
+	while let Err(report) = client.run_loop() {
+		client.try_recover(report)?;
 	}
-	client.run();
-
 	Ok(())
 }
 
 pub struct Client {
-	api: Api,
+	options: ClientOptions,
+
+	world: World,
 	camera: Camera,
 
-	control: ControllerHandler,
-	rendering: RenderingHandler,
-	world: Option<ClientWorld>,
-
-	// just for house keeping
-	thread_pool: Arc<ThreadPool>,
-	backend: ClientBackend,
+	api: Api,
+	input: InputModule,
+	graphics: GraphicSystem,
 }
 
 impl Client {
-	pub fn new(args: Args) -> Result<Client> {
-		let backend = ClientBackend::new(GliumBackend::new)?;
+	pub fn new() -> Result<Client> {
+		// Kernel core initialization
+		let dir = std::env::current_dir().wrap_err("Could not get current directory")?;
+		let options = ClientOptions::new();
+		rsa_core::initialize(options.logging)?;
+		info!(target: "init@rustaria", "Hi there! Im here to say that the rustaria core has initialized!");
 
-		let mut dir = std::env::current_dir()?;
-		dir.push("plugins");
-		let api = Api::new(dir, args.extra_plugin_paths)?;
+		// Graphics initialization
+		info!(target: "init@rustaria", "Initializing Graphics");
+		let graphics = GraphicSystem::new(900, 600)?;
 
-		let mut client = Client {
-			api,
-			world: None,
-			control: ControllerHandler::new(),
+		let input = InputModule::new();
+
+		// Api initialization
+		info!(target: "init@rustaria", "Initializing Api");
+		let api = Api::new(
+			dir.join("plugins"),
+			match options.mode {
+				ClientMode::KernelDev => vec![dir.join("../../../plugin")],
+				_ => vec![],
+			},
+		)?;
+
+		Ok(Client {
+			options,
+			world: World::new(),
 			camera: Camera {
-				position: [0.0, 0.0],
-				velocity: [0.0, 0.0],
-				zoom: 30.0,
-				screen_y_ratio: 0.0,
+				pos: vec2(8.0, 8.0),
+				scale: 20.0
 			},
-			rendering: RenderingHandler {
-				backend: backend.clone(),
-			},
-			thread_pool: Arc::new(ThreadPoolBuilder::new().num_threads(12).build().unwrap()),
-			backend,
-		};
-
-		client.reload()?;
-
-		Ok(client)
+			api,
+			input,
+			graphics,
+		})
 	}
 
-	pub fn run(&mut self) {
-		let mut last_tick = Instant::now();
-
-		let mut reload = false;
-		while !self.backend.instance().backend.window().should_close() {
-			{
-				let mut guard = self.backend.instance_mut();
-				for event in guard.backend.poll_events() {
-					match event {
-						WindowEvent::Size(width, height) => {
-							self.camera.screen_y_ratio = width as f32 / height as f32;
-						}
-						WindowEvent::Scroll(_, y) => {
-							self.camera.zoom += y as f32;
-						}
-						// Reload
-						WindowEvent::Key(Key::R, _, Action::Release, DEBUG_MOD) => {
-							reload = true;
-						}
-						// Re-mesh
-						WindowEvent::Key(Key::M, _, Action::Release, DEBUG_MOD) => {
-							guard.backend.mark_dirty();
-						}
-						_ => {}
-					}
-
-					self.control.consume_event(event);
-				}
-			}
-
-			while last_tick.elapsed() >= UPDATE_TIME {
-				if let Err(error) = self.tick() {
-					match error.downcast_ref::<SmartError>() {
-						Some(SmartError::CarrierUnavailable) => {
-							reload = true;
-						}
-						_ => Err(error).unwrap(),
-					}
-				}
-				last_tick.add_assign(UPDATE_TIME);
-			}
-
-			let delta = (last_tick.elapsed().as_secs_f32() / UPDATE_TIME.as_secs_f32()).abs();
-			if let Err(error) = self.draw(delta) {
-				match error.downcast_ref::<SmartError>() {
-					Some(SmartError::CarrierUnavailable) => {
-						reload = true;
-					}
-					_ => Err(error).unwrap(),
-				}
-			}
-
-			if reload {
-				self.reload().unwrap();
-				reload = false;
-			}
-		}
-	}
-
-	pub fn join_integrated(&mut self) -> Result<()> {
-		let mut server = Server::new(&self.api, self.thread_pool.clone())?;
-		let player = Player::new("testing testing".to_string());
-
-		let networking =
-			ClientNetwork::new_integrated(server.network.integrated.as_mut().unwrap())?;
-		let mut client_world = ClientWorld {
-			networking,
-			chunk: ChunkHandler::new(&self.rendering),
-			player_entity_id: None,
-			player,
-			entity: EntityHandler::new(&self.rendering),
-			integrated: Some(Box::new(server)),
-		};
-
-		// sync api
-		client_world.reload(&self.api);
-
-		// join packet
-		client_world
-			.networking
-			.send(ClientPacket::Player(ClientPlayerPacket::Join {}))?;
-		self.world = Some(client_world);
-
-		Ok(())
-	}
-
-	fn reload(&mut self) -> Result<()> {
-		debug!(target: "reload@rustariac", "Reloading Client");
+	pub fn reload(&mut self) -> Result<()> {
 		reload!((TilePrototype, EntityPrototype) => &mut self.api);
+		self.graphics
+			.reload(&self.api)
+			.wrap_err("Failed to reload Graphics System")?;
+		Ok(())
+	}
 
-		let mut sprites = HashSet::new();
-		let carrier = self.api.get_carrier();
-		prototypes!({
-			for prototype in carrier.get::<P>().iter() {
-				prototype.get_sprites(&mut sprites);
+	pub fn run_loop(&mut self) -> Result<(), LoopError> {
+		let mut last_tick = Instant::now();
+		while self.graphics.running() {
+			self.tick_input().map_err(LoopError::InputFail)?;
+
+			while let Some(value) = Instant::now().checked_duration_since(last_tick) {
+				if value >= TICK_DURATION {
+					self.tick().map_err(LoopError::ServerFail)?;
+					last_tick += TICK_DURATION;
+				} else {
+					break;
+				}
 			}
-		});
-		self.backend.instance_mut().supply_atlas(&self.api, sprites);
 
-		if let Some(world) = &mut self.world {
-			world.reload(&self.api);
+			self.draw().map_err(LoopError::DrawFail)?;
 		}
 
 		Ok(())
 	}
 
-	fn tick(&mut self) -> Result<()> {
-		if let Some(world) = &mut self.world {
-			world.tick(&mut self.camera, &mut self.control)?;
+	pub fn tick_input(&mut self) -> Result<()> {
+		for event in self.graphics.poll_events() {
+			self.input.system.notify_event(event);
 		}
-
 		Ok(())
 	}
 
-	fn draw(&mut self, delta: f32) -> Result<()> {
-		if let Some(world) = &mut self.world {
-			world.draw(&mut self.camera, delta)?;
-		}
-
-		self.backend.instance_mut().backend.draw(&self.camera);
+	/// Called every update, Used for communicating with the server as it runs on this update speed.
+	pub fn tick(&mut self) -> Result<()> {
+		self.input.tick();
 		Ok(())
 	}
+
+	/// Called every frame, Used for drawing stuff on screen.
+	pub fn draw(&mut self) -> Result<()> {
+		self.input.apply_zoom(&mut self.camera);
+		self.graphics.draw( &self.camera, &self.world)?;
+		Ok(())
+	}
+
+	pub fn try_recover(&mut self, error: LoopError) -> Result<()> {
+		if let LoopError::ServerFail(report) = &error {
+			if let Some(RichError::CarrierUnavailable) = report.downcast_ref::<RichError>() {
+				return self.reload().wrap_err("Failed to reload on bail.");
+			} else {
+				todo!("Leave server")
+			}
+		}
+
+		Err(match error {
+			LoopError::InputFail(result) => result,
+			LoopError::ServerFail(result) => result,
+			LoopError::DrawFail(result) => result,
+		})
+	}
+}
+
+pub enum LoopError {
+	InputFail(Report),
+	ServerFail(Report),
+	DrawFail(Report),
 }

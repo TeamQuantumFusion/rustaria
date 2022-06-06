@@ -20,7 +20,7 @@ macro_rules! reload {
     (($($PROTOTYPE:ty),*) => $API:expr) => {
 		let mut reload = $API.reload();
 		$(reload.start_prototype::<$PROTOTYPE>();)*
-		reload.reload()?;
+		reload.reload().wrap_err("Failed to reload api.")?;
 		$(reload.end_prototype::<$PROTOTYPE>();)*
 		reload.finish();
     };

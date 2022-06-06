@@ -14,6 +14,8 @@ type-map = "0.5.0"
 rayon = "1.5.1"
 crossbeam = "0.8.1"
 mlua = { git = "https://github.com/alphaqu/mlua", branch = "alphacurseness", features = ["serialize", "send"] }
+hecs = { version = "0.7.6", features = ["serde"] }
+thiserror = "1.0.31"
 
 frogelua = { path = "./libs/frogelua" }
 macro-module = { path = "./libs/macro-module" }
@@ -30,19 +32,13 @@ members = [
     "libs/rsa-gen",
     "libs/rsa-input",
     "libs/rsa-item",
-    "libs/rsac-rendering",
-    "libs/rsac-backend",
-    "libs/rsac-glium-backend",
+    "libs/rsac-audio",
+    "libs/rsac-graphic",
     "runtime/client",
 ]
 
 [features]
 client = []
-
-[profile.release]
-panic = "abort"
-opt-level = 3
-lto = "thin"
 
 [profile.dev]
 opt-level = 1

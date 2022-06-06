@@ -61,7 +61,13 @@
       <sourceFolder url="file://$MODULE_DIR$/libs/rsa-core/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rsac-rendering/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/apollo/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rsac-audio/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/satellite/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rsac-graphic/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/dynamite/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rsa-core/dynlib/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rsac-graphic/dynlib/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/runtime/client-old/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-network-old/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/runtime/client/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rustaria-client/src" isTestSource="false" />
@@ -73,8 +79,8 @@
       <excludeFolder url="file://$MODULE_DIR$/libs/rsa-world/target" />
       <excludeFolder url="file://$MODULE_DIR$/libs/rsa-comps/target" />
       <excludeFolder url="file://$MODULE_DIR$/libs/rsa-todo/target" />
-      <excludeFolder url="file://$MODULE_DIR$/runtime/client/run/plugins" />
-      <excludeFolder url="file://$MODULE_DIR$/runtime/client/run" />
+      <excludeFolder url="file://$MODULE_DIR$/runtime/client-old/run" />
+      <excludeFolder url="file://$MODULE_DIR$/runtime/client-old/run/plugins" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

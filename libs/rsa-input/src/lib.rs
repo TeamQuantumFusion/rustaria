@@ -43,23 +43,23 @@ impl InputSystem {
 		}
 	}
 
-	pub fn notify_event(&mut self, action: Event) {
-		if action.kind.sustained() {
-			if action.pressed {
+	pub fn notify_event(&mut self, event: Event) {
+		if event.kind.sustained() {
+			if event.pressed {
 				// If it already exists. End it here. (we prob missed the lift event)
-				if let Some((press_action, mut state)) = self.active.remove(&action.kind) {
+				if let Some((press_action, mut state)) = self.active.remove(&event.kind) {
 					state.fire_release = true;
 					self.subtick_history.push(EventRecord::new_dual(
 						press_action,
-						action.clone(),
+						event.clone(),
 						state,
 					));
 				}
 
 				self.active.insert(
-					action.kind.clone(),
+					event.kind.clone(),
 					(
-						action.clone(),
+						event.clone(),
 						EventState {
 							fire_press: true,
 							fire_release: false,
@@ -68,18 +68,18 @@ impl InputSystem {
 				);
 			} else {
 				// Get the pressed action and calculate its time. Else make a 0 length event.
-				if let Some((press_action, mut state)) = self.active.remove(&action.kind) {
+				if let Some((press_action, mut state)) = self.active.remove(&event.kind) {
 					state.fire_release = true;
 					self.subtick_history
-						.push(EventRecord::new_dual(press_action, action, state));
+						.push(EventRecord::new_dual(press_action, event, state));
 				} else {
 					self.subtick_history
-						.push(EventRecord::new(action, EventState::full()));
+						.push(EventRecord::new(event, EventState::full()));
 				}
 			}
 		} else {
 			self.subtick_history
-				.push(EventRecord::new(action, EventState::full()));
+				.push(EventRecord::new(event, EventState::full()));
 		}
 	}
 
@@ -114,22 +114,22 @@ impl InputSystem {
 				if let Some(subscribers) = subscribers.get_mut(sub) {
 					for subscriber in subscribers {
 						match subscriber {
-							Subscriber::Hold(value) => {
-								value.hold(delta);
+							Subscriber::Hold { hold} => {
+								hold(delta);
 							}
-							Subscriber::Trigger(value) => {
+							Subscriber::Trigger { press, release} => {
 								if state.fire_press {
-									value.pressed();
+									press();
 								}
 
 								if state.fire_release {
-									value.released();
+									release();
 								}
 							}
-							Subscriber::Toggle(value, switch) => {
+							Subscriber::Toggle { value, toggle } => {
 								if state.fire_press {
-									*switch = !*switch;
-									value.toggle(*switch);
+									*value = !*value;
+									toggle(*value);
 								}
 							}
 						}
@@ -144,42 +144,49 @@ impl InputSystem {
 }
 #[cfg(test)]
 mod tests {
+	use std::rc::Rc;
 	use mock_instant::{Instant, MockClock};
 	use std::sync::atomic::{AtomicBool, Ordering};
 	use std::sync::{Arc, Mutex};
 	use std::time::Duration;
 
-	use glfw::{Key, Modifiers};
-	use rustaria_api::ty::Tag;
 	use rsa_core::settings::UPS;
 
 	use rsa_core::ty::{Direction, Tag};
 
-	use crate::event::{EventKind, KeyboardEvent};
-	use crate::subscriber::{HoldSubscriber, ToggleSubscriber, TriggerSubscriber};
+	use crate::event::{EventKind};
 	use crate::{Event, EventRecord, EventState, InputSystem, Subscriber};
+	use crate::event::keyboard::{Key, KeyboardEvent};
+	use crate::event::modifier::Modifiers;
+	use crate::event::mouse::ScrollEvent;
 
 	const NSPU: u64 = (1000000000.0 / UPS as f64) as u64;
 
 	pub fn keyboard() -> KeyboardEvent {
 		KeyboardEvent {
-			key: Key::Space,
-			modifier: Modifiers::empty(),
+			modifiers: Modifiers::empty(),
+			key: Key::Char(' '),
 		}
+	}
+
+	pub fn basic() -> EventKind {
+		EventKind::Scroll(ScrollEvent {
+			direction: Direction::Up,
+		})
 	}
 
 	#[test]
 	fn test_basic() {
 		let mut input = InputSystem::new();
 		input.notify_event(Event {
-			kind: EventKind::Scroll(Direction::Up),
+			kind: basic(),
 			start: None,
 			pressed: false,
 		});
 
 		assert_eq!(
 			input.subtick_history[0].kind,
-			EventKind::Scroll(Direction::Up)
+			basic()
 		)
 	}
 
@@ -298,72 +305,62 @@ mod tests {
 
 	#[test]
 	fn test_trigger_subscriber() {
-		#[derive(Clone)]
-		pub struct Sub(Arc<AtomicBool>);
-		impl TriggerSubscriber for Sub {
-			fn pressed(&mut self) {
-				if self.0.load(Ordering::Relaxed) {
-					panic!("Double trigger")
-				}
-				self.0.store(true, Ordering::Relaxed);
-			}
-
-			fn released(&mut self) {}
-		}
-
-		let sub = Sub(Default::default());
-
 		let mut input = InputSystem::new();
-		input.register_binding(Tag::rsa("tests"), vec![EventKind::Scroll(Direction::Up)]);
+		let mut value = Rc::new(AtomicBool::new(false));
+
+		let rc = value.clone();
+		input.register_binding(Tag::rsa("tests"), vec![ basic()]);
 		input.register_subscriber(
 			Tag::rsa("tests"),
-			Subscriber::Trigger(Box::new(sub.clone())),
+			Subscriber::press(move || {
+				if rc.load(Ordering::Relaxed) {
+					panic!("Double trigger")
+				}
+				rc.store(true, Ordering::Relaxed);
+			}),
 		);
 
 		input.notify_event(Event {
-			kind: EventKind::Scroll(Direction::Up),
+			kind:  basic(),
 			start: None,
 			pressed: true,
 		});
 
 		input.tick();
 
-		if !sub.0.load(Ordering::Relaxed) {
+		if !value.load(Ordering::Relaxed) {
 			panic!("Never triggered")
 		}
 	}
 
 	#[test]
 	fn test_toggle_subscriber() {
-		#[derive(Clone)]
-		pub struct Sub(Arc<AtomicBool>);
-		impl ToggleSubscriber for Sub {
-			fn toggle(&mut self, state: bool) {
-				self.0.store(state, Ordering::Relaxed);
-			}
-		}
-
-		let sub = Sub(Default::default());
-
 		let mut input = InputSystem::new();
-		input.register_binding(Tag::rsa("tests"), vec![EventKind::Scroll(Direction::Up)]);
+
+		let value = Rc::new(AtomicBool::new(false));
+		input.register_binding(Tag::rsa("tests"), vec![ basic()]);
+
+
+		let rc = value.clone();
 		input.register_subscriber(
 			Tag::rsa("tests"),
-			Subscriber::Toggle(Box::new(sub.clone()), false),
+			Subscriber::toggle(false, move |state| {
+				rc.store(state, Ordering::Relaxed);
+			}),
 		);
 
 		input.notify_event(Event {
-			kind: EventKind::Scroll(Direction::Up),
+			kind:  basic(),
 			start: None,
 			pressed: true,
 		});
 		input.tick();
 
 		// on
-		assert!(sub.0.load(Ordering::Relaxed));
+		assert!(value.load(Ordering::Relaxed));
 
 		input.notify_event(Event {
-			kind: EventKind::Scroll(Direction::Up),
+			kind:  basic(),
 			start: None,
 			pressed: true,
 		});
@@ -371,32 +368,25 @@ mod tests {
 		input.tick();
 
 		// off
-		assert!(!sub.0.load(Ordering::Relaxed));
+		assert!(!value.load(Ordering::Relaxed));
 	}
 
 	#[test]
 	fn test_hold_subscriber() {
-		#[derive(Clone)]
-		pub struct Sub(Arc<Mutex<f32>>);
-		impl HoldSubscriber for Sub {
-			fn hold(&mut self, delta: f32) {
-				*self.0.lock().unwrap() += delta;
-			}
-		}
-
-		let sub = Sub(Default::default());
-
 		let mut input = InputSystem::new();
+
+		let value = Arc::new(Mutex::new(0.0));
 		input.register_binding(
 			Tag::rsa("tests"),
-			vec![EventKind::Keyboard(KeyboardEvent {
-				key: Key::Space,
-				modifier: Modifiers::empty(),
-			})],
+			vec![EventKind::Keyboard(keyboard())],
 		);
+
+		let valuee = value.clone();
 		input.register_subscriber(
 			Tag::rsa("tests"),
-			Subscriber::Hold(Box::new(sub.clone())),
+			Subscriber::hold(move |delta| {
+				*valuee.lock().unwrap() += delta;
+			}),
 		);
 
 		// Holds across ticks. Should be 1.0
@@ -408,7 +398,7 @@ mod tests {
 			});
 
 			input.tick();
-			assert_eq!(*sub.0.lock().unwrap(), 1.0);
+			assert_eq!(*value.lock().unwrap(), 1.0);
 		}
 
 		MockClock::advance(Duration::from_nanos(NSPU));
@@ -423,7 +413,7 @@ mod tests {
 			});
 			input.tick();
 
-			assert_eq!(*sub.0.lock().unwrap(), 1.5);
+			assert_eq!(*value.lock().unwrap(), 1.5);
 		}
 	}
 }

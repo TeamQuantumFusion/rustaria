@@ -5,6 +5,7 @@ use rsa_core::ty::Uuid;
 pub mod client;
 pub mod packet;
 pub mod server;
+pub mod tunnel;
 
 pub type Token = Uuid;
 pub type Result<T> = core::result::Result<T, Error>;

@@ -1,6 +1,3 @@
-pub mod entity;
-pub mod tile;
-
 #[macro_export]
 macro_rules! pt {
     ( $($TY:ty),* => $B:block) => {
@@ -11,11 +8,9 @@ macro_rules! pt {
     };
 }
 
-pub fn test() {}
-
 #[macro_export]
 macro_rules! prototypes {
     ($B:block) => {
-        pt!($crate::api::prototype::tile::TilePrototype, $crate::api::prototype::entity::EntityPrototype => $B);
+        $crate::pt!($crate::chunk::layer::tile::TilePrototype, $crate::entity::prototype::EntityPrototype => $B);
     };
 }
