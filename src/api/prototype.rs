@@ -1,16 +1,10 @@
-#[macro_export]
-macro_rules! pt {
-    ( $($TY:ty),* => $B:block) => {
-        $({
-        type P = $TY;
-        $B
-    };)*
-    };
-}
+use crate::{api::luna::table::LunaTable};
 
-#[macro_export]
-macro_rules! prototypes {
-    ($B:block) => {
-        $crate::pt!($crate::chunk::layer::tile::TilePrototype, $crate::entity::prototype::EntityPrototype => $B);
-    };
+pub trait Prototype
+where
+	Self: Sized + 'static + Send,
+{
+	type Output;
+	fn get_name() -> &'static str;
+	fn from_lua(table: LunaTable) -> eyre::Result<Self>;
 }

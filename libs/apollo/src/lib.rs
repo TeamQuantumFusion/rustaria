@@ -1,199 +1,144 @@
-mod field;
-mod method;
+//! # High-level bindings to Lua
+//!
+//! The `mlua` crate provides safe high-level bindings to the [Lua programming language].
+//!
+//! # The `Lua` object
+//!
+//! The main type exported by this library is the [`Lua`] struct. In addition to methods for
+//! [executing] Lua chunks or [evaluating] Lua expressions, it provides methods for creating Lua
+//! values and accessing the table of [globals].
+//!
+//! # Converting data
+//!
+//! The [`ToLua`] and [`FromLua`] traits allow conversion from Rust types to Lua values and vice
+//! versa. They are implemented for many data structures found in Rust's standard library.
+//!
+//! For more general conversions, the [`ToLuaMulti`] and [`FromLuaMulti`] traits allow converting
+//! between Rust types and *any number* of Lua values.
+//!
+//! Most code in `mlua` is generic over implementors of those traits, so in most places the normal
+//! Rust data structures are accepted without having to write any boilerplate.
+//!
+//! # Custom Userdata
+//!
+//! The [`UserData`] trait can be implemented by user-defined types to make them available to Lua.
+//! Methods and operators to be used from Lua can be added using the [`UserDataMethods`] API.
+//! Fields are supported using the [`UserDataFields`] API.
+//!
+//! # Serde support
+//!
+//! The [`LuaSerdeExt`] trait implemented for [`Lua`] allows conversion from Rust types to Lua values
+//! and vice versa using serde. Any user defined data type that implements [`serde::Serialize`] or
+//! [`serde::Deserialize`] can be converted.
+//! For convenience, additional functionality to handle `NULL` values and arrays is provided.
+//!
+//! The [`Value`] enum implements [`serde::Serialize`] trait to support serializing Lua values
+//! (including [`UserData`]) into Rust values.
+//!
+//! Requires `feature = "serialize"`.
+//!
+//! # Async/await support
+//!
+//! The [`create_async_function`] allows creating non-blocking functions that returns [`Future`].
+//! Lua code with async capabilities can be executed by [`call_async`] family of functions or polling
+//! [`AsyncThread`] using any runtime (eg. Tokio).
+//!
+//! Requires `feature = "async"`.
+//!
+//! # `Send` requirement
+//! By default `mlua` is `!Send`. This can be changed by enabling `feature = "send"` that adds `Send` requirement
+//! to [`Function`]s and [`UserData`].
+//!
+//! [Lua programming language]: https://www.lua.org/
+//! [`Lua`]: crate::Lua
+//! [executing]: crate::Chunk::exec
+//! [evaluating]: crate::Chunk::eval
+//! [globals]: crate::Lua::globals
+//! [`ToLua`]: crate::ToLua
+//! [`FromLua`]: crate::FromLua
+//! [`ToLuaMulti`]: crate::ToLuaMulti
+//! [`FromLuaMulti`]: crate::FromLuaMulti
+//! [`Function`]: crate::Function
+//! [`UserData`]: crate::UserData
+//! [`UserDataFields`]: crate::UserDataFields
+//! [`UserDataMethods`]: crate::UserDataMethods
+//! [`LuaSerdeExt`]: crate::LuaSerdeExt
+//! [`Value`]: crate::Value
+//! [`create_async_function`]: crate::Lua::create_async_function
+//! [`call_async`]: crate::Function::call_async
+//! [`AsyncThread`]: crate::AsyncThread
+//! [`Future`]: std::future::Future
+//! [`serde::Serialize`]: https://docs.serde.rs/serde/ser/trait.Serialize.html
+//! [`serde::Deserialize`]: https://docs.serde.rs/serde/de/trait.Deserialize.html
+
+// mlua types in rustdoc of other crates get linked to here.
+#![doc(html_root_url = "https://docs.rs/mlua/0.8.0-beta.3")]
+// Deny warnings inside doc tests / examples. When this isn't present, rustdoc doesn't show *any*
+// warnings at all.
+#![doc(test(attr(deny(warnings))))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
+#[macro_use]
+mod macros;
+
+mod chunk;
+mod conversion;
+mod error;
+mod ffi;
+mod function;
+mod hook;
+mod lua;
+mod multi;
+mod scope;
+mod stdlib;
+mod string;
+mod table;
+mod thread;
+mod types;
+mod userdata;
+mod userdata_impl;
 mod util;
+mod value;
 
-use crate::field::FieldType;
-use method::MethodType;
-use proc_macro2::{Ident, Literal, Span, TokenStream};
-use quote::{quote, TokenStreamExt};
-use syn::parse::{Parse, ParseStream};
-use syn::{parse_macro_input, ImplItem, ItemImpl, ImplItemMethod};
+pub mod prelude;
 
-macro_rules! import {
-    ($NAME:literal) => {
-        match proc_macro_crate::crate_name($NAME).expect($NAME) {
-           proc_macro_crate::FoundCrate::Itself => quote!( crate ),
-           proc_macro_crate::FoundCrate::Name(name) => {
-                let ident = Ident::new(&name, Span::call_site());
-                quote!( #ident )
-            }
-        }
-    };
+pub use crate::{ffi::lua_CFunction, ffi::lua_State};
+
+pub use crate::chunk::{AsChunk, Chunk, ChunkMode};
+pub use crate::error::{Error, ExternalError, ExternalResult, Result};
+pub use crate::function::Function;
+pub use crate::hook::{Debug, DebugEvent, DebugNames, DebugSource, DebugStack};
+pub use crate::lua::{GCMode, Lua, LuaOptions};
+pub use crate::multi::Variadic;
+pub use crate::conversion::{UserDataFromLua, UserDataToLua};
+pub use crate::scope::{LuaScope, LuaWeak, GlueError};
+pub use crate::stdlib::StdLib;
+pub use crate::string::String;
+pub use crate::table::{Table, TableExt, TablePairs, TableSequence};
+pub use crate::thread::{Thread, ThreadStatus};
+pub use crate::types::{Integer, LightUserData, Number, RegistryKey};
+pub use crate::userdata::{
+    AnyUserData, MetaMethod, UserData, UserDataFields, UserDataMetatable, UserDataMethods,
+};
+pub use crate::value::{FromLua, FromLuaMulti, MultiValue, Nil, ToLua, ToLuaMulti, Value};
+
+
+pub use crate::hook::HookTriggers;
+
+#[cfg(feature = "async")]
+pub use crate::thread::AsyncThread;
+
+#[cfg(feature = "macro")]
+pub mod impl_macro {
+    pub use apollo_macro::*;
 }
 
-pub(crate) use import;
+#[cfg(feature = "serialize")]
+#[doc(inline)]
+pub use crate::serde::{
+    de::Options as DeserializeOptions, ser::Options as SerializeOptions, LuaSerdeExt,
+};
 
-struct MethodAttr {
-	lua_name: Option<Ident>,
-}
-
-impl Parse for MethodAttr {
-	fn parse(input: ParseStream) -> syn::Result<Self> {
-		Ok(MethodAttr {
-			lua_name: input.parse()?,
-		})
-	}
-}
-
-
-/// Creates a lua method binding.
-/// This will automatically create the correct registration dependant on your parameters and method name.
-/// - If your method name is one of the lua metatable ones your method/function wil be a meta one.
-/// - If your first parameter is &self or &mut self it will be a method, else a function
-/// - If your self is a &mut self, then it will be a mut method, else it will be a normal method, functions are always the mut kind.
-/// # Overwriting
-/// If you want a different method name you can enter a custom name into the attribute.
-#[proc_macro_attribute]
-pub fn lua_method(
-	_: proc_macro::TokenStream,
-	item: proc_macro::TokenStream,
-) -> proc_macro::TokenStream {
-	item
-}
-
-fn lua_method_reg(item: &ImplItemMethod, attr: MethodAttr) -> TokenStream {
-	let lua_name = attr
-		.lua_name
-		.unwrap_or_else(|| item.sig.ident.clone())
-		.to_string();
-
-	let (lua_arg, args) = util::filter_self_lua(item.sig.inputs.iter());
-	let (names, types) = util::compile_reg_args(args);
-
-	// Fetch what methodtype this is for lua
-	let method_type = MethodType::new(&item.sig, &lua_name);
-
-	// Basic setup
-	let lua_reg_method = method_type.get_add_lua_ident();
-	let lua_name = Literal::string(&lua_name);
-	let rust_ident = item.sig.ident.clone();
-
-	let (closure_args, rust_args) =
-		util::compile_args(method_type.self_arg(), lua_arg, true, names, types);
-	
-	let ret = util::compile_invoke_return(&item.sig, quote!(Self::#rust_ident(#rust_args)));
-	quote!(methods.#lua_reg_method(#lua_name, |#closure_args| unsafe {
-		#ret
-	});)
-}
-
-#[derive(Copy, Clone, Eq, PartialEq)]
-enum FieldKind {
-	Get,
-	Set,
-}
-
-struct FieldAttr {
-	lua_name: Option<Ident>,
-}
-
-impl Parse for FieldAttr {
-	fn parse(input: ParseStream) -> syn::Result<Self> {
-		Ok(FieldAttr {
-			lua_name: input.parse()?,
-		})
-	}
-}
-
-/// Creates a lua field binding.
-/// # Glue
-/// If you want to pass a mutable reference to a field you need to return `LuaResult<*const Type>`
-/// # Overwriting
-/// If you want a different method name you can enter a custom name into the attribute.
-#[proc_macro_attribute]
-pub fn lua_field(
-	_: proc_macro::TokenStream,
-	item: proc_macro::TokenStream,
-) -> proc_macro::TokenStream {
-	item
-}
-
-fn lua_field_reg(item: &ImplItemMethod, attr: FieldAttr) -> TokenStream {
-	let str = item.sig.ident.to_string();
-	let (kind, lua_name) = if str.starts_with("get_") {
-		(FieldKind::Get, str.trim_start_matches("get_"))
-	} else  if str.starts_with("set_"){
-		(FieldKind::Set, str.trim_start_matches("set_"))
-	} else {
-		panic!("Method needs to start with either \"set_\" or \"get_\"")
-	};
-	let lua_name = attr
-		.lua_name
-		.map(|v| v.to_string()).unwrap_or_else(|| lua_name.to_string());
-
-
-	let (lua_arg, args) = util::filter_self_lua(item.sig.inputs.iter());
-	let (names, types) = util::compile_reg_args(args);
-	let field_type = FieldType::new(&item.sig, kind);
-
-
-	// Basic setup
-	let lua_reg_field = field_type.get_add_lua_ident();
-	let lua_name = Literal::string(&lua_name);
-	let rust_ident = item.sig.ident.clone();
-
-	let (closure_args, rust_args) = util::compile_args(
-		field_type.self_arg(),
-		lua_arg,
-		kind == FieldKind::Set,
-		names,
-		types,
-	);
-
-	let ret = util::compile_invoke_return(&item.sig, quote!(Self::#rust_ident(#rust_args)));
-	quote!(fields.#lua_reg_field(#lua_name, |#closure_args| unsafe {
-		#ret
-	});)
-}
-
-
-#[proc_macro_attribute]
-pub fn lua_impl(
-	_: proc_macro::TokenStream,
-	item: proc_macro::TokenStream,
-) -> proc_macro::TokenStream {
-	let core = import!("rsa-core");
-
-	let item = parse_macro_input!(item as ItemImpl);
-	let mut methods = TokenStream::new();
-	let mut fields = TokenStream::new();
-
-	for item in &item.items {
-		if let ImplItem::Method(item) = item {
-			for attribute in &item.attrs {
-				if let Some(ident) = attribute.path.get_ident() {
-					if ident == "lua_field" {
-						let attr = if attribute.tokens.is_empty() {
-							FieldAttr { lua_name: None }
-						} else {
-							attribute.parse_args().expect("Failed to parse args")
-						};
-						fields.append_all(lua_field_reg(item, attr));
-					} else if ident == "lua_method" {
-						let attr = if attribute.tokens.is_empty() {
-							MethodAttr { lua_name: None }
-						} else {
-							attribute.parse_args().expect("Failed to parse args")
-						};
-						methods.append_all(lua_method_reg(item, attr));
-					}
-				}
-			}
-		}
-	}
-
-	let ty = &item.self_ty;
-	let generics = &item.generics;
-	quote!(
-		#item
-		impl #generics #core::api::lua::LuaUserData for #ty {
-			fn add_methods<M: #core::api::lua::LuaUserDataMethods<Self>>(methods: &mut M) {
-				#methods
-			}
-			fn add_fields<M: #core::api::lua::LuaUserDataFields<Self>>(fields: &mut M) {
-				#fields
-			}
-		}
-	)
-	.into()
-}
+#[cfg(feature = "serialize")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serialize")))]
+pub mod serde;

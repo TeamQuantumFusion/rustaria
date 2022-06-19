@@ -5,3 +5,7 @@ newline_style = "Unix"
 remove_nested_parens = true
 reorder_imports = true
 reorder_modules = true
+fn_single_line = true
+format_macro_matchers = true
+imports_granularity = "Crate"
+group_imports = "StdExternalCrate"

@@ -1,13 +1,17 @@
+//! Axis-Aligned Bounding Box.
+//!
+//! Fancy word for "check if shit touches other shit in a 2d minecraft-clone world"
+//!
 //! https://www.youtube.com/watch?v=8JJ-4JgR7Dg
 
-use std::mem::swap;
-use std::ops::Mul;
+use std::{mem::swap, ops::Mul};
 
-use rsa_core::math;
-use rsa_core::math::{rect, vec2};
+use euclid::{rect, vec2};
 
-type Vec2 = math::Vector2D<f32, math::WorldSpace>;
-type Rect = math::Rect<f32, math::WorldSpace>;
+use crate::ty::{direction::Direction, WS};
+
+type Vec2 = euclid::Vector2D<f32, WS>;
+type Rect = euclid::Rect<f32, WS>;
 
 #[inline(always)]
 pub fn point_vs_rect(p: Vec2, r: Rect) -> bool {
@@ -25,11 +29,10 @@ pub fn rect_vs_rect(r1: Rect, r2: Rect) -> bool {
 		&& r1.origin.y + r1.size.height > r2.origin.y
 }
 
-#[derive(Default)]
 pub struct RayRectCollision {
 	pub contact_time: f32,
 	pub contact_point: Vec2,
-	pub contact_normal: Vec2,
+	pub contact_normal: Option<Direction>,
 }
 
 pub fn ray_vs_rect(ray_origin: Vec2, ray_dir: Vec2, target: Rect) -> Option<RayRectCollision> {
@@ -69,32 +72,32 @@ pub fn ray_vs_rect(ray_origin: Vec2, ray_dir: Vec2, target: Rect) -> Option<RayR
 		return None;
 	}
 
-	let mut result = RayRectCollision::default();
-
 	// Closest 'time' will be the first contact
-	result.contact_time = t_near.x.max(t_near.y);
-
-	// Contact point of collision from parametric line equation
-	result.contact_point = ray_origin.mul(result.contact_time).component_mul(ray_dir);
-
-	if t_near.x > t_near.y {
-		if invdir.x < 0.0 {
-			result.contact_normal = Vec2::new(1.0, 0.0);
-		} else {
-			result.contact_normal = Vec2::new(-1.0, 0.0);
-		}
-	} else if t_near.x < t_near.y {
-		if invdir.y < 0.0 {
-			result.contact_normal = Vec2::new(0.0, 1.0);
-		} else {
-			result.contact_normal = Vec2::new(0.0, -1.0);
-		}
-	}
+	let contact_time = t_near.x.max(t_near.y);
 
 	// Note if t_near == t_far, collision is principly in a diagonal
 	// so pointless to resolve. By returning a CN={0,0} even though its
 	// considered a hit, the resolver wont change anything.
-	Some(result)
+	Some(RayRectCollision {
+		contact_time,
+		// Contact point of collision from parametric line equation
+		contact_point: ray_origin.mul(contact_time).component_mul(ray_dir),
+		contact_normal: if t_near.x > t_near.y {
+			Some(if invdir.x < 0.0 {
+				Direction::Right
+			} else {
+				Direction::Left
+			})
+		} else if t_near.x < t_near.y {
+			Some(if invdir.y < 0.0 {
+				Direction::Up
+			} else {
+				Direction::Down
+			})
+		} else {
+			None
+		},
+	})
 }
 
 pub fn dynamic_rect_vs_rect(
@@ -134,14 +137,16 @@ pub fn resolve_dynamic_rect_vs_rect(
 	r_dynamic: Rect,
 	time_step: f32,
 	r_static: Rect,
-) -> Option<(Vec2, Vec2)> {
+) -> Option<Option<(Vec2, Direction)>> {
 	dynamic_rect_vs_rect(r_dynamic_vel, r_dynamic, time_step, r_static).map(|result| {
-		(
-			result
-				.contact_normal
-				.component_mul(vec2(r_dynamic_vel.x.abs(), r_dynamic_vel.y.abs()))
-				* (1.0 - result.contact_time),
-			result.contact_normal,
-		)
+		result.contact_normal.map(|direction| {
+			(
+				direction
+					.to_vec2()
+					.component_mul(vec2(r_dynamic_vel.x.abs(), r_dynamic_vel.y.abs()))
+					* (1.0 - result.contact_time),
+				direction,
+			)
+		})
 	})
 }

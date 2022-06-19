@@ -1,15 +1,42 @@
 [package]
 name = "apollo"
-version = "0.1.0"
+version = "0.0.1"
+license = "MIT"
+build = "build/main.rs"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[package.metadata.docs.rs]
+features = ["lua54", "vendored", "async", "send", "serialize", "macros"]
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+lua54 = []
+lua53 = []
+lua52 = []
+lua51 = []
+luajit = []
+luajit52 = ["luajit"]
+vendored = ["luajit-src"]
+async = ["futures-core", "futures-task", "futures-util"]
+send = []
+macro = ["apollo-macro"]
+serialize = ["serde", "erased-serde"]
 
 [dependencies]
-syn = { version = "1.0.91", features = ["full", "parsing"]}
-quote = "1.0.18"
-proc-macro2 = { version = "1.0.37", features = ["span-locations"] }
-proc-macro-crate = "1.1.3"
+eyre = "0.6.8"
+bstr = { version = "0.2", features = ["std"], default_features = false }
+once_cell = { version = "1.0" }
+num-traits = { version = "0.2.14" }
+rustc-hash = "1.0"
+futures-core = { version = "0.3.5", optional = true }
+futures-task = { version = "0.3.5", optional = true }
+futures-util = { version = "0.3.5", optional = true }
+apollo-macro = { path = "../apollo-macro", optional = true }
+serde = { version = "1.0", optional = true }
+erased-serde = { version = "0.3", optional = true }
+tracing = "0.1.35"
 
-[lib]
-proc-macro = true
+[build-dependencies]
+cc = { version = "1.0" }
+pkg-config = { version = "0.3.17" }
+luajit-src = { version = ">= 210.3.1, < 220.0.0", optional = true }

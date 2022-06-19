@@ -67,6 +67,8 @@
       <sourceFolder url="file://$MODULE_DIR$/libs/dynamite/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rsa-core/dynlib/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rsac-graphic/dynlib/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/client/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/apollo-macro/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/runtime/client-old/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/libs/rustaria-network-old/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/runtime/client/src" isTestSource="false" />
