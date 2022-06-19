@@ -8,6 +8,7 @@ use crate::entity::component::humanoid::HumanoidComp;
 use crate::entity::component::prototype::PrototypeComp;
 use crate::entity::component::physics::PhysicsComp;
 
+// please when adding new shit add also to mod.rs
 #[derive(Clone, Debug, serde::Deserialize, frogelua::FromLua)]
 pub struct EntityPrototype {
 	pub velocity: Option<PhysicsComp>,

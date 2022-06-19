@@ -1,5 +1,7 @@
-use std::collections::HashMap;
+use rsa_core::settings::UPS;
 use rsa_core::ty::Tag;
+use std::collections::HashMap;
+use std::ops::AddAssign;
 
 use crate::event::{Event, EventKind, EventRecord, EventState};
 use crate::subscriber::Subscriber;
@@ -84,18 +86,25 @@ impl InputSystem {
 	}
 
 	pub fn tick(&mut self) {
-		for (kind, (_, state)) in self.active.iter_mut() {
-			Self::invoke_subs(&self.bindings, &mut self.subscribers, kind, state, 1.0);
+		for (kind, (event, state)) in self.active.iter_mut() {
+			let delta = if let Some(time) = &mut event.start {
+				let elapsed = time.elapsed();
+				time.add_assign(elapsed);
+				elapsed.as_secs_f64() / (1.0 / UPS as f64)
+			} else {
+				1.0
+			};
+			Self::invoke_subs(&self.bindings, &mut self.subscribers, kind, state, delta);
 		}
 
 		for action in &mut self.subtick_history {
-			let delta = action.get_delta();
+			let tick_duration = action.tick_duration();
 			Self::invoke_subs(
 				&self.bindings,
 				&mut self.subscribers,
 				&action.kind,
 				&mut action.state,
-				delta,
+				tick_duration,
 			);
 		}
 
@@ -107,29 +116,29 @@ impl InputSystem {
 		subscribers: &mut HashMap<Tag, Vec<Subscriber>>,
 		kind: &EventKind,
 		state: &mut EventState,
-		delta: f32,
+		delta: f64,
 	) {
 		if let Some(subs) = bindings.get(kind) {
 			for sub in subs {
 				if let Some(subscribers) = subscribers.get_mut(sub) {
 					for subscriber in subscribers {
 						match subscriber {
-							Subscriber::Hold { hold} => {
-								hold(delta);
+							Subscriber::Hold { hold } => {
+								hold(delta, 1.0);
 							}
-							Subscriber::Trigger { press, release} => {
+							Subscriber::Trigger { press, release } => {
 								if state.fire_press {
-									press();
+									press(delta);
 								}
 
 								if state.fire_release {
-									release();
+									release(delta);
 								}
 							}
 							Subscriber::Toggle { value, toggle } => {
 								if state.fire_press {
 									*value = !*value;
-									toggle(*value);
+									toggle(delta, *value);
 								}
 							}
 						}
@@ -144,8 +153,8 @@ impl InputSystem {
 }
 #[cfg(test)]
 mod tests {
-	use std::rc::Rc;
 	use mock_instant::{Instant, MockClock};
+	use std::rc::Rc;
 	use std::sync::atomic::{AtomicBool, Ordering};
 	use std::sync::{Arc, Mutex};
 	use std::time::Duration;
@@ -154,11 +163,11 @@ mod tests {
 
 	use rsa_core::ty::{Direction, Tag};
 
-	use crate::event::{EventKind};
-	use crate::{Event, EventRecord, EventState, InputSystem, Subscriber};
 	use crate::event::keyboard::{Key, KeyboardEvent};
 	use crate::event::modifier::Modifiers;
 	use crate::event::mouse::ScrollEvent;
+	use crate::event::EventKind;
+	use crate::{Event, EventRecord, EventState, InputSystem, Subscriber};
 
 	const NSPU: u64 = (1000000000.0 / UPS as f64) as u64;
 
@@ -184,10 +193,7 @@ mod tests {
 			pressed: false,
 		});
 
-		assert_eq!(
-			input.subtick_history[0].kind,
-			basic()
-		)
+		assert_eq!(input.subtick_history[0].kind, basic())
 	}
 
 	#[test]
@@ -309,10 +315,10 @@ mod tests {
 		let mut value = Rc::new(AtomicBool::new(false));
 
 		let rc = value.clone();
-		input.register_binding(Tag::rsa("tests"), vec![ basic()]);
+		input.register_binding(Tag::rsa("tests"), vec![basic()]);
 		input.register_subscriber(
 			Tag::rsa("tests"),
-			Subscriber::press(move || {
+			Subscriber::press(move |delta| {
 				if rc.load(Ordering::Relaxed) {
 					panic!("Double trigger")
 				}
@@ -321,7 +327,7 @@ mod tests {
 		);
 
 		input.notify_event(Event {
-			kind:  basic(),
+			kind: basic(),
 			start: None,
 			pressed: true,
 		});
@@ -338,19 +344,18 @@ mod tests {
 		let mut input = InputSystem::new();
 
 		let value = Rc::new(AtomicBool::new(false));
-		input.register_binding(Tag::rsa("tests"), vec![ basic()]);
-
+		input.register_binding(Tag::rsa("tests"), vec![basic()]);
 
 		let rc = value.clone();
 		input.register_subscriber(
 			Tag::rsa("tests"),
-			Subscriber::toggle(false, move |state| {
+			Subscriber::toggle(false, move |delta, state| {
 				rc.store(state, Ordering::Relaxed);
 			}),
 		);
 
 		input.notify_event(Event {
-			kind:  basic(),
+			kind: basic(),
 			start: None,
 			pressed: true,
 		});
@@ -360,7 +365,7 @@ mod tests {
 		assert!(value.load(Ordering::Relaxed));
 
 		input.notify_event(Event {
-			kind:  basic(),
+			kind: basic(),
 			start: None,
 			pressed: true,
 		});
@@ -376,20 +381,17 @@ mod tests {
 		let mut input = InputSystem::new();
 
 		let value = Arc::new(Mutex::new(0.0));
-		input.register_binding(
-			Tag::rsa("tests"),
-			vec![EventKind::Keyboard(keyboard())],
-		);
+		input.register_binding(Tag::rsa("tests"), vec![EventKind::Keyboard(keyboard())]);
 
 		let valuee = value.clone();
 		input.register_subscriber(
 			Tag::rsa("tests"),
-			Subscriber::hold(move |delta| {
-				*valuee.lock().unwrap() += delta;
+			Subscriber::hold(move |delta, value| {
+				*valuee.lock().unwrap() += value * delta as f32;
 			}),
 		);
 
-		// Holds across ticks. Should be 1.0
+		// Lets wait a server tick, should be 1
 		{
 			input.notify_event(Event {
 				kind: EventKind::Keyboard(keyboard()),
@@ -397,11 +399,11 @@ mod tests {
 				pressed: true,
 			});
 
+			// +1 is a float moment
+			MockClock::advance(Duration::from_nanos(NSPU + 1));
 			input.tick();
 			assert_eq!(*value.lock().unwrap(), 1.0);
 		}
-
-		MockClock::advance(Duration::from_nanos(NSPU));
 
 		// Lets go of the event half way through a tick
 		{

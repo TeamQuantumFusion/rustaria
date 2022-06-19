@@ -12,7 +12,6 @@
 //! Saying "This code is fucking pain" is good, saying "fuck germans" is not.
 //!
 
-
 use std::fmt::{Debug, Display};
 use std::sync::Arc;
 
@@ -32,12 +31,12 @@ use crate::packet::{ClientPacket, ServerPacket};
 use crate::world::World;
 
 pub mod api;
+pub mod chunk;
 pub mod entity;
 pub(crate) mod module;
 pub mod packet;
 pub mod player;
 pub mod util;
-pub mod chunk;
 pub mod world;
 
 pub type ServerNetwork = rsa_network::server::ServerNetwork<ClientPacket, ServerPacket>;
@@ -59,7 +58,7 @@ pub struct Server {
 }
 
 impl Server {
-	pub fn new(api: &Api, thread_pool: Arc<ThreadPool>) -> Result<Server> {
+	pub fn new_integrated(api: &Api, thread_pool: Arc<ThreadPool>) -> Result<Server> {
 		Ok(Server {
 			api: api.clone(),
 			network: NetworkModule::new(ServerNetwork {
@@ -68,18 +67,23 @@ impl Server {
 			}),
 			chunk: ChunkModule::new(thread_pool),
 			entity: EntityModule::new(),
-			player: PlayerModule::new(),
-			world: World::new()
+			player: PlayerModule::new(api),
+			world: World::new(),
 		})
 	}
 
 	//noinspection ALL
 	pub fn tick(&mut self) -> Result<()> {
+		// Receive
+		NetworkModule::tick(self).wrap_err(SystemFail(SystemType::Network))?;
+
 		self.api.invoke_hook(&Tag::rsa("tick"), || ())?;
 		self.world.tick()?;
-		ChunkModule::tick(self).wrap_err(RichError::SystemFailure(SystemType::Chunk))?;
-		EntityModule::tick(self).wrap_err(RichError::SystemFailure(SystemType::Entity))?;
-		NetworkModule::tick(self).wrap_err(RichError::SystemFailure(SystemType::Network))?;
+		ChunkModule::tick(self).wrap_err(SystemFail(SystemType::Chunk))?;
+		EntityModule::tick(self).wrap_err(SystemFail(SystemType::Entity))?;
+
+		// Send
+		NetworkModule::tick(self).wrap_err(SystemFail(SystemType::Network))?;
 		Ok(())
 	}
 
@@ -88,26 +92,24 @@ impl Server {
 		self.player.reload(api);
 		self.entity.reload(api);
 	}
- }
-
-
-#[derive(Debug)]
-pub enum RichError {
-	CarrierUnavailable,
-	SystemFailure(SystemType),
 }
 
-impl Display for RichError {
+#[derive(Debug)]
+pub struct SystemFail(SystemType);
+
+impl Display for SystemFail {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			RichError::CarrierUnavailable => {
-				f.write_str("Carrier is unavailable, Force reloading instance.")
-			}
-			RichError::SystemFailure(name) => {
-				name.fmt(f)?;
-				f.write_str(" systems failure.")
-			}
-		}
+		self.0.fmt(f)?;
+		f.write_str(" systems failure.")
+	}
+}
+
+#[derive(Debug)]
+pub struct CarrierUnavailable;
+
+impl Display for CarrierUnavailable {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.write_str("Carrier is unavailable, Force reloading instance.")
 	}
 }
 

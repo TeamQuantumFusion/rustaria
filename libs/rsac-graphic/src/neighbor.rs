@@ -145,7 +145,6 @@ impl SpriteConnectionKind {
 			(Isolated, Isolated, Connected, Isolated) => SpriteConnectionKind::CapRight,
 			_ => SpriteConnectionKind::Solid,
 		};
-		println!("{kind:?}");
 		kind
 	}
 }

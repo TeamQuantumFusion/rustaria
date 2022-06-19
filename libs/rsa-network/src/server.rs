@@ -1,3 +1,4 @@
+use rsa_core::logging::trace;
 use crate::packet::Packet;
 use crate::server::integrated::Integrated;
 use crate::server::remote::Remote;

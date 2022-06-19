@@ -11,11 +11,11 @@ use rsa_core::error::Result;
 use rsa_core::logging::error;
 use rsa_core::settings::CHUNK_SIZE;
 use rsa_core::ty::{ChunkPos, ChunkSubPos, Tag};
+use crate::CarrierUnavailable;
 
 use crate::chunk::layer::tile::TilePrototype;
 use crate::chunk::layer::ChunkLayer;
 use crate::chunk::Chunk;
-use crate::RichError;
 
 pub struct WorldGeneration {
 	carrier: Option<Carrier>,
@@ -44,7 +44,7 @@ impl WorldGeneration {
 			let carrier = self
 				.carrier
 				.clone()
-				.wrap_err(RichError::CarrierUnavailable)?;
+				.wrap_err(CarrierUnavailable)?;
 
 			let sender = self.tx.clone();
 			self.thread_pool.spawn(move || {

@@ -2,6 +2,7 @@ use std::net::SocketAddr;
 
 use crossbeam::channel::{Receiver, Sender, TryRecvError};
 use laminar::{Socket, SocketEvent};
+use rsa_core::logging::trace;
 
 use crate::packet::Packet;
 use crate::Token;

@@ -5,16 +5,16 @@ pub mod mouse;
 
 #[cfg(test)]
 use mock_instant::Instant;
-use rsa_core::ty::Direction;
 use std::time::Duration;
 
 #[cfg(not(test))]
 use std::time::Instant;
 
 use crate::event::controller_button::ControllerButtonEvent;
-use crate::event::keyboard::KeyboardEvent;
+use crate::event::keyboard::{Key, KeyboardEvent};
 use crate::event::mouse::{MouseEvent, ScrollEvent};
 use rsa_core::settings::UPS;
+use crate::event::modifier::Modifiers;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Event {
@@ -39,6 +39,10 @@ pub enum EventKind {
 }
 
 impl EventKind {
+	pub fn key(key: Key) -> EventKind {
+		EventKind::Keyboard(KeyboardEvent { modifiers: Modifiers::empty(), key })
+	}
+
 	pub fn sustained(&self) -> bool {
 		match self {
 			EventKind::Keyboard(_) | EventKind::Mouse(_) | EventKind::ControllerButton(_) => true,
@@ -81,9 +85,9 @@ impl EventRecord {
 		}
 	}
 
-	pub fn get_delta(&self) -> f32 {
+	pub fn tick_duration(&self) -> f64 {
 		match self.duration {
-			Some(duration) => ((duration.as_secs_f32() * UPS as f32) % 1.0).clamp(0.0, 1.0),
+			Some(duration) => duration.as_secs_f64() / (1.0 / UPS as f64),
 			None => 1.0,
 		}
 	}

@@ -1,12 +1,11 @@
+use hecs::Entity;
 use serde::{Deserialize, Serialize};
-use rsa_core::math::{Vector2D, WorldSpace};
-use rsa_core::ty::{Uuid};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ServerPlayerPacket {
+	/// Responds to the player what entity to attach to and create.
 	Attach {
-		entity: Uuid,
-		pos: Vector2D<f32, WorldSpace>,
+		entity: Entity,
 	},
 
 }
@@ -15,6 +14,4 @@ pub enum ServerPlayerPacket {
 pub enum ClientPlayerPacket {
 	/// Creates a Player Entity
 	Join(),
-	SetPos(Vector2D<f32, WorldSpace>),
-
 }

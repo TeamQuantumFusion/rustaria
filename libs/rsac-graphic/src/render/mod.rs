@@ -1,6 +1,6 @@
 use crate::render::chunk::ChunkRenderer;
-use crate::Drawer;
-use glium::{Frame, Program};
+use crate::{Draw, GraphicSystem};
+use glium::{Program};
 use glium::program::{SourceCode};
 use rsa_core::api::Api;
 use rsa_core::error::Result;
@@ -8,18 +8,15 @@ use rsa_core::ty::ChunkPos;
 use rustaria::world::World;
 
 mod chunk;
+mod entity;
 
 pub struct WorldRenderer {
 	chunk: ChunkRenderer,
 }
 
 impl WorldRenderer {
-	pub fn notify_chunk(&mut self, pos: ChunkPos) {
-		self.chunk.dirty_chunk(pos);
-	}
-
-	pub(crate) fn new(drawer: &mut Drawer) -> Result<WorldRenderer> {
-		drawer.load_program("pos_tex",Program::new(&drawer.context, SourceCode {
+	pub fn new(system: &mut GraphicSystem) -> Result<WorldRenderer> {
+		system.drawer.load_program("pos_tex", Program::new(&system.drawer.context, SourceCode {
 			vertex_shader: include_str!("../builtin/shader/pos_tex.vert.glsl"),
 			tessellation_control_shader: None,
 			tessellation_evaluation_shader: None,
@@ -28,17 +25,22 @@ impl WorldRenderer {
 		})?);
 
 		Ok(WorldRenderer {
-			chunk: ChunkRenderer::new(drawer)?,
+			chunk: ChunkRenderer::new(&system.drawer)?,
 		})
 	}
 
-	pub(crate) fn draw(&mut self, frame: &mut Frame, drawer: &Drawer, world: &World) -> Result<()> {
-		self.chunk.draw(frame, drawer, &world.chunks)?;
+	pub fn notify_chunk(&mut self, pos: ChunkPos) {
+		self.chunk.dirty_chunk(pos);
+	}
+
+	pub fn draw(&mut self, draw: &mut Draw, world: &World) -> Result<()> {
+		self.chunk.draw(draw, &world.chunks)?;
 		Ok(())
 	}
 
-	pub(crate) fn reload(&mut self, api: &Api, drawer: &Drawer) {
-		self.chunk.reload(api, drawer);
+	pub fn reload(&mut self, api: &Api, graphics: &mut GraphicSystem) -> Result<()>{
+		self.chunk.reload(api, &graphics.drawer);
+		Ok(())
 	}
 }
 

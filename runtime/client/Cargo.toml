@@ -7,9 +7,10 @@ edition = "2021"
 
 [dependencies]
 raw-cpuid = "10.3.0"
-
+rayon = "1.5.3"
 
 rustaria = { path = "../../" }
 rsa-core = { path = "../../libs/rsa-core" }
 rsa-input = { path = "../../libs/rsa-input" }
+rsa-network = { path = "../../libs/rsa-network" }
 rsac-graphic = { path = "../../libs/rsac-graphic" }

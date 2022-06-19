@@ -1,9 +1,9 @@
-use rsa_core::ty::Uuid;
+use hecs::Entity;
 
 #[derive(Clone)]
 pub struct Player {
 	pub name: String,
-	pub entity: Option<Uuid>,
+	pub entity: Option<Entity>,
 
 	// Jump
 	pub jump_frames: u32,

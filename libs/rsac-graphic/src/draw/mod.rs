@@ -12,7 +12,6 @@ use rsa_core::error::{ContextCompat, Result, WrapErr};
 use crate::Internals;
 use crate::camera::Camera;
 use crate::draw::atlas::DrawAtlas;
-use crate::ty::PosTex;
 
 pub mod atlas;
 pub mod buffer;

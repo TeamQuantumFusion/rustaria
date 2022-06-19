@@ -17,7 +17,7 @@ impl World {
 	}
 
 	pub fn tick(&mut self) -> Result<()> {
-		self.entities.tick(&self.chunks)?;
+		self.entities.tick(&self.chunks, 1.0)?;
 		// nothing to tick on chunks yet
 
 		Ok(())

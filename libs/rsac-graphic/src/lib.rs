@@ -19,7 +19,6 @@ use crate::camera::Camera;
 
 use crate::draw::Drawer;
 use crate::event::map_event;
-use crate::render::WorldRenderer;
 
 mod ty;
 mod draw;
@@ -36,8 +35,6 @@ pub struct GraphicSystem {
 
 	/// The Drawer contains the opengl stuff needed to render
 	drawer: Drawer,
-	/// The code that actually renders the world
-	pub world_renderer: WorldRenderer,
 }
 
 impl GraphicSystem {
@@ -74,13 +71,11 @@ impl GraphicSystem {
 		let internals = Rc::new(Internals { window, glfw });
 		let mut drawer = Drawer::new(internals);
 		drawer.resize(width, height);
-		let world_renderer = WorldRenderer::new(&mut drawer)?;
 		Ok(GraphicSystem {
 			events,
 			width,
 			height,
 			drawer,
-			world_renderer
 		})
 	}
 
@@ -118,19 +113,31 @@ impl GraphicSystem {
 		!self.drawer.internals.window.should_close()
 	}
 
-	pub fn draw(&mut self, camera: &Camera, world: &World) -> Result<()> {
+	pub fn start_draw(&mut self, camera: &Camera) -> Draw {
 		self.drawer.camera = camera.clone();
 		let mut frame = Frame::new(self.drawer.context.clone(), (self.width, self.height));
 		frame.clear_color(0.1, 0.1, 0.1, 1.0);
-		self.world_renderer.draw(&mut frame, &self.drawer, world)?;
-		frame.finish()?;
-		Ok(())
+
+		Draw {
+			frame,
+			system: self
+		}
 	}
 
 	pub fn reload(&mut self, api: &Api) -> Result<()> {
 		self.drawer.reload(api).wrap_err("Failed to reload drawer")?;
-		self.world_renderer.reload(api, &self.drawer);
+		Ok(())
+	}
+}
 
+pub struct Draw<'a> {
+	pub(crate) frame: Frame,
+	pub(crate) system: &'a mut GraphicSystem
+}
+
+impl<'a> Draw<'a> {
+	pub fn finish(self)  -> Result<()>{
+		self.frame.finish()?;
 		Ok(())
 	}
 }

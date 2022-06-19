@@ -2,6 +2,7 @@ use rsa_core::api::carrier::Carrier;
 use rsa_core::api::{Api, Reloadable};
 use rsa_core::error::Result;
 use rsa_network::Token;
+use rsa_network::tunnel::MapTunnel;
 
 use crate::entity::packet::ClientEntityPacket;
 use crate::entity::systems::server_network::ServerNetworkECSystem;
@@ -22,6 +23,7 @@ impl EntityModule {
 
 	#[macro_module::module(server.entity)]
 	pub fn tick(this: &mut EntityModule, server: &mut Server) -> Result<()> {
+		this.network.tick(&mut server.world.entities, &mut server.network.map())?;
 		Ok(())
 	}
 
@@ -33,7 +35,7 @@ impl EntityModule {
 		packet: ClientEntityPacket,
 	) -> Result<()> {
 		this.network
-			.packet(&mut server.world.entities, &token, packet)
+			.packet(&server.player, &mut server.world.entities, &token, packet)
 	}
 
 	pub fn reload(&mut self, api: &Api) {

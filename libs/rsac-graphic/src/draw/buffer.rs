@@ -16,7 +16,7 @@ impl<V: Copy + Clone + Vertex> DrawBuffer<V> {
 		})
 	}
 
-	pub fn submit(&mut self, renderer: &Drawer, mesh_builder: &MeshBuilder<V>) -> Result<(), BufferCreationError> {
+	pub fn submit(&mut self, drawer: &Drawer, mesh_builder: &MeshBuilder<V>) -> Result<(), BufferCreationError> {
 		if !mesh_builder.vertex_data.is_empty() {
 			if let Some(slice) = self
 				.vertex_buffer
@@ -24,7 +24,7 @@ impl<V: Copy + Clone + Vertex> DrawBuffer<V> {
 			{
 				slice.write(&mesh_builder.vertex_data);
 			} else {
-				self.vertex_buffer = VertexBuffer::dynamic(&renderer.context, &mesh_builder.vertex_data)?;
+				self.vertex_buffer = VertexBuffer::dynamic(&drawer.context, &mesh_builder.vertex_data)?;
 			}
 
 			if let Some(slice) = self
@@ -34,7 +34,7 @@ impl<V: Copy + Clone + Vertex> DrawBuffer<V> {
 				slice.write(&mesh_builder.index_data);
 			} else {
 				self.index_buffer = IndexBuffer::dynamic(
-					&renderer.context,
+					&drawer.context,
 					PrimitiveType::TrianglesList,
 					&mesh_builder.index_data,
 				)?;

@@ -22,10 +22,17 @@ reload.registry.entity:insert {
             width = 2,
             height = 3,
         },
-        gravity = 20.0,
+        gravity = 1.0,
         velocity = {
             x = 0.0,
             y = 0.0,
+        },
+        humanoid = {
+            jump_frames = 15,
+            jump_speed = 20,
+            run_acceleration = 4.8 * 60,
+            run_slowdown = 1.2 * 60,
+            run_max_speed = 12.0 * 60,
         },
         rendering = {
             Static = {

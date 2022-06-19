@@ -102,8 +102,7 @@ impl TileRenderer {
 		builder.push_quad((
 			rect::<_, ()>(x as f32, y as f32, 1.0, 1.0),
 			rect(
-				(self.image.origin.x + (kind[0] as f32 * tile_width))
-					+ (variation as f32 * variation_width),
+				(self.image.origin.x + (kind[0] as f32 * tile_width)) + (variation as f32 * variation_width),
 				self.image.origin.y + (kind[1] as f32 * tile_height),
 				tile_width,
 				tile_height,

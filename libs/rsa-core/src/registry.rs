@@ -51,14 +51,14 @@ impl<P: Prototype> Registry<P> {
 	pub fn tag_from_id(&self, id: RawId) -> &Tag {
 		self.id_to_tag
 			.get(id.index())
-			.expect("RawId guideline failure")
+			.expect("Could not find RawId in registry, this heavily violates the RawId policy.")
 	}
 
 	#[inline(always)]
 	pub fn prototype_from_id(&self, id: RawId) -> &P {
 		self.entries
 			.get(id.index())
-			.expect("RawId guideline failure")
+			.expect("Could not find RawId in registry, this heavily violates the RawId policy.")
 	}
 
 	#[inline(always)]

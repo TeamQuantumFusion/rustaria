@@ -49,7 +49,6 @@ impl NetworkModule {
 		}
 
 		let data = this.internal.tick()?;
-
 		for token in data.to_connect {
 			info!("{} connected", token);
 			server.player.join(token);
@@ -61,7 +60,7 @@ impl NetworkModule {
 				ClientPacket::Player(packet) => {
 					server
 						.player
-						.packet(from, packet, &mut server.entity, &server.network)?
+						.packet(from, packet, &mut server.world, &server.network)?
 				}
 				ClientPacket::Entity(packet) => EntityModule::packet(server, from, packet)?,
 			}

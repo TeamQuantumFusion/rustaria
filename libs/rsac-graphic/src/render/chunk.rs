@@ -6,10 +6,11 @@ use crate::ty::PosTex;
 use rsa_core::ty::{ChunkPos, Direction, Offset};
 use rsa_core::error::Result;
 use std::collections::HashMap;
-use glium::{Frame, Surface, uniform};
+use glium::{Surface, uniform};
 use rayon::prelude::*;
 use rsa_core::api::Api;
 use rustaria::chunk::{ChunkSystem};
+use crate::Draw;
 use crate::draw::Drawer;
 use crate::render::chunk::tile::ChunkTileRenderer;
 
@@ -55,7 +56,8 @@ impl ChunkRenderer {
 		self.dirty_mesh = true;
 	}
 
-	pub fn draw(&mut self, frame: &mut Frame, drawer: &Drawer, chunks: &ChunkSystem) -> Result<()> {
+	pub fn draw(&mut self, draw: &mut Draw, chunks: &ChunkSystem) -> Result<()> {
+		let drawer = &draw.system.drawer;
 		if self.dirty_mesh {
 			// Compile individual meshes
 			self.chunk_meshes.par_iter_mut().for_each(|(pos, mesh)| {
@@ -87,7 +89,7 @@ impl ChunkRenderer {
 			tex: drawer.atlas.sampler()
 		};
 
-		frame.draw(&self.buffer.vertex_buffer, &self.buffer.index_buffer, program, &storage, &glium::draw_parameters::DrawParameters {
+		draw.frame.draw(&self.buffer.vertex_buffer, &self.buffer.index_buffer, program, &storage, &glium::draw_parameters::DrawParameters {
 			blend: glium::draw_parameters::Blend::alpha_blending(),
 			..glium::draw_parameters::DrawParameters::default()
 		})?;

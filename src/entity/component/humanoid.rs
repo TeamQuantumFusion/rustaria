@@ -17,11 +17,11 @@ pub struct HumanoidSettings {
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct HumanoidComp {
 	pub settings: HumanoidSettings,
-	pub direction: Vector2D<f32, WorldSpace>,
+	pub dir: Vector2D<f32, WorldSpace>,
 
 	// If its currently jumping
 	pub jumping: bool,
-	pub jump_frames_remaining: u32,
+	pub jump_frames_remaining: f32,
 }
 
 impl FromLua for HumanoidComp {
@@ -35,9 +35,9 @@ impl FromLua for HumanoidComp {
 					run_slowdown: table.get("run_slowdown")?,
 					run_max_speed: table.get("run_max_speed")?,
 				},
-				direction: Default::default(),
+				dir: Default::default(),
 				jumping: false,
-				jump_frames_remaining: 0,
+				jump_frames_remaining: 0.0,
 			})
 		} else {
 			return Err(LuaError::UserDataTypeMismatch);
