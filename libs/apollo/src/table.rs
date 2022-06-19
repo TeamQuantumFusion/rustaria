@@ -58,10 +58,10 @@ impl Table {
     /// ```
     ///
     /// [`raw_set`]: #method.raw_set
-    pub fn set<K: ToLua, V: ToLua>(&self, key: K, value: V) -> Result<()> {
+    pub fn insert<K: ToLua, V: ToLua>(&self, k: K, v: V) -> Result<()> {
         let lua = &self.0.lua.optional()?;
-        let key = key.to_lua(lua)?;
-        let value = value.to_lua(lua)?;
+        let key = k.to_lua(lua)?;
+        let value = v.to_lua(lua)?;
 
         unsafe {
             let _sg = StackGuard::new(lua.state);
@@ -98,9 +98,9 @@ impl Table {
     /// ```
     ///
     /// [`raw_get`]: #method.raw_get
-    pub fn get<K: ToLua, V: FromLua>(&self, key: K) -> eyre::Result<V> {
+    pub fn get<K: ToLua, V: FromLua>(&self, k: K) -> eyre::Result<V> {
         let lua = &self.0.lua.optional()?;
-        let key = key.to_lua(lua)?;
+        let key = k.to_lua(lua)?;
 
         let value = unsafe {
             let _sg = StackGuard::new(lua.state);
@@ -354,7 +354,7 @@ impl Table {
     ///
     /// [`Result`]: crate::Result
     /// [Lua manual]: http://www.lua.org/manual/5.4/manual.html#pdf-next
-    pub fn pairs<K: FromLua, V: FromLua>(self) -> TablePairs<K, V> {
+    pub fn iter<K: FromLua, V: FromLua>(self) -> TablePairs<K, V> {
         TablePairs {
             table: self.0,
             key: Some(Nil),
@@ -660,7 +660,7 @@ impl Serialize for Table {
             }
 
             let mut map = serializer.serialize_map(None)?;
-            for kv in self.clone().pairs::<Value, Value>() {
+            for kv in self.clone().iter::<Value, Value>() {
                 let (k, v) = kv.map_err(serde::ser::Error::custom)?;
                 map.serialize_entry(&k, &v)?;
             }

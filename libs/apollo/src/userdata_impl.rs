@@ -1,4 +1,4 @@
-use std::any::TypeId;
+use std::any::{type_name, TypeId};
 use std::cell::{Ref, RefCell, RefMut};
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex, RwLock};
@@ -252,7 +252,7 @@ impl<T: 'static + UserData> StaticUserDataMethods<T> {
                             let ud = ud.try_read().map_err(|_| Error::UserDataBorrowError)?;
                             Ok(method(lua, &ud, A::from_lua_multi(args, lua)?)?.to_lua_multi(lua)?)
                         }
-                        _ => Err(Report::new(Error::UserDataTypeMismatch)),
+                        _ => Err(Report::new(Error::UserDataTypeMismatch(type_name::<T>()))),
                     }
                 }
             } else {
@@ -308,7 +308,7 @@ impl<T: 'static + UserData> StaticUserDataMethods<T> {
                                 ud.try_write().map_err(|_| Error::UserDataBorrowMutError)?;
                             method(lua, &mut ud, A::from_lua_multi(args, lua)?)?.to_lua_multi(lua)
                         }
-                        _ => Err(Report::new(Error::UserDataTypeMismatch)),
+                        _ => Err(Report::new(Error::UserDataTypeMismatch(type_name::<T>()))),
                     }
                 }
             } else {
@@ -360,7 +360,7 @@ impl<T: 'static + UserData> StaticUserDataMethods<T> {
                                 let ud = ud.try_read().map_err(|_| Error::UserDataBorrowError)?;
                                 Ok(method(lua, ud.clone(), A::from_lua_multi(args, lua)?))
                             }
-                            _ => Err(Error::UserDataTypeMismatch),
+                            _ => Err(Error::UserDataTypeMismatch(type_name::<T>())),
                         }
                     }
                 } else {

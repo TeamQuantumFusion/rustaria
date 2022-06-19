@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use eyre::WrapErr;
-use apollo::Value;
 
 use crate::{
 	api::{luna::table::LunaTable, prototype::Prototype},

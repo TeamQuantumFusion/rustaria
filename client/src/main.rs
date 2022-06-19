@@ -25,6 +25,7 @@ use rustaria::{
 };
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt, fmt::format, layer::SubscriberExt, util::SubscriberInitExt};
+use apollo::LuaScope;
 
 use crate::{
 	api::ClientApi,
@@ -134,6 +135,9 @@ impl Client {
 	}
 
 	pub fn tick(&mut self) -> Result<()> {
+		let api_scope = LuaScope::from(&*self.api);
+		self.api.api.luna.lua.globals().insert("api", api_scope.lua())?;
+
 		let start = Instant::now();
 		if let Some(world) = &mut self.game {
 			world.tick(&self.frontend, &self.api, &self.viewport, &mut self.debug)?

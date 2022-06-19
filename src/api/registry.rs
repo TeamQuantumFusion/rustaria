@@ -84,6 +84,11 @@ impl<I: 'static + UserData + ToLua + Send> Registry<I> {
 		self.get(id)
 	}
 
+	#[lua_method(get_id)]
+	pub fn lua_get_id(&self, id: Identifier) -> Option<Id<I>> {
+		self.get_id(&id)
+	}
+
 	#[lua_method(get_identifier)]
 	pub fn lua_get_identifier(&self, id: Id<I>) -> &Identifier {
 		self.get_identifier(id)

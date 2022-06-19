@@ -110,7 +110,7 @@ pub enum Error {
     ///
     /// [`AnyUserData`]: crate::AnyUserData
     /// [`UserDataMethods`]: crate::UserDataMethods
-    UserDataTypeMismatch,
+    UserDataTypeMismatch(&'static str),
     /// An [`AnyUserData`] borrow failed because it has been destructed.
     ///
     /// This error can happen either due to to being destructed in a previous __gc, or due to being
@@ -237,7 +237,7 @@ impl fmt::Display for Error {
                 }
             }
             Error::CoroutineInactive => write!(fmt, "cannot resume inactive coroutine"),
-            Error::UserDataTypeMismatch => write!(fmt, "userdata is not expected type"),
+            Error::UserDataTypeMismatch(expected) => write!(fmt, "userdata is not {expected} type"),
             Error::UserDataDestructed => write!(fmt, "userdata has been destructed"),
             Error::UserDataBorrowError => write!(fmt, "userdata already mutably borrowed"),
             Error::UserDataBorrowMutError => write!(fmt, "userdata already borrowed"),

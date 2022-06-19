@@ -8,6 +8,7 @@ use std::{
 	ops::{Deref, DerefMut},
 	sync::{Arc, Weak},
 };
+use std::any::type_name;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use eyre::ContextCompat;
@@ -119,7 +120,15 @@ impl<V: UserData> UserData for LuaWeak<V> {
 		V::add_fields(&mut GlueUserDataFields {
 			fields,
 			data: Default::default(),
-		})
+		});
+
+		fields.add_field_method_get("__mut", |lua, weak| {
+			Ok(weak.mutable)
+		});
+
+		fields.add_field_method_get("__type", |lua, weak| {
+			Ok(type_name::<V>())
+		});
 	}
 
 	fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {

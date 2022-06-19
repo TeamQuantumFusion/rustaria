@@ -5,8 +5,10 @@ use std::{
 };
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
+use apollo::{FromLua, ToLua, UserData};
+use apollo::impl_macro::*;
 use crate::ty::id::Id;
+use crate::ty::identifier::Identifier;
 
 pub struct IdTable<I, V> {
 	values: Vec<V>,
@@ -16,12 +18,27 @@ pub struct IdTable<I, V> {
 impl<I, V> IdTable<I, V> {
 	pub fn get(&self, id: Id<I>) -> &V { &self.values[id.index()] }
 
-	pub fn get_mut(&mut self, id: Id<I>) -> &mut V { &mut self.values[id.index()] }
+	pub fn get_mut(&mut self, id: Id<I>) -> &mut V {
+		&mut self.values[id.index()]
+	}
 
-	pub fn iter(&self) -> IdTableIter<I, &V, Iter<V>> { IdTableIter::new(self.values.iter()) }
+	pub fn iter(&self) -> IdTableIter<I, &V, Iter<V>> {
+		IdTableIter::new(self.values.iter())
+	}
 
 	pub fn iter_mut(&mut self) -> IdTableIter<I, &mut V, IterMut<V>> {
 		IdTableIter::new(self.values.iter_mut())
+	}
+}
+
+#[lua_impl]
+impl<I: 'static, V: UserData + ToLua + Send + 'static> IdTable<I, V> {
+	#[lua_method(!get)]
+	pub fn get(&self, id: Id<I>) -> &V { &self.values[id.index()] }
+
+	#[lua_method(!get_mut)]
+	pub fn get_mut(&mut self, id: Id<I>) -> &mut V {
+		&mut self.values[id.index()]
 	}
 }
 

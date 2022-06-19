@@ -1,4 +1,12 @@
-use crate::{ty, ty::Offset, world::chunk::CHUNK_SIZE};
+use apollo::{FromLua, Lua, Table, ToLua, Value};
+use eyre::ContextCompat;
+
+use crate::{
+	api::{luna::table::LunaTable, util::lua_table},
+	ty,
+	ty::Offset,
+	world::chunk::CHUNK_SIZE,
+};
 
 #[derive(
 	Copy,
@@ -63,5 +71,25 @@ impl Offset<(i8, i8)> for BlockLayerPos {
 		let x = ty::checked_add_signed_u8(self.x(), dx)?;
 		let y = ty::checked_add_signed_u8(self.y(), dy)?;
 		Self::try_new(x, y)
+	}
+}
+
+impl ToLua for BlockLayerPos {
+	fn to_lua(self, lua: &Lua) -> eyre::Result<Value> {
+		Ok(Value::Table(
+			lua.create_table_from([("x", self.x()), ("y", self.y())])?,
+		))
+	}
+}
+
+impl FromLua for BlockLayerPos {
+	fn from_lua(lua_value: Value, lua: &Lua) -> eyre::Result<Self> {
+		let table = LunaTable {
+			lua,
+			table: lua_table(lua_value)?,
+		};
+
+		BlockLayerPos::try_new(table.get("x")?, table.get("y")?)
+			.wrap_err("BlockLayerPos is out of bounds.")
 	}
 }

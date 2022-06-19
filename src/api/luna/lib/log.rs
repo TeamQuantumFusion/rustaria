@@ -3,12 +3,12 @@ use tracing::{debug, error, info, trace, warn};
 
 pub fn register(lua: &Lua, globals: &Table) -> eyre::Result<()> {
 	let log = lua.create_table()?;
-	log.set("trace", lua.create_function(trace)?)?;
-	log.set("debug", lua.create_function(debug)?)?;
-	log.set("info", lua.create_function(info)?)?;
-	log.set("warn", lua.create_function(warn)?)?;
-	log.set("error", lua.create_function(error)?)?;
-	globals.set("log", log)?;
+	log.insert("trace", lua.create_function(trace)?)?;
+	log.insert("debug", lua.create_function(debug)?)?;
+	log.insert("info", lua.create_function(info)?)?;
+	log.insert("warn", lua.create_function(warn)?)?;
+	log.insert("error", lua.create_function(error)?)?;
+	globals.insert("log", log)?;
 	Ok(())
 }
 

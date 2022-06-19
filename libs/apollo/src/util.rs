@@ -806,7 +806,7 @@ pub unsafe fn init_error_registry(state: *mut ffi::lua_State) -> Result<()> {
                 Some(WrappedFailure::Panic(None)) => Err(Error::PreviouslyResumedPanic),
                 _ => {
                     // I'm not sure whether this is possible to trigger without bugs in mlua?
-                    Err(Error::UserDataTypeMismatch)
+                    Err(Error::UserDataTypeMismatch("unknown"))
                 }
             }?;
 

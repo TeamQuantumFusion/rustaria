@@ -1,12 +1,11 @@
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::{TokenStream};
 use quote::{quote, ToTokens, TokenStreamExt};
 use syn::{punctuated::Punctuated, Signature, Token};
 
 use crate::{
 	attr::MethodAttr,
-	values::{Receiver, ValueManager},
+	values::{ValueManager},
 };
-use crate::values::LuaValue;
 
 pub(crate) fn bind_method(sig: &Signature, attr: MethodAttr) -> TokenStream {
 	let mut manager = ValueManager::new(false);

@@ -2078,7 +2078,7 @@ impl Lua {
 	pub(crate) unsafe fn push_userdata_ref(&self, lref: &LuaRef) -> Result<Option<TypeId>> {
 		self.push_ref(lref);
 		if ffi::lua_getmetatable(self.state, -1) == 0 {
-			return Err(Error::UserDataTypeMismatch);
+			return Err(Error::UserDataTypeMismatch("unknown"));
 		}
 		let mt_ptr = ffi::lua_topointer(self.state, -1);
 		ffi::lua_pop(self.state, 1);
@@ -2089,7 +2089,7 @@ impl Lua {
 				Err(Error::UserDataDestructed)
 			}
 			Some(&type_id) => Ok(type_id),
-			None => Err(Error::UserDataTypeMismatch),
+			None => Err(Error::UserDataTypeMismatch("unknown")),
 		}
 	}
 
@@ -2293,12 +2293,12 @@ impl Lua {
 		let coroutine = self.globals().get::<_, Table>("coroutine")?;
 
 		let env = self.create_table_with_capacity(0, 4)?;
-		env.set("get_poll", get_poll)?;
-		env.set("yield", coroutine.get::<_, Function>("yield")?)?;
+		env.insert("get_poll", get_poll)?;
+		env.insert("yield", coroutine.get::<_, Function>("yield")?)?;
 		unsafe {
-			env.set("unpack", self.create_c_function(unpack)?)?;
+			env.insert("unpack", self.create_c_function(unpack)?)?;
 		}
-		env.set("pending", {
+		env.insert("pending", {
 			LightUserData(&ASYNC_POLL_PENDING as *const u8 as *mut c_void)
 		})?;
 
@@ -2369,7 +2369,7 @@ impl Lua {
 	fn disable_c_modules(&self) -> Result<()> {
 		let package: Table = self.globals().get("package")?;
 
-		package.set(
+		package.insert(
 			"loadlib",
 			self.create_function(|_, ()| -> Result<()> {
 				Err(Error::SafetyError(

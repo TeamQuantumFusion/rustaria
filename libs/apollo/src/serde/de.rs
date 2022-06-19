@@ -173,7 +173,7 @@ impl<'lua, 'de> serde::Deserializer<'de> for Deserializer {
             Value::Table(table) => {
                 let _guard = RecursionGuard::new(&table, &self.visited);
 
-                let mut iter = table.pairs::<StdString, Value>();
+                let mut iter = table.iter::<StdString, Value>();
                 let (variant, value) = match iter.next() {
                     Some(v) => v?,
                     None => {
@@ -271,7 +271,7 @@ impl<'lua, 'de> serde::Deserializer<'de> for Deserializer {
                 let _guard = RecursionGuard::new(&t, &self.visited);
 
                 let mut deserializer = MapDeserializer {
-                    pairs: t.pairs(),
+                    pairs: t.iter(),
                     value: None,
                     options: self.options,
                     visited: self.visited,

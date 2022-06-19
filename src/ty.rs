@@ -1,3 +1,5 @@
+use std::fmt::{Display, Formatter, Write};
+
 pub mod block_layer_pos;
 pub mod block_pos;
 pub mod chunk_pos;
@@ -10,8 +12,18 @@ pub struct WS;
 /// Screen Space
 pub struct SS;
 
+#[derive(Debug)]
 pub enum Error {
 	OutOfBounds,
+}
+
+impl std::error::Error for Error {
+}
+
+impl Display for Error {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		f.write_str("Coordinates are out of bounds")
+	}
 }
 
 pub trait MultiDeref<T> {

@@ -18,6 +18,22 @@ pub struct Chunk {
 	pub layers: IdTable<BlockLayer, ChunkLayer<Block>>,
 }
 
+use apollo::impl_macro::*;
+use apollo::{FromLua, ToLua, UserData};
+
+#[lua_impl]
+impl Chunk {
+	#[lua_method]
+	pub fn get_layers(&self) -> &IdTable<BlockLayer, ChunkLayer<Block>> {
+		&self.layers
+	}
+
+	#[lua_method]
+	pub fn get_mut_layers(&mut self) ->  &mut IdTable<BlockLayer, ChunkLayer<Block>>{
+		&mut self.layers
+	}
+}
+
 // Layer
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct ChunkLayer<T: Clone> {
@@ -58,6 +74,26 @@ impl<T: Clone> ChunkLayer<T> {
 		out
 	}
 }
+
+#[lua_impl]
+impl<T: UserData + Clone + Send + ToLua + FromLua + 'static> ChunkLayer<T> {
+	#[lua_method(!)]
+	fn __index(&mut self, pos: BlockLayerPos) -> &mut T {
+		&mut self[pos]
+	}
+
+
+	#[lua_method(!)]
+	fn __index(&self, pos: BlockLayerPos) -> &T {
+		&self[pos]
+	}
+
+	#[lua_method]
+	fn set_entry(&mut self, pos: BlockLayerPos, value: T) {
+		self[pos] = value;
+	}
+}
+
 
 impl<T: Clone + Copy> ChunkLayer<T> {
 	pub fn new_copy(value: T) -> Self {

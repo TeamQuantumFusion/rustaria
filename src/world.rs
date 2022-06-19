@@ -1,5 +1,5 @@
 use chunk::{block::BlockDesc, layer::BlockLayer};
-use eyre::Result;
+use eyre::{Result, WrapErr};
 use hecs::Entity;
 
 use crate::{
@@ -51,12 +51,13 @@ impl World {
 		})
 	}
 
-	pub fn tick(&mut self, api: &Api, debug: &mut impl DebugRendererImpl) {
+	pub fn tick(&mut self, api: &Api, debug: &mut impl DebugRendererImpl) -> eyre::Result<()> {
 		for (pos, layer_id, block_id) in self.spreader.tick(api, &mut self.chunks, debug) {
 			self.place_block(api, pos, layer_id, block_id);
 		}
 		// Entity
-		self.entities.tick(api, &self.chunks, debug);
+		self.entities.tick(api, &mut self.chunks, debug).wrap_err("Ticking entity")?;
+		Ok(())
 	}
 
 	pub fn place_block(

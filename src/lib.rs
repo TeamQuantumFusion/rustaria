@@ -56,7 +56,7 @@ impl Server {
 			}
 		}
 
-		self.world.tick(api, &mut DummyRenderer);
+		self.world.tick(api, &mut DummyRenderer).wrap_err("Ticking world")?;
 		self.player
 			.tick(&mut self.network, &self.world)
 			.wrap_err("Ticking player system.")?;

@@ -22,9 +22,9 @@ pub struct BlockLayer {
 
 #[lua_impl]
 impl BlockLayer {
-	#[lua_method]
-	pub fn get_blocks(&mut self) -> LuaResult<&mut Registry<BlockDesc>> {
-		Ok(&mut self.blocks)
+	#[lua_field(get blocks)]
+	pub fn blocks(&self) -> &Registry<BlockDesc> {
+		&self.blocks
 	}
 }
 
@@ -62,6 +62,7 @@ impl BlockLayerPrototype {
 		})
 	}
 }
+
 
 impl Prototype for BlockLayerPrototype {
 	type Output = BlockLayer;

@@ -1,5 +1,5 @@
 use euclid::{rect, vec2, Rect, Size2D, Vector2D};
-use apollo::{LuaSerdeExt, Value};
+use apollo::{LuaScope, LuaSerdeExt, Value};
 
 use crate::{
 	debug::{DebugCategory, DebugRendererImpl},
@@ -23,9 +23,9 @@ impl CollisionSystem {
 		&mut self,
 		api: &Api,
 		storage: &mut EntityStorage,
-		chunks: &ChunkStorage,
+		chunks: &mut ChunkStorage,
 		debug: &mut impl DebugRendererImpl,
-	) {
+	) -> eyre::Result<()> {
 		for (_, (collision, position, physics)) in storage.query_mut::<(
 			&mut CollisionComponent,
 			&PositionComponent,
@@ -128,11 +128,14 @@ impl CollisionSystem {
 						.component_mul(vec2(physics.accel.x.abs(), physics.accel.y.abs()));
 					collision.collided[contact] = true;
 					if let Some(callback) = &collision.hit_callback {
-						let _result: Value = callback.call((api.luna.lua.to_value(&contact).unwrap())).unwrap();
+						let chunks_scope = LuaScope::from(&mut *chunks);
+						let contact = api.luna.lua.to_value(&contact).unwrap();
+						let _result: Value = callback.call((chunks_scope.lua(), contact))?;
 					}
 				}
 			}
 		}
+		Ok(())
 	}
 }
 

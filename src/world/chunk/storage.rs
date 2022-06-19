@@ -2,6 +2,7 @@ use std::collections::hash_set::Iter;
 
 use fxhash::{FxHashMap, FxHashSet};
 
+use apollo::impl_macro::*;
 use crate::{Chunk, ChunkPos};
 
 #[derive(Clone)]
@@ -12,6 +13,7 @@ pub struct ChunkStorage {
 	dirty: FxHashSet<ChunkPos>,
 }
 
+#[lua_impl]
 impl ChunkStorage {
 	pub fn new(width: u32, height: u32) -> ChunkStorage {
 		ChunkStorage {
@@ -22,18 +24,13 @@ impl ChunkStorage {
 		}
 	}
 
+	#[lua_field(get width)]
 	pub fn width(&self) -> u32 { self.width }
 
+	#[lua_field(get height)]
 	pub fn height(&self) -> u32 { self.height }
 
-	pub fn get(&self, pos: ChunkPos) -> Option<&Chunk> {
-		if !self.check_inbounds(pos) {
-			return None;
-		}
-
-		self.chunks.get(&pos)
-	}
-
+	#[lua_method]
 	pub fn contains(&self, pos: ChunkPos) -> bool {
 		if !self.check_inbounds(pos) {
 			return false;
@@ -42,6 +39,16 @@ impl ChunkStorage {
 		self.chunks.contains_key(&pos)
 	}
 
+	#[lua_method]
+	pub fn get(&self, pos: ChunkPos) -> Option<&Chunk> {
+		if !self.check_inbounds(pos) {
+			return None;
+		}
+
+		self.chunks.get(&pos)
+	}
+
+	#[lua_method]
 	pub fn get_mut(&mut self, pos: ChunkPos) -> Option<&mut Chunk> {
 		if !self.check_inbounds(pos) {
 			return None;
@@ -51,6 +58,7 @@ impl ChunkStorage {
 		self.chunks.get_mut(&pos)
 	}
 
+	#[lua_method]
 	pub fn insert(&mut self, pos: ChunkPos, chunk: Chunk) -> Option<Chunk> {
 		if !self.check_inbounds(pos) {
 			return None;

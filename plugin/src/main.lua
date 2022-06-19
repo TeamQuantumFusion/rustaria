@@ -94,6 +94,7 @@ reload.stargate.block_layer:register {
         }
     }
 }
+
 reload.stargate.entity:register {
     ["player"] = {
         position = { 24.0, 20.0 },
@@ -129,8 +130,19 @@ reload.stargate.entity:register {
                 origin = { -0.55, -0.55 },
                 size = { 1.1, 1.1 }
             },
-            hit_callback = function()
-                log.info("hi")
+            hit_callback = function(chunks)
+                local tile_layer_id = api.carrier.block_layer:get_id("tile");
+                local layer_p = api.carrier.block_layer:get(tile_layer_id);
+
+                local stone_id = layer_p.blocks:get_id("stone");
+
+                chunks:get_mut({
+                    x = 0,
+                    y = 0
+                }):get_mut_layers():get_mut(tile_layer_id):set_entry({
+                    x = 0,
+                    y = 0
+                }, layer_p.blocks:get(stone_id):create(stone_id));
             end
         },
         gravity = {

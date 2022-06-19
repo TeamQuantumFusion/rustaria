@@ -1,11 +1,15 @@
 use euclid::Vector2D;
-use num::FromPrimitive;
+use num::{FromPrimitive, ToPrimitive};
+use apollo::{FromLua, Lua, ToLua, Value};
 
 use crate::{
 	ty,
 	ty::{direction::Direction, Error, Offset},
 	world::chunk::CHUNK_SIZE,
 };
+use crate::api::luna::table::LunaTable;
+use crate::api::util::lua_table;
+use crate::ty::block_pos::BlockPos;
 
 // ======================================== POSITION ========================================
 #[derive(
@@ -76,13 +80,32 @@ impl<S> TryFrom<Vector2D<f32, S>> for ChunkPos {
 	}
 }
 
-impl TryFrom<(i64, i64)> for ChunkPos {
+impl<X: ToPrimitive, Y: ToPrimitive> TryFrom<(X, Y)> for ChunkPos {
 	type Error = Error;
 
-	fn try_from(value: (i64, i64)) -> Result<Self, Self::Error> {
+	fn try_from((x, y): (X, Y)) -> Result<Self, Self::Error> {
 		Ok(ChunkPos {
-			x: u32::from_i64(value.0).ok_or(Error::OutOfBounds)?,
-			y: u32::from_i64(value.1).ok_or(Error::OutOfBounds)?,
+			x: x.to_u32().ok_or(Error::OutOfBounds)?,
+			y: y.to_u32().ok_or(Error::OutOfBounds)?,
 		})
+	}
+}
+
+impl ToLua for ChunkPos {
+	fn to_lua(self, lua: &Lua) -> eyre::Result<Value> {
+		Ok(Value::Table(
+			lua.create_table_from([("x", self.x), ("y", self.y)])?,
+		))
+	}
+}
+
+impl FromLua for ChunkPos {
+	fn from_lua(lua_value: Value, lua: &Lua) -> eyre::Result<Self> {
+		let table = LunaTable {
+			lua,
+			table: lua_table(lua_value)?,
+		};
+
+		Ok(ChunkPos::try_from((table.get::<_, u32>("x")?, table.get::<_, u32>("y")?))?)
 	}
 }

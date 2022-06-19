@@ -1,7 +1,7 @@
 use std::ops::{Deref, DerefMut};
 
 use euclid::{size2, Rect};
-use eyre::Result;
+use eyre::{Result, WrapErr};
 use fxhash::FxHashSet;
 use rustaria::{
 	api::Api,
@@ -56,7 +56,7 @@ impl ClientWorld {
 				}
 			}
 		}
-		self.inner.tick(api, debug);
+		self.inner.tick(api, debug).wrap_err("Ticking client world.")?;
 		Ok(())
 	}
 

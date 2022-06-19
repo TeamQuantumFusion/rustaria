@@ -34,7 +34,7 @@ impl<P: Prototype> RegistryBuilder<P> {
 	pub fn build(&mut self, lua: &Lua) -> Result<Registry<P>> {
 		let mut values = FxHashMap::default();
 		for table in &self.tables {
-			for value in table.clone().pairs::<Value, Value>() {
+			for value in table.clone().iter::<Value, Value>() {
 				let (key, value) = value?;
 				let (identifier, priority) = Self::get_prototype_entry_key(key)
 					.wrap_err("Failed to get registry entry key.")?;

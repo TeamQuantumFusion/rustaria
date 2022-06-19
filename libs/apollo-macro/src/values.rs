@@ -55,14 +55,14 @@ impl ValueManager {
 			FnArg::Typed(ty) => {
 				let name = ty.to_token_stream().to_string();
 				match LuaValue::parse(*ty.ty.clone()) {
-					LuaValue::LuaResult { original: ty, .. } | LuaValue::Normal(ty) => {
+					LuaValue::Option { original: ty, .. }  | LuaValue::LuaResult { original: ty, .. } | LuaValue::Normal(ty) => {
 						let value = self.new_value(quote!(#ty), None);
 						quote!(#value)
 					}
 					LuaValue::Reference {
 						inner,
 						mutable,
-						lifetime,
+						lifetime, ..
 					} => {
 						let value = self.new_value(quote!(apollo::LuaWeak<#inner>), lifetime);
 						if mutable {
@@ -74,6 +74,7 @@ impl ValueManager {
 					LuaValue::Lua => {
 						quote!(lua)
 					}
+
 				}
 			}
 		}
@@ -103,15 +104,22 @@ impl ValueManager {
 			}
 			// TODO maybe lifetime processing to determine what lua weak exactly we are borrowing from. currently we just assume its self
 			LuaValue::Reference {
-				inner,
 				mutable,
-				lifetime,
+				lifetime, ..
 			} => {
 				let var = self
 					.lifetimes
 					.get(&lifetime.unwrap_or_else(|| { Lifetime::new("'v0", Span::call_site()) }))
 					.expect("Lifetime does not exist");
 				quote!(#var.extend(#invoke, #mutable)?)
+			}
+			LuaValue::Option { inner, .. } => {
+				let stream = self.wrap_return_internal(*inner, quote!(value));
+
+				quote!(match #invoke {
+					Some(value) => Some(#stream),
+					None => None,
+				})
 			}
 		}
 	}
@@ -138,7 +146,7 @@ impl ValueManager {
 			Some(lifetime) => lifetime,
 		};
 
-		self.lifetimes.insert(lifetime, ident.clone());
+		self.lifetimes.insert(lifetime, ident);
 	}
 }
 
@@ -156,13 +164,17 @@ pub enum LuaValue {
 		inner: Box<LuaValue>,
 		original: Type,
 	},
+	Option {
+		inner: Box<LuaValue>,
+		original: Type,
+	},
 	Normal(Type),
 	Lua,
 }
 
 impl LuaValue {
-	pub fn parse(ty: Type) -> LuaValue {
-		match ty {
+	pub fn parse(original: Type) -> LuaValue {
+		match original.clone() {
 			Type::Paren(ty) => LuaValue::Normal(*ty.elem),
 			Type::Path(path) => {
 				{
@@ -174,7 +186,21 @@ impl LuaValue {
 							{
 								return LuaValue::LuaResult {
 									inner: Box::new(LuaValue::parse(ty.clone())),
-									original: ty.clone(),
+									original,
+								};
+							}
+							panic!("The result args must be a type")
+						} else {
+							panic!("The result args must be in <>")
+						}
+					} else if path.ident == "Option" {
+						if let PathArguments::AngleBracketed(brackets) = &path.arguments {
+							if let GenericArgument::Type(ty) =
+							brackets.args.first().expect("Result must have args")
+							{
+								return LuaValue::Option {
+									inner: Box::new(LuaValue::parse(ty.clone())),
+									original,
 								};
 							}
 							panic!("The result args must be a type")
@@ -196,7 +222,7 @@ impl LuaValue {
 				LuaValue::Reference {
 					lifetime: reference.lifetime.clone(),
 					inner: *reference.elem,
-					mutable: reference.mutability.is_some(),
+					mutable: reference.mutability.is_some()
 				}
 			}
 			ty => LuaValue::Normal(ty),

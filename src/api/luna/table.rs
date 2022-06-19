@@ -16,13 +16,7 @@ impl<'a> LunaTable<'a> {
 			.get(key.clone())
 			.wrap_err_with(|| format!("Getting field \"{}\"", key))
 	}
-
-	pub fn get_ident<K: ToLua + Display + Clone>(&self, key: K) -> Result<Identifier> {
-		self.table
-			.get(key.clone())
-			.wrap_err_with(|| format!("Getting field \"{}\"", key))
-	}
-
+	
 	pub fn get_ser<'de, K: ToLua + Display + Clone, V: Deserialize<'de>>(
 		&self,
 		key: K,

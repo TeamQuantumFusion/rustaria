@@ -135,7 +135,7 @@ impl FromLua for AnyUserData {
                 from: value.type_name(),
                 to: "userdata",
                 message: None,
-            }).wrap_err(type_name::<Self>()),
+            }).wrap_err(format!("Failed to convert {} from {}", value.type_name(), type_name::<Self>())),
         }
     }
 }
@@ -162,7 +162,7 @@ impl<T: UserDataFromLua + 'static + Clone> FromLua for T {
                 from: value.type_name(),
                 to: "userdata",
                 message: None,
-            }).wrap_err(type_name::<Self>()),
+            }).wrap_err(format!("Failed to convert {} to {}", value.type_name(), type_name::<Self>())),
         }
     }
 }
@@ -541,7 +541,7 @@ impl<'lua, K: Eq + Hash + FromLua, V: FromLua, S: BuildHasher + Default> FromLua
     fn from_lua(value: Value, _: &Lua) -> Result<Self> {
 
         if let Value::Table(table) = value {
-            table.pairs().collect()
+            table.iter().collect()
         } else {
             Err(Error::FromLuaConversionError {
                 from: value.type_name(),
@@ -562,7 +562,7 @@ impl<'lua, K: Ord + FromLua, V: FromLua> FromLua for BTreeMap<K, V> {
     fn from_lua(value: Value, _: &Lua) -> Result<Self> {
 
         if let Value::Table(table) = value {
-            table.pairs().collect()
+            table.iter().collect()
         } else {
             Err(Error::FromLuaConversionError {
                 from: value.type_name(),
@@ -587,7 +587,7 @@ impl<'lua, T: Eq + Hash + FromLua, S: BuildHasher + Default> FromLua for HashSet
         match value {
             Value::Table(table) if table.len()? > 0 => table.sequence_values().collect(),
             Value::Table(table) => table
-                .pairs::<T, Value>()
+                .iter::<T, Value>()
                 .map(|res| res.map(|(k, _)| k))
                 .collect(),
             _ => Err(Error::FromLuaConversionError {
@@ -613,7 +613,7 @@ impl<'lua, T: Ord + FromLua> FromLua for BTreeSet<T> {
         match value {
             Value::Table(table) if table.len()? > 0 => table.sequence_values().collect(),
             Value::Table(table) => table
-                .pairs::<T, Value>()
+                .iter::<T, Value>()
                 .map(|res| res.map(|(k, _)| k))
                 .collect(),
             _ => Err(Error::FromLuaConversionError {

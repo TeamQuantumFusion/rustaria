@@ -109,11 +109,12 @@ impl EntityWorld {
 		})
 	}
 
-	pub fn tick(&mut self, api: &Api, chunks: &ChunkStorage, debug: &mut impl DebugRendererImpl) {
+	pub fn tick(&mut self, api: &Api, chunks: &mut ChunkStorage, debug: &mut impl DebugRendererImpl) -> eyre::Result<()> {
 		self.gravity.tick(&mut self.storage);
 		self.humanoid.tick(&mut self.storage);
-		self.collision.tick(api, &mut self.storage, chunks, debug);
+		self.collision.tick(api, &mut self.storage, chunks, debug)?;
 		self.velocity.tick(&mut self.storage, debug);
+		Ok(())
 	}
 
 	pub fn packet(&mut self, packet: &EntityPacket) {

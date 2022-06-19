@@ -94,7 +94,7 @@ impl Api {
 
 		{
 			let reload_scope = LuaScope::from(&mut *reload);
-			self.luna.lua.globals().set("reload", reload_scope.lua())?;
+			self.luna.lua.globals().insert("reload", reload_scope.lua())?;
 
 			for plugin in self.resources.plugins.values() {
 				info!("Reloading {}", &plugin.id);

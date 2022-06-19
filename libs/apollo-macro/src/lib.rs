@@ -3,7 +3,7 @@ mod method;
 mod values;
 mod field;
 
-use proc_macro2::TokenStream;
+use proc_macro2::{Ident, TokenStream};
 use quote::{quote, TokenStreamExt, ToTokens};
 use syn::{Attribute, ImplItem, ItemImpl, parse_macro_input};
 use syn::spanned::Spanned;
@@ -68,17 +68,24 @@ pub fn lua_impl(
 	let mut new_items = Vec::new();
 	let mut from_lua = None;
 	let mut to_lua = None;
-	'item: for item in item.items {
-		if let ImplItem::Method(method) = &item {
+	'item: for (i, mut item) in item.items.into_iter().enumerate() {
+		if let ImplItem::Method(method) = &mut item {
 			for attribute in &method.attrs {
 				if let Some(attr) = parse_binding_attr(attribute) {
 					match attr {
 						Ok(attr) => {
 							match attr {
 								LuaBindingAttr::Method(attr) => {
+									if !attr.keep_original {
+										method.sig.ident = Ident::new(&format!("__internal_stuff_{}_{i}", method.sig.ident), method.sig.ident.span());
+									}
 									methods.append_all(method::bind_method(&method.sig, attr));
+
 								}
 								LuaBindingAttr::Field(attr) => {
+									if !attr.keep_original {
+										method.sig.ident = Ident::new(&format!("__internal_stuff_{}_{i}", method.sig.ident), method.sig.ident.span());
+									}
 									fields.append_all(field::bind_field(&method.sig, attr));
 								}
 								LuaBindingAttr::FromLua => {
@@ -158,6 +165,7 @@ fn parse_binding_attr(attribute: &Attribute) -> Option<syn::Result<LuaBindingAtt
 	} else if kind == "lua_method" {
 		if attribute.tokens.is_empty()  {
 			return Some(Ok(LuaBindingAttr::Method(MethodAttr {
+				keep_original: true,
 				lua_name: None
 			})));
 		}

@@ -791,7 +791,7 @@ impl AnyUserData {
     pub fn is<T: 'static + UserData>(&self) -> bool {
         match self.inspect(|_: &UserDataCell<T>| Ok(())) {
             Ok(()) => true,
-            Err(Error::UserDataTypeMismatch) => false,
+            Err(Error::UserDataTypeMismatch(_)) => false,
             Err(_) => unreachable!(),
         }
     }
@@ -853,7 +853,7 @@ impl AnyUserData {
 
                     Ok(take_userdata::<UserDataCell<T>>(lua.state).into_inner())
                 }
-                _ => Err(Error::UserDataTypeMismatch),
+                _ => Err(Error::UserDataTypeMismatch(type_name::<T>())),
             }
         }
     }
@@ -1113,7 +1113,7 @@ impl AnyUserData {
                 Some(type_id) if type_id == TypeId::of::<T>() => {
                     func(&*get_userdata::<UserDataCell<T>>(lua.state, -1))
                 }
-                _ => Err(Error::UserDataTypeMismatch),
+                _ => Err(Error::UserDataTypeMismatch(type_name::<T>())),
             }
         }
     }
@@ -1194,7 +1194,7 @@ impl UserDataMetatable {
     ///
     /// [`Result`]: crate::Result
     pub fn pairs<V: FromLua>(self) -> UserDataMetatablePairs<V> {
-        UserDataMetatablePairs(self.0.pairs())
+        UserDataMetatablePairs(self.0.iter())
     }
 }
 

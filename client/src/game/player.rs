@@ -167,7 +167,7 @@ impl PlayerSystem {
 		world: &mut World,
 	) -> Result<()> {
 		self.prediction_world
-			.tick(api, &world.chunks, &mut DummyRenderer);
+			.tick(api, &mut world.chunks, &mut DummyRenderer)?;
 		if let Some(entity) = self.check(&world.entities) {
 			self.send_command.dir = self.speed.dir;
 			self.send_command.jumping = self.jump;
@@ -257,7 +257,7 @@ impl PlayerSystem {
 							entity.jumping = speed.jumping;
 						}
 						self.base_server_world
-							.tick(api, &world.chunks, &mut DummyRenderer);
+							.tick(api, &mut world.chunks, &mut DummyRenderer);
 
 						// If we reach the tick that we currently received,
 						// stop as the next events are the ones that the server has not yet seen.
@@ -267,7 +267,7 @@ impl PlayerSystem {
 					}
 
 					// Recompile our prediction
-					self.compile_prediction(api, &world.chunks);
+					self.compile_prediction(api, &mut world.chunks);
 				}
 			}
 			ClientBoundPlayerPacket::Joined(entity) => {
@@ -343,7 +343,7 @@ impl PlayerSystem {
 
 	// When a client receives a packet, rebase the base_server_entity and
 	// then apply the events not yet to be responded by the server.
-	fn compile_prediction(&mut self, api: &Api, chunks: &ChunkStorage) -> Option<()> {
+	fn compile_prediction(&mut self, api: &Api, chunks: &mut ChunkStorage) -> Option<()> {
 		let entity = self.server_player?;
 
 		// Put prediction on the server value

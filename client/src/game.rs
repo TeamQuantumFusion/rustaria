@@ -67,7 +67,7 @@ impl ClientGame {
 		debug: &mut Debug,
 	) -> Result<()> {
 		if let Some(server) = &mut self.integrated {
-			server.tick(api)?;
+			server.tick(api).wrap_err("Ticking integrated server")?;
 		}
 		for packet in self.network.poll() {
 			match packet {
