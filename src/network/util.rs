@@ -3,8 +3,9 @@ use std::{
 	thread::sleep,
 	time::{Duration, Instant},
 };
+use anyways::audit::Audit;
 
-use eyre::Report;
+use anyways::Result;
 use laminar::{Packet, Socket, SocketEvent};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -18,7 +19,7 @@ impl Connector {
 		Socket::bind(addr).map(|socket| Connector { socket, addr })
 	}
 
-	pub fn send<V: Serialize>(&mut self, value: &V) -> eyre::Result<()> {
+	pub fn send<V: Serialize>(&mut self, value: &V) -> Result<()> {
 		self.socket.send(Packet::reliable_ordered(
 			self.addr,
 			bincode::serialize(value)?,
@@ -28,7 +29,7 @@ impl Connector {
 		Ok(())
 	}
 
-	pub fn receive<V: DeserializeOwned>(&mut self) -> eyre::Result<V> {
+	pub fn receive<V: DeserializeOwned>(&mut self) -> Result<V> {
 		loop {
 			self.socket.manual_poll(Instant::now());
 			if let Some(packet) = self.socket.recv() {
@@ -37,7 +38,7 @@ impl Connector {
 						return Ok(bincode::deserialize(packet.payload())?);
 					}
 					SocketEvent::Disconnect(_) => {
-						return Err(Report::msg("Disconnected"));
+						return Err(Audit::new("Disconnected"));
 					}
 					_ => {}
 				}

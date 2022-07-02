@@ -3,7 +3,7 @@ use std::os::raw::c_int;
 
 use crate::error::{Error, Result};
 use crate::ffi;
-use crate::types::LuaRef;
+use crate::types::LuaPointer;
 use crate::util::{check_stack, error_traceback, pop_error, StackGuard};
 use crate::value::{FromLuaMulti, ToLuaMulti};
 
@@ -46,7 +46,7 @@ pub enum ThreadStatus {
 
 /// Handle to an internal Lua thread (or coroutine).
 #[derive(Clone, Debug)]
-pub struct Thread(pub(crate) LuaRef);
+pub struct Thread(pub(crate) LuaPointer);
 
 /// Thread (coroutine) representation as an async [`Future`] or [`Stream`].
 ///

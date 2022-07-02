@@ -1,6 +1,7 @@
 use std::fmt::Write;
+use anyways::ext::AuditExt;
 
-use eyre::{Result, WrapErr};
+use anyways::Result;
 use apollo::{prelude::LuaError, Chunk, Lua, Table, Value};
 use tracing::debug;
 
@@ -29,7 +30,7 @@ impl Luna {
 		let resources = resources.clone();
 		searchers.raw_insert(
 			2,
-			lua.create_function(move |lua, location: Value| {
+			lua.create_function(move |lua, location: String| {
 				let mut location = Identifier::new_lua(location)?;
 				location
 					.path

@@ -15,6 +15,7 @@ use crate::{
 	},
 	Api, ChunkStorage,
 };
+use anyways::Result;
 
 pub struct CollisionSystem;
 
@@ -25,7 +26,7 @@ impl CollisionSystem {
 		storage: &mut EntityStorage,
 		chunks: &mut ChunkStorage,
 		debug: &mut impl DebugRendererImpl,
-	) -> eyre::Result<()> {
+	) -> Result<()> {
 		for (_, (collision, position, physics)) in storage.query_mut::<(
 			&mut CollisionComponent,
 			&PositionComponent,

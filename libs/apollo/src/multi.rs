@@ -4,7 +4,7 @@ use std::iter::FromIterator;
 use std::ops::{Deref, DerefMut};
 use std::result::Result as StdResult;
 
-use eyre::Result;
+use anyways::Result;
 use crate::lua::Lua;
 use crate::value::{FromLua, FromLuaMulti, MultiValue, Nil, ToLua, ToLuaMulti};
 

@@ -1,5 +1,5 @@
 use crossbeam::channel::{unbounded, Receiver, Sender};
-use eyre::Result;
+use anyways::Result;
 
 use crate::network::packet::{ClientBoundPacket, ServerBoundPacket};
 

@@ -1,17 +1,18 @@
 use std::collections::HashMap;
+use anyways::ext::AuditExt;
 
-use eyre::ContextCompat;
-use apollo::{FromLua, Lua, Value};
+use anyways::Result;
+use apollo::{FromLua, macros::*};
 use rand::Rng;
 use rand_xoshiro::Xoroshiro64Star;
 
 use crate::{
-	api::util::lua_table,
 	ty::{block_pos::BlockPos, direction::Direction, id::Id, identifier::Identifier, Offset},
 	world::chunk::{block::BlockDesc, layer::BlockLayer},
 	ChunkStorage, TPS,
 };
 
+#[derive(Clone)]
 pub struct BlockSpreader {
 	pub chance:        f32,
 	pub convert_table: HashMap<Id<BlockDesc>, Id<BlockDesc>>,
@@ -61,39 +62,30 @@ pub struct SpreadResult {
 	pub spread: Option<(BlockPos, Id<BlockDesc>)>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, FromLua)]
 pub struct BlockSpreaderPrototype {
 	pub chance:        f32,
 	pub convert_table: HashMap<Identifier, Identifier>,
 }
 
+#[lua_impl]
 impl BlockSpreaderPrototype {
-	pub fn bake(self, blocks: &HashMap<Identifier, Id<BlockDesc>>) -> eyre::Result<BlockSpreader> {
+	pub fn bake(self, blocks: &HashMap<Identifier, Id<BlockDesc>>) -> Result<BlockSpreader> {
 		let mut convert_table = HashMap::new();
 		for (from, to) in &self.convert_table {
 			convert_table.insert(
 				*blocks
 					.get(from)
-					.wrap_err(format!("Could not find from target {}", from))?,
+					.wrap_err_with(|| format!("Could not find from target {}", from))?,
 				*blocks
 					.get(to)
-					.wrap_err(format!("Could not find to target {}", to))?,
+					.wrap_err_with(|| format!("Could not find to target {}", to))?,
 			);
 		}
 
 		Ok(BlockSpreader {
 			chance: self.chance,
 			convert_table,
-		})
-	}
-}
-
-impl FromLua for BlockSpreaderPrototype {
-	fn from_lua(lua_value: Value, _: &Lua) -> eyre::Result<Self> {
-		let table = lua_table(lua_value)?;
-		Ok(BlockSpreaderPrototype {
-			chance:        table.get("chance")?,
-			convert_table: table.get("convert_table")?,
 		})
 	}
 }

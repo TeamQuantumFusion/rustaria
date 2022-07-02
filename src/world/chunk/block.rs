@@ -1,13 +1,15 @@
 use std::collections::HashMap;
+use anyways::ext::AuditExt;
 
-use eyre::WrapErr;
+use apollo::{macros::*, FromLua};
+use anyways::Result;
 
 use crate::{
-	api::{luna::table::LunaTable, prototype::Prototype},
+	api::{prototype::Prototype},
 	ty::{id::Id, identifier::Identifier},
 	world::chunk::spread::{BlockSpreader, BlockSpreaderPrototype},
 };
-use apollo::impl_macro::*;
+
 #[derive(Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Block {
 	pub id: Id<BlockDesc>,
@@ -17,16 +19,13 @@ pub struct Block {
 #[lua_impl]
 impl Block {
 	#[lua_method]
-	pub fn get_id(&self) -> Id<BlockDesc> {
-		self.id
-	}
+	pub fn get_id(&self) -> Id<BlockDesc> { self.id }
 
 	#[lua_method]
-	pub fn get_collision(&self) -> bool {
-		self.collision
-	}
+	pub fn get_collision(&self) -> bool { self.collision }
 }
 
+#[derive(Clone)]
 pub struct BlockDesc {
 	pub collision: bool,
 	pub spread: Option<BlockSpreader>,
@@ -43,13 +42,15 @@ impl BlockDesc {
 	}
 }
 
+#[derive(FromLua, Debug)]
 pub struct BlockPrototype {
 	pub collision: bool,
 	pub spread: Option<BlockSpreaderPrototype>,
 }
 
+#[lua_impl]
 impl BlockPrototype {
-	pub fn bake(self, blocks: &HashMap<Identifier, Id<BlockDesc>>) -> eyre::Result<BlockDesc> {
+	pub fn bake(self, blocks: &HashMap<Identifier, Id<BlockDesc>>) -> Result<BlockDesc> {
 		Ok(BlockDesc {
 			collision: self.collision,
 			spread: if let Some(spread) = self.spread {
@@ -65,11 +66,4 @@ impl Prototype for BlockPrototype {
 	type Output = BlockDesc;
 
 	fn get_name() -> &'static str { "block" }
-
-	fn from_lua(table: LunaTable) -> eyre::Result<Self> {
-		Ok(BlockPrototype {
-			collision: table.get("collision")?,
-			spread: table.get("spread")?,
-		})
-	}
 }

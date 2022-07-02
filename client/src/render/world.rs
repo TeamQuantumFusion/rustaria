@@ -9,6 +9,7 @@ use crate::{
 	},
 	ClientApi, Debug, Frontend, PlayerSystem, Timing,
 };
+use anyways::Result;
 
 pub mod chunk;
 pub mod entity;
@@ -25,7 +26,7 @@ impl WorldRenderer {
 }
 
 impl WorldRenderer {
-	pub fn new(frontend: &Frontend, api: &ClientApi) -> eyre::Result<Self> {
+	pub fn new(frontend: &Frontend, api: &ClientApi) -> Result<Self> {
 		//let mut image_locations = Vec::new();
 		//for prototype in api.c_carrier.block_layer_renderer.entries() {
 		//    for entry in prototype.registry.entries() {
@@ -60,7 +61,7 @@ impl WorldRenderer {
 		player: &PlayerSystem,
 		world: &World,
 		debug: &mut Debug,
-	) -> eyre::Result<()> {
+	) -> Result<()> {
 		self.chunk_renderer.tick(frontend, &world.chunks)?;
 		// self.entity_renderer.tick(player, &world.entity)?;
 		Ok(())
@@ -76,7 +77,7 @@ impl WorldRenderer {
 		viewport: &Viewport,
 		debug: &mut Debug,
 		timing: &Timing,
-	) -> eyre::Result<()> {
+	) -> Result<()> {
 		let mut draw = Draw {
 			frame,
 			viewport,

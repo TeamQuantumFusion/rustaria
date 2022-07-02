@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
+use anyways::ext::AuditExt;
 
 use crossbeam::channel::{unbounded, Receiver, Sender};
-use eyre::{Result, WrapErr};
 use laminar::{Packet, Socket, SocketEvent};
 use rustaria::{
 	network::{
@@ -11,7 +11,7 @@ use rustaria::{
 	},
 	KERNEL_VERSION,
 };
-use semver::Version;
+use anyways::Result;
 use tracing::error;
 
 pub enum ClientNetworkSystem {
@@ -80,32 +80,32 @@ impl ClientNetworkSystem {
 		}
 	}
 
-	///
-	/// # Packet layout
-	/// <- Rustaria Kernel version
-	/// -> if 0 { cancel }
-	fn new_remote(addr: SocketAddr) -> Result<(), ConnectionError> {
-		use ConnectionError::*;
-		let mut connector = Connector::new(addr).map_err(BindError)?;
-
-		// <- Rustaria Kernel version
-		connector.send(&KERNEL_VERSION).map_err(SendKernelVersion)?;
-
-		// -> server kernel version
-		let server_version: Version = connector.receive().map_err(ReceiveKernelVersion)?;
-		if server_version != KERNEL_VERSION {
-			return Err(WrongKernelVersion(server_version));
-		}
-
-		// <- Registry hash
-
-		Ok(())
-	}
+	////
+	//// # Packet layout
+	//// <- Rustaria Kernel version
+	//// -> if 0 { cancel }
+	//fn new_remote(addr: SocketAddr) -> Result<(), ConnectionError> {
+	//	use ConnectionError::*;
+	//	let mut connector = Connector::new(addr).map_err(BindError)?;
+//
+	//	// <- Rustaria Kernel version
+	//	connector.send(&KERNEL_VERSION).map_err(SendKernelVersion)?;
+//
+	//	// -> server kernel version
+	//	let server_version: Version = connector.receive().map_err(ReceiveKernelVersion)?;
+	//	if server_version != KERNEL_VERSION {
+	//		return Err(WrongKernelVersion(server_version));
+	//	}
+//
+	//	// <- Registry hash
+//
+	//	Ok(())
+	//}
 }
 
-pub enum ConnectionError {
-	BindError(laminar::ErrorKind),
-	SendKernelVersion(eyre::Report),
-	ReceiveKernelVersion(eyre::Report),
-	WrongKernelVersion(Version),
-}
+//pub enum ConnectionError {
+//	BindError(laminar::ErrorKind),
+//	SendKernelVersion(eyre::Report),
+//	ReceiveKernelVersion(eyre::Report),
+//	WrongKernelVersion(Version),
+//}

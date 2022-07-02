@@ -1,7 +1,6 @@
 use std::fmt::{Display, Formatter};
 
 use euclid::Vector2D;
-use eyre::WrapErr;
 use num::ToPrimitive;
 use apollo::{FromLua, Lua, ToLua, Value};
 
@@ -11,7 +10,7 @@ use crate::{
 };
 use crate::api::luna::table::LunaTable;
 use crate::api::util::lua_table;
-use crate::world::chunk::block::Block;
+use apollo::macros::*;
 
 #[derive(
 	Copy,
@@ -115,7 +114,7 @@ impl Display for BlockPos {
 }
 
 impl ToLua for BlockPos {
-	fn to_lua(self, lua: &Lua) -> eyre::Result<Value> {
+	fn to_lua(self, lua: &Lua) -> anyways::Result<Value> {
 		Ok(Value::Table(
 			lua.create_table_from([("x", self.x()), ("y", self.y())])?,
 		))
@@ -123,7 +122,7 @@ impl ToLua for BlockPos {
 }
 
 impl FromLua for BlockPos {
-	fn from_lua(lua_value: Value, lua: &Lua) -> eyre::Result<Self> {
+	fn from_lua(lua_value: Value, lua: &Lua) -> anyways::Result<Self> {
 		let table = LunaTable {
 			lua,
 			table: lua_table(lua_value)?,

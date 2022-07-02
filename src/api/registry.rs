@@ -1,8 +1,9 @@
 use std::any::type_name;
 use std::cmp::Ordering;
+use std::fmt::Debug;
 
 use fxhash::{FxBuildHasher, FxHashMap};
-use apollo::{ToLua, UserData};
+use apollo::UserData;
 use tracing::trace;
 
 use crate::{
@@ -10,8 +11,9 @@ use crate::{
 	ty::{id::Id, identifier::Identifier},
 };
 use crate::util::blake3::Hasher;
-use apollo::impl_macro::*;
+use apollo::macros::*;
 
+#[derive(Clone, Debug)]
 pub struct Registry<I> {
 	pub table: IdTable<I, I>,
 	pub id_to_ident: IdTable<I, Identifier>,
@@ -43,7 +45,7 @@ impl<I> Registry<I> {
 
 	pub fn new(
 		values: FxHashMap<Identifier, (f32, I)>,
-	) -> Registry<I> {
+	) -> Registry<I> where I: Debug {
 		let mut values: Vec<((Identifier, f32), I)> = values
 			.into_iter()
 			.map(|(identifier, (priority, prototype))| ((identifier, priority), prototype))
@@ -61,7 +63,7 @@ impl<I> Registry<I> {
 			.into_iter()
 			.enumerate()
 			.map(|(id, ((identifier, _), value))| unsafe {
-				trace!(target: "registry", "Registered {} \"{}\"", type_name::<I>().split("::").last().expect("what"), identifier);
+				trace!(target: "registry", "Registered {} \"{}\" {value:?}", type_name::<I>().split("::").last().expect("what"), identifier);
 
 				(Id::<I>::new(id), identifier, value)
 			})
@@ -78,7 +80,7 @@ impl<I> Registry<I> {
 }
 
 #[lua_impl]
-impl<I: 'static + UserData + ToLua + Send> Registry<I> {
+impl<I: UserData + 'static + Send> Registry<I> {
 	#[lua_method(get)]
 	pub fn lua_get(&self, id: Id<I>) -> &I {
 		self.get(id)
@@ -90,8 +92,8 @@ impl<I: 'static + UserData + ToLua + Send> Registry<I> {
 	}
 
 	#[lua_method(get_identifier)]
-	pub fn lua_get_identifier(&self, id: Id<I>) -> &Identifier {
-		self.get_identifier(id)
+	pub fn lua_get_identifier(&self, id: Id<I>) -> Identifier {
+		self.get_identifier(id).clone()
 	}
 }
 

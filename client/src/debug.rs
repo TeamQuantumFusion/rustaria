@@ -1,7 +1,6 @@
 use std::time::{Duration, Instant};
 
 use euclid::{rect, vec2, Rect, Vector2D};
-use eyre::Result;
 use glium::{program::SourceCode, uniform, Blend, DrawParameters, Frame, Program};
 use rustaria::{
 	debug::{DebugCategory, DebugDraw, DebugEvent, DebugRendererImpl},
@@ -9,6 +8,7 @@ use rustaria::{
 	TPS,
 };
 use tracing::info;
+use anyways::Result;
 
 use crate::{
 	render::ty::{

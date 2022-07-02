@@ -5,6 +5,7 @@ use std::os::raw::{c_char, c_int, c_void};
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::sync::Arc;
 use std::{mem, ptr, slice};
+use anyways::audit::Audit;
 
 use once_cell::sync::Lazy;
 use rustc_hash::FxHashMap;
@@ -555,7 +556,7 @@ pub unsafe extern "C" fn userdata_destructor<T>(state: *mut ffi::lua_State) -> c
 // as normal, but cannot assume that the arguments available start at 0.
 pub unsafe fn callback_error<F, R>(state: *mut ffi::lua_State, f: F) -> R
 where
-    F: FnOnce(c_int) -> Result<R>,
+    F: FnOnce(c_int) -> anyways::Result<R>,
 {
     let nargs = ffi::lua_gettop(state);
 
@@ -828,7 +829,7 @@ pub unsafe fn init_error_registry(state: *mut ffi::lua_State) -> Result<()> {
     // Create destructed userdata metatable
 
     unsafe extern "C" fn destructed_error(state: *mut ffi::lua_State) -> c_int {
-        callback_error(state, |_| Err(Error::CallbackDestructed))
+        callback_error(state, |_| Err(Audit::new(Error::CallbackDestructed)))
     }
 
     push_table(state, 0, 26)?;

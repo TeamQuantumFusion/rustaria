@@ -18,8 +18,9 @@ pub struct Chunk {
 	pub layers: IdTable<BlockLayer, ChunkLayer<Block>>,
 }
 
-use apollo::impl_macro::*;
-use apollo::{FromLua, ToLua, UserData};
+use apollo::macros::*;
+use apollo::{FromLua, Lua, ToLua, UserData, Value};
+use crate::api::util::lua_table;
 
 #[lua_impl]
 impl Chunk {
@@ -77,15 +78,14 @@ impl<T: Clone> ChunkLayer<T> {
 
 #[lua_impl]
 impl<T: UserData + Clone + Send + ToLua + FromLua + 'static> ChunkLayer<T> {
-	#[lua_method(!)]
-	fn __index(&mut self, pos: BlockLayerPos) -> &mut T {
-		&mut self[pos]
-	}
-
-
-	#[lua_method(!)]
+	#[lua_method(__index)]
 	fn __index(&self, pos: BlockLayerPos) -> &T {
 		&self[pos]
+	}
+
+	#[lua_method(__index)]
+	fn __index_mut(&mut self, pos: BlockLayerPos) -> &mut T {
+		&mut self[pos]
 	}
 
 	#[lua_method]
@@ -117,7 +117,7 @@ impl<T: Clone> IndexMut<BlockLayerPos> for ChunkLayer<T> {
 	}
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, FromLua)]
 pub enum ConnectionType {
 	// air
 	Isolated,

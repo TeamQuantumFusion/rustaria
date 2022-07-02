@@ -1,7 +1,7 @@
 use std::collections::{hash_map::Entry, HashMap};
 
 use euclid::{vec2, Vector2D};
-use eyre::{ContextCompat, Result};
+use anyways::Result;
 use hecs::{Entity, EntityRef};
 use tracing::{debug, info, trace, warn};
 
@@ -54,8 +54,7 @@ impl PlayerSystem {
 			player_entity: api
 				.carrier
 				.entity
-				.get_id(&Identifier::new("player"))
-				.wrap_err("Could not find Player entity")?,
+				.get_id(&Identifier::new("player")).ok_or("Could not find Player entity")?
 		})
 	}
 

@@ -1,6 +1,6 @@
 use std::{collections::HashSet, mem::replace, ops::Deref, path::PathBuf};
+use anyways::ext::AuditExt;
 
-use eyre::{Context, Result};
 use rustaria::{
 	api::{
 		id_table::IdTable,
@@ -9,6 +9,8 @@ use rustaria::{
 	},
 	world::{chunk::layer::BlockLayer, entity::prototype::EntityDesc},
 };
+use anyways::Result;
+
 
 use crate::{
 	render::{
@@ -30,7 +32,7 @@ pub struct ClientApi {
 impl ClientApi {
 	pub fn new(run_dir: PathBuf, extra: Vec<PathBuf>) -> Result<ClientApi> {
 		Ok(ClientApi {
-			api: Api::new(run_dir, extra).wrap_err("Failed to reload common API")?,
+			api: Api::new(run_dir, extra).wrap_err("Failed to create common API")?,
 			c_carrier: ClientCarrier {
 				block_layer_renderer: Default::default(),
 				entity_renderer: Default::default(),
@@ -47,13 +49,13 @@ impl ClientApi {
 		// Register client only prototypes
 		reload
 			.stargate
-			.register_builder::<BlockLayerRendererPrototype>();
+			.register_builder::<BlockLayerRendererPrototype>(&self.luna.lua)?;
 		reload
 			.stargate
-			.register_builder::<EntityRendererPrototype>();
+			.register_builder::<EntityRendererPrototype>(&self.luna.lua)?;
 
 		// reload server stuff
-		self.api.reload(&mut reload).wrap_err("Failed to reload")?;
+		self.api.reload(&mut reload).wrap_err("Failed to reload common")?;
 
 		let mut sprites = HashSet::new();
 		let block_layers = reload

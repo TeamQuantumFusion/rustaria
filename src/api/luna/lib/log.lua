@@ -21,6 +21,7 @@ end
 ---
 --- Designates useful information.
 --- @param msg string
+--- @return string
 function log.info(msg)
 end
 

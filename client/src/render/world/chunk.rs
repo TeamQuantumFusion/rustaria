@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use euclid::rect;
-use eyre::Result;
 use glium::{uniform, Blend, DrawParameters, Program};
 use layer::BlockLayerRenderer;
 use rustaria::{
@@ -15,7 +14,8 @@ use rustaria::{
 		Offset,
 	},
 	world::chunk::{layer::BlockLayer, storage::ChunkStorage, CHUNK_SIZE},
-};
+};use anyways::Result;
+
 
 use crate::{
 	render::ty::{

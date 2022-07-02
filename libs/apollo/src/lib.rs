@@ -1,3 +1,4 @@
+#![feature(box_into_inner)]
 //! # High-level bindings to Lua
 //!
 //! The `mlua` crate provides safe high-level bindings to the [Lua programming language].
@@ -79,7 +80,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 #[macro_use]
-mod macros;
+mod util_macros;
 
 mod chunk;
 mod conversion;
@@ -110,15 +111,14 @@ pub use crate::function::Function;
 pub use crate::hook::{Debug, DebugEvent, DebugNames, DebugSource, DebugStack};
 pub use crate::lua::{GCMode, Lua, LuaOptions};
 pub use crate::multi::Variadic;
-pub use crate::conversion::{UserDataFromLua, UserDataToLua};
-pub use crate::scope::{LuaScope, LuaWeak, GlueError};
+pub use crate::scope::{LuaScope, RefError};
 pub use crate::stdlib::StdLib;
 pub use crate::string::String;
 pub use crate::table::{Table, TableExt, TablePairs, TableSequence};
 pub use crate::thread::{Thread, ThreadStatus};
 pub use crate::types::{Integer, LightUserData, Number, RegistryKey};
 pub use crate::userdata::{
-    AnyUserData, MetaMethod, UserData, UserDataFields, UserDataMetatable, UserDataMethods,
+    AnyUserData, MetaMethod, UserData, UserDataFields, UserDataMetatable, UserDataMethods, UserDataCell, Ref, RefMut
 };
 pub use crate::value::{FromLua, FromLuaMulti, MultiValue, Nil, ToLua, ToLuaMulti, Value};
 
@@ -129,8 +129,12 @@ pub use crate::hook::HookTriggers;
 pub use crate::thread::AsyncThread;
 
 #[cfg(feature = "macro")]
-pub mod impl_macro {
-    pub use apollo_macro::*;
+pub mod macros {
+    pub use apollo_macro::lua_impl;
+    pub use apollo_macro::lua_field;
+    pub use apollo_macro::lua_method;
+    pub use apollo_macro::to_lua;
+    pub use apollo_macro::from_lua;
 }
 
 #[cfg(feature = "serialize")]

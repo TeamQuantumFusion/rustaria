@@ -1,6 +1,7 @@
 use std::{any::type_name, fmt::Display};
+use anyways::ext::AuditExt;
 
-use eyre::{Context, Result};
+use anyways::Result;
 use apollo::{FromLua, Lua, LuaSerdeExt, Table, ToLua};
 use serde::Deserialize;
 use crate::ty::identifier::Identifier;

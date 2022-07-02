@@ -9,7 +9,9 @@ use std::result::Result as StdResult;
 use std::str::Utf8Error;
 use std::string::String as StdString;
 use std::sync::Arc;
-use eyre::{ErrReport, Report};
+use anyways::audit::{Audit, AuditError, AuditSection, AuditSectionEntry};
+use owo_colors::{AnsiColors, DynColors};
+use crate::RefError;
 
 /// Error type returned by `mlua` methods.
 #[derive(Debug, Clone)]
@@ -111,6 +113,11 @@ pub enum Error {
     /// [`AnyUserData`]: crate::AnyUserData
     /// [`UserDataMethods`]: crate::UserDataMethods
     UserDataTypeMismatch(&'static str),
+    /// When a type is not what it was expected to be
+    WrongType {
+        expected: &'static str,
+        received: &'static str,
+    },
     /// An [`AnyUserData`] borrow failed because it has been destructed.
     ///
     /// This error can happen either due to to being destructed in a previous __gc, or due to being
@@ -157,7 +164,7 @@ pub enum Error {
         /// Lua call stack backtrace.
         traceback: StdString,
         /// Original error returned by the Rust code.
-        cause: Arc<Error>,
+        cause: Arc<Audit>,
     },
     /// A Rust panic that was previously resumed, returned again.
     ///
@@ -181,7 +188,8 @@ pub enum Error {
     /// from which the original error (and a stack traceback) can be recovered.
     ExternalError(Arc<dyn StdError + Send + Sync>),
     LuaUnavailable,
-    Report(Arc<Report>)
+    RefError(RefError),
+    Audit(Arc<Audit>)
 }
 
 /// A specialized `Result` type used by `mlua`'s API.
@@ -256,24 +264,32 @@ impl fmt::Display for Error {
                 writeln!(fmt, "callback error")?;
                 // Trace errors down to the root
                 let (mut cause, mut full_traceback) = (cause, None);
-                while let Error::CallbackError { cause: ref cause2, traceback: ref traceback2 } = **cause {
+                while let Some(Error::CallbackError { cause: cause2, traceback: traceback2 }) = cause.downcast_ref::<Error>() {
                     cause = cause2;
                     full_traceback = Some(traceback2);
                 }
+
+                use std::fmt::Write;
+                let mut stacktrace = String::new();
                 if let Some(full_traceback) = full_traceback {
+                    writeln!(&mut stacktrace, "{full_traceback}")?;
                     let traceback = traceback.trim_start_matches("stack traceback:");
                     let traceback = traceback.trim_start().trim_end();
                     // Try to find local traceback within the full traceback
                     if let Some(pos) = full_traceback.find(traceback) {
-                        write!(fmt, "{}", &full_traceback[..pos])?;
-                        writeln!(fmt, ">{}", &full_traceback[pos..].trim_end())?;
+                        write!(&mut stacktrace, "{}", &full_traceback[..pos])?;
+                        writeln!(&mut stacktrace, ">{}", &full_traceback[pos..].trim_end())?;
                     } else {
-                        writeln!(fmt, "{}", full_traceback.trim_end())?;
+                        writeln!(&mut stacktrace, "{}", full_traceback.trim_end())?;
                     }
                 } else {
-                    writeln!(fmt, "{}", traceback.trim_end())?;
+                    writeln!(&mut stacktrace, "{}", traceback.trim_end())?;
                 }
-                write!(fmt, "caused by: {}", cause)
+
+                for err in &cause.errors {
+                    writeln!(&mut stacktrace, "  [rust]: {}", err.to_string().trim_end())?
+                }
+                write!(fmt, "{}", stacktrace)
             }
             Error::PreviouslyResumedPanic => {
                 write!(fmt, "previously resumed panic returned again")
@@ -287,9 +303,16 @@ impl fmt::Display for Error {
                 write!(fmt, "deserialize error: {}", err)
             },
             Error::ExternalError(ref err) => write!(fmt, "{}", err),
+            Error::WrongType { expected, received } => {
+                write!(fmt, "Wrong type, Expected {expected} but got {received}")
+            }
             Error::LuaUnavailable => write!(fmt, "lua unavailable"),
-            Error::Report(ref report) => {
-                write!(fmt, "{}", report)
+            Error::Audit(ref report) => {
+                writeln!(fmt, "{:?}", report)?;
+                Ok(())
+            }
+            Error::RefError(ref err) => {
+                write!(fmt, "{}", err)
             }
         }
     }
@@ -312,6 +335,64 @@ impl StdError for Error {
 impl Error {
     pub fn external<T: Into<Box<dyn StdError + Send + Sync>>>(err: T) -> Error {
         Error::ExternalError(err.into().into())
+    }
+
+    pub fn report(self) -> Audit {
+        match self {
+            Error::CallbackError {
+                traceback, cause
+            } => {
+                let (mut cause, mut full_traceback) = (cause, None);
+
+                let mut cause = &cause;
+                while let Some(Error::CallbackError { cause: cause2, traceback: traceback2 }) = cause.downcast_ref::<Error>() {
+                    cause = cause2;
+                    full_traceback = Some(traceback2);
+                }
+
+                let mut audit = Audit {
+                    backtrace: cause.backtrace.clone(),
+                    errors: cause.errors.iter().map(|v| {
+                        AuditError {
+                            error: format!("{}", v.error).into(),
+                            location: v.location.clone()
+                        }
+                    }).collect(),
+                    custom_sections: cause.custom_sections.clone(),
+                };
+
+                let mut section = AuditSection {
+                    name: "Lua Stacktrace".to_string(),
+                    color: DynColors::Ansi(AnsiColors::Blue),
+                    entries: vec![]
+                };
+
+                for msg in traceback.trim_end().split("\n") {
+                    let string = msg.replace("\t", "    ");
+                    if string != "stack traceback:" {
+                        section.entries.push(AuditSectionEntry::text(string));
+                    }
+                }
+                audit.custom_sections.push(section);
+
+                audit
+            }
+            Error::Audit(audit) => {
+                Audit {
+                    backtrace: audit.backtrace.clone(),
+                    errors: audit.errors.iter().map(|v| {
+                        AuditError {
+                            error: format!("{}", v.error).into(),
+                            location: v.location.clone()
+                        }
+                    }).collect(),
+                    custom_sections: audit.custom_sections.clone(),
+                }
+            }
+            error => {
+                Audit::new(error)
+            }
+        }
     }
 }
 
@@ -356,9 +437,15 @@ impl From<Utf8Error> for Error {
     }
 }
 
-impl From<Report> for Error {
-    fn from(err: Report) -> Self {
-        Error::Report(Arc::new(err))
+impl From<Audit> for Error {
+    fn from(err: Audit) -> Self {
+        Error::Audit(Arc::new(err))
+    }
+}
+
+impl From<RefError> for Error {
+    fn from(err: RefError) -> Self {
+        Error::RefError(err)
     }
 }
 

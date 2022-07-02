@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::api::prototype::Prototype;
-use apollo::impl_macro::*;
+use apollo::macros::*;
 
 /// The internal id is a instance bound identifier to the registry,
 /// absolutely not forward/backwards compatible across versions or even game instances.
@@ -38,6 +38,9 @@ impl<P: Prototype> Id<P> {
 	}
 }
 
+unsafe impl<P> Send for Id<P> {
+
+}
 impl<P> Hash for Id<P> {
 	fn hash<H: Hasher>(&self, state: &mut H) { self.id.hash(state) }
 }

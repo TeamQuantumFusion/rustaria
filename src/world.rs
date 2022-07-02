@@ -1,5 +1,6 @@
+use anyways::ext::AuditExt;
 use chunk::{block::BlockDesc, layer::BlockLayer};
-use eyre::{Result, WrapErr};
+use anyways::Result;
 use hecs::Entity;
 
 use crate::{
@@ -51,7 +52,7 @@ impl World {
 		})
 	}
 
-	pub fn tick(&mut self, api: &Api, debug: &mut impl DebugRendererImpl) -> eyre::Result<()> {
+	pub fn tick(&mut self, api: &Api, debug: &mut impl DebugRendererImpl) -> Result<()> {
 		for (pos, layer_id, block_id) in self.spreader.tick(api, &mut self.chunks, debug) {
 			self.place_block(api, pos, layer_id, block_id);
 		}

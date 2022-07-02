@@ -9,7 +9,7 @@ use crate::{
 };
 use crate::api::luna::table::LunaTable;
 use crate::api::util::lua_table;
-use crate::ty::block_pos::BlockPos;
+use apollo::macros::*;
 
 // ======================================== POSITION ========================================
 #[derive(
@@ -92,7 +92,7 @@ impl<X: ToPrimitive, Y: ToPrimitive> TryFrom<(X, Y)> for ChunkPos {
 }
 
 impl ToLua for ChunkPos {
-	fn to_lua(self, lua: &Lua) -> eyre::Result<Value> {
+	fn to_lua(self, lua: &Lua) -> anyways::Result<Value> {
 		Ok(Value::Table(
 			lua.create_table_from([("x", self.x), ("y", self.y)])?,
 		))
@@ -100,7 +100,8 @@ impl ToLua for ChunkPos {
 }
 
 impl FromLua for ChunkPos {
-	fn from_lua(lua_value: Value, lua: &Lua) -> eyre::Result<Self> {
+	#[from_lua(shape(x: u32, y: u32))]
+	fn from_lua(lua_value: Value, lua: &Lua) -> anyways::Result<Self> {
 		let table = LunaTable {
 			lua,
 			table: lua_table(lua_value)?,

@@ -2,7 +2,7 @@ use std::collections::hash_set::Iter;
 
 use fxhash::{FxHashMap, FxHashSet};
 
-use apollo::impl_macro::*;
+use apollo::macros::*;
 use crate::{Chunk, ChunkPos};
 
 #[derive(Clone)]

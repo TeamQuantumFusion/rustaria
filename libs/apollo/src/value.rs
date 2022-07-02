@@ -17,6 +17,27 @@ use crate::thread::Thread;
 use crate::types::{Integer, LightUserData, Number};
 use crate::userdata::AnyUserData;
 
+// #[derive(Debug)]
+// pub struct WrongType;
+//
+macro_rules! try_into {
+    ($ITEM:ident => $TY:ty) => {
+        impl TryInto<$TY> for Value {
+            type Error = crate::error::Error;
+            fn try_into(self) -> StdResult<$TY, crate::error::Error> {
+                if let Value::$ITEM(value) = self {
+                    return Ok(value)
+                } else {
+                    Err(Error::WrongType  {
+                        expected: stringify!($ITEM),
+                        received: self.type_name()
+                    })
+                }
+            }
+        }
+    };
+}
+
 /// A dynamically typed Lua value. The `String`, `Table`, `Function`, `Thread`, and `UserData`
 /// variants contain handle types into the internal Lua state. It is a logic error to mix handle
 /// types between separate `Lua` instances, and doing so will result in a panic.
@@ -51,8 +72,18 @@ pub enum Value {
     Error(Error),
 }
 
-pub use self::Value::Nil;
+try_into!(Boolean => bool);
+try_into!(LightUserData => LightUserData);
+try_into!(Integer => Integer);
+try_into!(Number => Number);
+try_into!(String => String);
+try_into!(Table => Table);
+try_into!(Function => Function);
+try_into!(Thread => Thread);
+try_into!(UserData => AnyUserData);
+try_into!(Error => Error);
 
+pub use self::Value::Nil;
 impl Value {
     pub const fn type_name(&self) -> &'static str {
         match *self {
@@ -80,7 +111,7 @@ impl Value {
     /// The first value is checked first. If that value does not define a metamethod
     /// for `__eq`, then mlua will check the second value.
     /// Then mlua calls the metamethod with the two values as arguments, if found.
-    pub fn equals<T: AsRef<Self>>(&self, other: T) -> Result<bool> {
+    pub fn equals<T: AsRef<Self>>(&self, other: T) -> anyways::Result<bool> {
         match (self, other.as_ref()) {
             (Value::Table(a), Value::Table(b)) => a.equals(b),
             (Value::UserData(a), Value::UserData(b)) => a.equals(b),
@@ -145,13 +176,16 @@ impl Serialize for Value {
 /// Trait for types convertible to `Value`.
 pub trait ToLua {
     /// Performs the conversion.
-    fn to_lua(self, lua: &Lua) -> eyre::Result<Value>;
+    fn to_lua(self, lua: &Lua) -> anyways::Result<Value>;
 }
+
+#[cfg(feature = "macro")]
+pub use apollo_macro::FromLua;
 
 /// Trait for types convertible from `Value`.
 pub trait FromLua: Sized {
     /// Performs the conversion.
-    fn from_lua(lua_value: Value, lua: &Lua) -> eyre::Result<Self>;
+    fn from_lua(lua_value: Value, lua: &Lua) -> anyways::Result<Self>;
 }
 
 /// Multiple Lua values used for both argument passing and also for multiple return values.
@@ -263,8 +297,8 @@ impl MultiValue {
     #[inline]
     pub(crate) fn refill(
         &mut self,
-        iter: impl IntoIterator<Item = eyre::Result<Value>>,
-    ) -> eyre::Result<()> {
+        iter: impl IntoIterator<Item = anyways::Result<Value>>,
+    ) -> anyways::Result<()> {
         self.0.clear();
         for value in iter {
             self.0.push(value?);
@@ -280,7 +314,7 @@ impl MultiValue {
 /// one. Any type that implements `ToLua` will automatically implement this trait.
 pub trait ToLuaMulti {
     /// Performs the conversion.
-    fn to_lua_multi(self, lua: &Lua) -> eyre::Result<MultiValue>;
+    fn to_lua_multi(self, lua: &Lua) -> anyways::Result<MultiValue>;
 }
 
 /// Trait for types that can be created from an arbitrary number of Lua values.
@@ -294,5 +328,5 @@ pub trait FromLuaMulti: Sized {
     /// values should be ignored. This reflects the semantics of Lua when calling a function or
     /// assigning values. Similarly, if not enough values are given, conversions should assume that
     /// any missing values are nil.
-    fn from_lua_multi(values: MultiValue, lua: &Lua) -> eyre::Result<Self>;
+    fn from_lua_multi(values: MultiValue, lua: &Lua) -> anyways::Result<Self>;
 }

@@ -1,5 +1,6 @@
-use apollo::{FromLua, Lua, Table, ToLua, Value};
-use eyre::ContextCompat;
+use anyways::audit::Audit;
+use anyways::Result;
+use apollo::{macros::*, FromLua, Lua, Table, ToLua, Value};
 
 use crate::{
 	api::{luna::table::LunaTable, util::lua_table},
@@ -75,7 +76,7 @@ impl Offset<(i8, i8)> for BlockLayerPos {
 }
 
 impl ToLua for BlockLayerPos {
-	fn to_lua(self, lua: &Lua) -> eyre::Result<Value> {
+	fn to_lua(self, lua: &Lua) -> anyways::Result<Value> {
 		Ok(Value::Table(
 			lua.create_table_from([("x", self.x()), ("y", self.y())])?,
 		))
@@ -83,13 +84,13 @@ impl ToLua for BlockLayerPos {
 }
 
 impl FromLua for BlockLayerPos {
-	fn from_lua(lua_value: Value, lua: &Lua) -> eyre::Result<Self> {
+	fn from_lua(lua_value: Value, lua: &Lua) -> anyways::Result<Self> {
 		let table = LunaTable {
 			lua,
 			table: lua_table(lua_value)?,
 		};
 
 		BlockLayerPos::try_new(table.get("x")?, table.get("y")?)
-			.wrap_err("BlockLayerPos is out of bounds.")
+			.ok_or_else(|| Audit::new("BlockLayerPos is out of bounds."))
 	}
 }

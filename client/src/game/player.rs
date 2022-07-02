@@ -1,9 +1,11 @@
 use std::collections::VecDeque;
+use anyways::ext::AuditExt;
 
 use euclid::{vec2, Vector2D};
-use eyre::{ContextCompat, Result};
 use glfw::{Action, Key, MouseButton, WindowEvent};
 use hecs::{Component, Entity, Ref};
+use anyways::Result;
+
 use rustaria::{
 	api::Api,
 	debug::DummyRenderer,

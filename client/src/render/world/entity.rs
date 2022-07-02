@@ -1,18 +1,19 @@
 use std::collections::HashSet;
 
 use euclid::{Rect, Vector2D};
-use eyre::Result;
 use glium::{uniform, Blend, DrawParameters, Program};
 use rustaria::{
-	api::{luna::table::LunaTable, prototype::Prototype},
+	api::{prototype::Prototype},
 	ty::{identifier::Identifier, WS},
-	util::blake3::Hasher,
 	world::entity::{
 		component::{PhysicsComponent, PositionComponent, PrototypeComponent},
 		EntityWorld,
 	},
 };
-use tracing::error_span;
+
+use apollo::{FromLua, Lua, Value, macros::*};
+use rustaria::api::util::lua_table;
+use anyways::Result;
 
 use crate::{
 	render::{
@@ -100,6 +101,8 @@ impl EntityRenderer {
 	}
 }
 
+
+#[derive(Debug)]
 pub struct EntityRendererPrototype {
 	pub image: Identifier,
 	pub panel: Rect<f32, WS>,
@@ -122,9 +125,11 @@ impl Prototype for EntityRendererPrototype {
 	type Output = EntityRenderer;
 
 	fn get_name() -> &'static str { "entity_renderer" }
+}
 
-	fn from_lua(table: LunaTable) -> Result<Self> {
-		let _span = error_span!(target: "lua", "entity_renderer").entered();
+impl FromLua for EntityRendererPrototype {
+	fn from_lua(lua_value: Value, lua: &Lua) -> Result<Self> {
+		let table = lua_table(lua_value)?;
 		Ok(EntityRendererPrototype {
 			image: table.get("image")?,
 			panel: table.get_ser("panel")?,

@@ -1,68 +1,38 @@
 use proc_macro2::{TokenStream};
 use quote::{quote, ToTokens, TokenStreamExt};
-use syn::{punctuated::Punctuated, Signature, Token};
+use syn::{ImplItemMethod, punctuated::Punctuated, Token};
 
 use crate::{
 	attr::MethodAttr,
-	values::{ValueManager},
 };
+use crate::lua_impl::values::ValueManager;
 
-pub(crate) fn bind_method(sig: &Signature, attr: MethodAttr) -> TokenStream {
+pub(crate) fn bind_method(item: &ImplItemMethod, attr: MethodAttr) -> TokenStream {
 	let mut manager = ValueManager::new(false);
 
 	// Scan inputs
-	let inputs: Punctuated<TokenStream, Token!(,)> = sig
+	let inputs: Punctuated<TokenStream, Token!(,)> = item.sig
 		.inputs
 		.iter()
 		.map(|input| manager.unwrap_input(input))
 		.collect();
 
-
 	// Create the "run" this is what actually gets run in the closure
-	let target_name = &sig.ident;
+	let target_name = &item.sig.ident;
 
-	let wrapped_return = manager.wrap_return(&sig.output, quote!(Self::#target_name(#inputs)));
-	let run = quote!(unsafe { #wrapped_return });
+	let wrapped_return = manager.wrap_return(&item.sig.output, quote!(Self::#target_name(#inputs)));
+	let parameter_mappers = &manager.parameter_mappers;
+
+	let run = quote!(unsafe { #parameter_mappers #wrapped_return });
 
 	// Determine what kind of binding we are making
-	let lua_name = attr.lua_name.unwrap_or_else(|| sig.ident.to_string());
-	let binding = MethodBinding::new( lua_name);
-
+	let lua_name = attr.lua_name.unwrap_or_else(|| item.sig.ident.to_string());
+	let binding = MethodBinding::new(lua_name);
 
 	binding.register(&mut manager, run)
 }
 
-// fn add_method<S, A, R, M>(&mut self, name: &S, method: M)
-// 		M: 'static + MaybeSend + Fn(&Lua, &T, A) -> eyre::Result<R>;
-//
-// fn add_meta_method<S, A, R, M>(&mut self, meta: S, method: M)
-// 		M: 'static + MaybeSend + Fn(&Lua, &T, A) -> eyre::Result<R>;
-//
-
-// fn add_method_mut<S, A, R, M>(&mut self, name: &S, method: M)
-// 		M: 'static + MaybeSend + FnMut(&Lua, &mut T, A) -> eyre::Result<R>;
-//
-// fn add_meta_method_mut<S, A, R, M>(&mut self, meta: S, method: M)
-// 		M: 'static + MaybeSend + FnMut(&Lua, &mut T, A) -> eyre::Result<R>;
-//
-
-// fn add_function<S, A, R, F>(&mut self, name: &S, function: F)
-// 		F: 'static + MaybeSend + Fn(&Lua, A) -> eyre::Result<R>;
-//
-// fn add_meta_function<S, A, R, F>(&mut self, meta: S, function: F)
-// 		F: 'static + MaybeSend + Fn(&Lua, A) -> eyre::Result<R>;
-//
-
-// fn add_function_mut<S, A, R, F>(&mut self, name: &S, function: F)
-// 		F: 'static + MaybeSend + FnMut(&Lua, A) -> eyre::Result<R>;
-//
-// fn add_meta_function_mut<S, A, R, F>(&mut self, meta: S, function: F)
-// 		F: 'static + MaybeSend + FnMut(&Lua, A) -> eyre::Result<R>;
 enum MethodBinding {
-	//AddMethod(String),
-	//AddMethodMeta(MetaMethod),
-	//AddMethodMut(String),
-	//AddMethodMutMeta(MetaMethod),
 	AddFunctionMut(String),
 	AddFunctionMutMeta(MetaMethod),
 }
@@ -72,19 +42,9 @@ impl MethodBinding {
 		match MetaMethod::new(&lua_name) {
 			None => {
 				MethodBinding::AddFunctionMut(lua_name)
-				//match receiver {
-				//	None => MethodBinding::AddFunctionMut(lua_name),
-				//	Some(Receiver::Immutable) => MethodBinding::AddMethod(lua_name),
-				//	Some(Receiver::Mutable) => MethodBinding::AddMethodMut(lua_name),
-				//}
 			}
 			Some(meta) => {
 				MethodBinding::AddFunctionMutMeta(meta)
-				//match receiver {
-				//	None => MethodBinding::AddFunctionMutMeta(meta),
-				//	Some(Receiver::Immutable) => MethodBinding::AddMethodMeta(meta),
-				//	Some(Receiver::Mutable) => MethodBinding::AddMethodMutMeta(meta),
-				//}
 			}
 		}
 	}
@@ -94,18 +54,6 @@ impl MethodBinding {
 		let types = &value.closure_types;
 		let args = quote!((#names): (#types));
 		match self {
-			//MethodBinding::AddMethod(value) => {
-			//	quote!(methods.add_method(#value, |lua, this, #args| #run);)
-			//}
-			//MethodBinding::AddMethodMeta(value) => {
-			//	quote!(methods.add_meta_method(#value, |lua, this, #args| #run);)
-			//}
-			//MethodBinding::AddMethodMut(value) => {
-			//	quote!(methods.add_method_mut(#value, |lua, this, #args| #run);)
-			//}
-			//MethodBinding::AddMethodMutMeta(value) => {
-			//	quote!(methods.add_meta_method_mut(#value, |lua, this, #args| #run);)
-			//}
 			MethodBinding::AddFunctionMut(value) => {
 				quote!(methods.add_function_mut(#value, |lua, #args| #run);)
 			}

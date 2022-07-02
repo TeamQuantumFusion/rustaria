@@ -1,16 +1,20 @@
 use hecs::{BuiltEntityClone, EntityBuilderClone};
-use tracing::{error_span, info};
+use tracing::{info};
+use apollo::{FromLua, Lua, Value};
 
 use crate::{
-	api::{luna::table::LunaTable, prototype::Prototype},
+	api::{prototype::Prototype},
 	ty::id::Id,
 	world::entity::component::{
 		CollisionComponent, GravityComponent, HumanoidComponent, PhysicsComponent,
 		PositionComponent, PrototypeComponent,
 	},
 };
-use apollo::impl_macro::*;
+use apollo::macros::*;
+use crate::api::util::lua_table;
+use anyways::Result;
 
+#[derive(Clone)]
 pub struct EntityDesc {
 	pub template: BuiltEntityClone,
 }
@@ -55,9 +59,11 @@ impl Prototype for EntityPrototype {
 	type Output = EntityDesc;
 
 	fn get_name() -> &'static str { "entity" }
+}
 
-	fn from_lua(table: LunaTable) -> eyre::Result<Self> {
-		let _span = error_span!(target: "lua", "entity").entered();
+impl FromLua for EntityPrototype {
+	fn from_lua(lua_value: Value, lua: &Lua) -> Result<Self> {
+		let table = lua_table(lua_value)?;
 		Ok(EntityPrototype {
 			position: table.get_ser("position")?,
 			velocity: table.get_ser("velocity")?,

@@ -1,12 +1,13 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 use syn::punctuated::Punctuated;
-use syn::{Signature, Token};
-use crate::{FieldAttr, MethodAttr};
+use syn::{ImplItemMethod, Token};
+use crate::{FieldAttr};
 use crate::attr::FieldBindKind;
-use crate::values::ValueManager;
+use crate::lua_impl::values::{Receiver, ValueManager};
 
-pub(crate) fn bind_field(sig: &Signature, attr: FieldAttr) -> TokenStream {
+pub(crate) fn bind_field(method: &ImplItemMethod, attr: FieldAttr) -> TokenStream {
+	let sig = &method.sig;
 	let mut manager = ValueManager::new(true);
 
 	manager.add_local(Ident::new("v0", Span::call_site()), None);
@@ -23,7 +24,23 @@ pub(crate) fn bind_field(sig: &Signature, attr: FieldAttr) -> TokenStream {
 	let target_name = &sig.ident;
 
 	let wrapped_return = manager.wrap_return(&sig.output, quote!(Self::#target_name(#inputs)));
-	let run = quote!(unsafe { let v0 = this.borrow::<apollo::LuaWeak<Self>>()?; #wrapped_return });
+
+	let parameter_mappers = &manager.parameter_mappers;
+
+
+	let conversion = if let Some(receiver) = &manager.receiver {
+		match receiver {
+			Receiver::Mutable => {
+				quote!(this.get_mut("self")?)
+			}
+			Receiver::Immutable => {
+				quote!(this.get("self")?)
+			}
+		}
+	} else {
+		panic!("Field getter needs receiver")
+	};
+	let run = quote!(unsafe { let this = this.get_cell::<Self>()?; let v0 = #conversion; #parameter_mappers; #wrapped_return });
 
 	// Determine what kind of binding we are making
 	let lua_name = attr.lua_name.unwrap_or_else(|| sig.ident.to_string());
@@ -36,6 +53,7 @@ pub(crate) fn bind_field(sig: &Signature, attr: FieldAttr) -> TokenStream {
 			if !names.is_empty() {
 				panic!("Cannot have arguments on a field getter")
 			}
+
 			quote!(fields.add_field_function_get(#lua_name, |lua, this| #run);)
 		}
 		FieldBindKind::Setter => {

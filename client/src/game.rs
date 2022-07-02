@@ -1,17 +1,19 @@
-use eyre::{Result, WrapErr};
+use anyways::ext::AuditExt;
+use anyways::Result;
 use glfw::WindowEvent;
 use glium::Frame;
+
 use rustaria::{
-	network::{new_networking, packet::ClientBoundPacket, ClientNetwork},
+	network::{ClientNetwork, new_networking, packet::ClientBoundPacket},
 	player::ServerBoundPlayerPacket,
-	world::{chunk::storage::ChunkStorage, World},
 	Server,
+	world::{chunk::storage::ChunkStorage, World},
 };
 
 use crate::{
-	game::world::ClientWorld,
-	render::{ty::viewport::Viewport, world::WorldRenderer},
-	ClientApi, Debug, Frontend, PlayerSystem, Timing,
+	ClientApi,
+	Debug,
+	Frontend, game::world::ClientWorld, PlayerSystem, render::{ty::viewport::Viewport, world::WorldRenderer}, Timing,
 };
 
 mod network;

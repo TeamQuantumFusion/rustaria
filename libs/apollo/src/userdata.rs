@@ -1,5 +1,6 @@
-use std::any::{type_name, TypeId};
-use std::cell::{Ref, RefCell, RefMut};
+use std::any::{Any, type_name, TypeId};
+use std::borrow::Borrow;
+use std::cell::{UnsafeCell};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
@@ -8,7 +9,10 @@ use std::string::String as StdString;
 
 #[cfg(feature = "async")]
 use std::future::Future;
-use eyre::{Report, WrapErr};
+use std::rc::Rc;
+use std::rc::Weak;
+use anyways::audit::Audit;
+use anyways::ext::AuditExt;
 
 #[cfg(feature = "serialize")]
 use {
@@ -17,11 +21,11 @@ use {
 };
 
 use crate::error::{Error, Result};
-use crate::{ffi, Value};
+use crate::{ffi, RefError, Value};
 use crate::function::Function;
 use crate::lua::Lua;
 use crate::table::{Table, TablePairs};
-use crate::types::{Callback, LuaRef, MaybeSend};
+use crate::types::{Callback, LuaPointer, MaybeSend};
 use crate::util::{check_stack, get_userdata, take_userdata, StackGuard};
 use crate::value::{FromLua, FromLuaMulti, ToLua, ToLuaMulti};
 
@@ -302,7 +306,7 @@ pub trait UserDataMethods<T: UserData> {
         S: AsRef<[u8]> + ?Sized,
         A: FromLuaMulti,
         R: ToLuaMulti,
-        M: 'static + MaybeSend + Fn(&Lua, &T, A) -> eyre::Result<R>;
+        M: 'static + MaybeSend + Fn(&Lua, Ref<T>, A) -> anyways::Result<R>;
 
     /// Add a regular method which accepts a `&mut T` as the first parameter.
     ///
@@ -314,7 +318,7 @@ pub trait UserDataMethods<T: UserData> {
         S: AsRef<[u8]> + ?Sized,
         A: FromLuaMulti,
         R: ToLuaMulti,
-        M: 'static + MaybeSend + FnMut(&Lua, &mut T, A) -> eyre::Result<R>;
+        M: 'static + MaybeSend + FnMut(&Lua, RefMut<T>, A) -> anyways::Result<R>;
 
     /// Add an async method which accepts a `T` as the first parameter and returns Future.
     /// The passed `T` is cloned from the original value.
@@ -333,7 +337,7 @@ pub trait UserDataMethods<T: UserData> {
         A: FromLuaMulti,
         R: ToLuaMulti,
         M: 'static + MaybeSend + Fn(&Lua, T, A) -> MR,
-        MR: Future<Output = eyre::Result<R>>;
+        MR: Future<Output = anyways::Result<R>>;
 
     /// Add a regular method as a function which accepts generic arguments, the first argument will
     /// be a [`AnyUserData`] of type `T` if the method is called with Lua method syntax:
@@ -350,7 +354,7 @@ pub trait UserDataMethods<T: UserData> {
         S: AsRef<[u8]> + ?Sized,
         A: FromLuaMulti,
         R: ToLuaMulti,
-        F: 'static + MaybeSend + Fn(&Lua, A) -> eyre::Result<R>;
+        F: 'static + MaybeSend + Fn(&Lua, A) -> anyways::Result<R>;
 
     /// Add a regular method as a mutable function which accepts generic arguments.
     ///
@@ -362,7 +366,7 @@ pub trait UserDataMethods<T: UserData> {
         S: AsRef<[u8]> + ?Sized,
         A: FromLuaMulti,
         R: ToLuaMulti,
-        F: 'static + MaybeSend + FnMut(&Lua, A) -> eyre::Result<R>;
+        F: 'static + MaybeSend + FnMut(&Lua, A) -> anyways::Result<R>;
 
     /// Add a regular method as an async function which accepts generic arguments
     /// and returns Future.
@@ -380,7 +384,7 @@ pub trait UserDataMethods<T: UserData> {
         A: FromLuaMulti,
         R: ToLuaMulti,
         F: 'static + MaybeSend + Fn(&Lua, A) -> FR,
-        FR: Future<Output = eyre::Result<R>>;
+        FR: Future<Output = anyways::Result<R>>;
 
     /// Add a metamethod which accepts a `&T` as the first parameter.
     ///
@@ -395,7 +399,7 @@ pub trait UserDataMethods<T: UserData> {
         S: Into<MetaMethod>,
         A: FromLuaMulti,
         R: ToLuaMulti,
-        M: 'static + MaybeSend + Fn(&Lua, &T, A) -> eyre::Result<R>;
+        M: 'static + MaybeSend + Fn(&Lua, Ref<T>, A) -> anyways::Result<R>;
 
     /// Add a metamethod as a function which accepts a `&mut T` as the first parameter.
     ///
@@ -410,7 +414,7 @@ pub trait UserDataMethods<T: UserData> {
         S: Into<MetaMethod>,
         A: FromLuaMulti,
         R: ToLuaMulti,
-        M: 'static + MaybeSend + FnMut(&Lua, &mut T, A) -> eyre::Result<R>;
+        M: 'static + MaybeSend + FnMut(&Lua, RefMut<T>, A) -> anyways::Result<R>;
 
     /// Add an async metamethod which accepts a `T` as the first parameter and returns Future.
     /// The passed `T` is cloned from the original value.
@@ -441,7 +445,7 @@ pub trait UserDataMethods<T: UserData> {
         S: Into<MetaMethod>,
         A: FromLuaMulti,
         R: ToLuaMulti,
-        F: 'static + MaybeSend + Fn(&Lua, A) -> eyre::Result<R>;
+        F: 'static + MaybeSend + Fn(&Lua, A) -> anyways::Result<R>;
 
     /// Add a metamethod as a mutable function which accepts generic arguments.
     ///
@@ -453,7 +457,7 @@ pub trait UserDataMethods<T: UserData> {
         S: Into<MetaMethod>,
         A: FromLuaMulti,
         R: ToLuaMulti,
-        F: 'static + MaybeSend + FnMut(&Lua, A) -> eyre::Result<R>;
+        F: 'static + MaybeSend + FnMut(&Lua, A) -> anyways::Result<R>;
 
     /// Add a metamethod which accepts generic arguments and returns Future.
     ///
@@ -511,7 +515,14 @@ pub trait UserDataFields<T: UserData> {
     where
         S: AsRef<[u8]> + ?Sized,
         R: ToLua,
-        M: 'static + MaybeSend + Fn(&Lua, &T) -> eyre::Result<R>;
+        M: 'static + MaybeSend + Fn(&Lua, Ref<T>) -> anyways::Result<R>;
+
+    fn add_field_method_get_mut<S, R, M>(&mut self, name: &S, method: M)
+        where
+            S: AsRef<[u8]> + ?Sized,
+            R: ToLua,
+            M: 'static + MaybeSend + FnMut(&Lua, RefMut<T>) -> anyways::Result<R>;
+
 
     /// Add a regular field setter as a method which accepts a `&mut T` as the first parameter.
     ///
@@ -519,12 +530,18 @@ pub trait UserDataFields<T: UserData> {
     /// accessed field. This allows them to be used with the expected `userdata.field = value` syntax.
     ///
     /// If `add_meta_method` is used to set the `__newindex` metamethod, the `__newindex` metamethod will
-    /// be used as a fall-back if no regular field is found.
+    /// be used as a fall-back if no regular field is found.X
     fn add_field_method_set<S, A, M>(&mut self, name: &S, method: M)
+        where
+            S: AsRef<[u8]> + ?Sized,
+            A: FromLua,
+            M: 'static + MaybeSend + Fn(&Lua, Ref<T>, A) -> anyways::Result<()>;
+
+    fn add_field_method_set_mut<S, A, M>(&mut self, name: &S, method: M)
     where
         S: AsRef<[u8]> + ?Sized,
         A: FromLua,
-        M: 'static + MaybeSend + FnMut(&Lua, &mut T, A) -> eyre::Result<()>;
+        M: 'static + MaybeSend + FnMut(&Lua, RefMut<T>, A) -> anyways::Result<()>;
 
     /// Add a regular field getter as a function which accepts a generic [`AnyUserData`] of type `T`
     /// argument.
@@ -537,7 +554,7 @@ pub trait UserDataFields<T: UserData> {
     where
         S: AsRef<[u8]> + ?Sized,
         R: ToLua,
-        F: 'static + MaybeSend + Fn(&Lua, AnyUserData) -> eyre::Result<R>;
+        F: 'static + MaybeSend + Fn(&Lua, AnyUserData) -> anyways::Result<R>;
 
     /// Add a regular field setter as a function which accepts a generic [`AnyUserData`] of type `T`
     /// first argument.
@@ -550,7 +567,7 @@ pub trait UserDataFields<T: UserData> {
     where
         S: AsRef<[u8]> + ?Sized,
         A: FromLua,
-        F: 'static + MaybeSend + FnMut(&Lua, AnyUserData, A) -> eyre::Result<()>;
+        F: 'static + MaybeSend + FnMut(&Lua, AnyUserData, A) -> anyways::Result<()>;
 
     /// Add a metamethod value computed from `f`.
     ///
@@ -563,7 +580,7 @@ pub trait UserDataFields<T: UserData> {
     fn add_meta_field_with<S, R, F>(&mut self, meta: S, f: F)
     where
         S: Into<MetaMethod>,
-        F: 'static + MaybeSend + Fn(&Lua) -> eyre::Result<R>,
+        F: 'static + MaybeSend + Fn(&Lua) -> anyways::Result<R>,
         R: ToLua;
 
     //
@@ -650,50 +667,176 @@ pub trait UserData: Sized {
 
     /// Adds custom methods and operators specific to this userdata.
     fn add_methods<M: UserDataMethods<Self>>(_methods: &mut M) {}
+
+    fn from_lua(value: Value, lua: &Lua) -> Option<anyways::Result<Self>> {
+        None
+    }
 }
 
 // Wraps UserData in a way to always implement `serde::Serialize` trait.
-pub(crate) struct UserDataCell<T>(RefCell<UserDataWrapped<T>>);
+pub enum UserDataCell<V: 'static + UserData> {
+    Owned {
+        value: Rc<dyn Any>,
+    },
+    Reference {
+        reference: *const V,
+        mutable: bool,
+        lock: Weak<dyn Any>,
+    },
+}
 
-impl<T> UserDataCell<T> {
-    #[inline]
-    pub(crate) fn new(data: T) -> Self {
-        UserDataCell(RefCell::new(UserDataWrapped::new(data)))
+impl<V: 'static + UserData> UserDataCell<V> {
+    pub fn new(value: V) -> UserDataCell<V> {
+        UserDataCell::Owned {
+            value: Rc::new(UnsafeCell::new(value))
+        }
     }
 
-    #[cfg(feature = "serialize")]
-    #[inline]
-    pub(crate) fn new_ser(data: T) -> Self
-    where
-        T: 'static + Serialize,
-    {
-        UserDataCell(RefCell::new(UserDataWrapped::new_ser(data)))
+    pub fn get(&self, local: &'static str) -> Result<Ref<V>> {
+        Ok(match self {
+            UserDataCell::Owned { value } =>
+            // SAFETY: because i said so
+                unsafe {
+                    Ref {
+                        lock: value.clone(),
+                        value: &*(Self::get_inner(value)?.get()),
+                    }
+                },
+            UserDataCell::Reference {
+                reference, lock, ..
+            } =>
+            // SAFETY: because i said so
+                unsafe {
+                    Ref {
+                        lock: lock.upgrade().ok_or(RefError::Dropped(local))?,
+                        value: &**reference,
+                    }
+                },
+        })
     }
 
-    // Immutably borrows the wrapped value.
-    #[inline]
-    pub(crate) fn try_borrow(&self) -> Result<Ref<T>> {
-        self.0
-            .try_borrow()
-            .map(|r| Ref::map(r, |r| r.deref()))
-            .map_err(|_| Error::UserDataBorrowError)
+    pub fn get_mut(&self, local: &'static str) -> Result<RefMut<V>> {
+        Ok(match self {
+            UserDataCell::Owned { value } =>
+            // SAFETY: because i said so
+                unsafe {
+                    RefMut {
+                        lock: value.clone(),
+                        value: &mut *(Self::get_inner(value)?.get()),
+                    }
+                },
+            UserDataCell::Reference {
+                reference,
+                mutable,
+                lock,
+            } =>
+                // SAFETY: because i said so
+                unsafe {
+                    if !*mutable {
+                        return Err(Error::RefError(RefError::Immutable(local)));
+                    }
+
+                    RefMut {
+                        lock: lock.upgrade().ok_or(RefError::Dropped(local))?,
+                        value:  &mut *(*reference as *mut V),
+                    }
+                },
+        })
     }
 
-    // Mutably borrows the wrapped value.
-    #[inline]
-    pub(crate) fn try_borrow_mut(&self) -> Result<RefMut<T>> {
-        self.0
-            .try_borrow_mut()
-            .map(|r| RefMut::map(r, |r| r.deref_mut()))
-            .map_err(|_| Error::UserDataBorrowMutError)
+    pub fn into_inner(self) -> Result<V> {
+        match self {
+            UserDataCell::Owned { value } => {
+                let value = Rc::downcast::<UnsafeCell<V>>(value).ok().ok_or_else(|| Error::UserDataTypeMismatch(type_name::<V>()))?;
+                let value = Rc::try_unwrap(value).ok().ok_or_else(|| Error::RefError(RefError::Locked))?;
+                Ok(value.into_inner())
+            }
+            UserDataCell::Reference { .. } => {
+                Err(Error::RefError(RefError::NotOwned))
+            }
+        }
     }
 
-    // Consumes this `UserDataCell`, returning the wrapped value.
-    #[inline]
-    fn into_inner(self) -> T {
-        self.0.into_inner().into_inner()
+
+    fn get_inner(value: &Rc<dyn Any>) -> Result<&UnsafeCell<V>> {
+        Ok(value.downcast_ref::<UnsafeCell<V>>().ok_or_else(|| Error::UserDataTypeMismatch(type_name::<V>()))?)
     }
 }
+
+impl<V: 'static + UserData> Clone for UserDataCell<V> {
+    fn clone(&self) -> Self {
+        match self {
+            UserDataCell::Owned { value } => {
+                UserDataCell::Owned {
+                    value: value.clone()
+                }
+            }
+            UserDataCell::Reference { reference, mutable, lock } => {
+                UserDataCell::Reference {
+                    reference: *reference,
+                    mutable: *mutable,
+                    lock: lock.clone()
+                }
+            }
+        }
+    }
+}
+
+// da locks
+pub struct Ref<'a, V> {
+    lock: Rc<dyn Any>,
+    value: &'a V,
+}
+
+impl<'a, V> Ref<'a, V> {
+    pub fn borrow(&self) -> &V {
+        self.value
+    }
+
+    pub fn map<O: 'static  + UserData>(&self, value_ref: &'a O) -> Result<UserDataCell<O>> {
+       self.map_inner(value_ref, false)
+    }
+
+    pub fn map_inner<O: 'static  + UserData>(&self, value_ref: &'a O, _mutable: bool) -> Result<UserDataCell<O>> {
+        Ok(UserDataCell::Reference {
+            reference: (value_ref as *const O as *mut O),
+            mutable: false,
+            lock: Rc::downgrade(&self.lock),
+        })
+    }
+}
+
+pub struct RefMut<'a, V> {
+    lock: Rc<dyn Any>,
+    value: &'a mut V,
+}
+
+impl<'a, V> RefMut<'a, V> {
+    pub fn borrow(&self) -> &V {
+        self.value
+    }
+
+    pub unsafe fn borrow_mut(&self) -> &mut V {
+        &mut *(self.borrow() as *const V as *mut V)
+    }
+
+    pub fn map<O: 'static + UserData>(&self, value_ref: &'a O) -> Result<UserDataCell<O>> {
+        self.map_inner(value_ref, false)
+    }
+
+    pub fn map_mut<O: 'static + UserData>(&self, value_ref: &'a O) -> Result<UserDataCell<O>> {
+        self.map_inner(value_ref, true)
+    }
+
+    pub fn map_inner<O: 'static + UserData>(&self, value_ref: &'a O, mutable: bool) -> Result<UserDataCell<O>> {
+        Ok(UserDataCell::Reference {
+            reference: (value_ref as *const O as *mut O),
+            mutable,
+            lock: Rc::downgrade(&self.lock),
+        })
+    }
+}
+
 
 pub(crate) enum UserDataWrapped<T> {
     Default(Box<T>),
@@ -784,7 +927,7 @@ impl Serialize for UserDataSerializeError {
 /// [`is`]: crate::AnyUserData::is
 /// [`borrow`]: crate::AnyUserData::borrow
 #[derive(Clone, Debug)]
-pub struct AnyUserData(pub(crate) LuaRef);
+pub struct AnyUserData(pub(crate) LuaPointer);
 
 impl AnyUserData {
     /// Checks whether the type of this userdata is `T`.
@@ -796,26 +939,8 @@ impl AnyUserData {
         }
     }
 
-    /// Borrow this userdata immutably if it is of type `T`.
-    ///
-    /// # Errors
-    ///
-    /// Returns a `UserDataBorrowError` if the userdata is already mutably borrowed. Returns a
-    /// `UserDataTypeMismatch` if the userdata is not of type `T`.
-    #[inline]
-    pub fn borrow<T: 'static + UserData>(&self) -> Result<Ref<T>> {
-        self.inspect(|cell| cell.try_borrow())
-    }
-
-    /// Borrow this userdata mutably if it is of type `T`.
-    ///
-    /// # Errors
-    ///
-    /// Returns a `UserDataBorrowMutError` if the userdata cannot be mutably borrowed.
-    /// Returns a `UserDataTypeMismatch` if the userdata is not of type `T`.
-    #[inline]
-    pub fn borrow_mut<T: 'static + UserData>(&self) -> Result<RefMut<T>> {
-        self.inspect(|cell| cell.try_borrow_mut())
+    pub fn get_cell<T: 'static + UserData>(&self) -> Result<UserDataCell<T>> {
+        self.inspect(|cell| Ok(cell.clone()))
     }
 
     /// Takes out the value of `UserData` and sets the special "destructed" metatable that prevents
@@ -832,7 +957,7 @@ impl AnyUserData {
             match type_id {
                 Some(type_id) if type_id == TypeId::of::<T>() => {
                     // Try to borrow userdata exclusively
-                    let _ = (*get_userdata::<UserDataCell<T>>(lua.state, -1)).try_borrow_mut()?;
+                    let _ = (*get_userdata::<UserDataCell<T>>(lua.state, -1)).get_mut("unknown")?;
 
                     // Clear associated user values
                     #[cfg(feature = "lua54")]
@@ -851,7 +976,7 @@ impl AnyUserData {
                         ffi::lua_setuservalue(state, -2);
                     })?;
 
-                    Ok(take_userdata::<UserDataCell<T>>(lua.state).into_inner())
+                    Ok(take_userdata::<UserDataCell<T>>(lua.state).into_inner()?)
                 }
                 _ => Err(Error::UserDataTypeMismatch(type_name::<T>())),
             }
@@ -878,7 +1003,7 @@ impl AnyUserData {
     /// [`set_user_value`]: #method.set_user_value
     /// [`get_nth_user_value`]: #method.get_nth_user_value
     #[inline]
-    pub fn get_user_value<V: FromLua>(&self) -> eyre::Result<V> {
+    pub fn get_user_value<V: FromLua>(&self) -> anyways::Result<V> {
         self.get_nth_user_value(1)
     }
 
@@ -946,9 +1071,9 @@ impl AnyUserData {
     /// For other Lua versions this functionality is provided using a wrapping table.
     ///
     /// [`set_nth_user_value`]: #method.set_nth_user_value
-    pub fn get_nth_user_value<V: FromLua>(&self, n: usize) -> eyre::Result<V> {
+    pub fn get_nth_user_value<V: FromLua>(&self, n: usize) -> anyways::Result<V> {
         if n < 1 || n > u16::MAX as usize {
-            return Err(Report::new(Error::RuntimeError(
+            return Err(Audit::new(Error::RuntimeError(
                 "user value index out of bounds".to_string(),
             )));
         }
@@ -1077,7 +1202,7 @@ impl AnyUserData {
         }
     }
 
-    pub(crate) fn equals<T: AsRef<Self>>(&self, other: T) -> Result<bool> {
+    pub(crate) fn equals<T: AsRef<Self>>(&self, other: T) -> anyways::Result<bool> {
         let other = other.as_ref();
         // Uses lua_rawequal() under the hood
         if self == other {
@@ -1118,7 +1243,7 @@ impl AnyUserData {
         }
     }
 
-    pub(crate) fn from_lua_impl(value: Value, _: &Lua) -> eyre::Result<AnyUserData> {
+    pub(crate) fn from_lua_impl(value: Value, _: &Lua) -> anyways::Result<AnyUserData> {
         match value {
             Value::UserData(ud) => Ok(ud),
             _ => Err(Error::FromLuaConversionError {
@@ -1129,7 +1254,7 @@ impl AnyUserData {
         }
     }
 
-    pub(crate) fn to_lua_impl(self, _: &Lua) -> eyre::Result<Value> {
+    pub(crate) fn to_lua_impl(self, _: &Lua) -> anyways::Result<Value> {
         Ok(Value::UserData(self))
     }
 
@@ -1164,7 +1289,7 @@ impl UserDataMetatable {
     ///
     /// If no value is associated to `key`, returns the `Nil` value.
     /// Access to restricted metamethods such as `__gc` or `__metatable` will cause an error.
-    pub fn get<K: Into<MetaMethod>, V: FromLua>(&self, key: K) -> eyre::Result<V> {
+    pub fn get<K: Into<MetaMethod>, V: FromLua>(&self, key: K) -> anyways::Result<V> {
         self.0.raw_get(key.into().validate()?.name())
     }
 
@@ -1212,7 +1337,7 @@ impl<V> Iterator for UserDataMetatablePairs<V>
 where
     V: FromLua,
 {
-    type Item = eyre::Result<(MetaMethod, V)>;
+    type Item = anyways::Result<(MetaMethod, V)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -1235,19 +1360,21 @@ impl Serialize for AnyUserData {
     where
         S: Serializer,
     {
-        let lua = &self.0.lua.required();
-        let data = unsafe {
-            let _sg = StackGuard::new(lua.state);
-            check_stack(lua.state, 3).map_err(ser::Error::custom)?;
-
-            lua.push_userdata_ref(&self.0).map_err(ser::Error::custom)?;
-            let ud = &*get_userdata::<UserDataCell<()>>(lua.state, -1);
-            ud.0.try_borrow()
-                .map_err(|_| ser::Error::custom(Error::UserDataBorrowError))?
-        };
-        match &*data {
-            UserDataWrapped::Default(_) => UserDataSerializeError.serialize(serializer),
-            UserDataWrapped::Serializable(ser) => ser.serialize(serializer),
-        }
+        panic!("Double check that the ignoring the lua operations is fine");
+        // UserDataSerializeError.serialize(serializer)
+        //let lua = &self.0.lua.required();
+        //let data = unsafe {
+        //    let _sg = StackGuard::new(lua.state);
+        //    check_stack(lua.state, 3).map_err(ser::Error::custom)?;
+//
+        //    lua.push_userdata_ref(&self.0).map_err(ser::Error::custom)?;
+        //    let ud = &*get_userdata::<UserDataCell<()>>(lua.state, -1);
+        //    ud.0.try_borrow()
+        //        .map_err(|_| ser::Error::custom(Error::UserDataBorrowError))?
+        //};
+        //match &*data {
+        //    UserDataWrapped::Default(_) => UserDataSerializeError.serialize(serializer),
+        //    UserDataWrapped::Serializable(ser) => ser.serialize(serializer),
+        //}
     }
 }

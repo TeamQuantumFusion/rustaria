@@ -1,5 +1,6 @@
 //! Holds our luna interface
-use eyre::{Result, WrapErr};
+use anyways::ext::AuditExt;
+use anyways::Result;
 use apollo::Lua;
 
 mod log;

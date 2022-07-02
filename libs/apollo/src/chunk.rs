@@ -122,7 +122,7 @@ impl<'a> Chunk<'a> {
     /// All global variables (including the standard library!) are looked up in `_ENV`, so it may be
     /// necessary to populate the environment in order for scripts using custom environments to be
     /// useful.
-    pub fn set_environment<V: ToLua>(mut self, env: V) -> Result<Self> {
+    pub fn set_environment<V: ToLua>(mut self, env: V) -> anyways::Result<Self> {
         // Prefer to propagate errors here and wrap to `Ok`
         let lua = self.lua.optional()?;
         self.env = Ok(Some(env.to_lua(&lua)?));
@@ -141,7 +141,7 @@ impl<'a> Chunk<'a> {
     /// Execute this chunk of code.
     ///
     /// This is equivalent to calling the chunk function with no arguments and no return values.
-    pub fn exec(self) -> Result<()> {
+    pub fn exec(self) -> anyways::Result<()> {
         self.call(())?;
         Ok(())
     }
@@ -166,7 +166,7 @@ impl<'a> Chunk<'a> {
     /// If the chunk can be parsed as an expression, this loads and executes the chunk and returns
     /// the value that it evaluates to. Otherwise, the chunk is interpreted as a block as normal,
     /// and this is equivalent to calling `exec`.
-    pub fn eval<R: FromLuaMulti>(self) -> Result<R> {
+    pub fn eval<R: FromLuaMulti>(self) -> anyways::Result<R> {
         // Bytecode is always interpreted as a statement.
         // For source code, first try interpreting the lua as an expression by adding
         // "return", then as a statement. This is the same thing the
@@ -205,8 +205,8 @@ impl<'a> Chunk<'a> {
     /// Load the chunk function and call it with the given arguments.
     ///
     /// This is equivalent to `into_function` and calling the resulting function.
-    pub fn call<A: ToLuaMulti, R: FromLuaMulti>(self, args: A) -> Result<R> {
-        self.into_function()?.call(args)
+    pub fn call<A: ToLuaMulti, R: FromLuaMulti>(self, args: A) -> anyways::Result<R> {
+       Ok (self.into_function()?.call(args)?)
     }
 
     /// Load the chunk function and asynchronously call it with the given arguments.

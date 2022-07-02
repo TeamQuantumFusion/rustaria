@@ -1,7 +1,7 @@
 use apollo::{Lua, MetaMethod, Table, Value};
 use tracing::{debug, error, info, trace, warn};
 
-pub fn register(lua: &Lua, globals: &Table) -> eyre::Result<()> {
+pub fn register(lua: &Lua, globals: &Table) -> anyways::Result<()> {
 	let log = lua.create_table()?;
 	log.insert("trace", lua.create_function(trace)?)?;
 	log.insert("debug", lua.create_function(debug)?)?;

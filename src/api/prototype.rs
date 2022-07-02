@@ -1,10 +1,10 @@
-use crate::{api::luna::table::LunaTable};
+use std::fmt::Debug;
+use apollo::{FromLua};
 
 pub trait Prototype
 where
-	Self: Sized + 'static + Send,
+	Self: Sized + 'static + Send + FromLua + Debug,
 {
 	type Output;
 	fn get_name() -> &'static str;
-	fn from_lua(table: LunaTable) -> eyre::Result<Self>;
 }

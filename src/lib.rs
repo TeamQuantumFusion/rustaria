@@ -1,6 +1,6 @@
 #![allow(clippy::new_without_default)]
 
-use eyre::{Context, Result};
+use anyways::ext::AuditExt;
 use semver::Version;
 use tracing::info;
 use ty::chunk_pos::ChunkPos;
@@ -16,6 +16,8 @@ use crate::{
 	player::PlayerSystem,
 	world::World,
 };
+use anyways::Result;
+
 
 pub mod api;
 pub mod debug;

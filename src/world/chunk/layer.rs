@@ -1,6 +1,8 @@
-use eyre::{ContextCompat, WrapErr};
+use anyways::ext::AuditExt;
+use anyways::Result;
 use apollo::prelude::LuaResult;
-use tracing::error_span;
+use tracing::{error_span, trace};
+use apollo::{FromLua, Lua, Value};
 
 use crate::{
 	api::{
@@ -9,11 +11,11 @@ use crate::{
 		registry::Registry,
 	},
 	ty::{id::Id, identifier::Identifier},
-	util::blake3::Hasher,
 	world::chunk::block::{BlockDesc, BlockPrototype},
 };
-use apollo::impl_macro::*;
+use apollo::macros::*;
 
+#[derive(Clone)]
 pub struct BlockLayer {
 	pub blocks: Registry<BlockDesc>,
 	pub default: Id<BlockDesc>,
@@ -28,23 +30,25 @@ impl BlockLayer {
 	}
 }
 
+#[derive(FromLua, Debug)]
 pub struct BlockLayerPrototype {
-	pub blocks: Registry<BlockPrototype>,
+	pub blocks: RegistryBuilder<BlockPrototype>,
 	pub default: Identifier,
 	pub collision: bool,
 }
 
 impl BlockLayerPrototype {
-	pub fn bake(self) -> eyre::Result<BlockLayer> {
-		let lookup = self
-			.blocks
+	pub fn bake(self) -> Result<BlockLayer> {
+		let blocks = self.blocks.build().wrap_err("Failed to build blocks")?;
+		let lookup = blocks
 			.ident_to_id
 			.iter()
 			.map(|(ident, id)| (ident.clone(), id.build()))
 			.collect();
 
 		let mut out = Vec::new();
-		for (id, ident, entry) in self.blocks.into_entries() {
+		for (id, ident, entry) in blocks.into_entries() {
+			trace!("Baked block {ident} {entry:?}");
 			let prototype = entry
 				.bake(&lookup)
 				.wrap_err_with(|| format!("Failed to bake block {}", ident))?;
@@ -68,16 +72,4 @@ impl Prototype for BlockLayerPrototype {
 	type Output = BlockLayer;
 
 	fn get_name() -> &'static str { "block_layer" }
-
-	fn from_lua(table: LunaTable) -> eyre::Result<Self> {
-		let mut blocks = RegistryBuilder::<BlockPrototype>::new();
-		blocks.register(table.lua, table.get("blocks")?)?;
-		Ok(BlockLayerPrototype {
-			blocks: blocks
-				.build(table.lua)
-				.wrap_err("Failed to create blocks registry")?,
-			default: table.get("default")?,
-			collision: table.get("collision")?,
-		})
-	}
 }

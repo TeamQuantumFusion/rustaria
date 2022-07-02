@@ -1,9 +1,9 @@
 use std::fmt::{Display, Formatter, Write};
 
-use apollo::{FromLua, Lua, Value};
+use apollo::{FromLua, Lua, ToLua, Value};
 
-use crate::api::util;
-use apollo::impl_macro::*;
+use apollo::macros::*;
+use crate::api::util::lua_string;
 
 /// The identifier is a dual-string notifying which mod (namespace) the entry is from. and what it is.
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -12,7 +12,6 @@ pub struct Identifier {
 	pub path: String,
 }
 
-#[lua_impl]
 impl Identifier {
 	pub fn new(path: &'static str) -> Identifier {
 		Identifier {
@@ -21,9 +20,7 @@ impl Identifier {
 		}
 	}
 
-	#[lua_method(new)]
-	pub fn new_lua(value: Value) -> eyre::Result<Self> {
-		let string = util::lua_string(value)?;
+	pub fn new_lua(string: String) -> anyways::Result<Self> {
 		if let Some((namespace, path)) = string.split_once(':') {
 			Ok(Identifier {
 				namespace: namespace.to_string(),
@@ -36,20 +33,18 @@ impl Identifier {
 			})
 		}
 	}
+}
 
-	#[lua_method]
-	pub fn namespace(&mut self) -> (String) {
-		self.namespace.clone()
+impl FromLua for Identifier {
+	fn from_lua(lua_value: Value, _: &Lua) -> anyways::Result<Self> {
+		let string = lua_string(lua_value)?;
+		Identifier::new_lua(string)
 	}
+}
 
-	#[lua_method]
-	pub fn path(&mut self) -> (String) {
-		self.path.clone()
-	}
-
-	#[from_lua]
-	fn from_lua(lua_value: Value, _: &Lua) -> eyre::Result<Self> {
-		Identifier::new_lua(lua_value)
+impl ToLua for Identifier {
+	fn to_lua(self, lua: &Lua) -> anyways::Result<Value> {
+		Ok(Value::String(lua.create_string(&format!("{}:{}", self.namespace, self.path))?))
 	}
 }
 

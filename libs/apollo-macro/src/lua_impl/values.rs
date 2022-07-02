@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 use proc_macro2::{Ident, Span, TokenStream};
-use quote::{quote, ToTokens};
+use quote::{quote, ToTokens, TokenStreamExt};
 use syn::{
-	punctuated::Punctuated, spanned::Spanned, FnArg, GenericArgument, Lifetime, PathArguments,
-	ReturnType, Signature, Token, Type,
+	punctuated::Punctuated, token::Mut, FnArg, GenericArgument, Lifetime, PathArguments,
+	ReturnType, Token, Type,
 };
 
 #[derive(Copy, Clone)]
@@ -16,6 +16,7 @@ pub enum Receiver {
 pub struct ValueManager {
 	pub closure_names: Punctuated<Ident, Token!(,)>,
 	pub closure_types: Punctuated<TokenStream, Token!(,)>,
+	pub parameter_mappers: TokenStream,
 	pub receiver: Option<Receiver>,
 	lifetimes: HashMap<Lifetime, Ident>,
 	fields: bool,
@@ -27,54 +28,80 @@ impl ValueManager {
 		ValueManager {
 			closure_names: Default::default(),
 			closure_types: Default::default(),
+			parameter_mappers: Default::default(),
 			receiver: None,
 			fields,
 			lifetimes: Default::default(),
-			var: 0
+			var: 0,
 		}
 	}
 
 	pub fn unwrap_input(&mut self, input: &FnArg) -> TokenStream {
 		match input {
 			FnArg::Receiver(receiver) => {
+				let mutable = receiver.mutability.is_some();
 				let value = if self.fields {
-					quote!(v0)
+					if mutable {
+						quote!(v0.borrow_mut())
+					} else {
+						quote!(v0.borrow())
+					}
 				} else {
-					self.new_value(quote!(apollo::LuaWeak<Self>), receiver.lifetime().cloned())
-						.to_token_stream()
+					self.new_value(
+						ParameterKind::UserData {
+							mutable,
+							name: "self".to_string(),
+						},
+						quote!(Self),
+						receiver.lifetime().cloned(),
+					)
+					.to_token_stream()
 				};
 
-				if receiver.mutability.is_some() {
+				if mutable {
 					self.receiver = Some(Receiver::Mutable);
-					quote!(#value.get_mut("self")?)
 				} else {
 					self.receiver = Some(Receiver::Immutable);
-					quote!(#value.get("self")?)
 				}
+
+				//if !self.fields {
+				//	if mutable {
+				//		quote!(#value.get_mut("self")?)
+				//	} else {
+				//		quote!(#value.get("self")?)
+				//	}
+				//} else {
+					//quote!(#value)
+				value
+				//}
 			}
 			FnArg::Typed(ty) => {
 				let name = ty.to_token_stream().to_string();
 				match LuaValue::parse(*ty.ty.clone()) {
-					LuaValue::Option { original: ty, .. }  | LuaValue::LuaResult { original: ty, .. } | LuaValue::Normal(ty) => {
-						let value = self.new_value(quote!(#ty), None);
-						quote!(#value)
-					}
+					LuaValue::Option { original: ty, .. }
+					| LuaValue::LuaResult { original: ty, .. }
+					| LuaValue::Normal(ty) => self
+						.new_value(ParameterKind::ToLua, quote!(#ty), None)
+						.to_token_stream(),
 					LuaValue::Reference {
 						inner,
 						mutable,
-						lifetime, ..
-					} => {
-						let value = self.new_value(quote!(apollo::LuaWeak<#inner>), lifetime);
-						if mutable {
-							quote!(#value.get_mut(#name)?)
-						} else {
-							quote!(#value.get(#name)?)
-						}
-					}
+						lifetime,
+						..
+					} =>  {
+						let local = self
+							.new_value(
+								ParameterKind::UserData { mutable, name },
+								quote!(#inner),
+								lifetime,
+							)
+							.to_token_stream();
+
+						local
+					},
 					LuaValue::Lua => {
 						quote!(lua)
 					}
-
 				}
 			}
 		}
@@ -102,16 +129,14 @@ impl ValueManager {
 			LuaValue::LuaResult { inner, .. } => {
 				self.wrap_return_internal(*inner, quote!(#invoke?))
 			}
-			// TODO maybe lifetime processing to determine what lua weak exactly we are borrowing from. currently we just assume its self
 			LuaValue::Reference {
-				mutable,
-				lifetime, ..
+				mutable, lifetime, ..
 			} => {
 				let var = self
 					.lifetimes
-					.get(&lifetime.unwrap_or_else(|| { Lifetime::new("'v0", Span::call_site()) }))
+					.get(&lifetime.unwrap_or_else(|| Lifetime::new("'v0", Span::call_site())))
 					.expect("Lifetime does not exist");
-				quote!(#var.extend(#invoke, #mutable)?)
+				quote!(#var.map_inner(#invoke, #mutable)?)
 			}
 			LuaValue::Option { inner, .. } => {
 				let stream = self.wrap_return_internal(*inner, quote!(value));
@@ -129,15 +154,41 @@ impl ValueManager {
 		self.var += 1;
 	}
 
-	fn new_value(&mut self, ty: TokenStream, lifetime: Option<Lifetime>) -> Ident {
+	fn new_value(
+		&mut self,
+		kind: ParameterKind,
+		ty: TokenStream,
+		lifetime: Option<Lifetime>,
+	) -> TokenStream {
 		let span = Span::call_site();
 		let ident = Ident::new(&format!("v{}", self.var), span);
 		self.add_lifetime(ident.clone(), lifetime);
 		self.closure_names.push(ident.clone());
-		self.closure_types.push(ty);
+		self.closure_types.push(if kind.is_userdata() {
+			quote!(apollo::UserDataCell<#ty>)
+		} else {
+			ty
+		});
 
 		self.var += 1;
-		ident
+		if let ParameterKind::UserData { mutable, name } = kind {
+			self.parameter_mappers.append_all({
+				if mutable {
+					quote!(let mut #ident = #ident.get_mut(#name)?;)
+				} else {
+					quote!(let #ident = #ident.get(#name)?;)
+				}
+			});
+
+			if mutable {
+				quote!(#ident.borrow_mut())
+			} else {
+				quote!(#ident.borrow())
+			}
+		} else {
+			quote!(#ident)
+		}
+
 	}
 
 	fn add_lifetime(&mut self, ident: Ident, lifetime: Option<Lifetime>) {
@@ -196,7 +247,7 @@ impl LuaValue {
 					} else if path.ident == "Option" {
 						if let PathArguments::AngleBracketed(brackets) = &path.arguments {
 							if let GenericArgument::Type(ty) =
-							brackets.args.first().expect("Result must have args")
+								brackets.args.first().expect("Result must have args")
 							{
 								return LuaValue::Option {
 									inner: Box::new(LuaValue::parse(ty.clone())),
@@ -222,7 +273,7 @@ impl LuaValue {
 				LuaValue::Reference {
 					lifetime: reference.lifetime.clone(),
 					inner: *reference.elem,
-					mutable: reference.mutability.is_some()
+					mutable: reference.mutability.is_some(),
 				}
 			}
 			ty => LuaValue::Normal(ty),
@@ -234,4 +285,18 @@ fn push_arg(args: &mut Vec<(Ident, TokenStream)>, ty: TokenStream) -> Ident {
 	let ident = Ident::new(&format!("v{}", args.len()), Span::call_site());
 	args.push((ident.clone(), ty));
 	ident
+}
+
+pub enum ParameterKind {
+	ToLua,
+	UserData { mutable: bool, name: String },
+}
+
+impl ParameterKind {
+	pub fn is_userdata(&self) -> bool {
+		match self {
+			ParameterKind::ToLua => false,
+			ParameterKind::UserData { .. } => true,
+		}
+	}
 }

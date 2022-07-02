@@ -1,5 +1,5 @@
-use apollo::impl_macro::*;
-use eyre::Result;
+use apollo::macros::*;
+use anyways::Result;
 use crate::api::luna::lib::stargate::Stargate;
 
 pub struct Reload {

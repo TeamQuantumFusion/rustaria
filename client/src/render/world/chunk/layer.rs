@@ -1,7 +1,7 @@
 use std::collections::HashSet;
+use anyways::ext::AuditExt;
 
-use eyre::WrapErr;
-use apollo::{Function, Lua, LuaSerdeExt};
+use apollo::{FromLua, Function, Lua, LuaSerdeExt, Value, macros::*};
 use rustaria::{
 	api::{
 		id_table::IdTable,
@@ -21,6 +21,7 @@ use rustaria::{
 		ChunkLayer, ConnectionType,
 	},
 };
+use anyways::Result;
 
 use crate::{
 	render::{
@@ -78,8 +79,9 @@ impl BlockLayerRenderer {
 	}
 }
 
+#[derive(Debug, FromLua)]
 pub struct BlockLayerRendererPrototype {
-	pub blocks: Registry<BlockRendererPrototype>,
+	pub blocks: RegistryBuilder<BlockRendererPrototype>,
 	pub get_uv: Function,
 	pub get_rect: Function,
 }
@@ -90,7 +92,7 @@ impl BlockLayerRendererPrototype {
 		lua: &Lua,
 		atlas: &Atlas,
 		parent: &BlockLayer,
-	) -> eyre::Result<BlockLayerRenderer> {
+	) -> Result<BlockLayerRenderer> {
 		let mut kind_uvs = Vec::new();
 		for value in SpriteConnectionKind::iter() {
 			let value = format!("{:?}", value);
@@ -108,6 +110,7 @@ impl BlockLayerRendererPrototype {
 			});
 		}
 
+		let blocks = self.blocks.build()?;
 		Ok(BlockLayerRenderer {
 			block_renderers: parent
 				.blocks
@@ -116,10 +119,10 @@ impl BlockLayerRendererPrototype {
 				.map(|(id, entry)| {
 					(
 						id,
-						self.blocks
+						blocks
 							.ident_to_id
 							.get(entry)
-							.map(|entry| self.blocks.get(*entry).bake(atlas)),
+							.map(|entry| blocks.get(*entry).bake(atlas)),
 					)
 				})
 				.collect(),
@@ -128,7 +131,7 @@ impl BlockLayerRendererPrototype {
 	}
 
 	pub fn get_sprites(&self, sprites: &mut HashSet<Identifier>) {
-		for (_, entry) in self.blocks.table.iter() {
+		for (_, entry) in self.blocks.values.values() {
 			entry.get_sprites(sprites);
 		}
 	}
@@ -138,17 +141,20 @@ impl Prototype for BlockLayerRendererPrototype {
 	type Output = BlockLayerRenderer;
 
 	fn get_name() -> &'static str { "block_layer_renderer" }
-
-	fn from_lua(table: LunaTable) -> eyre::Result<Self> {
-		let mut blocks = RegistryBuilder::<BlockRendererPrototype>::new();
-		blocks.register(table.lua, table.get("blocks")?)?;
-
-		Ok(BlockLayerRendererPrototype {
-			blocks: blocks
-				.build(table.lua)
-				.wrap_err("Building \"blocks\" registry")?,
-			get_uv: table.get("get_uv")?,
-			get_rect: table.get("get_rect")?,
-		})
-	}
 }
+
+//mpl FromLua for BlockLayerRendererPrototype {
+//	fn from_lua(lua_value: Value, lua: &Lua) -> eyre::Result<Self> {
+//		let table = lua_table(lua_value)?;
+//		let mut blocks = RegistryBuilder::<BlockRendererPrototype>::new();
+//		blocks.register(table.get("blocks")?);
+
+//		Ok(BlockLayerRendererPrototype {
+//			blocks: blocks
+//				.build()
+//				.wrap_err("Building \"blocks\" registry")?,
+//			get_uv: table.get("get_uv")?,
+//			get_rect: table.get("get_rect")?,
+//		})
+//	}
+//

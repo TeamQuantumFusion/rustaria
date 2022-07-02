@@ -1,6 +1,7 @@
 use std::{collections::HashMap, io, io::ErrorKind, path::PathBuf, sync::Arc};
+use anyways::ext::AuditExt;
 
-use eyre::{Context, Result};
+use anyways::Result;
 use rayon::{ThreadPool, ThreadPoolBuilder};
 use tracing::{info};
 
@@ -19,7 +20,7 @@ use crate::{
 	},
 };
 
-use apollo::impl_macro::*;
+use apollo::macros::*;
 use apollo::{LuaScope};
 
 pub mod id_table;
@@ -89,26 +90,15 @@ impl Api {
 		self.hash = None;
 
 		// Prepare for reload
-		reload.stargate.register_builder::<BlockLayerPrototype>();
-		reload.stargate.register_builder::<EntityPrototype>();
+		reload.stargate.register_builder::<BlockLayerPrototype>(&self.luna.lua)?;
+		reload.stargate.register_builder::<EntityPrototype>(&self.luna.lua)?;
 
 		{
 			let reload_scope = LuaScope::from(&mut *reload);
-			self.luna.lua.globals().insert("reload", reload_scope.lua())?;
+			self.luna.lua.globals().insert("reload", reload_scope.lua()).wrap_err("Failed to insert reload")?;
 
 			for plugin in self.resources.plugins.values() {
-				info!("Reloading {}", &plugin.id);
-				let identifier = Identifier::new("main.lua");
-				let data = self
-					.resources
-					.get_resource(ResourceKind::Source, &identifier)
-					.wrap_err(format!(
-						"Could not find entrypoint \"main.lua\" for plugin {}",
-						plugin.id
-					))?;
-
-			//	let ptr_mut = LuaGluePtrMut::new(reload);
-				self.luna.load(&identifier, &data)?.exec()?;
+				plugin.reload(&self.luna).wrap_err_with(|| format!("Failed to reload plugin {}", plugin.id))?;
 			}
 		}
 

@@ -6,10 +6,11 @@ use std::{
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use apollo::{FromLua, ToLua, UserData};
-use apollo::impl_macro::*;
+use apollo::macros::*;
 use crate::ty::id::Id;
 use crate::ty::identifier::Identifier;
 
+#[derive(Debug)]
 pub struct IdTable<I, V> {
 	values: Vec<V>,
 	_i: PhantomData<I>,
@@ -32,12 +33,12 @@ impl<I, V> IdTable<I, V> {
 }
 
 #[lua_impl]
-impl<I: 'static, V: UserData + ToLua + Send + 'static> IdTable<I, V> {
-	#[lua_method(!get)]
-	pub fn get(&self, id: Id<I>) -> &V { &self.values[id.index()] }
+impl<I: 'static, V: UserData + Send + 'static> IdTable<I, V> {
+	#[lua_method(get)]
+	pub fn lua_get(&self, id: Id<I>) -> &V { &self.values[id.index()] }
 
-	#[lua_method(!get_mut)]
-	pub fn get_mut(&mut self, id: Id<I>) -> &mut V {
+	#[lua_method(get_mut)]
+	pub fn lua_get_mut(&mut self, id: Id<I>) -> &mut V {
 		&mut self.values[id.index()]
 	}
 }

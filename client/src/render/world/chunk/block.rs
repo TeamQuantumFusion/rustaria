@@ -2,14 +2,14 @@ use std::collections::HashSet;
 
 use euclid::{size2, vec2, Rect};
 use rustaria::{
-	api::{luna::table::LunaTable, prototype::Prototype},
+	api::{prototype::Prototype},
 	debug::{DebugCategory, DebugRendererImpl},
 	draw_debug,
 	ty::{block_pos::BlockPos, identifier::Identifier, WS},
-	util::blake3::Hasher,
 	world::chunk::ConnectionType,
 };
-use tracing::error_span;
+use apollo::{FromLua, Lua, Value, macros::*};
+use rustaria::api::util::lua_table;
 
 use crate::{
 	render::{
@@ -69,7 +69,7 @@ pub struct KindDesc {
 	pub(crate) rect: Rect<f32, WS>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, FromLua)]
 pub struct BlockRendererPrototype {
 	pub image: Identifier,
 	pub connection_type: ConnectionType,
@@ -82,7 +82,6 @@ impl BlockRendererPrototype {
 			connection_type: self.connection_type,
 		}
 	}
-
 	pub fn get_sprites(&self, sprites: &mut HashSet<Identifier>) {
 		sprites.insert(self.image.clone());
 	}
@@ -92,12 +91,4 @@ impl Prototype for BlockRendererPrototype {
 	type Output = BlockRenderer;
 
 	fn get_name() -> &'static str { "block_renderer" }
-
-	fn from_lua(table: LunaTable) -> eyre::Result<Self> {
-		let _span = error_span!(target: "lua", "block_renderer").entered();
-		Ok(BlockRendererPrototype {
-			image: table.get("image")?,
-			connection_type: table.get_ser("connection_type")?,
-		})
-	}
 }

@@ -3,11 +3,13 @@ use std::{
 	rc::Rc,
 	sync::mpsc::Receiver,
 };
+use anyways::ext::AuditExt;
 
-use eyre::{ContextCompat, Result, WrapErr};
 use glfw::{
 	with_c_str, Context, Glfw, OpenGlProfileHint, SwapInterval, WindowEvent, WindowHint, WindowMode,
 };
+use anyways::Result;
+
 use glium::{
 	backend::Backend,
 	debug::{DebugCallbackBehavior, Severity},

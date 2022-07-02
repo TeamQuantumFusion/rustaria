@@ -6,6 +6,7 @@ use crate::{
 	world::entity::prototype::EntityDesc,
 };
 use crate::api::util::lua_table;
+use anyways::Result;
 
 /// Our lovely components
 #[macro_export]
@@ -68,7 +69,7 @@ pub struct CollisionComponent {
 }
 
 impl FromLua for CollisionComponent {
-	fn from_lua(lua_value: Value, lua: &Lua) -> eyre::Result<Self> {
+	fn from_lua(lua_value: Value, lua: &Lua) -> Result<Self> {
 		let table = lua_table(lua_value)?;
 		Ok(CollisionComponent {
 			collision_box: lua.from_value(table.get("collision_box")?)?,

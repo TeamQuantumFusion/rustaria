@@ -6,19 +6,16 @@ pub(crate) enum LuaBindingAttr {
 	Method(MethodAttr),
 	Field(FieldAttr),
 	FromLua,
-	ToLua
 }
 
 #[derive(Clone)]
 pub(crate) struct MethodAttr {
-	pub keep_original: bool,
 	pub lua_name: Option<String>
 }
 
 impl Parse for MethodAttr {
 	fn parse(input: ParseStream) -> syn::Result<Self> {
 		Ok(MethodAttr {
-			keep_original: input.parse::<Option<Token!(!)>>()?.is_none(),
 			lua_name: input.parse::<Option<Ident>>()?.map(|i| i.to_string()),
 		})
 	}
@@ -46,7 +43,6 @@ impl Parse for FieldBindKind {
 
 #[derive(Clone)]
 pub(crate) struct FieldAttr {
-	pub keep_original: bool,
 	pub kind: FieldBindKind,
 	pub lua_name: Option<String>,
 }
@@ -54,7 +50,6 @@ pub(crate) struct FieldAttr {
 impl Parse for FieldAttr {
 	fn parse(input: ParseStream) -> syn::Result<Self> {
 		Ok(FieldAttr {
-			keep_original: input.parse::<Option<Token!(!)>>()?.is_none(),
 			kind: input.parse()?,
 			lua_name: input.parse::<Option<Ident>>()?.map(|i| i.to_string()),
 		})

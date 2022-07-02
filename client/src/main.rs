@@ -7,10 +7,10 @@ use std::{
 	path::PathBuf,
 	time::{Duration, Instant},
 };
+use anyways::ext::AuditExt;
 
 use debug::Debug;
 use euclid::vec2;
-use eyre::{Context, Result};
 use glfw::{Action, Key, WindowEvent};
 use glium::Surface;
 use render::ty::viewport::Viewport;
@@ -26,7 +26,7 @@ use rustaria::{
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt, fmt::format, layer::SubscriberExt, util::SubscriberInitExt};
 use apollo::LuaScope;
-
+use anyways::Result;
 use crate::{
 	api::ClientApi,
 	frontend::Frontend,
@@ -54,7 +54,6 @@ fn main() -> Result<()> {
 		.with(fmt_layer)
 		.init();
 
-	color_eyre::install()?;
 	let mut client = Client::new()?;
 	client.api.reload(&client.frontend)?;
 	client.run()?;

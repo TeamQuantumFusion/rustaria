@@ -7,8 +7,7 @@ edition = "2021"
 
 [dependencies]
 # Errors
-eyre = "0.6.8"
-color-eyre = { version = "0.6.1", features = ["capture-spantrace"] }
+anyways = "*"
 
 # Logging
 tracing = "0.1.35"
@@ -24,7 +23,7 @@ hecs = "0.7.6"
 rustaria = { path = "../" }
 
 # Lua
-apollo = { path = "../libs/apollo", features = ["luajit", "vendored", "serialize", "send", "macro"] }
+apollo = { path = "../libs/apollo", features = ["luajit", "vendored", "serialize", "macro"] }
 
 # Rendering
 glfw = { version = "0.45.0", features = ["image"] }

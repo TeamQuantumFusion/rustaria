@@ -26,8 +26,16 @@ pub type Number = ffi::lua_Number;
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct LightUserData(pub *mut c_void);
 
+unsafe impl Send for LightUserData {
+
+}
+
+unsafe impl Sync for LightUserData {
+
+}
+
 pub(crate) type Callback<'a> =
-    Box<dyn Fn(&'a Lua, MultiValue) -> eyre::Result<MultiValue> + 'a>;
+    Box<dyn Fn(&'a Lua, MultiValue) -> anyways::Result<MultiValue> + 'a>;
 
 pub(crate) struct Upvalue<T> {
     pub(crate) data: T,
@@ -38,25 +46,25 @@ pub(crate) type CallbackUpvalue = Upvalue<Callback<'static>>;
 
 #[cfg(feature = "async")]
 pub(crate) type AsyncCallback<'a> =
-    Box<dyn Fn(&Lua, MultiValue) -> LocalBoxFuture<eyre::Result<MultiValue>> + 'a>;
+    Box<dyn Fn(&Lua, MultiValue) -> LocalBoxFuture<anyways::Result<MultiValue>> + 'a>;
 
 #[cfg(feature = "async")]
 pub(crate) type AsyncCallbackUpvalue = Upvalue<AsyncCallback<'static>>;
 
 #[cfg(feature = "async")]
-pub(crate) type AsyncPollUpvalue = Upvalue<LocalBoxFuture<'static, eyre::Result<MultiValue>>>;
+pub(crate) type AsyncPollUpvalue = Upvalue<LocalBoxFuture<'static, anyways::Result<MultiValue>>>;
 
 #[cfg(all(feature = "send"))]
-pub(crate) type HookCallback = Arc<dyn Fn(&Lua, Debug) -> eyre::Result<()> + Send>;
+pub(crate) type HookCallback = Arc<dyn Fn(&Lua, Debug) -> anyways::Result<()> + Send>;
 
 #[cfg(all(not(feature = "send")))]
-pub(crate) type HookCallback = Arc<dyn Fn(&Lua, Debug) -> Result<()>>;
+pub(crate) type HookCallback = Arc<dyn Fn(&Lua, Debug) ->  anyways::Result<()>>;
 
 #[cfg(all(feature = "send", feature = "lua54"))]
-pub(crate) type WarnCallback = Box<dyn Fn(&Lua, &CStr, bool) -> eyre::Result<()> + Send>;
+pub(crate) type WarnCallback = Box<dyn Fn(&Lua, &CStr, bool) -> anyways::Result<()> + Send>;
 
 #[cfg(all(not(feature = "send"), feature = "lua54"))]
-pub(crate) type WarnCallback = Box<dyn Fn(&Lua, &CStr, bool) -> Result<()>>;
+pub(crate) type WarnCallback = Box<dyn Fn(&Lua, &CStr, bool) -> anyways::Result<()>>;
 
 #[cfg(feature = "send")]
 pub trait MaybeSend: Send {}
@@ -133,24 +141,24 @@ impl RegistryKey {
     }
 }
 
-pub(crate) struct LuaRef {
+pub(crate) struct LuaPointer {
     pub(crate) lua: LuaWeakRef,
     pub(crate) index: c_int,
 }
 
-impl fmt::Debug for LuaRef {
+impl fmt::Debug for LuaPointer {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Ref({})", self.index)
     }
 }
 
-impl Clone for LuaRef {
+impl Clone for LuaPointer {
     fn clone(&self) -> Self {
         self.lua.required().clone_ref(self)
     }
 }
 
-impl Drop for LuaRef {
+impl Drop for LuaPointer {
     fn drop(&mut self) {
         if let Ok(lua) = self.lua.optional() {
             if self.index > 0 {
@@ -160,7 +168,7 @@ impl Drop for LuaRef {
     }
 }
 
-impl PartialEq for LuaRef {
+impl PartialEq for LuaPointer {
     fn eq(&self, other: &Self) -> bool {
         let lua = self.lua.required();
         unsafe {

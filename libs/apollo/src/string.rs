@@ -11,14 +11,14 @@ use {
 
 use crate::error::{Error, Result};
 use crate::ffi;
-use crate::types::LuaRef;
+use crate::types::LuaPointer;
 use crate::util::{assert_stack, StackGuard};
 
 /// Handle to an internal Lua string.
 ///
 /// Unlike Rust strings, Lua strings may not be valid UTF-8.
 #[derive(Clone, Debug)]
-pub struct String(pub(crate) LuaRef);
+pub struct String(pub(crate) LuaPointer);
 
 impl String {
     /// Get a `&str` slice if the Lua string is valid UTF-8.

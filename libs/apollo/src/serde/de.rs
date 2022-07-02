@@ -219,7 +219,7 @@ impl<'lua, 'de> serde::Deserializer<'de> for Deserializer {
 
                 let len = t.raw_len() as usize;
                 let mut deserializer = SeqDeserializer {
-                    seq: t.raw_sequence_values(),
+                    seq: t.raw_iter_values(),
                     options: self.options,
                     visited: self.visited,
                 };

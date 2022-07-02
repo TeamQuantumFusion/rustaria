@@ -1,8 +1,12 @@
 local connected_blocks = require "connected_blocks";
 
+--- @type Stargate
+local stargate = reload.stargate;
+
 if reload.client then
-    reload.stargate.entity_renderer:register {
+    stargate.entity_renderer:register {
         ["player"] = {
+            test = { hello = {} },
             image = "image/entity/alpha.png",
             panel = {
                 origin = { -0.9, -1.4 },
@@ -17,26 +21,26 @@ if reload.client then
             }
         }
     }
-    reload.stargate.block_layer_renderer:register {
+    stargate.block_layer_renderer:register({
         ["tile"] = {
             get_rect = connected_blocks["tile"].get_rect,
             get_uv = connected_blocks["tile"].get_uv,
             blocks = {
                 ["dirt"] = {
                     image = "image/tile/dirt.png",
-                    connection_type = "Connected"
+                    connection_type = { "Connected" }
                 },
                 ["stone"] = {
                     image = "image/tile/stone.png",
-                    connection_type = "Connected"
+                    connection_type = { "Connected" }
                 },
                 ["grass"] = {
                     image = "image/tile/grass.png",
-                    connection_type = "Connected",
+                    connection_type = { "Connected" },
                 },
                 ["corrupt_grass"] = {
                     image = "image/tile/corrupt_grass.png",
-                    connection_type = "Connected",
+                    connection_type = { "Connected" },
                 }
             }
         },
@@ -45,15 +49,15 @@ if reload.client then
             get_uv = connected_blocks["wall"].get_uv,
             blocks = {
                 ["dirt"] = {
-                    image = "image/wall/dirt.png",
-                    connection_type = "Connected"
+                    image = "image/wall/glass.png",
+                    connection_type = { "Connected" }
                 }
             }
         }
-    }
+    })
 end
 
-reload.stargate.block_layer:register {
+stargate.block_layer:register {
     ["tile"] = {
         collision = true,
         default = "air",
@@ -81,7 +85,7 @@ reload.stargate.block_layer:register {
             }
         }
     },
-    [{ name = "wall", priority = 0 }] = {
+    [{ name = "wall", priority = 1 }] = {
         default = "air",
         collision = false,
         blocks = {
@@ -95,7 +99,7 @@ reload.stargate.block_layer:register {
     }
 }
 
-reload.stargate.entity:register {
+stargate.entity:register {
     ["player"] = {
         position = { 24.0, 20.0 },
         velocity = {
@@ -131,18 +135,25 @@ reload.stargate.entity:register {
                 size = { 1.1, 1.1 }
             },
             hit_callback = function(chunks)
-                local tile_layer_id = api.carrier.block_layer:get_id("tile");
-                local layer_p = api.carrier.block_layer:get(tile_layer_id);
 
-                local stone_id = layer_p.blocks:get_id("stone");
+                --- @type Carrier
+                local carrier = api.carrier;
+                local layer_registry = carrier.block_layer;
+
+                local layer_id = layer_registry:get_id("tile");
+                local layer_prot = layer_registry:get(layer_id);
+
+                local block_id = layer_prot.blocks:get_id("stone");
+                local block = layer_prot.blocks:get(block_id);
+                local stone_block = block:create(block_id);
 
                 chunks:get_mut({
                     x = 0,
                     y = 0
-                }):get_mut_layers():get_mut(tile_layer_id):set_entry({
+                })    :get_mut_layers():get_mut(layer_id):set_entry({
                     x = 0,
                     y = 0
-                }, layer_p.blocks:get(stone_id):create(stone_id));
+                }, stone_block);
             end
         },
         gravity = {

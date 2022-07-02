@@ -1,6 +1,7 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
-use eyre::WrapErr;
+use anyways::ext::AuditExt;
+use serde::Deserialize;
 
 #[cfg(feature = "serialize")]
 use {
@@ -10,9 +11,9 @@ use {
 };
 
 use crate::error::{Error, Result};
-use crate::ffi;
+use crate::{ffi, LuaSerdeExt};
 use crate::function::Function;
-use crate::types::{Integer, LuaRef};
+use crate::types::{Integer, LuaPointer};
 use crate::util::{assert_stack, check_stack, StackGuard};
 use crate::value::{FromLua, FromLuaMulti, Nil, ToLua, ToLuaMulti, Value};
 
@@ -21,7 +22,7 @@ use {futures_core::future::LocalBoxFuture, futures_util::future};
 
 /// Handle to an internal Lua table.
 #[derive(Clone, Debug)]
-pub struct Table(pub(crate) LuaRef);
+pub struct Table(pub(crate) LuaPointer);
 
 #[allow(clippy::len_without_is_empty)]
 impl Table {
@@ -98,9 +99,9 @@ impl Table {
     /// ```
     ///
     /// [`raw_get`]: #method.raw_get
-    pub fn get<K: ToLua, V: FromLua>(&self, k: K) -> eyre::Result<V> {
+    pub fn get<K: ToLua, V: FromLua>(&self, key: K) -> anyways::Result<V> {
         let lua = &self.0.lua.optional()?;
-        let key = k.to_lua(lua)?;
+        let key = key.to_lua(lua)?;
 
         let value = unsafe {
             let _sg = StackGuard::new(lua.state);
@@ -112,11 +113,16 @@ impl Table {
 
             lua.pop_value()
         };
-        V::from_lua(value, lua)
+       Ok(V::from_lua(value, lua)?)
     }
 
-    /// Checks whether the table contains a non-nil value for `key`.
-    pub fn contains_key<K: ToLua>(&self, key: K) -> eyre::Result<bool> {
+    pub fn get_ser<'a, K: ToLua, V: Deserialize<'a>>(&self, key: K) -> anyways::Result<V> {
+        let lua = &self.0.lua.optional()?;
+        Ok(lua.from_value(self.get(key)?)?)
+    }
+
+        /// Checks whether the table contains a non-nil value for `key`.
+    pub fn contains_key<K: ToLua>(&self, key: K) -> anyways::Result<bool> {
         let lua = &self.0.lua.optional()?;
         let key = key.to_lua(lua)?;
 
@@ -131,7 +137,7 @@ impl Table {
         }
     }
 
-    pub fn equals<T: AsRef<Self>>(&self, other: T) -> Result<bool> {
+    pub fn equals<T: AsRef<Self>>(&self, other: T) -> anyways::Result<bool> {
         let other = other.as_ref();
         if self == other {
             return Ok(true);
@@ -176,7 +182,7 @@ impl Table {
     }
 
     /// Gets the value associated to `key` without invoking metamethods.
-    pub fn raw_get<K: ToLua, V: FromLua>(&self, key: K) -> eyre::Result<V> {
+    pub fn raw_get<K: ToLua, V: FromLua>(&self, key: K) -> anyways::Result<V> {
         let lua = &self.0.lua.optional()?;
         let key = key.to_lua(lua)?;
 
@@ -403,7 +409,7 @@ impl Table {
     /// [`pairs`]: #method.pairs
     /// [`Result`]: crate::Result
     /// [Lua manual]: http://www.lua.org/manual/5.4/manual.html#pdf-next
-    pub fn sequence_values<V: FromLua>(self) -> TableSequence<V> {
+    pub fn iter_values<V: FromLua>(self) -> TableSequence<V> {
         TableSequence {
             table: self.0,
             index: Some(1),
@@ -418,7 +424,7 @@ impl Table {
     /// Unlike the `sequence_values`, does not invoke `__index` metamethod when iterating.
     ///
     /// [`sequence_values`]: #method.sequence_values
-    pub fn raw_sequence_values<V: FromLua>(self) -> TableSequence<V> {
+    pub fn raw_iter_values<V: FromLua>(self) -> TableSequence<V> {
         TableSequence {
             table: self.0,
             index: Some(1),
@@ -478,7 +484,7 @@ pub trait TableExt {
     /// Calls the table as function assuming it has `__call` metamethod.
     ///
     /// The metamethod is called with the table as its first argument, followed by the passed arguments.
-    fn call<A, R>(&self, args: A) -> Result<R>
+    fn call<A, R>(&self, args: A) -> anyways::Result<R>
     where
         A: ToLuaMulti,
         R: FromLuaMulti;
@@ -501,7 +507,7 @@ pub trait TableExt {
     /// `table.get::<_, Function>(key)?.call((table.clone(), arg1, ..., argN))`
     ///
     /// This might invoke the `__index` metamethod.
-    fn call_method<K, A, R>(&self, key: K, args: A) -> Result<R>
+    fn call_method<K, A, R>(&self, key: K, args: A) -> anyways::Result<R>
     where
         K: ToLua,
         A: ToLuaMulti,
@@ -514,7 +520,7 @@ pub trait TableExt {
     /// `table.get::<_, Function>(key)?.call(args)`
     ///
     /// This might invoke the `__index` metamethod.
-    fn call_function<K, A, R>(&self, key: K, args: A) -> Result<R>
+    fn call_function<K, A, R>(&self, key: K, args: A) -> anyways::Result<R>
     where
         K: ToLua,
         A: ToLuaMulti,
@@ -556,7 +562,7 @@ pub trait TableExt {
 }
 
 impl TableExt for Table {
-    fn call<A, R>(&self, args: A) -> Result<R>
+    fn call<A, R>(&self, args: A) -> anyways::Result<R>
     where
         A: ToLuaMulti,
         R: FromLuaMulti,
@@ -575,7 +581,7 @@ impl TableExt for Table {
         Function(self.0.clone()).call_async(args)
     }
 
-    fn call_method<K, A, R>(&self, key: K, args: A) -> Result<R>
+    fn call_method<K, A, R>(&self, key: K, args: A) -> anyways::Result<R>
     where
         K: ToLua,
         A: ToLuaMulti,
@@ -587,7 +593,7 @@ impl TableExt for Table {
         self.get::<_, Function>(key)?.call(args)
     }
 
-    fn call_function<K, A, R>(&self, key: K, args: A) -> Result<R>
+    fn call_function<K, A, R>(&self, key: K, args: A) -> anyways::Result<R>
     where
         K: ToLua,
         A: ToLuaMulti,
@@ -679,7 +685,7 @@ impl Serialize for Table {
 ///
 /// [`Table::pairs`]: crate::Table::pairs
 pub struct TablePairs<K, V> {
-    table: LuaRef,
+    table: LuaPointer,
     key: Option<Value>,
     _phantom: PhantomData<(K, V)>,
 }
@@ -689,7 +695,7 @@ where
     K: FromLua,
     V: FromLua,
 {
-    type Item =  eyre::Result<(K, V)>;
+    type Item = anyways::Result<(K, V)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let lua = &self.table.lua.optional().ok()?;
@@ -710,8 +716,8 @@ where
                     let key = lua.pop_value();
                     Ok(Some((
                         key.clone(),
-                        K::from_lua(key, lua)?,
-                        V::from_lua(value, lua)?,
+                        K::from_lua(key, lua).wrap_err("Failed to convert table key")?,
+                        V::from_lua(value, lua).wrap_err("Failed to convert table value")?,
                     )))
                 } else {
                     Ok(None)
@@ -738,7 +744,7 @@ where
 ///
 /// [`Table::sequence_values`]: crate::Table::sequence_values
 pub struct TableSequence<V> {
-    table: LuaRef,
+    table: LuaPointer,
     index: Option<Integer>,
     len: Option<Integer>,
     raw: bool,
@@ -749,7 +755,7 @@ impl<V> Iterator for TableSequence<V>
 where
     V: FromLua,
 {
-    type Item = eyre::Result<V>;
+    type Item = anyways::Result<V>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let lua = &self.table.lua.optional().ok()?;

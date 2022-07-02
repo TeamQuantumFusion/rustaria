@@ -1,4 +1,4 @@
-use eyre::Result;
+use anyways::Result;
 use hecs::{Component, DynamicBundle, DynamicBundleClone, Entity, EntityBuilder, EntityBuilderClone, EntityRef, Query, QueryBorrow, QueryMut, Ref, RefMut, TakenEntity};
 
 use crate::{
@@ -109,7 +109,7 @@ impl EntityWorld {
 		})
 	}
 
-	pub fn tick(&mut self, api: &Api, chunks: &mut ChunkStorage, debug: &mut impl DebugRendererImpl) -> eyre::Result<()> {
+	pub fn tick(&mut self, api: &Api, chunks: &mut ChunkStorage, debug: &mut impl DebugRendererImpl) -> Result<()> {
 		self.gravity.tick(&mut self.storage);
 		self.humanoid.tick(&mut self.storage);
 		self.collision.tick(api, &mut self.storage, chunks, debug)?;

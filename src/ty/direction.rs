@@ -5,6 +5,7 @@ use std::{
 
 use euclid::{vec2, Vector2D};
 use Direction::*;
+use apollo::macros::*;
 
 // ======================================== DIRECTION ========================================
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash, serde::Serialize, serde::Deserialize)]
@@ -15,6 +16,7 @@ pub enum Direction {
 	Right,
 }
 
+#[lua_impl(docs)]
 impl Direction {
 	pub fn vertical(self) -> bool {
 		match self {

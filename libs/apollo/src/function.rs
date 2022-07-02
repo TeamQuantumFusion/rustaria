@@ -1,9 +1,10 @@
 use std::os::raw::c_int;
 use std::ptr;
+use anyways::audit::Audit;
 
 use crate::error::{Error, Result};
 use crate::ffi;
-use crate::types::LuaRef;
+use crate::types::LuaPointer;
 use crate::util::{assert_stack, check_stack, error_traceback, pop_error, StackGuard};
 use crate::value::{FromLuaMulti, ToLuaMulti};
 
@@ -12,7 +13,7 @@ use {futures_core::future::LocalBoxFuture, futures_util::future};
 
 /// Handle to an internal Lua function.
 #[derive(Clone, Debug)]
-pub struct Function(pub(crate) LuaRef);
+pub struct Function(pub(crate) LuaPointer);
 
 impl Function {
     /// Calls the function, passing `args` as function arguments.
@@ -55,7 +56,7 @@ impl Function {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn call<A: ToLuaMulti, R: FromLuaMulti>(&self, args: A) -> Result<R> {
+    pub fn call<A: ToLuaMulti, R: FromLuaMulti>(&self, args: A) -> anyways::Result<R> {
         let lua = &self.0.lua.optional()?;
 
         let mut args = args.to_lua_multi(lua)?;
@@ -73,7 +74,7 @@ impl Function {
             }
             let ret = ffi::lua_pcall(lua.state, nargs, ffi::LUA_MULTRET, stack_start);
             if ret != ffi::LUA_OK {
-                return Err(pop_error(lua.state, ret));
+                return Err(pop_error(lua.state, ret).report());
             }
             let nresults = ffi::lua_gettop(lua.state) - stack_start;
             let mut results = args; // Reuse MultiValue container
@@ -161,7 +162,7 @@ impl Function {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn bind<A: ToLuaMulti>(&self, args: A) -> Result<Function> {
+    pub fn bind<A: ToLuaMulti>(&self, args: A) -> anyways::Result<Function> {
         unsafe extern "C" fn bind_call_impl(state: *mut ffi::lua_State) -> c_int {
             let nargs = ffi::lua_gettop(state);
             let nbinds = ffi::lua_tointeger(state, ffi::lua_upvalueindex(2)) as c_int;
@@ -188,7 +189,7 @@ impl Function {
         let nargs = args.len() as c_int;
 
         if nargs + 2 > ffi::LUA_MAX_UPVALUES {
-            return Err(Error::BindError);
+            return Err(Audit::new(Error::BindError));
         }
 
         unsafe {
