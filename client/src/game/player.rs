@@ -1,11 +1,10 @@
 use std::collections::VecDeque;
-use anyways::ext::AuditExt;
 
+use anyways::{ext::AuditExt, Result};
 use euclid::{vec2, Vector2D};
 use glfw::{Action, Key, MouseButton, WindowEvent};
 use hecs::{Component, Entity, Ref};
-use anyways::Result;
-
+use log::debug;
 use rustaria::{
 	api::Api,
 	debug::DummyRenderer,
@@ -23,7 +22,6 @@ use rustaria::{
 		ServerBoundWorldPacket, World,
 	},
 };
-use tracing::debug;
 
 use crate::{render::ty::viewport::Viewport, Frontend};
 
@@ -212,7 +210,7 @@ impl PlayerSystem {
 							network.send(ServerBoundWorldPacket::SpawnEntity(
 								entity,
 								vec![EntityComponentPacket::Pos {
-									set_pos: vec2(x, y)  + viewport.pos,
+									set_pos: vec2(x, y) + viewport.pos,
 								}],
 							))?;
 						}
@@ -258,8 +256,9 @@ impl PlayerSystem {
 							entity.dir = speed.dir;
 							entity.jumping = speed.jumping;
 						}
-						self.base_server_world
-							.tick(api, &mut world.chunks, &mut DummyRenderer);
+						let _ignored =
+							self.base_server_world
+								.tick(api, &mut world.chunks, &mut DummyRenderer);
 
 						// If we reach the tick that we currently received,
 						// stop as the next events are the ones that the server has not yet seen.

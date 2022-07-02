@@ -1,9 +1,8 @@
 use std::fmt::Write;
-use anyways::ext::AuditExt;
 
-use anyways::Result;
-use apollo::{prelude::LuaError, Chunk, Lua, Table, Value};
-use tracing::debug;
+use anyways::{ext::AuditExt, Result};
+use apollo::{prelude::LuaError, Chunk, Lua, Table};
+use log::debug;
 
 use crate::{
 	api::{Plugins, ResourceKind},

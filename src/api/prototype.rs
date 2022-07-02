@@ -1,5 +1,6 @@
 use std::fmt::Debug;
-use apollo::{FromLua};
+
+use apollo::FromLua;
 
 pub trait Prototype
 where

@@ -1,5 +1,8 @@
 use anyways::Result;
-use hecs::{Component, DynamicBundle, DynamicBundleClone, Entity, EntityBuilder, EntityBuilderClone, EntityRef, Query, QueryBorrow, QueryMut, Ref, RefMut, TakenEntity};
+use hecs::{
+	Component, DynamicBundle, Entity, EntityBuilder, EntityRef, Query, QueryBorrow, QueryMut, Ref,
+	RefMut, TakenEntity,
+};
 
 use crate::{
 	api::Api,
@@ -9,12 +12,14 @@ use crate::{
 	world::entity::{
 		prototype::EntityDesc,
 		system::{
-			collision::CollisionSystem, humanoid::HumanoidSystem, GravitySystem, VelocitySystem,
+			collision::CollisionSystem,
+			humanoid::HumanoidSystem,
+			network::{EntityPacket, NetworkSystem},
+			GravitySystem, VelocitySystem,
 		},
 	},
 	ChunkStorage,
 };
-use crate::world::entity::system::network::{EntityPacket, NetworkSystem};
 
 pub mod component;
 pub mod prototype;
@@ -80,7 +85,7 @@ impl EntityStorage {
 		let entity = self.world.entity(from).ok()?;
 		iter_components!({
 			if let Some(component) = entity.get::<T>() {
-				to_storage.world.insert_one(to,  (*component).clone()).ok()?;
+				to_storage.world.insert_one(to, (*component).clone()).ok()?;
 			}
 		});
 
@@ -98,18 +103,23 @@ pub struct EntityWorld {
 }
 
 impl EntityWorld {
-	pub fn new(api: &Api) -> Result<EntityWorld> {
+	pub fn new(_api: &Api) -> Result<EntityWorld> {
 		Ok(EntityWorld {
 			storage: EntityStorage::new(),
 			velocity: VelocitySystem,
 			gravity: GravitySystem,
 			collision: CollisionSystem,
 			humanoid: HumanoidSystem,
-			network: NetworkSystem
+			network: NetworkSystem,
 		})
 	}
 
-	pub fn tick(&mut self, api: &Api, chunks: &mut ChunkStorage, debug: &mut impl DebugRendererImpl) -> Result<()> {
+	pub fn tick(
+		&mut self,
+		api: &Api,
+		chunks: &mut ChunkStorage,
+		debug: &mut impl DebugRendererImpl,
+	) -> Result<()> {
 		self.gravity.tick(&mut self.storage);
 		self.humanoid.tick(&mut self.storage);
 		self.collision.tick(api, &mut self.storage, chunks, debug)?;

@@ -1,8 +1,9 @@
-use syn::{Attribute, FnArg, GenericArgument, GenericParam, Lit, Meta, MetaNameValue, Pat, PathArguments, ReturnType, Token, Type};
-use lua_docs::{ClassGenerics, Parameter};
-use syn::punctuated::Punctuated;
-use lua_docs::ty::Type as LuaType;
+use lua_docs::{ty::Type as LuaType, ClassGenerics, Parameter};
 use quote::ToTokens;
+use syn::{
+	punctuated::Punctuated, Attribute, FnArg, GenericArgument, GenericParam, Lit, Meta,
+	MetaNameValue, Pat, PathArguments, ReturnType, Token, Type,
+};
 
 pub fn attribute_contains(attrs: &Vec<Attribute>, string: &str) -> bool {
 	for attr in attrs {
@@ -14,7 +15,6 @@ pub fn attribute_contains(attrs: &Vec<Attribute>, string: &str) -> bool {
 	false
 }
 
-
 pub fn get_attribute<'a>(attrs: &'a Vec<Attribute>, name: &str) -> Option<&'a Attribute> {
 	for attr in attrs {
 		if attr.path.segments.last().unwrap().ident == name {
@@ -24,7 +24,6 @@ pub fn get_attribute<'a>(attrs: &'a Vec<Attribute>, name: &str) -> Option<&'a At
 
 	None
 }
-
 
 pub fn to_lua_type(ty: &Type) -> LuaType {
 	match ty {
@@ -177,9 +176,7 @@ pub fn get_return_ty(ret: &ReturnType) -> Option<LuaType> {
 	}
 }
 
-pub fn get_path_name(path: &syn::Path) -> String {
-	path.segments.last().unwrap().ident.to_string()
-}
+pub fn get_path_name(path: &syn::Path) -> String { path.segments.last().unwrap().ident.to_string() }
 
 pub fn get_type_name(ty: &Type) -> String {
 	if let Type::Path(path) = ty {

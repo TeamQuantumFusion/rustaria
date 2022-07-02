@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter, Write};
+use std::fmt::{Display, Formatter};
 
 pub mod block_layer_pos;
 pub mod block_pos;
@@ -9,6 +9,7 @@ pub mod identifier;
 
 /// World Space
 pub struct WS;
+
 /// Screen Space
 pub struct SS;
 
@@ -17,8 +18,7 @@ pub enum Error {
 	OutOfBounds,
 }
 
-impl std::error::Error for Error {
-}
+impl std::error::Error for Error {}
 
 impl Display for Error {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

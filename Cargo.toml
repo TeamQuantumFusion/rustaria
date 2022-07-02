@@ -3,12 +3,14 @@ name = "rustaria"
 version = "0.1.0"
 edition = "2021"
 
+build = "build.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 # Core
 anyways = "*"
-tracing = "0.1.35"
+log = "0.4.17"
 serde = { version = "1.0.137", features = ["derive"] }
 
 # World

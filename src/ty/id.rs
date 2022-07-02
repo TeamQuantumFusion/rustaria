@@ -3,8 +3,9 @@ use std::{
 	marker::PhantomData,
 };
 
-use crate::api::prototype::Prototype;
 use apollo::macros::*;
+
+use crate::api::prototype::Prototype;
 
 /// The internal id is a instance bound identifier to the registry,
 /// absolutely not forward/backwards compatible across versions or even game instances.
@@ -38,15 +39,16 @@ impl<P: Prototype> Id<P> {
 	}
 }
 
-unsafe impl<P> Send for Id<P> {
+unsafe impl<P> Send for Id<P> {}
 
-}
 impl<P> Hash for Id<P> {
 	fn hash<H: Hasher>(&self, state: &mut H) { self.id.hash(state) }
 }
+
 impl<P> PartialEq<Self> for Id<P> {
 	fn eq(&self, other: &Self) -> bool { self.id == other.id }
 }
+
 impl<P> Eq for Id<P> {}
 
 // This is needed as rustc cringes on the phantomdata

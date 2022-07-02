@@ -1,10 +1,8 @@
 use std::{any::type_name, fmt::Display};
-use anyways::ext::AuditExt;
 
-use anyways::Result;
+use anyways::{ext::AuditExt, Result};
 use apollo::{FromLua, Lua, LuaSerdeExt, Table, ToLua};
 use serde::Deserialize;
-use crate::ty::identifier::Identifier;
 
 pub struct LunaTable<'a> {
 	pub lua: &'a Lua,
@@ -17,7 +15,7 @@ impl<'a> LunaTable<'a> {
 			.get(key.clone())
 			.wrap_err_with(|| format!("Getting field \"{}\"", key))
 	}
-	
+
 	pub fn get_ser<'de, K: ToLua + Display + Clone, V: Deserialize<'de>>(
 		&self,
 		key: K,

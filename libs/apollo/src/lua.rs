@@ -1,5 +1,5 @@
 use std::{
-	any::{type_name, Any, TypeId},
+	any::{Any, TypeId},
 	cell::{Ref, RefCell, RefMut, UnsafeCell},
 	collections::HashMap,
 	ffi::{CStr, CString},
@@ -11,20 +11,16 @@ use std::{
 	os::raw::{c_char, c_int, c_void},
 	panic::{catch_unwind, resume_unwind, AssertUnwindSafe, Location},
 	ptr, str,
-	sync::{Arc, Mutex, RwLock, Weak},
+	sync::{Arc, Mutex, Weak},
 };
-use anyways::audit::Audit;
-use anyways::ext::AuditExt;
 
+use anyways::{audit::Audit, ext::AuditExt};
 use rustc_hash::FxHashMap;
-#[cfg(feature = "serialize")]
-use serde::Serialize;
-use tracing::{debug, debug_span, info_span, span};
 #[cfg(feature = "async")]
 use {
 	crate::types::{AsyncCallback, AsyncCallbackUpvalue, AsyncPollUpvalue},
 	futures_core::{
-		future::{Future, LocalBoxFuture},
+		future::Future,
 		task::{Context, Poll, Waker},
 	},
 	futures_task::noop_waker,
@@ -38,7 +34,7 @@ use crate::{
 	error::{Error, Result},
 	ffi,
 	function::Function,
-	hook::{Debug, HookTriggers},
+	hook::Debug,
 	stdlib::StdLib,
 	string::String,
 	table::Table,
@@ -66,12 +62,14 @@ use crate::{types::WarnCallback, userdata::USER_VALUE_MAXSLOT, util::push_userda
 pub struct Lua(Arc<UnsafeCell<LuaInner>>);
 
 unsafe impl Sync for Lua {}
+
 unsafe impl Send for Lua {}
 
 #[derive(Debug)]
 pub struct LuaWeakRef(Weak<UnsafeCell<LuaInner>>);
 
 unsafe impl Sync for LuaWeakRef {}
+
 unsafe impl Send for LuaWeakRef {}
 
 impl LuaWeakRef {
@@ -1112,8 +1110,6 @@ impl Lua {
 	where
 		S: AsRef<[u8]> + ?Sized,
 	{
-		let _span = debug_span!("Creating String").entered();
-
 		unsafe {
 			let _sg = StackGuard::new(self.state);
 			check_stack(self.state, 3)?;
@@ -1124,8 +1120,6 @@ impl Lua {
 
 	/// Creates and returns a new empty table.
 	pub fn create_table(&self) -> Result<Table> {
-		let _span = debug_span!("Creating Table").entered();
-
 		unsafe {
 			let _sg = StackGuard::new(self.state);
 			check_stack(self.state, 2)?;
@@ -1139,7 +1133,6 @@ impl Lua {
 	/// `nrec` is a hint for how many other elements the table will have.
 	/// Lua may use these hints to preallocate memory for the new table.
 	pub fn create_table_with_capacity(&self, narr: c_int, nrec: c_int) -> Result<Table> {
-		let _span = debug_span!("Creating Table").entered();
 		unsafe {
 			let _sg = StackGuard::new(self.state);
 			check_stack(self.state, 3)?;
@@ -1155,7 +1148,6 @@ impl Lua {
 		V: ToLua,
 		I: IntoIterator<Item = (K, V)>,
 	{
-		let _span = debug_span!("Creating Table").entered();
 		unsafe {
 			let _sg = StackGuard::new(self.state);
 			check_stack(self.state, 6)?;
@@ -1203,7 +1195,6 @@ impl Lua {
 		R: ToLuaMulti,
 		F: 'static + MaybeSend + Fn(&Lua, A) -> Result<R>,
 	{
-		let _span = debug_span!("Creating Function").entered();
 		self.create_callback(Box::new(move |lua, args| {
 			Ok(func(lua, A::from_lua_multi(args, lua)?)?.to_lua_multi(lua)?)
 		}))
@@ -1221,7 +1212,6 @@ impl Lua {
 		R: ToLuaMulti,
 		F: 'static + MaybeSend + FnMut(&Lua, A) -> Result<R>,
 	{
-		let _span = debug_span!("Creating Mutable Function").entered();
 		let func = RefCell::new(func);
 		self.create_function(move |lua, args| {
 			(*func
@@ -1263,7 +1253,6 @@ impl Lua {
 	///
 	/// Equivalent to `coroutine.create`.
 	pub fn create_thread(&self, func: Function) -> Result<Thread> {
-		let _span = debug_span!("Creating Thread").entered();
 		unsafe {
 			let _sg = StackGuard::new(self.state);
 			check_stack(self.state, 3)?;
@@ -1325,7 +1314,8 @@ impl Lua {
 		T: 'static + MaybeSend + UserData,
 	{
 		unsafe {
-			self.make_userdata::<T>(data).wrap_err("Failed to create userdata")
+			self.make_userdata::<T>(data)
+				.wrap_err("Failed to create userdata")
 		}
 	}
 
@@ -1439,7 +1429,8 @@ impl Lua {
 
 	/// Converts a value that implements `ToLuaMulti` into a `MultiValue` instance.
 	pub fn pack_multi<T: ToLuaMulti>(&self, t: T) -> anyways::Result<MultiValue> {
-		Ok(t.to_lua_multi(self).wrap_err("Failed to pack multi value")?)
+		Ok(t.to_lua_multi(self)
+			.wrap_err("Failed to pack multi value")?)
 	}
 
 	/// Converts a `MultiValue` instance into a value that implements `FromLuaMulti`.
@@ -2106,7 +2097,10 @@ impl Lua {
 	}
 
 	#[cfg(feature = "async")]
-	pub(crate) fn create_async_callback(&self, func: AsyncCallback<'static>) -> eyre::Result<Function> {
+	pub(crate) fn create_async_callback(
+		&self,
+		func: AsyncCallback<'static>,
+	) -> eyre::Result<Function> {
 		#[cfg(any(feature = "lua54", feature = "lua53", feature = "lua52"))]
 		unsafe {
 			let libs = (*self.extra.get()).libs;

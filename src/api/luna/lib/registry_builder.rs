@@ -1,17 +1,10 @@
-use std::{marker::PhantomData};
-use std::collections::HashMap;
-use std::fmt::Debug;
-use anyways::audit::Audit;
+use std::{fmt::Debug, marker::PhantomData};
 
-use anyways::Result;
+use anyways::{audit::Audit, Result};
+use apollo::{macros::*, FromLua, Lua, Value};
 use fxhash::FxHashMap;
-use apollo::{FromLua, Lua, Value};
-use apollo::macros::*;
 
-use crate::{
-	api::{registry::Registry},
-	ty::identifier::Identifier,
-};
+use crate::{api::registry::Registry, ty::identifier::Identifier};
 
 const DEFAULT_PRIORITY: f32 = 69420.0;
 
@@ -33,13 +26,14 @@ impl<P: FromLua + 'static + Debug> RegistryBuilder<P> {
 	#[lua_method]
 	pub fn register(&mut self, values: Vec<(RegistryKey, P)>) {
 		for (key, value) in values {
-			self.values.insert(key.identifier, (key.priority.unwrap_or(DEFAULT_PRIORITY), value));
+			self.values.insert(
+				key.identifier,
+				(key.priority.unwrap_or(DEFAULT_PRIORITY), value),
+			);
 		}
 	}
 
-	pub fn build(self) -> Result<Registry<P>> {
-		Ok(Registry::new(self.values))
-	}
+	pub fn build(self) -> Result<Registry<P>> { Ok(Registry::new(self.values)) }
 }
 
 impl<P: FromLua + 'static + Debug> FromLua for RegistryBuilder<P> {
@@ -54,7 +48,7 @@ impl<P: FromLua + 'static + Debug> FromLua for RegistryBuilder<P> {
 #[derive(Debug)]
 pub struct RegistryKey {
 	identifier: Identifier,
-	priority: Option<f32>
+	priority: Option<f32>,
 }
 
 impl FromLua for RegistryKey {
@@ -62,18 +56,16 @@ impl FromLua for RegistryKey {
 		Ok(match lua_value {
 			Value::String(_) => RegistryKey {
 				identifier: Identifier::from_lua(lua_value, lua)?,
-				priority: None
+				priority: None,
 			},
-			Value::Table(table) =>  {
-				RegistryKey {
-					identifier: Identifier::new_lua(table.get("name")?)?,
-					priority: table.get::<_, Option<f32>>("priority")?
-				}
+			Value::Table(table) => RegistryKey {
+				identifier: Identifier::new_lua(table.get("name")?)?,
+				priority: table.get::<_, Option<f32>>("priority")?,
 			},
 			_ => {
 				return Err(Audit::new(
 					"Registry type must be Table { name = , priority = } or an identifier",
-				))
+				));
 			}
 		})
 	}

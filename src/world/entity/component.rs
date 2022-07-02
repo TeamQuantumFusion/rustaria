@@ -1,12 +1,12 @@
-use euclid::{Rect, Vector2D};
+use anyways::Result;
 use apollo::{FromLua, Function, Lua, LuaSerdeExt, Value};
+use euclid::{Rect, Vector2D};
 
 use crate::{
+	api::util::lua_table,
 	ty::{direction::DirMap, id::Id, WS},
 	world::entity::prototype::EntityDesc,
 };
-use crate::api::util::lua_table;
-use anyways::Result;
 
 /// Our lovely components
 #[macro_export]
@@ -75,7 +75,7 @@ impl FromLua for CollisionComponent {
 			collision_box: lua.from_value(table.get("collision_box")?)?,
 			hit_callback: table.get("hit_callback")?,
 			collided: Default::default(),
-			collisions: vec![]
+			collisions: vec![],
 		})
 	}
 }

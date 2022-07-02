@@ -1,8 +1,8 @@
 use std::collections::hash_set::Iter;
 
+use apollo::macros::*;
 use fxhash::{FxHashMap, FxHashSet};
 
-use apollo::macros::*;
 use crate::{Chunk, ChunkPos};
 
 #[derive(Clone)]

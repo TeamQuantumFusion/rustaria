@@ -1,19 +1,12 @@
-use anyways::ext::AuditExt;
-use anyways::Result;
-use apollo::prelude::LuaResult;
-use tracing::{error_span, trace};
-use apollo::{FromLua, Lua, Value};
+use anyways::{ext::AuditExt, Result};
+use apollo::{macros::*, FromLua};
+use log::trace;
 
 use crate::{
-	api::{
-		luna::{lib::registry_builder::RegistryBuilder, table::LunaTable},
-		prototype::Prototype,
-		registry::Registry,
-	},
+	api::{luna::lib::registry_builder::RegistryBuilder, prototype::Prototype, registry::Registry},
 	ty::{id::Id, identifier::Identifier},
 	world::chunk::block::{BlockDesc, BlockPrototype},
 };
-use apollo::macros::*;
 
 #[derive(Clone)]
 pub struct BlockLayer {
@@ -25,9 +18,7 @@ pub struct BlockLayer {
 #[lua_impl]
 impl BlockLayer {
 	#[lua_field(get blocks)]
-	pub fn blocks(&self) -> &Registry<BlockDesc> {
-		&self.blocks
-	}
+	pub fn blocks(&self) -> &Registry<BlockDesc> { &self.blocks }
 }
 
 #[derive(FromLua, Debug)]
@@ -66,7 +57,6 @@ impl BlockLayerPrototype {
 		})
 	}
 }
-
 
 impl Prototype for BlockLayerPrototype {
 	type Output = BlockLayer;

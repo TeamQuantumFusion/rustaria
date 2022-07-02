@@ -31,8 +31,6 @@ impl ItemsBuilder {
 		}
 		self.field += 1;
 	}
-
-	pub fn build(self) -> TokenStream { self.stream }
 }
 
 impl ToTokens for ItemsBuilder {

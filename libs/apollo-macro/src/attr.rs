@@ -1,6 +1,8 @@
 use proc_macro2::Ident;
-use syn::{Error, Token};
-use syn::parse::{Parse, ParseStream};
+use syn::{
+	parse::{Parse, ParseStream},
+	Error,
+};
 
 pub(crate) enum LuaBindingAttr {
 	Method(MethodAttr),
@@ -10,7 +12,7 @@ pub(crate) enum LuaBindingAttr {
 
 #[derive(Clone)]
 pub(crate) struct MethodAttr {
-	pub lua_name: Option<String>
+	pub lua_name: Option<String>,
 }
 
 impl Parse for MethodAttr {
@@ -24,7 +26,7 @@ impl Parse for MethodAttr {
 #[derive(Clone)]
 pub(crate) enum FieldBindKind {
 	Getter,
-	Setter
+	Setter,
 }
 
 impl Parse for FieldBindKind {
@@ -36,7 +38,10 @@ impl Parse for FieldBindKind {
 		} else if ident == "set" {
 			Ok(FieldBindKind::Setter)
 		} else {
-			Err(Error::new(ident.span(), "Field attribute needs to start with \"get\" or \"set\""))
+			Err(Error::new(
+				ident.span(),
+				"Field attribute needs to start with \"get\" or \"set\"",
+			))
 		}
 	}
 }
@@ -55,4 +60,3 @@ impl Parse for FieldAttr {
 		})
 	}
 }
-

@@ -1,9 +1,14 @@
 use euclid::Vector2D;
 use hecs::Entity;
-use tracing::warn;
-use crate::ty::WS;
-use crate::world::entity::component::{HumanoidComponent, PhysicsComponent, PositionComponent};
-use crate::world::entity::EntityStorage;
+use log::warn;
+
+use crate::{
+	ty::WS,
+	world::entity::{
+		component::{HumanoidComponent, PhysicsComponent, PositionComponent},
+		EntityStorage,
+	},
+};
 
 pub struct NetworkSystem;
 
@@ -11,7 +16,10 @@ impl NetworkSystem {
 	pub fn apply(&mut self, storage: &mut EntityStorage, packet: &EntityPacket) {
 		if let Some(entity) = storage.get(packet.entity) {
 			match packet.component {
-				EntityComponentPacket::Physics { add_velocity, add_accel } => {
+				EntityComponentPacket::Physics {
+					add_velocity,
+					add_accel,
+				} => {
 					if let Some(mut physics) = entity.get_mut::<PhysicsComponent>() {
 						physics.vel += add_velocity;
 						physics.accel += add_accel;
@@ -38,13 +46,13 @@ impl NetworkSystem {
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct EntityPacket {
 	pub entity: Entity,
-	pub component: EntityComponentPacket
+	pub component: EntityComponentPacket,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub enum EntityComponentPacket {
 	Pos {
-		set_pos: Vector2D<f32, WS>
+		set_pos: Vector2D<f32, WS>,
 	},
 	Physics {
 		add_velocity: Vector2D<f32, WS>,
@@ -53,5 +61,5 @@ pub enum EntityComponentPacket {
 	Humanoid {
 		dir: Vector2D<f32, WS>,
 		jumping: bool,
-	}
+	},
 }

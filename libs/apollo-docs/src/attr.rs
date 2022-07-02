@@ -1,6 +1,8 @@
-use syn::parse::{Parse, ParseStream};
 use proc_macro2::Ident;
-use syn::Error;
+use syn::{
+	parse::{Parse, ParseStream},
+	Error,
+};
 
 #[derive(Clone)]
 pub(crate) enum FieldBindKind {

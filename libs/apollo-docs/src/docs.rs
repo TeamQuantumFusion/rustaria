@@ -1,7 +1,6 @@
+use lua_docs::{Class, ClassGenerics, Field, FuncGenerics, Function, ty::Type as LuaType};
 use quote::ToTokens;
 use syn::{Attribute, GenericArgument, GenericParam, ItemImpl, Lit, Meta, PathArguments, Type};
-
-use lua_docs::{Class, Field, Function, FuncGenerics, ty::Type as LuaType, ClassGenerics};
 
 pub struct DocsBuilder {
 	pub class: Class,

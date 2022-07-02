@@ -1,19 +1,14 @@
 use std::ops::{Deref, DerefMut};
-use anyways::ext::AuditExt;
 
+use anyways::{ext::AuditExt, Result};
 use euclid::{size2, Rect};
 use fxhash::FxHashSet;
-use anyways::Result;
-
 use rustaria::{
 	api::Api,
 	debug::DebugRendererImpl,
 	network::ClientNetwork,
 	ty::chunk_pos::ChunkPos,
-	world::{
-		chunk::{Chunk, CHUNK_SIZE_F32},
-		ClientBoundWorldPacket, ServerBoundWorldPacket, World,
-	},
+	world::{chunk::CHUNK_SIZE_F32, ClientBoundWorldPacket, ServerBoundWorldPacket, World},
 };
 
 use crate::{ClientApi, PlayerSystem};
@@ -58,16 +53,13 @@ impl ClientWorld {
 				}
 			}
 		}
-		self.inner.tick(api, debug).wrap_err("Ticking client world.")?;
+		self.inner
+			.tick(api, debug)
+			.wrap_err("Ticking client world.")?;
 		Ok(())
 	}
 
-	pub(crate) fn packet(
-		&mut self,
-		api: &Api,
-		packet: ClientBoundWorldPacket,
-		debug: &mut impl DebugRendererImpl,
-	) -> Result<()> {
+	pub(crate) fn packet(&mut self, api: &Api, packet: ClientBoundWorldPacket) -> Result<()> {
 		match packet {
 			ClientBoundWorldPacket::Chunk(chunk_pos, chunk) => {
 				self.inner.chunks.insert(chunk_pos, chunk);
@@ -95,9 +87,4 @@ impl Deref for ClientWorld {
 
 impl DerefMut for ClientWorld {
 	fn deref_mut(&mut self) -> &mut Self::Target { &mut self.inner }
-}
-
-pub enum ChunkRequestStatus {
-	Requested,
-	Received(Chunk),
 }

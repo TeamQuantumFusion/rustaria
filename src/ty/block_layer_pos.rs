@@ -1,6 +1,5 @@
 use anyways::audit::Audit;
-use anyways::Result;
-use apollo::{macros::*, FromLua, Lua, Table, ToLua, Value};
+use apollo::{FromLua, Lua, ToLua, Value};
 
 use crate::{
 	api::{luna::table::LunaTable, util::lua_table},

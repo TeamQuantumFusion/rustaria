@@ -1,12 +1,10 @@
 use std::{mem::size_of, rc::Rc};
-use anyways::ext::AuditExt;
 
+use anyways::{ext::AuditExt, Result};
 use glium::{
 	index::PrimitiveType, uniforms::Uniforms, DrawParameters, Frame, IndexBuffer, Program, Surface,
 	Vertex, VertexBuffer,
 };
-use anyways::Result;
-
 
 use crate::{render::ty::mesh_builder::MeshBuilder, Frontend};
 

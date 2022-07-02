@@ -1,17 +1,15 @@
-use proc_macro2::{TokenStream};
+use proc_macro2::TokenStream;
 use quote::{quote, ToTokens, TokenStreamExt};
-use syn::{ImplItemMethod, punctuated::Punctuated, Token};
+use syn::{punctuated::Punctuated, ImplItemMethod, Token};
 
-use crate::{
-	attr::MethodAttr,
-};
-use crate::lua_impl::values::ValueManager;
+use crate::{attr::MethodAttr, lua_impl::values::ValueManager};
 
 pub(crate) fn bind_method(item: &ImplItemMethod, attr: MethodAttr) -> TokenStream {
 	let mut manager = ValueManager::new(false);
 
 	// Scan inputs
-	let inputs: Punctuated<TokenStream, Token!(,)> = item.sig
+	let inputs: Punctuated<TokenStream, Token!(,)> = item
+		.sig
 		.inputs
 		.iter()
 		.map(|input| manager.unwrap_input(input))
@@ -38,14 +36,10 @@ enum MethodBinding {
 }
 
 impl MethodBinding {
-	pub fn new( lua_name: String) -> MethodBinding {
+	pub fn new(lua_name: String) -> MethodBinding {
 		match MetaMethod::new(&lua_name) {
-			None => {
-				MethodBinding::AddFunctionMut(lua_name)
-			}
-			Some(meta) => {
-				MethodBinding::AddFunctionMutMeta(meta)
-			}
+			None => MethodBinding::AddFunctionMut(lua_name),
+			Some(meta) => MethodBinding::AddFunctionMutMeta(meta),
 		}
 	}
 

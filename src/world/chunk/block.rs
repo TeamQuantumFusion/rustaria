@@ -1,11 +1,10 @@
 use std::collections::HashMap;
-use anyways::ext::AuditExt;
 
+use anyways::{ext::AuditExt, Result};
 use apollo::{macros::*, FromLua};
-use anyways::Result;
 
 use crate::{
-	api::{prototype::Prototype},
+	api::prototype::Prototype,
 	ty::{id::Id, identifier::Identifier},
 	world::chunk::spread::{BlockSpreader, BlockSpreaderPrototype},
 };

@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{quote, ToTokens, TokenStreamExt};
 use syn::{
-	punctuated::Punctuated, token::Mut, FnArg, GenericArgument, Lifetime, PathArguments,
-	ReturnType, Token, Type,
+	punctuated::Punctuated, FnArg, GenericArgument, Lifetime, PathArguments, ReturnType, Token,
+	Type,
 };
 
 #[derive(Copy, Clone)]
@@ -71,7 +71,7 @@ impl ValueManager {
 				//		quote!(#value.get("self")?)
 				//	}
 				//} else {
-					//quote!(#value)
+				//quote!(#value)
 				value
 				//}
 			}
@@ -88,7 +88,7 @@ impl ValueManager {
 						mutable,
 						lifetime,
 						..
-					} =>  {
+					} => {
 						let local = self
 							.new_value(
 								ParameterKind::UserData { mutable, name },
@@ -98,7 +98,7 @@ impl ValueManager {
 							.to_token_stream();
 
 						local
-					},
+					}
 					LuaValue::Lua => {
 						quote!(lua)
 					}
@@ -188,7 +188,6 @@ impl ValueManager {
 		} else {
 			quote!(#ident)
 		}
-
 	}
 
 	fn add_lifetime(&mut self, ident: Ident, lifetime: Option<Lifetime>) {
@@ -279,12 +278,6 @@ impl LuaValue {
 			ty => LuaValue::Normal(ty),
 		}
 	}
-}
-
-fn push_arg(args: &mut Vec<(Ident, TokenStream)>, ty: TokenStream) -> Ident {
-	let ident = Ident::new(&format!("v{}", args.len()), Span::call_site());
-	args.push((ident.clone(), ty));
-	ident
 }
 
 pub enum ParameterKind {

@@ -3,12 +3,14 @@ use std::{
 	ops::{Index, IndexMut},
 };
 
+use apollo::macros::*;
 use euclid::{vec2, Vector2D};
 use Direction::*;
-use apollo::macros::*;
 
 // ======================================== DIRECTION ========================================
-#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(
+	Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash, serde::Serialize, serde::Deserialize,
+)]
 pub enum Direction {
 	Up,
 	Left,
@@ -118,16 +120,6 @@ impl<V> DirMap<V> {
 			Left => 1,
 			Down => 2,
 			Right => 3,
-		}
-	}
-
-	fn get_dir(dir: usize) -> Direction {
-		match dir {
-			0 => Up,
-			1 => Left,
-			2 => Down,
-			3 => Right,
-			_ => panic!("wtf"),
 		}
 	}
 }

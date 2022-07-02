@@ -1,19 +1,17 @@
 use std::collections::HashSet;
 
+use anyways::Result;
+use apollo::{FromLua, Lua, Value};
 use euclid::{Rect, Vector2D};
 use glium::{uniform, Blend, DrawParameters, Program};
 use rustaria::{
-	api::{prototype::Prototype},
+	api::{prototype::Prototype, util::lua_table},
 	ty::{identifier::Identifier, WS},
 	world::entity::{
 		component::{PhysicsComponent, PositionComponent, PrototypeComponent},
 		EntityWorld,
 	},
 };
-
-use apollo::{FromLua, Lua, Value, macros::*};
-use rustaria::api::util::lua_table;
-use anyways::Result;
 
 use crate::{
 	render::{
@@ -101,7 +99,6 @@ impl EntityRenderer {
 	}
 }
 
-
 #[derive(Debug)]
 pub struct EntityRendererPrototype {
 	pub image: Identifier,
@@ -128,7 +125,7 @@ impl Prototype for EntityRendererPrototype {
 }
 
 impl FromLua for EntityRendererPrototype {
-	fn from_lua(lua_value: Value, lua: &Lua) -> Result<Self> {
+	fn from_lua(lua_value: Value, _lua: &Lua) -> Result<Self> {
 		let table = lua_table(lua_value)?;
 		Ok(EntityRendererPrototype {
 			image: table.get("image")?,

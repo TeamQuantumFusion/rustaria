@@ -9,11 +9,10 @@ use std::{
 	hash::{BuildHasher, Hash},
 	string::String as StdString,
 };
-use anyways::ext::AuditExt;
 
+use anyways::{ext::AuditExt, Result};
 use bstr::{BStr, BString};
 use num_traits::cast;
-use anyways::Result;
 
 use crate::{
 	error::Error,
@@ -22,8 +21,8 @@ use crate::{
 	string::String,
 	table::Table,
 	thread::Thread,
-	types::{LightUserData, LuaPointer, MaybeSend},
-	userdata::{AnyUserData, UserData},
+	types::{LightUserData, MaybeSend},
+	userdata::{AnyUserData, UserData, UserDataCell},
 	value::{FromLua, ToLua, Value},
 };
 
@@ -140,19 +139,18 @@ impl FromLua for AnyUserData {
 	}
 }
 
-
-
 impl<T: UserData + MaybeSend + 'static> ToLua for T {
-	fn to_lua(self, lua: &Lua) -> Result<Value> {
-		UserDataCell::new(self).to_lua(lua)
-	}
+	fn to_lua(self, lua: &Lua) -> Result<Value> { UserDataCell::new(self).to_lua(lua) }
 }
 impl<T: UserData + MaybeSend + 'static + Clone> FromLua for T {
 	fn from_lua(lua_value: Value, lua: &Lua) -> Result<Self> {
-		if let Some(value) = T::from_lua(lua_value.clone(), lua)  {
+		if let Some(value) = T::from_lua(lua_value.clone(), lua) {
 			return Ok(value?);
 		} else {
-			Ok(UserDataCell::<T>::from_lua(lua_value, lua)?.get("unknown")?.borrow().clone())
+			Ok(UserDataCell::<T>::from_lua(lua_value, lua)?
+				.get("unknown")?
+				.borrow()
+				.clone())
 		}
 	}
 }
@@ -164,11 +162,9 @@ impl<T: UserData + MaybeSend + 'static> ToLua for UserDataCell<T> {
 
 impl<T: UserData + MaybeSend + 'static> FromLua for UserDataCell<T> {
 	#[inline]
-	fn from_lua(value: Value, lua: &Lua) -> Result<UserDataCell<T>> {
+	fn from_lua(value: Value, _lua: &Lua) -> Result<UserDataCell<T>> {
 		match value {
-			Value::UserData(ud) => {
-				Ok(ud.get_cell::<T>().wrap_err("Failed to get UserDataCell")?)
-			},
+			Value::UserData(ud) => Ok(ud.get_cell::<T>().wrap_err("Failed to get UserDataCell")?),
 			_ => Err(Error::FromLuaConversionError {
 				from: value.type_name(),
 				to: "userdata",
@@ -354,8 +350,6 @@ impl FromLua for BString {
 impl ToLua for &BStr {
 	fn to_lua(self, lua: &Lua) -> Result<Value> { Ok(Value::String(lua.create_string(&self)?)) }
 }
-use crate::userdata::{Ref, RefMut, UserDataCell};
-
 macro_rules! lua_convert_int {
 	($x:ty) => {
 		impl ToLua for $x {

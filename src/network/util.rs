@@ -3,11 +3,10 @@ use std::{
 	thread::sleep,
 	time::{Duration, Instant},
 };
-use anyways::audit::Audit;
 
-use anyways::Result;
+use anyways::{audit::Audit, Result};
 use laminar::{Packet, Socket, SocketEvent};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Serialize};
 
 pub struct Connector {
 	socket: Socket,

@@ -1,10 +1,12 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
-use syn::punctuated::Punctuated;
-use syn::{ImplItemMethod, Token};
-use crate::{FieldAttr};
-use crate::attr::FieldBindKind;
-use crate::lua_impl::values::{Receiver, ValueManager};
+use syn::{punctuated::Punctuated, ImplItemMethod, Token};
+
+use crate::{
+	attr::FieldBindKind,
+	lua_impl::values::{Receiver, ValueManager},
+	FieldAttr,
+};
 
 pub(crate) fn bind_field(method: &ImplItemMethod, attr: FieldAttr) -> TokenStream {
 	let sig = &method.sig;
@@ -19,14 +21,12 @@ pub(crate) fn bind_field(method: &ImplItemMethod, attr: FieldAttr) -> TokenStrea
 		.map(|input| manager.unwrap_input(input))
 		.collect();
 
-
 	// Create the "run" this is what actually gets run in the closure
 	let target_name = &sig.ident;
 
 	let wrapped_return = manager.wrap_return(&sig.output, quote!(Self::#target_name(#inputs)));
 
 	let parameter_mappers = &manager.parameter_mappers;
-
 
 	let conversion = if let Some(receiver) = &manager.receiver {
 		match receiver {

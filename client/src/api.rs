@@ -1,6 +1,6 @@
 use std::{collections::HashSet, mem::replace, ops::Deref, path::PathBuf};
-use anyways::ext::AuditExt;
 
+use anyways::{ext::AuditExt, Result};
 use rustaria::{
 	api::{
 		id_table::IdTable,
@@ -9,8 +9,6 @@ use rustaria::{
 	},
 	world::{chunk::layer::BlockLayer, entity::prototype::EntityDesc},
 };
-use anyways::Result;
-
 
 use crate::{
 	render::{
@@ -55,7 +53,9 @@ impl ClientApi {
 			.register_builder::<EntityRendererPrototype>(&self.luna.lua)?;
 
 		// reload server stuff
-		self.api.reload(&mut reload).wrap_err("Failed to reload common")?;
+		self.api
+			.reload(&mut reload)
+			.wrap_err("Failed to reload common")?;
 
 		let mut sprites = HashSet::new();
 		let block_layers = reload

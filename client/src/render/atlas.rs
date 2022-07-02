@@ -1,18 +1,17 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+use anyways::Result;
 use euclid::{point2, size2, Rect};
 use glium::texture::RawImage2d;
 use image::imageops::FilterType;
+use log::{error, trace, warn};
 use rectangle_pack::{
 	pack_rects, GroupedRectsToPlace, RectToInsert, RectanglePackError, TargetBin,
 };
-use anyways::Result;
-
 use rustaria::{
 	api::{Api, ResourceKind},
 	ty::identifier::Identifier,
 };
-use tracing::{error, trace, warn};
 
 use crate::Frontend;
 

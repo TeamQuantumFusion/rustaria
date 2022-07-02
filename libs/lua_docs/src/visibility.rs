@@ -12,9 +12,9 @@ impl Display for Visibility {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		match self {
 			Visibility::None => Ok(()),
-			Visibility::Public => { f.write_str("public") }
-			Visibility::Protected => { f.write_str("protected") }
-			Visibility::Private => { f.write_str("private") }
+			Visibility::Public => f.write_str("public"),
+			Visibility::Protected => f.write_str("protected"),
+			Visibility::Private => f.write_str("private"),
 		}
 	}
 }

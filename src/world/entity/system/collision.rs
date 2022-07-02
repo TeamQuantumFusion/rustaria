@@ -1,5 +1,6 @@
-use euclid::{rect, vec2, Rect, Size2D, Vector2D};
+use anyways::Result;
 use apollo::{LuaScope, LuaSerdeExt, Value};
+use euclid::{rect, vec2, Rect, Size2D, Vector2D};
 
 use crate::{
 	debug::{DebugCategory, DebugRendererImpl},
@@ -15,7 +16,6 @@ use crate::{
 	},
 	Api, ChunkStorage,
 };
-use anyways::Result;
 
 pub struct CollisionSystem;
 
@@ -70,7 +70,13 @@ impl CollisionSystem {
 									continue;
 								}
 								let tile = Rect::new(pos.to_point(), Size2D::new(1.0, 1.0));
-								test_collision(physics.vel, old_rect, tile, &mut collision.collisions, debug);
+								test_collision(
+									physics.vel,
+									old_rect,
+									tile,
+									&mut collision.collisions,
+									debug,
+								);
 							}
 						}
 					}

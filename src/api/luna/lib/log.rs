@@ -1,5 +1,5 @@
 use apollo::{Lua, MetaMethod, Table, Value};
-use tracing::{debug, error, info, trace, warn};
+use log::{debug, error, info, trace, warn};
 
 pub fn register(lua: &Lua, globals: &Table) -> anyways::Result<()> {
 	let log = lua.create_table()?;
@@ -12,27 +12,27 @@ pub fn register(lua: &Lua, globals: &Table) -> anyways::Result<()> {
 	Ok(())
 }
 
-fn trace(lua: &Lua, msg: Value) -> apollo::Result<()> {
+fn trace(_lua: &Lua, msg: Value) -> apollo::Result<()> {
 	trace!(target: "luna", "{}", to_string(msg)?);
 	Ok(())
 }
 
-fn debug(lua: &Lua, msg: Value) -> apollo::Result<()> {
+fn debug(_lua: &Lua, msg: Value) -> apollo::Result<()> {
 	debug!(target: "luna", "{}", to_string(msg)?);
 	Ok(())
 }
 
-fn info(lua: &Lua, msg: Value) -> apollo::Result<()> {
+fn info(_lua: &Lua, msg: Value) -> apollo::Result<()> {
 	info!(target: "luna", "{}", to_string(msg)?);
 	Ok(())
 }
 
-fn warn(lua: &Lua, msg: Value) -> apollo::Result<()> {
+fn warn(_lua: &Lua, msg: Value) -> apollo::Result<()> {
 	warn!(target: "luna", "{}", to_string(msg)?);
 	Ok(())
 }
 
-fn error(lua: &Lua, msg: Value) -> apollo::Result<()> {
+fn error(_lua: &Lua, msg: Value) -> apollo::Result<()> {
 	error!(target: "luna", "{}", to_string(msg)?);
 	Ok(())
 }

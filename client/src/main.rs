@@ -7,15 +7,16 @@ use std::{
 	path::PathBuf,
 	time::{Duration, Instant},
 };
-use anyways::ext::AuditExt;
 
+use anyways::{ext::AuditExt, Result};
+use apollo::LuaScope;
 use debug::Debug;
 use euclid::vec2;
 use glfw::{Action, Key, WindowEvent};
 use glium::Surface;
+use log::{info, LevelFilter};
 use render::ty::viewport::Viewport;
 use rustaria::{
-	debug::DebugCategory,
 	ty::{chunk_pos::ChunkPos, identifier::Identifier},
 	world::{
 		chunk::{storage::ChunkStorage, Chunk, ChunkLayer},
@@ -23,10 +24,8 @@ use rustaria::{
 	},
 	TPS,
 };
-use tracing_error::ErrorLayer;
-use tracing_subscriber::{fmt, fmt::format, layer::SubscriberExt, util::SubscriberInitExt};
-use apollo::LuaScope;
-use anyways::Result;
+use simplelog::{ColorChoice, CombinedLogger, Config, TermLogger, TerminalMode};
+
 use crate::{
 	api::ClientApi,
 	frontend::Frontend,
@@ -42,18 +41,14 @@ mod game;
 mod render;
 mod ty;
 
-const TICK_DURATION: Duration = Duration::from_nanos((1000000000 / TPS) as u64);
-
 fn main() -> Result<()> {
-	let fmt_layer = fmt::layer()
-		//.with_max_level(Level::TRACE)
-		.event_format(format().compact())
-		.without_time();
-	tracing_subscriber::registry()
-		.with(ErrorLayer::default())
-		.with(fmt_layer)
-		.init();
-
+	TermLogger::init(
+		LevelFilter::Trace,
+		Config::default(),
+		TerminalMode::Mixed,
+		ColorChoice::Auto,
+	)?;
+	info!("hi");
 	let mut client = Client::new()?;
 	client.api.reload(&client.frontend)?;
 	client.run()?;
@@ -74,7 +69,7 @@ impl Client {
 	pub fn new() -> Result<Client> {
 		let run_dir = std::env::current_dir().wrap_err("Could not find current directory.")?;
 		let frontend = Frontend::new().wrap_err("Could not initialize frontend.")?;
-		let mut debug = Debug::new(&frontend).wrap_err("Could not initialize debug render.")?;
+		let debug = Debug::new(&frontend).wrap_err("Could not initialize debug render.")?;
 		//debug.enable(DebugCategory::TileSpread);
 		//debug.enable(DebugCategory::EntityCollision);
 		//debug.enable(DebugCategory::EntityVelocity);
@@ -135,7 +130,12 @@ impl Client {
 
 	pub fn tick(&mut self) -> Result<()> {
 		let api_scope = LuaScope::from(&*self.api);
-		self.api.api.luna.lua.globals().insert("api", api_scope.lua())?;
+		self.api
+			.api
+			.luna
+			.lua
+			.globals()
+			.insert("api", api_scope.lua())?;
 
 		let start = Instant::now();
 		if let Some(world) = &mut self.game {

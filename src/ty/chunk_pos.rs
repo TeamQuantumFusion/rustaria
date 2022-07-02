@@ -1,15 +1,13 @@
+use apollo::{macros::*, FromLua, Lua, ToLua, Value};
 use euclid::Vector2D;
 use num::{FromPrimitive, ToPrimitive};
-use apollo::{FromLua, Lua, ToLua, Value};
 
 use crate::{
+	api::{luna::table::LunaTable, util::lua_table},
 	ty,
 	ty::{direction::Direction, Error, Offset},
 	world::chunk::CHUNK_SIZE,
 };
-use crate::api::luna::table::LunaTable;
-use crate::api::util::lua_table;
-use apollo::macros::*;
 
 // ======================================== POSITION ========================================
 #[derive(
@@ -69,6 +67,7 @@ impl Offset<(i32, i32)> for ChunkPos {
 		Some(Self { x, y })
 	}
 }
+
 impl<S> TryFrom<Vector2D<f32, S>> for ChunkPos {
 	type Error = Error;
 
@@ -107,6 +106,9 @@ impl FromLua for ChunkPos {
 			table: lua_table(lua_value)?,
 		};
 
-		Ok(ChunkPos::try_from((table.get::<_, u32>("x")?, table.get::<_, u32>("y")?))?)
+		Ok(ChunkPos::try_from((
+			table.get::<_, u32>("x")?,
+			table.get::<_, u32>("y")?,
+		))?)
 	}
 }

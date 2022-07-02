@@ -1,5 +1,3 @@
-use anyways::audit::Audit;
-use anyways::ext::AuditExt;
 use bitflags::bitflags;
 use euclid::{rect, vec2, Rect, Vector2D};
 
@@ -14,6 +12,7 @@ pub trait DebugRendererImpl {
 }
 
 pub struct DummyRenderer;
+
 impl DebugRendererImpl for DummyRenderer {
 	fn event(&mut self, _: DebugEvent) {}
 }

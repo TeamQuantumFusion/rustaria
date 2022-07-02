@@ -1,8 +1,7 @@
 use std::collections::HashMap;
-use anyways::ext::AuditExt;
 
-use anyways::Result;
-use apollo::{FromLua, macros::*};
+use anyways::{ext::AuditExt, Result};
+use apollo::{macros::*, FromLua};
 use rand::Rng;
 use rand_xoshiro::Xoroshiro64Star;
 
@@ -14,7 +13,7 @@ use crate::{
 
 #[derive(Clone)]
 pub struct BlockSpreader {
-	pub chance:        f32,
+	pub chance: f32,
 	pub convert_table: HashMap<Id<BlockDesc>, Id<BlockDesc>>,
 }
 
@@ -50,7 +49,7 @@ impl BlockSpreader {
 			SpreadResult { keep, spread }
 		} else {
 			SpreadResult {
-				keep:   true,
+				keep: true,
 				spread: None,
 			}
 		}
@@ -58,13 +57,13 @@ impl BlockSpreader {
 }
 
 pub struct SpreadResult {
-	pub keep:   bool,
+	pub keep: bool,
 	pub spread: Option<(BlockPos, Id<BlockDesc>)>,
 }
 
 #[derive(Debug, FromLua)]
 pub struct BlockSpreaderPrototype {
-	pub chance:        f32,
+	pub chance: f32,
 	pub convert_table: HashMap<Identifier, Identifier>,
 }
 

@@ -1,15 +1,14 @@
 use std::collections::HashSet;
 
+use apollo::FromLua;
 use euclid::{size2, vec2, Rect};
 use rustaria::{
-	api::{prototype::Prototype},
+	api::prototype::Prototype,
 	debug::{DebugCategory, DebugRendererImpl},
 	draw_debug,
 	ty::{block_pos::BlockPos, identifier::Identifier, WS},
 	world::chunk::ConnectionType,
 };
-use apollo::{FromLua, Lua, Value, macros::*};
-use rustaria::api::util::lua_table;
 
 use crate::{
 	render::{

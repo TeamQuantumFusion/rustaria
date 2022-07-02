@@ -1,14 +1,14 @@
 use std::time::{Duration, Instant};
 
+use anyways::Result;
 use euclid::{rect, vec2, Rect, Vector2D};
 use glium::{program::SourceCode, uniform, Blend, DrawParameters, Frame, Program};
+use log::info;
 use rustaria::{
 	debug::{DebugCategory, DebugDraw, DebugEvent, DebugRendererImpl},
 	ty::WS,
 	TPS,
 };
-use tracing::info;
-use anyways::Result;
 
 use crate::{
 	render::ty::{
@@ -233,7 +233,7 @@ impl Debug {
 		size: f32,
 		pos: Vector2D<f32, WS>,
 	) {
-		let half = (size / 2.0);
+		let half = size / 2.0;
 		builder.push_quad((rect::<_, WS>(pos.x - half, pos.y - half, size, size), color))
 	}
 

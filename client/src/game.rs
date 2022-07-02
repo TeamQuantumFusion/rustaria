@@ -1,19 +1,17 @@
-use anyways::ext::AuditExt;
-use anyways::Result;
+use anyways::{ext::AuditExt, Result};
 use glfw::WindowEvent;
 use glium::Frame;
-
 use rustaria::{
-	network::{ClientNetwork, new_networking, packet::ClientBoundPacket},
+	network::{new_networking, packet::ClientBoundPacket, ClientNetwork},
 	player::ServerBoundPlayerPacket,
-	Server,
 	world::{chunk::storage::ChunkStorage, World},
+	Server,
 };
 
 use crate::{
-	ClientApi,
-	Debug,
-	Frontend, game::world::ClientWorld, PlayerSystem, render::{ty::viewport::Viewport, world::WorldRenderer}, Timing,
+	game::world::ClientWorld,
+	render::{ty::viewport::Viewport, world::WorldRenderer},
+	ClientApi, Debug, Frontend, PlayerSystem, Timing,
 };
 
 mod network;
@@ -77,7 +75,7 @@ impl ClientGame {
 					self.player.packet(api, packet, &mut self.world)?;
 				}
 				ClientBoundPacket::World(packet) => {
-					self.world.packet(api, packet, debug)?;
+					self.world.packet(api, packet)?;
 				}
 			}
 		}

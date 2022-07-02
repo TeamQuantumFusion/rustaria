@@ -1,5 +1,3 @@
 use std::path::PathBuf;
 
-pub fn probe_lua() -> Option<PathBuf> {
-    unreachable!()
-}
+pub fn probe_lua() -> Option<PathBuf> { unreachable!() }

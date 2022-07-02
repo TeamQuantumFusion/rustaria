@@ -1,8 +1,8 @@
 #![allow(clippy::new_without_default)]
 
-use anyways::ext::AuditExt;
+use anyways::{ext::AuditExt, Result};
+use log::info;
 use semver::Version;
-use tracing::info;
 use ty::chunk_pos::ChunkPos;
 use world::{
 	chunk::{storage::ChunkStorage, Chunk},
@@ -16,8 +16,6 @@ use crate::{
 	player::PlayerSystem,
 	world::World,
 };
-use anyways::Result;
-
 
 pub mod api;
 pub mod debug;
@@ -58,7 +56,9 @@ impl Server {
 			}
 		}
 
-		self.world.tick(api, &mut DummyRenderer).wrap_err("Ticking world")?;
+		self.world
+			.tick(api, &mut DummyRenderer)
+			.wrap_err("Ticking world")?;
 		self.player
 			.tick(&mut self.network, &self.world)
 			.wrap_err("Ticking player system.")?;

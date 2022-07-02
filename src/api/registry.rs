@@ -1,17 +1,14 @@
-use std::any::type_name;
-use std::cmp::Ordering;
-use std::fmt::Debug;
+use std::{any::type_name, cmp::Ordering, fmt::Debug};
 
+use apollo::{macros::*, UserData};
 use fxhash::{FxBuildHasher, FxHashMap};
-use apollo::UserData;
-use tracing::trace;
+use log::trace;
 
 use crate::{
 	api::id_table::IdTable,
 	ty::{id::Id, identifier::Identifier},
+	util::blake3::Hasher,
 };
-use crate::util::blake3::Hasher;
-use apollo::macros::*;
 
 #[derive(Clone, Debug)]
 pub struct Registry<I> {
@@ -43,9 +40,10 @@ impl<I> Registry<I> {
 			.map(|((id, prototype), (_, identifier))| (id, identifier, prototype))
 	}
 
-	pub fn new(
-		values: FxHashMap<Identifier, (f32, I)>,
-	) -> Registry<I> where I: Debug {
+	pub fn new(values: FxHashMap<Identifier, (f32, I)>) -> Registry<I>
+	where
+		I: Debug,
+	{
 		let mut values: Vec<((Identifier, f32), I)> = values
 			.into_iter()
 			.map(|(identifier, (priority, prototype))| ((identifier, priority), prototype))
@@ -82,19 +80,13 @@ impl<I> Registry<I> {
 #[lua_impl]
 impl<I: UserData + 'static + Send> Registry<I> {
 	#[lua_method(get)]
-	pub fn lua_get(&self, id: Id<I>) -> &I {
-		self.get(id)
-	}
+	pub fn lua_get(&self, id: Id<I>) -> &I { self.get(id) }
 
 	#[lua_method(get_id)]
-	pub fn lua_get_id(&self, id: Identifier) -> Option<Id<I>> {
-		self.get_id(&id)
-	}
+	pub fn lua_get_id(&self, id: Identifier) -> Option<Id<I>> { self.get_id(&id) }
 
 	#[lua_method(get_identifier)]
-	pub fn lua_get_identifier(&self, id: Id<I>) -> Identifier {
-		self.get_identifier(id).clone()
-	}
+	pub fn lua_get_identifier(&self, id: Id<I>) -> Identifier { self.get_identifier(id).clone() }
 }
 
 impl<I> FromIterator<(Id<I>, Identifier, I)> for Registry<I> {

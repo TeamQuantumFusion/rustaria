@@ -1,14 +1,9 @@
 use std::collections::HashSet;
-use anyways::ext::AuditExt;
 
-use apollo::{FromLua, Function, Lua, LuaSerdeExt, Value, macros::*};
+use anyways::{ext::AuditExt, Result};
+use apollo::{FromLua, Function, Lua, LuaSerdeExt};
 use rustaria::{
-	api::{
-		id_table::IdTable,
-		luna::{lib::registry_builder::RegistryBuilder, table::LunaTable},
-		prototype::Prototype,
-		registry::Registry,
-	},
+	api::{id_table::IdTable, luna::lib::registry_builder::RegistryBuilder, prototype::Prototype},
 	ty::{
 		block_pos::BlockPos,
 		chunk_pos::ChunkPos,
@@ -16,12 +11,11 @@ use rustaria::{
 		identifier::Identifier,
 	},
 	world::chunk::{
-		block::{BlockDesc, Block},
+		block::{Block, BlockDesc},
 		layer::BlockLayer,
 		ChunkLayer, ConnectionType,
 	},
 };
-use anyways::Result;
 
 use crate::{
 	render::{
@@ -87,12 +81,7 @@ pub struct BlockLayerRendererPrototype {
 }
 
 impl BlockLayerRendererPrototype {
-	pub fn bake(
-		self,
-		lua: &Lua,
-		atlas: &Atlas,
-		parent: &BlockLayer,
-	) -> Result<BlockLayerRenderer> {
+	pub fn bake(self, lua: &Lua, atlas: &Atlas, parent: &BlockLayer) -> Result<BlockLayerRenderer> {
 		let mut kind_uvs = Vec::new();
 		for value in SpriteConnectionKind::iter() {
 			let value = format!("{:?}", value);

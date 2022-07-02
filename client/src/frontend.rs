@@ -3,13 +3,11 @@ use std::{
 	rc::Rc,
 	sync::mpsc::Receiver,
 };
-use anyways::ext::AuditExt;
 
+use anyways::{ext::AuditExt, Result};
 use glfw::{
 	with_c_str, Context, Glfw, OpenGlProfileHint, SwapInterval, WindowEvent, WindowHint, WindowMode,
 };
-use anyways::Result;
-
 use glium::{
 	backend::Backend,
 	debug::{DebugCallbackBehavior, Severity},
@@ -17,7 +15,7 @@ use glium::{
 	Frame, Program, SwapBuffersError, Vertex,
 };
 use image::imageops::FilterType;
-use tracing::{event, Level};
+use log::{log, Level};
 
 use crate::render::ty::mesh_buffer::MeshDrawer;
 
@@ -71,16 +69,16 @@ impl Frontend {
 						synchronous: false,
 						callback: Box::new(|src, kind, severity, _, _, msg| match severity {
 							Severity::Notification => {
-								event!(target: "opengl", Level::DEBUG, ?src, ?kind, "{}", msg);
+								log!(target: "opengl", Level::Debug, "{}", msg);
 							}
 							Severity::Low => {
-								event!(target: "opengl", Level::INFO, ?src, ?kind, "{}", msg);
+								log!(target: "opengl", Level::Info, "{}", msg);
 							}
 							Severity::Medium => {
-								event!(target: "opengl", Level::WARN, ?src, ?kind, "{}", msg);
+								log!(target: "opengl", Level::Warn, "{}", msg);
 							}
 							Severity::High => {
-								event!(target: "opengl", Level::ERROR, ?src, ?kind, "{}", msg);
+								log!(target: "opengl", Level::Error, "{}", msg);
 							}
 						}),
 					},

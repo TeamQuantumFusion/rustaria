@@ -1,10 +1,9 @@
-use std::collections::HashMap;
-use std::fs;
+use std::{collections::HashMap, fmt::Write, fs};
 
 use lua_docs::ty::Type;
-use proc_macro2::{Ident, TokenStream};
-use syn::{Attribute, ImplItem, ImplItemMethod, ItemImpl};
-use std::fmt::Write;
+use proc_macro2::TokenStream;
+use syn::{Attribute, ImplItem, ItemImpl};
+
 use crate::{
 	util::{attribute_contains, get_attribute, get_path_name, get_type_name},
 	ClassInfo,
@@ -18,11 +17,11 @@ pub struct Index {
 
 impl Index {
 	pub fn consume(&mut self, impl_item: &ItemImpl) -> eyre::Result<()> {
-
 		if attribute_contains(&impl_item.attrs, "lua_impl") {
 			let name = get_type_name(&*impl_item.self_ty);
 			if !self.userdata.contains_key(&name) {
-				self.userdata.insert(name.clone(), ClassInfo::new(impl_item)?);
+				self.userdata
+					.insert(name.clone(), ClassInfo::new(impl_item)?);
 			}
 
 			self.userdata.get_mut(&name).unwrap().extend(impl_item)?;
@@ -53,7 +52,6 @@ impl Index {
 					}
 				}
 			}
-
 		}
 
 		Ok(())
@@ -75,7 +73,11 @@ impl Index {
 
 	pub fn export(mut self) {
 		for (_, info) in self.userdata {
-			fs::write(format!("./docs/{}.lua", info.name),info.export(&mut self.from_luas)).unwrap();
+			fs::write(
+				format!("./docs/{}.lua", info.name),
+				info.export(&mut self.from_luas),
+			)
+			.unwrap();
 		}
 
 		let mut out = String::new();
@@ -83,6 +85,6 @@ impl Index {
 			writeln!(&mut out, "--- @alias {name} {ty}").unwrap();
 		}
 
-		fs::write("./docs/Util.lua".to_string(),out).unwrap();
+		fs::write("./docs/Util.lua".to_string(), out).unwrap();
 	}
 }

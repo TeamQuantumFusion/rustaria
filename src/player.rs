@@ -1,9 +1,9 @@
 use std::collections::{hash_map::Entry, HashMap};
 
-use euclid::{vec2, Vector2D};
 use anyways::Result;
+use euclid::{vec2, Vector2D};
 use hecs::{Entity, EntityRef};
-use tracing::{debug, info, trace, warn};
+use log::{debug, info, trace, warn};
 
 use crate::{
 	api::Api,
@@ -33,7 +33,7 @@ pub enum ClientBoundPlayerPacket {
 
 #[derive(Default, Copy, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PlayerCommand {
-	pub dir:     Vector2D<f32, WS>,
+	pub dir: Vector2D<f32, WS>,
 	pub jumping: bool,
 }
 
@@ -54,7 +54,8 @@ impl PlayerSystem {
 			player_entity: api
 				.carrier
 				.entity
-				.get_id(&Identifier::new("player")).ok_or("Could not find Player entity")?
+				.get_id(&Identifier::new("player"))
+				.ok_or("Could not find Player entity")?,
 		})
 	}
 
@@ -132,7 +133,7 @@ impl PlayerSystem {
 
 #[derive(Clone)]
 pub struct Player {
-	pub pos:      Vector2D<f32, WS>,
+	pub pos: Vector2D<f32, WS>,
 	pub velocity: Vector2D<f32, WS>,
 }
 

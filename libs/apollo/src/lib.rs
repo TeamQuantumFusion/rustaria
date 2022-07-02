@@ -79,6 +79,34 @@
 #![doc(test(attr(deny(warnings))))]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+#[cfg(feature = "serialize")]
+#[doc(inline)]
+pub use crate::serde::{
+	de::Options as DeserializeOptions, ser::Options as SerializeOptions, LuaSerdeExt,
+};
+#[cfg(feature = "async")]
+pub use crate::thread::AsyncThread;
+pub use crate::{
+	chunk::{AsChunk, Chunk, ChunkMode},
+	error::{Error, ExternalError, ExternalResult, Result},
+	ffi::{lua_CFunction, lua_State},
+	function::Function,
+	hook::{Debug, DebugEvent, DebugNames, DebugSource, DebugStack, HookTriggers},
+	lua::{GCMode, Lua, LuaOptions},
+	multi::Variadic,
+	scope::{LuaScope, RefError},
+	stdlib::StdLib,
+	string::String,
+	table::{Table, TableExt, TablePairs, TableSequence},
+	thread::{Thread, ThreadStatus},
+	types::{Integer, LightUserData, Number, RegistryKey},
+	userdata::{
+		AnyUserData, MetaMethod, Ref, RefMut, UserData, UserDataCell, UserDataFields,
+		UserDataMetatable, UserDataMethods,
+	},
+	value::{FromLua, FromLuaMulti, MultiValue, Nil, ToLua, ToLuaMulti, Value},
+};
+
 #[macro_use]
 mod util_macros;
 
@@ -103,45 +131,10 @@ mod value;
 
 pub mod prelude;
 
-pub use crate::{ffi::lua_CFunction, ffi::lua_State};
-
-pub use crate::chunk::{AsChunk, Chunk, ChunkMode};
-pub use crate::error::{Error, ExternalError, ExternalResult, Result};
-pub use crate::function::Function;
-pub use crate::hook::{Debug, DebugEvent, DebugNames, DebugSource, DebugStack};
-pub use crate::lua::{GCMode, Lua, LuaOptions};
-pub use crate::multi::Variadic;
-pub use crate::scope::{LuaScope, RefError};
-pub use crate::stdlib::StdLib;
-pub use crate::string::String;
-pub use crate::table::{Table, TableExt, TablePairs, TableSequence};
-pub use crate::thread::{Thread, ThreadStatus};
-pub use crate::types::{Integer, LightUserData, Number, RegistryKey};
-pub use crate::userdata::{
-    AnyUserData, MetaMethod, UserData, UserDataFields, UserDataMetatable, UserDataMethods, UserDataCell, Ref, RefMut
-};
-pub use crate::value::{FromLua, FromLuaMulti, MultiValue, Nil, ToLua, ToLuaMulti, Value};
-
-
-pub use crate::hook::HookTriggers;
-
-#[cfg(feature = "async")]
-pub use crate::thread::AsyncThread;
-
 #[cfg(feature = "macro")]
 pub mod macros {
-    pub use apollo_macro::lua_impl;
-    pub use apollo_macro::lua_field;
-    pub use apollo_macro::lua_method;
-    pub use apollo_macro::to_lua;
-    pub use apollo_macro::from_lua;
+	pub use apollo_macro::{from_lua, lua_field, lua_impl, lua_method, to_lua};
 }
-
-#[cfg(feature = "serialize")]
-#[doc(inline)]
-pub use crate::serde::{
-    de::Options as DeserializeOptions, ser::Options as SerializeOptions, LuaSerdeExt,
-};
 
 #[cfg(feature = "serialize")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serialize")))]

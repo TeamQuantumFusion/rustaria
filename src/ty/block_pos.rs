@@ -1,16 +1,14 @@
 use std::fmt::{Display, Formatter};
 
+use apollo::{FromLua, Lua, ToLua, Value};
 use euclid::Vector2D;
 use num::ToPrimitive;
-use apollo::{FromLua, Lua, ToLua, Value};
 
 use crate::{
+	api::{luna::table::LunaTable, util::lua_table},
 	ty::{block_layer_pos::BlockLayerPos, chunk_pos::ChunkPos, Error, Error::OutOfBounds, Offset},
 	world::chunk::CHUNK_SIZE,
 };
-use crate::api::luna::table::LunaTable;
-use crate::api::util::lua_table;
-use apollo::macros::*;
 
 #[derive(
 	Copy,
@@ -86,14 +84,18 @@ impl<X: ToPrimitive, Y: ToPrimitive> TryFrom<(X, Y)> for BlockPos {
 		let y = y.to_u64().ok_or(OutOfBounds)?;
 		Ok(BlockPos {
 			chunk: ChunkPos {
-				x: u32::try_from(x / CHUNK_SIZE as u64).ok().ok_or(OutOfBounds)?,
-				y: u32::try_from(y / CHUNK_SIZE as u64).ok().ok_or(OutOfBounds)?
+				x: u32::try_from(x / CHUNK_SIZE as u64)
+					.ok()
+					.ok_or(OutOfBounds)?,
+				y: u32::try_from(y / CHUNK_SIZE as u64)
+					.ok()
+					.ok_or(OutOfBounds)?,
 			},
 			entry: BlockLayerPos::try_new(
 				(x as u64 % CHUNK_SIZE as u64) as u8,
 				(y as u64 % CHUNK_SIZE as u64) as u8,
 			)
-				.ok_or(OutOfBounds)?,
+			.ok_or(OutOfBounds)?,
 		})
 	}
 }
@@ -128,12 +130,15 @@ impl FromLua for BlockPos {
 			table: lua_table(lua_value)?,
 		};
 
-		if table.table.contains_key("x")? && table.table.contains_key("y")?  {
-			Ok(BlockPos::try_from((table.get::<_, u64>("x")?, table.get::<_, u64>("y")?))?)
+		if table.table.contains_key("x")? && table.table.contains_key("y")? {
+			Ok(BlockPos::try_from((
+				table.get::<_, u64>("x")?,
+				table.get::<_, u64>("y")?,
+			))?)
 		} else {
 			Ok(BlockPos {
 				chunk: table.get("chunk")?,
-				entry: table.get("entry")?
+				entry: table.get("entry")?,
 			})
 		}
 	}

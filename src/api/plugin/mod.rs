@@ -1,13 +1,12 @@
 use std::{collections::HashMap, path::PathBuf};
-use anyways::ext::AuditExt;
 
-use anyways::Result;
+use anyways::{ext::AuditExt, Result};
 use semver::{Version, VersionReq};
-use crate::api::luna::Luna;
 
-use crate::api::plugin::archive::Archive;
-use crate::api::ResourceKind;
-use crate::ty::identifier::Identifier;
+use crate::{
+	api::{luna::Luna, plugin::archive::Archive},
+	ty::identifier::Identifier,
+};
 
 mod archive;
 
@@ -35,14 +34,15 @@ impl Plugin {
 
 	pub fn reload(&self, luna: &Luna) -> Result<()> {
 		let identifier = Identifier::new("main.lua");
-		let data = self
-			.archive.get("src/main.lua")
-			.wrap_err(format!(
-				"Could not find entrypoint \"main.lua\" for plugin {}",
-				self.id
-			))?;
+		let data = self.archive.get("src/main.lua").wrap_err(format!(
+			"Could not find entrypoint \"main.lua\" for plugin {}",
+			self.id
+		))?;
 
-		luna.load(&identifier, &data).wrap_err("Failed to load lua file")?.exec().wrap_err("Failure while executing entrypoint")?;
+		luna.load(&identifier, &data)
+			.wrap_err("Failed to load lua file")?
+			.exec()
+			.wrap_err("Failure while executing entrypoint")?;
 		Ok(())
 	}
 }
@@ -74,7 +74,7 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn test_manifest() -> eyre::Result<()> {
+	fn test_manifest() -> anyways::Result<()> {
 		let manifest: Manifest = toml::from_str(
 			r#"
 	    [plugin]

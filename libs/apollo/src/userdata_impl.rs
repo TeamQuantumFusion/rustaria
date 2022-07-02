@@ -7,8 +7,7 @@ use std::{
 	sync::{Arc, Mutex, RwLock},
 };
 
-use anyways::{audit::Audit, ext::AuditExt};
-use bstr::ByteSlice;
+use anyways::audit::Audit;
 #[cfg(feature = "async")]
 use {
 	crate::types::AsyncCallback,
@@ -235,12 +234,8 @@ impl<T: 'static + UserData> StaticUserDataMethods<T> {
 					match type_id {
 						Some(id) if id == TypeId::of::<T>() => {
 							let ud = get_userdata_cell::<T>(lua.state);
-							Ok(method(
-								lua,
-								ud.get("self")?,
-								A::from_lua_multi(args, lua)?,
-							)?
-							.to_lua_multi(lua)?)
+							Ok(method(lua, ud.get("self")?, A::from_lua_multi(args, lua)?)?
+								.to_lua_multi(lua)?)
 						}
 						_ => Err(Audit::new(Error::UserDataTypeMismatch(type_name::<T>()))),
 					}
@@ -275,13 +270,9 @@ impl<T: 'static + UserData> StaticUserDataMethods<T> {
 					let type_id = lua.push_userdata_ref(&userdata.0)?;
 					match type_id {
 						Some(id) if id == TypeId::of::<T>() => {
-							let mut ud = get_userdata_cell::<T>(lua.state);
-							method(
-								lua,
-								ud.get_mut("self")?,
-								A::from_lua_multi(args, lua)?,
-							)?
-							.to_lua_multi(lua)
+							let ud = get_userdata_cell::<T>(lua.state);
+							method(lua, ud.get_mut("self")?, A::from_lua_multi(args, lua)?)?
+								.to_lua_multi(lua)
 						}
 						_ => Err(Audit::new(Error::UserDataTypeMismatch(type_name::<T>()))),
 					}
@@ -365,13 +356,7 @@ impl<T: 'static + UserData> StaticUserDataMethods<T> {
 		R: ToLuaMulti,
 		F: 'static + MaybeSend + Fn(&Lua, A) -> anyways::Result<R>,
 	{
-		Box::new(move |lua, args| {
-			function(
-				lua,
-				A::from_lua_multi(args, lua)?,
-			)?
-			.to_lua_multi(lua)
-		})
+		Box::new(move |lua, args| function(lua, A::from_lua_multi(args, lua)?)?.to_lua_multi(lua))
 	}
 
 	fn box_function_mut<A, R, F>(function: F) -> Callback<'static>
@@ -385,11 +370,7 @@ impl<T: 'static + UserData> StaticUserDataMethods<T> {
 			let function = &mut *function
 				.try_borrow_mut()
 				.map_err(|_| Error::RecursiveMutCallback)?;
-			function(
-				lua,
-				A::from_lua_multi(args, lua)?,
-			)?
-			.to_lua_multi(lua)
+			function(lua, A::from_lua_multi(args, lua)?)?.to_lua_multi(lua)
 		})
 	}
 
@@ -402,8 +383,7 @@ impl<T: 'static + UserData> StaticUserDataMethods<T> {
 		FR: Future<Output = eyre::Result<R>>,
 	{
 		Box::new(move |lua, args| {
-			let args = match A::from_lua_multi(args, lua)
-			{
+			let args = match A::from_lua_multi(args, lua) {
 				Ok(args) => args,
 				Err(e) => return Box::pin(future::err(e)),
 			};
@@ -440,9 +420,7 @@ impl<T: 'static + UserData> UserDataFields<T> for StaticUserDataFields<T> {
 	{
 		self.field_getters.push((
 			name.as_ref().to_vec(),
-			StaticUserDataMethods::box_method(
-				move |lua, data, ()| method(lua, data),
-			),
+			StaticUserDataMethods::box_method(move |lua, data, ()| method(lua, data)),
 		));
 	}
 
@@ -454,9 +432,7 @@ impl<T: 'static + UserData> UserDataFields<T> for StaticUserDataFields<T> {
 	{
 		self.field_getters.push((
 			name.as_ref().to_vec(),
-			StaticUserDataMethods::box_method_mut(
-				move |lua, data, ()| method(lua, data),
-			),
+			StaticUserDataMethods::box_method_mut(move |lua, data, ()| method(lua, data)),
 		));
 	}
 
@@ -504,9 +480,9 @@ impl<T: 'static + UserData> UserDataFields<T> for StaticUserDataFields<T> {
 	{
 		self.field_setters.push((
 			name.as_ref().to_vec(),
-			StaticUserDataMethods::<T>::box_function_mut(
-				move |lua, (data, val)| function(lua, data, val),
-			),
+			StaticUserDataMethods::<T>::box_function_mut(move |lua, (data, val)| {
+				function(lua, data, val)
+			}),
 		));
 	}
 

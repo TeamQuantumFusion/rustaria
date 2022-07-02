@@ -1,6 +1,5 @@
 //! Holds our luna interface
-use anyways::ext::AuditExt;
-use anyways::Result;
+use anyways::{ext::AuditExt, Result};
 use apollo::Lua;
 
 mod log;

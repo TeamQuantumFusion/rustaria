@@ -1,9 +1,8 @@
 use std::{collections::HashMap, io, io::ErrorKind, path::PathBuf, sync::Arc};
-use anyways::ext::AuditExt;
 
-use anyways::Result;
+use anyways::{ext::AuditExt, Result};
+use apollo::{macros::*, LuaScope};
 use rayon::{ThreadPool, ThreadPoolBuilder};
-use tracing::{info};
 
 use crate::{
 	api::{
@@ -19,9 +18,6 @@ use crate::{
 		entity::prototype::{EntityDesc, EntityPrototype},
 	},
 };
-
-use apollo::macros::*;
-use apollo::{LuaScope};
 
 pub mod id_table;
 pub mod luna;
@@ -41,9 +37,7 @@ pub struct Api {
 #[lua_impl]
 impl Api {
 	#[lua_field(get carrier)]
-	pub fn get_carrier(&self) -> &Carrier {
-		&self.carrier
-	}
+	pub fn get_carrier(&self) -> &Carrier { &self.carrier }
 
 	pub fn new(run_dir: PathBuf, extra: Vec<PathBuf>) -> Result<Api> {
 		let plugins_path = run_dir.join("./plugins");
@@ -90,15 +84,25 @@ impl Api {
 		self.hash = None;
 
 		// Prepare for reload
-		reload.stargate.register_builder::<BlockLayerPrototype>(&self.luna.lua)?;
-		reload.stargate.register_builder::<EntityPrototype>(&self.luna.lua)?;
+		reload
+			.stargate
+			.register_builder::<BlockLayerPrototype>(&self.luna.lua)?;
+		reload
+			.stargate
+			.register_builder::<EntityPrototype>(&self.luna.lua)?;
 
 		{
 			let reload_scope = LuaScope::from(&mut *reload);
-			self.luna.lua.globals().insert("reload", reload_scope.lua()).wrap_err("Failed to insert reload")?;
+			self.luna
+				.lua
+				.globals()
+				.insert("reload", reload_scope.lua())
+				.wrap_err("Failed to insert reload")?;
 
 			for plugin in self.resources.plugins.values() {
-				plugin.reload(&self.luna).wrap_err_with(|| format!("Failed to reload plugin {}", plugin.id))?;
+				plugin
+					.reload(&self.luna)
+					.wrap_err_with(|| format!("Failed to reload plugin {}", plugin.id))?;
 			}
 		}
 
@@ -135,6 +139,7 @@ impl Api {
 		Ok(())
 	}
 }
+
 pub enum ResourceKind {
 	Assets,
 	Source,
@@ -175,12 +180,8 @@ multi_deref_fields!(Carrier {
 #[lua_impl]
 impl Carrier {
 	#[lua_field(get block_layer)]
-	pub fn get_block_layer(&self) -> &Registry<BlockLayer> {
-		&self.block_layer
-	}
+	pub fn get_block_layer(&self) -> &Registry<BlockLayer> { &self.block_layer }
 
 	#[lua_field(get entity)]
-	pub fn get_entity(&self) -> &Registry<EntityDesc> {
-		&self.entity
-	}
+	pub fn get_entity(&self) -> &Registry<EntityDesc> { &self.entity }
 }

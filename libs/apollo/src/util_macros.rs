@@ -1,21 +1,18 @@
-
-
-
 macro_rules! bug_msg {
-    ($arg:expr) => {
-        concat!(
-            "mlua internal error: ",
-            $arg,
-            " (this is a bug, please file an issue)"
-        )
-    };
+	($arg:expr) => {
+		concat!(
+			"mlua internal error: ",
+			$arg,
+			" (this is a bug, please file an issue)"
+		)
+	};
 }
 
 macro_rules! cstr {
-    ($s:expr) => {
-        concat!($s, "\0") as *const str as *const [::std::os::raw::c_char]
-            as *const ::std::os::raw::c_char
-    };
+	($s:expr) => {
+		concat!($s, "\0") as *const str as *const [::std::os::raw::c_char]
+			as *const ::std::os::raw::c_char
+	};
 }
 
 macro_rules! mlua_panic {
@@ -73,42 +70,42 @@ macro_rules! mlua_debug_assert {
 }
 
 macro_rules! mlua_expect {
-    ($res:expr, $msg:expr) => {
-        $res.expect(bug_msg!($msg))
-    };
+	($res:expr, $msg:expr) => {
+		$res.expect(bug_msg!($msg))
+	};
 
-    ($res:expr, $msg:expr,) => {
-        mlua_expect!($res, $msg)
-    };
+	($res:expr, $msg:expr,) => {
+		mlua_expect!($res, $msg)
+	};
 }
 
 #[cfg(feature = "module")]
 #[doc(hidden)]
 #[macro_export]
 macro_rules! require_module_feature {
-    () => {};
+	() => {};
 }
 
 #[cfg(not(feature = "module"))]
 #[doc(hidden)]
 #[macro_export]
 macro_rules! require_module_feature {
-    () => {
-        compile_error!("Feature `module` must be enabled in the `mlua` crate");
-    };
+	() => {
+		compile_error!("Feature `module` must be enabled in the `mlua` crate");
+	};
 }
 
 macro_rules! protect_lua {
-    ($state:expr, $nargs:expr, $nresults:expr, $f:expr) => {
-        crate::util::protect_lua_closure($state, $nargs, $nresults, $f)
-    };
+	($state:expr, $nargs:expr, $nresults:expr, $f:expr) => {
+		crate::util::protect_lua_closure($state, $nargs, $nresults, $f)
+	};
 
-    ($state:expr, $nargs:expr, $nresults:expr, fn($state_inner:ident) $code:expr) => {{
-        unsafe extern "C" fn do_call($state_inner: *mut ffi::lua_State) -> ::std::os::raw::c_int {
-            $code;
-            $nresults
-        }
+	($state:expr, $nargs:expr, $nresults:expr,fn($state_inner:ident) $code:expr) => {{
+		unsafe extern "C" fn do_call($state_inner: *mut ffi::lua_State) -> ::std::os::raw::c_int {
+			$code;
+			$nresults
+		}
 
-        crate::util::protect_lua_call($state, $nargs, do_call)
-    }};
+		crate::util::protect_lua_call($state, $nargs, do_call)
+	}};
 }

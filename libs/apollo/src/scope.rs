@@ -2,18 +2,14 @@
 // mod methods;
 
 use std::{
+	any::Any,
 	error::Error,
 	fmt::{Display, Formatter, Write},
 	marker::PhantomData,
-	sync::{Arc},
+	rc::Rc,
 };
-use std::any::{Any};
-use std::rc::Rc;
 
-use serde::{Deserializer, Serializer};
-use crate::UserData;
-
-use crate::userdata::{UserDataCell};
+use crate::{userdata::UserDataCell, UserData};
 
 pub struct LuaScope<'a, V: 'static + UserData> {
 	// Box<dyn Any> is always ()
@@ -43,24 +39,15 @@ impl<'a, V: 'static + UserData> LuaScope<'a, V> {
 }
 
 impl<'a, V: 'static + UserData> From<&'a mut V> for LuaScope<'a, V> {
-	fn from(value: &'a mut V) -> Self {
-		unsafe {
-			LuaScope::new(value, true)
-		}
-	}
+	fn from(value: &'a mut V) -> Self { unsafe { LuaScope::new(value, true) } }
 }
 
 impl<'a, V: 'static + UserData> From<&'a V> for LuaScope<'a, V> {
-	fn from(value: &'a V) -> Self {
-		unsafe {
-			LuaScope::new(value, false)
-		}
-	}
+	fn from(value: &'a V) -> Self { unsafe { LuaScope::new(value, false) } }
 }
 
 impl<V: 'static + UserData> Drop for LuaScope<'_, V> {
-	fn drop(&mut self) {
-	}
+	fn drop(&mut self) {}
 }
 
 // pub struct LuaWeak<V> {
@@ -139,7 +126,7 @@ pub enum RefError {
 	MutablyBorrowLocked(&'static str),
 	NotOwned,
 	Locked,
-	ReturnMutable
+	ReturnMutable,
 }
 
 impl Display for RefError {
@@ -157,7 +144,10 @@ impl Display for RefError {
 				f.write_str("\" which is an immutable binding.")?;
 			}
 			RefError::MutablyBorrowLocked(local) => {
-				write!(f, "Cannot borrow {local} because it is already mutably borrowed")?;
+				write!(
+					f,
+					"Cannot borrow {local} because it is already mutably borrowed"
+				)?;
 			}
 			RefError::ReturnMutable => {
 				f.write_str("Cannot return mutable when self is immutable.")?;
@@ -167,7 +157,6 @@ impl Display for RefError {
 			}
 			RefError::Locked => {
 				write!(f, "The value is still locked.")?;
-
 			}
 		}
 		Ok(())

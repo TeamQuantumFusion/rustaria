@@ -1,18 +1,16 @@
+use anyways::Result;
+use apollo::{macros::*, FromLua, Lua, Value};
 use hecs::{BuiltEntityClone, EntityBuilderClone};
-use tracing::{info};
-use apollo::{FromLua, Lua, Value};
+use log::info;
 
 use crate::{
-	api::{prototype::Prototype},
+	api::{prototype::Prototype, util::lua_table},
 	ty::id::Id,
 	world::entity::component::{
 		CollisionComponent, GravityComponent, HumanoidComponent, PhysicsComponent,
 		PositionComponent, PrototypeComponent,
 	},
 };
-use apollo::macros::*;
-use crate::api::util::lua_table;
-use anyways::Result;
 
 #[derive(Clone)]
 pub struct EntityDesc {
@@ -62,7 +60,7 @@ impl Prototype for EntityPrototype {
 }
 
 impl FromLua for EntityPrototype {
-	fn from_lua(lua_value: Value, lua: &Lua) -> Result<Self> {
+	fn from_lua(lua_value: Value, _lua: &Lua) -> Result<Self> {
 		let table = lua_table(lua_value)?;
 		Ok(EntityPrototype {
 			position: table.get_ser("position")?,

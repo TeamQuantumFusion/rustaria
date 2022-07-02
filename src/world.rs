@@ -1,6 +1,5 @@
-use anyways::ext::AuditExt;
+use anyways::{ext::AuditExt, Result};
 use chunk::{block::BlockDesc, layer::BlockLayer};
-use anyways::Result;
 use hecs::Entity;
 
 use crate::{
@@ -8,11 +7,15 @@ use crate::{
 	network::Token,
 	packet,
 	ty::{block_pos::BlockPos, id::Id},
-	world::spread::SpreaderSystem,
+	world::{
+		entity::{
+			prototype::EntityDesc,
+			system::network::{EntityComponentPacket, EntityPacket},
+		},
+		spread::SpreaderSystem,
+	},
 	Api, Chunk, ChunkPos, ChunkStorage, EntityWorld, ServerNetwork,
 };
-use crate::world::entity::prototype::EntityDesc;
-use crate::world::entity::system::network::{EntityComponentPacket, EntityPacket};
 
 pub mod chunk;
 pub mod entity;
@@ -37,7 +40,7 @@ pub enum ClientBoundWorldPacket {
 }
 
 pub struct World {
-	pub chunks:   ChunkStorage,
+	pub chunks: ChunkStorage,
 	pub entities: EntityWorld,
 
 	spreader: SpreaderSystem,
@@ -46,7 +49,7 @@ pub struct World {
 impl World {
 	pub fn new(api: &Api, chunk: ChunkStorage) -> Result<World> {
 		Ok(World {
-			chunks:   chunk,
+			chunks: chunk,
 			entities: EntityWorld::new(api)?,
 			spreader: SpreaderSystem::new(),
 		})
@@ -57,7 +60,9 @@ impl World {
 			self.place_block(api, pos, layer_id, block_id);
 		}
 		// Entity
-		self.entities.tick(api, &mut self.chunks, debug).wrap_err("Ticking entity")?;
+		self.entities
+			.tick(api, &mut self.chunks, debug)
+			.wrap_err("Ticking entity")?;
 		Ok(())
 	}
 
@@ -107,12 +112,11 @@ impl World {
 				for packet in packets {
 					let packet = EntityPacket {
 						entity,
-						component: packet
+						component: packet,
 					};
 					self.entities.packet(&packet);
 					network.send(token, ClientBoundWorldPacket::UpdateEntity(packet))?;
 				}
-
 			}
 			ServerBoundWorldPacket::UpdateEntity(packet) => {
 				self.entities.packet(&packet);

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use anyways::Result;
 use euclid::rect;
 use glium::{uniform, Blend, DrawParameters, Program};
 use layer::BlockLayerRenderer;
@@ -14,8 +15,7 @@ use rustaria::{
 		Offset,
 	},
 	world::chunk::{layer::BlockLayer, storage::ChunkStorage, CHUNK_SIZE},
-};use anyways::Result;
-
+};
 
 use crate::{
 	render::ty::{
@@ -139,7 +139,7 @@ pub struct ChunkMesh {
 impl ChunkMesh {
 	pub fn tick(
 		&mut self,
-		api: &ClientApi,
+		_api: &ClientApi,
 		pos: ChunkPos,
 		chunks: &ChunkStorage,
 		renderers: &IdTable<BlockLayer, Option<BlockLayerRenderer>>,

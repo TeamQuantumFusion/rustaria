@@ -1,16 +1,10 @@
 use std::{collections::HashMap, time::Instant};
-use anyways::ext::AuditExt;
 
-use apollo::macros::*;
-use apollo::{Lua, UserDataCell, Value};
-use anyways::Result;
+use anyways::{ext::AuditExt, Result};
+use apollo::{macros::*, Lua, UserDataCell, Value};
 
-use crate::{
-	api::{
-		luna::lib::registry_builder::{RegistryBuilder},
-		prototype::Prototype,
-		registry::Registry,
-	},
+use crate::api::{
+	luna::lib::registry_builder::RegistryBuilder, prototype::Prototype, registry::Registry,
 };
 
 pub struct Stargate {
@@ -29,17 +23,16 @@ impl Stargate {
 	pub fn register_builder<P: Prototype>(&mut self, lua: &Lua) -> Result<()> {
 		self.builders.insert(
 			P::get_name().to_string(),
-			lua.pack(UserDataCell::new(RegistryBuilder::<P>::new())).wrap_err_with(|| format!("Failed to convert {} Builder to Lua", P::get_name()))?,
+			lua.pack(UserDataCell::new(RegistryBuilder::<P>::new()))
+				.wrap_err_with(|| format!("Failed to convert {} Builder to Lua", P::get_name()))?,
 		);
 
 		Ok(())
 	}
 
-	pub fn build_registry<P: Prototype>(
-		&mut self,
-		lua: &Lua,
-	) -> Result<Registry<P>> {
-		let value = self.builders
+	pub fn build_registry<P: Prototype>(&mut self, _lua: &Lua) -> Result<Registry<P>> {
+		let value = self
+			.builders
 			.remove(P::get_name())
 			.expect("Registry unregistered");
 
@@ -48,7 +41,7 @@ impl Stargate {
 				let builder: RegistryBuilder<P> = userdata.take().wrap_err("Wrong userdata")?;
 				builder.build()
 			}
-			_ => panic!("not userdata")
+			_ => panic!("not userdata"),
 		}
 	}
 }
@@ -64,6 +57,9 @@ impl Stargate {
 impl Stargate {
 	#[lua_method]
 	pub fn __index(&mut self, name: String) -> Result<Value> {
-		self.builders.get_mut(&name).wrap_err_with(|| format!("Registry {} does not exist in this context.", name)).cloned()
+		self.builders
+			.get_mut(&name)
+			.wrap_err_with(|| format!("Registry {} does not exist in this context.", name))
+			.cloned()
 	}
 }

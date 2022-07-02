@@ -1,13 +1,16 @@
-use syn::{Attribute, FnArg, ImplItem, ImplItemMethod, ItemImpl};
-use std::collections::HashMap;
-use proc_macro2::Ident;
+use std::{collections::HashMap, fmt::Write};
+
 use eyre::WrapErr;
-use lua_docs::{Class, ClassGenerics, Field, Function, Return};
-use lua_docs::ty::Type;
-use lua_docs::visibility::Visibility;
-use crate::{FieldAttr, FieldBindKind, util};
-use crate::util::{get_doc_comments, get_generics, get_type_name};
-use std::fmt::Write;
+use lua_docs::{ty::Type, visibility::Visibility, Class, ClassGenerics, Field, Function, Return};
+use proc_macro2::Ident;
+use syn::{Attribute, FnArg, ImplItem, ImplItemMethod, ItemImpl};
+
+use crate::{
+	util,
+	util::{get_doc_comments, get_generics, get_type_name},
+	FieldAttr, FieldBindKind,
+};
+
 #[derive(Debug)]
 pub struct ClassInfo {
 	pub doc_comments: Vec<String>,
@@ -33,20 +36,30 @@ impl ClassInfo {
 
 		let name = if let Some(ty) = from_luas.remove(&self.name) {
 			let userdata_name = format!("{}UserData", self.name);
-			write!(&mut string, "--- @alias {} {} | {}\n\n", self.name, ty, userdata_name).unwrap();
+			write!(
+				&mut string,
+				"--- @alias {} {} | {}\n\n",
+				self.name, ty, userdata_name
+			)
+			.unwrap();
 			userdata_name
 		} else {
 			self.name.clone()
 		};
-		write!(&mut string, "{}", Class {
-			doc_comments: self.doc_comments.clone(),
-			name,
-			parent: None,
-			generics: self.generics.clone(),
-			fields: self.fields.clone().into_values().collect(),
-			functions: self.methods.clone().into_values().collect(),
-			comment: Default::default(),
-		}).unwrap();
+		write!(
+			&mut string,
+			"{}",
+			Class {
+				doc_comments: self.doc_comments.clone(),
+				name,
+				parent: None,
+				generics: self.generics.clone(),
+				fields: self.fields.clone().into_values().collect(),
+				functions: self.methods.clone().into_values().collect(),
+				comment: Default::default(),
+			}
+		)
+		.unwrap();
 
 		string
 	}
@@ -61,10 +74,12 @@ impl ClassInfo {
 					for attr in &item.attrs {
 						let attribute_name = util::get_path_name(&attr.path);
 						if attribute_name == "lua_method" {
-							let method = Self::fetch_method(attr, item).wrap_err("Failed to fetch method.")?;
+							let method = Self::fetch_method(attr, item)
+								.wrap_err("Failed to fetch method.")?;
 							self.methods.insert(method.name.to_string(), method);
 						} else if attribute_name == "lua_field" {
-							let field = Self::fetch_field(attr, item).wrap_err("Failed to fetch field.")?;
+							let field =
+								Self::fetch_field(attr, item).wrap_err("Failed to fetch field.")?;
 							self.fields.insert(field.name.to_string(), field);
 						}
 					}
@@ -76,7 +91,11 @@ impl ClassInfo {
 	}
 
 	fn fetch_method(attr: &Attribute, item: &ImplItemMethod) -> eyre::Result<Function> {
-		let name: Option<Ident> = if !attr.tokens.is_empty() { attr.parse_args()? } else { None };
+		let name: Option<Ident> = if !attr.tokens.is_empty() {
+			attr.parse_args()?
+		} else {
+			None
+		};
 		let name = name
 			.map(|i| i.to_string())
 			.unwrap_or_else(|| item.sig.ident.to_string());

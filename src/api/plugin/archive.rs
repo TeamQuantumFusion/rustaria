@@ -1,8 +1,6 @@
 use std::{fs::File, io, io::Read, path::PathBuf};
-use anyways::audit::Audit;
-use anyways::ext::AuditExt;
 
-use anyways::Result;
+use anyways::{audit::Audit, ext::AuditExt, Result};
 use parking_lot::Mutex;
 use zip::ZipArchive;
 
@@ -16,9 +14,10 @@ impl Archive {
 		if path.is_file() {
 			if let Some(extension) = path.extension() {
 				let extension = extension
-					.to_str().ok_or("Could not convert extension to UTF-8")?;
+					.to_str()
+					.ok_or("Could not convert extension to UTF-8")?;
 				if extension == "zip" {
-					let mut file = File::open(path).wrap_err("Could not open zip file.")?;
+					let file = File::open(path).wrap_err("Could not open zip file.")?;
 					let zip_archive =
 						ZipArchive::new(file).wrap_err("Could not create ZipArchive")?;
 					return Ok(Archive::Zip(Mutex::new(zip_archive)));
@@ -28,7 +27,9 @@ impl Archive {
 			return Ok(Archive::Directory(path.clone()));
 		}
 
-		return Err(Audit::new("Could not determine what kind of plugin archive to open."));
+		return Err(Audit::new(
+			"Could not determine what kind of plugin archive to open.",
+		));
 	}
 
 	pub fn get(&self, location: &str) -> io::Result<Vec<u8>> {

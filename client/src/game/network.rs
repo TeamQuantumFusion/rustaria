@@ -1,18 +1,13 @@
 use std::net::SocketAddr;
-use anyways::ext::AuditExt;
 
+use anyways::{ext::AuditExt, Result};
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use laminar::{Packet, Socket, SocketEvent};
-use rustaria::{
-	network::{
-		packet::{ClientBoundPacket, ServerBoundPacket},
-		util::Connector,
-		ServerNetwork,
-	},
-	KERNEL_VERSION,
+use log::error;
+use rustaria::network::{
+	packet::{ClientBoundPacket, ServerBoundPacket},
+	ServerNetwork,
 };
-use anyways::Result;
-use tracing::error;
 
 pub enum ClientNetworkSystem {
 	Integrated {
@@ -87,18 +82,18 @@ impl ClientNetworkSystem {
 	//fn new_remote(addr: SocketAddr) -> Result<(), ConnectionError> {
 	//	use ConnectionError::*;
 	//	let mut connector = Connector::new(addr).map_err(BindError)?;
-//
+	//
 	//	// <- Rustaria Kernel version
 	//	connector.send(&KERNEL_VERSION).map_err(SendKernelVersion)?;
-//
+	//
 	//	// -> server kernel version
 	//	let server_version: Version = connector.receive().map_err(ReceiveKernelVersion)?;
 	//	if server_version != KERNEL_VERSION {
 	//		return Err(WrongKernelVersion(server_version));
 	//	}
-//
+	//
 	//	// <- Registry hash
-//
+	//
 	//	Ok(())
 	//}
 }

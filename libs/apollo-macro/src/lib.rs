@@ -1,15 +1,9 @@
 #![feature(proc_macro_span)]
-
-mod attr;
-mod from_lua;
-mod lua_impl;
+#![allow(non_snake_case)]
 
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote, TokenStreamExt};
-use syn::{
-	parse_macro_input, spanned::Spanned, token::Mut, Attribute, ImplItem, Item, ItemImpl, LitStr,
-	Type, TypeReference,
-};
+use quote::{quote, TokenStreamExt};
+use syn::{parse_macro_input, spanned::Spanned, Attribute, ImplItem, Item, ItemImpl};
 
 // UserData for implementing methods and such
 // FromLua for auto-implementing FromLua from fields
@@ -19,6 +13,10 @@ use crate::{
 	from_lua::ItemsBuilder,
 	lua_impl::{field, method},
 };
+
+mod attr;
+mod from_lua;
+mod lua_impl;
 
 #[proc_macro_derive(FromLua)]
 pub fn FromLua(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -137,7 +135,7 @@ pub fn lua_field(
 /// ```
 #[proc_macro_attribute]
 pub fn lua_impl(
-	attr: proc_macro::TokenStream,
+	_attr: proc_macro::TokenStream,
 	tokens: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
 	let mut item = parse_macro_input!(tokens as ItemImpl);
