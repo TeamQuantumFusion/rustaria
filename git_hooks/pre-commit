@@ -11,7 +11,7 @@
 cargo test --color always || {
     echo;
     echo "============================================================"
-    echo "|   Some tests FAILED:cvxzdfasdfadf please fix them before committing   |"
+    echo "|   Some tests FAILED: please fix them before committing   |"
     echo "============================================================"
     exit 1;
 }
