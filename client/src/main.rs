@@ -126,7 +126,6 @@ impl Client {
 		let api_scope = LuaScope::from(&*self.api);
 		self.api
 			.api
-			.luna
 			.lua
 			.globals()
 			.insert("api", api_scope.lua())?;

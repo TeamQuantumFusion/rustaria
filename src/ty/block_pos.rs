@@ -5,7 +5,7 @@ use euclid::Vector2D;
 use num::ToPrimitive;
 
 use crate::{
-	api::{luna::table::LunaTable, util::lua_table},
+	api::{util::lua_table},
 	ty::{block_layer_pos::BlockLayerPos, chunk_pos::ChunkPos, Error, Error::OutOfBounds, Offset},
 	world::chunk::CHUNK_SIZE,
 };
@@ -125,12 +125,9 @@ impl ToLua for BlockPos {
 
 impl FromLua for BlockPos {
 	fn from_lua(lua_value: Value, lua: &Lua) -> anyways::Result<Self> {
-		let table = LunaTable {
-			lua,
-			table: lua_table(lua_value)?,
-		};
+		let table = lua_table(lua_value)?;
 
-		if table.table.contains_key("x")? && table.table.contains_key("y")? {
+		if table.contains_key("x")? && table.contains_key("y")? {
 			Ok(BlockPos::try_from((
 				table.get::<_, u64>("x")?,
 				table.get::<_, u64>("y")?,

@@ -4,7 +4,7 @@ use anyways::{ext::AuditExt, Result};
 use apollo::{macros::*, Lua, UserDataCell, Value};
 
 use crate::api::{
-	luna::lib::registry_builder::RegistryBuilder, prototype::Prototype, registry::Registry,
+	lua::lib::registry_builder::RegistryBuilder, prototype::Prototype, registry::Registry,
 };
 
 pub struct Stargate {

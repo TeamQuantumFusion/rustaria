@@ -44,7 +44,7 @@ impl Atlas {
 
 		// Load all images
 		for location in image_locations {
-			if let Ok(image) = api.resources.get_resource(ResourceKind::Assets, &location) {
+			if let Ok(image) = api.plugins.get_resource(ResourceKind::Assets, &location) {
 				match image::load_from_memory(&image) {
 					Ok(image) => {
 						images.insert(location, image);

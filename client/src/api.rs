@@ -4,7 +4,7 @@ use anyways::{ext::AuditExt, Result};
 use rustaria::{
 	api::{
 		id_table::IdTable,
-		luna::lib::{reload::Reload, stargate::Stargate},
+		lua::lib::{reload::Reload, stargate::Stargate},
 		Api,
 	},
 	world::{chunk::layer::BlockLayer, entity::prototype::EntityDesc},
@@ -47,10 +47,10 @@ impl ClientApi {
 		// Register client only prototypes
 		reload
 			.stargate
-			.register_builder::<BlockLayerRendererPrototype>(&self.luna.lua)?;
+			.register_builder::<BlockLayerRendererPrototype>(&self.lua)?;
 		reload
 			.stargate
-			.register_builder::<EntityRendererPrototype>(&self.luna.lua)?;
+			.register_builder::<EntityRendererPrototype>(&self.lua)?;
 
 		// reload server stuff
 		self.api
@@ -60,11 +60,11 @@ impl ClientApi {
 		let mut sprites = HashSet::new();
 		let block_layers = reload
 			.stargate
-			.build_registry::<BlockLayerRendererPrototype>(&self.api.luna.lua)?;
+			.build_registry::<BlockLayerRendererPrototype>(&self.api.lua)?;
 
 		let entities = reload
 			.stargate
-			.build_registry::<EntityRendererPrototype>(&self.api.luna.lua)?;
+			.build_registry::<EntityRendererPrototype>(&self.api.lua)?;
 
 		for (_, prototype) in block_layers.table.iter() {
 			prototype.get_sprites(&mut sprites);
@@ -84,7 +84,7 @@ impl ClientApi {
 			if let Some(id) = self.api.carrier.block_layer.get_id_from_identifier(&identifier) {
 				let prototype = prototype
 					.bake(
-						&self.api.luna.lua,
+						&self.api.lua,
 						&atlas,
 						self.api.carrier.block_layer.get(id),
 					)

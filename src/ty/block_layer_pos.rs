@@ -2,7 +2,7 @@ use anyways::audit::Audit;
 use apollo::{FromLua, Lua, ToLua, Value};
 
 use crate::{
-	api::{luna::table::LunaTable, util::lua_table},
+	api::{lua::table::LunaTable, util::lua_table},
 	ty,
 	ty::Offset,
 	world::chunk::CHUNK_SIZE,

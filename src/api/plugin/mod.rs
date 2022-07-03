@@ -2,9 +2,10 @@ use std::{collections::HashMap, path::PathBuf};
 
 use anyways::{ext::AuditExt, Result};
 use semver::{Version, VersionReq};
+use apollo::Lua;
 
 use crate::{
-	api::{luna::Luna, plugin::archive::Archive},
+	api::{plugin::archive::Archive},
 	ty::identifier::Identifier,
 };
 
@@ -62,14 +63,14 @@ impl Plugin {
 		})
 	}
 
-	pub fn reload(&self, luna: &Luna) -> Result<()> {
+	pub fn reload(&self, lua: &Lua) -> Result<()> {
 		let identifier = Identifier::new("main.lua");
 		let data = self.archive.get("src/main.lua").wrap_err(format!(
 			"Could not find entrypoint \"main.lua\" for plugin {}",
 			self.id
 		))?;
 
-		luna.load(&identifier, &data)
+		lua.load(&data).set_name(format!("{identifier}"))
 			.wrap_err("Failed to load lua file")?
 			.exec()
 			.wrap_err("Failure while executing entrypoint")?;

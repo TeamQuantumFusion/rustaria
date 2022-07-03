@@ -3,7 +3,7 @@ use euclid::Vector2D;
 use num::{FromPrimitive, ToPrimitive};
 
 use crate::{
-	api::{luna::table::LunaTable, util::lua_table},
+	api::{lua::table::LunaTable, util::lua_table},
 	ty,
 	ty::{direction::Direction, Error, Offset},
 	world::chunk::CHUNK_SIZE,

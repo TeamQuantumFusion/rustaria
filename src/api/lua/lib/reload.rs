@@ -1,7 +1,7 @@
 use anyways::Result;
 use apollo::macros::*;
+use crate::api::lua::lib::stargate::Stargate;
 
-use crate::api::luna::lib::stargate::Stargate;
 
 pub struct Reload {
 	pub stargate: Stargate,

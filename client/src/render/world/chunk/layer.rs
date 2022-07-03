@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use anyways::{ext::AuditExt, Result};
 use apollo::{FromLua, Function, Lua, LuaSerdeExt};
 use rustaria::{
-	api::{id_table::IdTable, luna::lib::registry_builder::RegistryBuilder, prototype::Prototype},
+	api::{id_table::IdTable, lua::lib::registry_builder::RegistryBuilder, prototype::Prototype},
 	ty::{
 		block_pos::BlockPos,
 		chunk_pos::ChunkPos,

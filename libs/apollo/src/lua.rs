@@ -2296,6 +2296,21 @@ impl Lua {
 		Ok(AnyUserData(self.pop_ref()))
 	}
 
+	pub fn set_loader<F>(&self, func: F) -> Result<()>
+	where
+		F: 'static + MaybeSend + Fn(&Lua, std::string::String) -> Result<Function>,
+	{
+		let package: Table = self.globals().get("package")?;
+
+		#[cfg(any(feature = "lua54", feature = "lua53", feature = "lua52"))]
+		let searchers: Table = package.get("searchers")?;
+		#[cfg(any(feature = "lua51", feature = "luajit"))]
+		let searchers: Table = package.get("loaders")?;
+
+		searchers.raw_insert(2, self.create_function(func)?)?;
+		Ok(())
+	}
+
 	fn disable_c_modules(&self) -> Result<()> {
 		let package: Table = self.globals().get("package")?;
 

@@ -136,7 +136,7 @@ impl CollisionSystem {
 					collision.collided[contact] = true;
 					if let Some(callback) = &collision.hit_callback {
 						let chunks_scope = LuaScope::from(&mut *chunks);
-						let contact = api.luna.lua.to_value(&contact).unwrap();
+						let contact = api.lua.to_value(&contact).unwrap();
 						let _result: Value = callback.call((chunks_scope.lua(), contact))?;
 					}
 				}

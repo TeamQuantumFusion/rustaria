@@ -3,11 +3,10 @@ use std::{collections::HashMap, io, io::ErrorKind, path::PathBuf, sync::Arc};
 use anyways::{ext::AuditExt, Result};
 use rayon::{ThreadPool, ThreadPoolBuilder};
 
-use apollo::{LuaScope, macros::*};
+use apollo::{Lua, LuaScope, macros::*};
 
 use crate::{
 	api::{
-		luna::{lib::reload::Reload, Luna},
 		plugin::Plugin,
 		registry::Registry,
 	},
@@ -20,22 +19,24 @@ use crate::{
 		entity::prototype::{EntityDesc, EntityPrototype},
 	},
 };
-use crate::api::luna::lib::stargate::Stargate;
+use crate::api::lua::create_lua;
+use crate::api::lua::lib::reload::Reload;
+use crate::api::lua::lib::stargate::Stargate;
 use crate::item::prototype::ItemPrototype;
 
 pub mod id_table;
-pub mod luna;
 pub mod plugin;
 pub mod prototype;
 pub mod registry;
 pub mod util;
+pub mod lua;
 
 pub struct Api {
 	pub carrier: Carrier,
-	pub resources: Plugins,
+	pub plugins: Plugins,
 	pub thread_pool: Arc<ThreadPool>,
-	pub luna: Luna,
 	pub hash: Option<Blake3Hash>,
+	pub lua: Lua,
 }
 
 
@@ -70,17 +71,18 @@ impl Api {
 			}
 		}
 
-		let resources = Plugins {
+		let plugins = Plugins {
 			plugins: Arc::new(plugins),
 		};
+
 		Ok(Api {
-			luna: Luna::new(&resources)?,
+			lua: create_lua(&plugins).wrap_err("Failed to initialize lua")?,
 			carrier: Carrier {
 				block_layer: Registry::default(),
 				entity: Registry::default(),
 				item: Registry::default()
 			},
-			resources,
+			plugins,
 			thread_pool: Arc::new(ThreadPoolBuilder::new().build()?),
 			hash: None,
 		})
@@ -92,32 +94,32 @@ impl Api {
 		// Prepare for reload
 		reload
 			.stargate
-			.register_builder::<BlockLayerPrototype>(&self.luna.lua)?;
+			.register_builder::<BlockLayerPrototype>(&self.lua)?;
 		reload
 			.stargate
-			.register_builder::<EntityPrototype>(&self.luna.lua)?;
+			.register_builder::<EntityPrototype>(&self.lua)?;
 		reload
 			.stargate
-			.register_builder::<ItemPrototype>(&self.luna.lua)?;
+			.register_builder::<ItemPrototype>(&self.lua)?;
 
 		{
 			let reload_scope = LuaScope::from(&mut *reload);
-			self.luna
+			self
 				.lua
 				.globals()
 				.insert("reload", reload_scope.lua())
 				.wrap_err("Failed to insert reload")?;
 
-			for plugin in self.resources.plugins.values() {
+			for plugin in self.plugins.plugins.values() {
 				plugin
-					.reload(&self.luna)
+					.reload(&self.lua)
 					.wrap_err_with(|| format!("Failed to reload plugin {}", plugin.id))?;
 			}
 		}
 
 		let registry = reload
 			.stargate
-			.build_registry::<BlockLayerPrototype>(&self.luna.lua)?;
+			.build_registry::<BlockLayerPrototype>(&self.lua)?;
 
 		let block_layer = registry
 			.table
@@ -134,13 +136,13 @@ impl Api {
 			block_layer,
 			entity: reload
 				.stargate
-				.build_registry::<EntityPrototype>(&self.luna.lua)?
+				.build_registry::<EntityPrototype>(&self.lua)?
 				.into_entries()
 				.map(|(id, ident, prototype)| (id.build(), ident, prototype.bake(id)))
 				.collect(),
 			item: reload
 				.stargate
-				.build_registry::<ItemPrototype>(&self.luna.lua)?
+				.build_registry::<ItemPrototype>(&self.lua)?
 				.into_entries()
 				.map(|(id, ident, prototype)| (id.build(), ident, prototype.bake()))
 				.collect(),
@@ -167,7 +169,7 @@ impl Api {
 	}
 
 	pub fn new_test(plugins: Vec<Plugin>) -> Api {
-		let resources = Plugins {
+		let plugins = Plugins {
 			plugins: Arc::new(
 				plugins
 					.into_iter()
@@ -181,8 +183,8 @@ impl Api {
 				entity: Default::default(),
 				item: Default::default()
 			},
-			luna: Luna::new(&resources).unwrap(),
-			resources,
+			lua: create_lua(&plugins).unwrap(),
+			plugins,
 			thread_pool: Arc::new(ThreadPoolBuilder::new().num_threads(1).build().unwrap()),
 			hash: None
 		}

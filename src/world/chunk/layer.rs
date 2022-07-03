@@ -3,7 +3,7 @@ use apollo::{macros::*, FromLua};
 use log::trace;
 
 use crate::{
-	api::{luna::lib::registry_builder::RegistryBuilder, prototype::Prototype, registry::Registry},
+	api::{lua::lib::registry_builder::RegistryBuilder, prototype::Prototype, registry::Registry},
 	ty::{id::Id, identifier::Identifier},
 	world::chunk::block::{BlockDesc, BlockPrototype},
 };
