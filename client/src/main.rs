@@ -42,13 +42,7 @@ mod render;
 mod ty;
 
 fn main() -> Result<()> {
-	TermLogger::init(
-		LevelFilter::Trace,
-		Config::default(),
-		TerminalMode::Mixed,
-		ColorChoice::Auto,
-	)?;
-	info!("hi");
+	rustaria::initialize()?;
 	let mut client = Client::new()?;
 	client.api.reload(&client.frontend)?;
 	client.run()?;
@@ -194,13 +188,13 @@ impl Client {
 							.map(|(layer_id, prototype)| {
 								let id = prototype
 									.blocks
-									.get_id(&Identifier::new("dirt"))
+									.get_id_from_identifier(&Identifier::new("dirt"))
 									.expect("where dirt");
 								let dirt = prototype.blocks.get(id).create(id);
 
 								let id = prototype
 									.blocks
-									.get_id(&Identifier::new("air"))
+									.get_id_from_identifier(&Identifier::new("air"))
 									.expect("where air");
 								let air = prototype.blocks.get(id).create(id);
 

@@ -24,7 +24,7 @@ impl<I> Registry<I> {
 
 	pub fn get_identifier(&self, id: Id<I>) -> &Identifier { self.id_to_ident.get(id) }
 
-	pub fn get_id(&self, id: &Identifier) -> Option<Id<I>> { self.ident_to_id.get(id).copied() }
+	pub fn get_id_from_identifier(&self, id: &Identifier) -> Option<Id<I>> { self.ident_to_id.get(id).copied() }
 
 	pub fn into_entries(self) -> impl Iterator<Item = (Id<I>, Identifier, I)> {
 		self.table
@@ -77,13 +77,21 @@ impl<I> Registry<I> {
 	}
 }
 
+
+#[cfg(feature = "testing")]
+impl<I> Registry<I> {
+	pub fn get_value(&self, identifier: &Identifier) -> Option<&I> {
+		Some(self.get(self.get_id_from_identifier(identifier)?))
+	}
+}
+
 #[lua_impl]
 impl<I: UserData + 'static + Send> Registry<I> {
 	#[lua_method(get)]
 	pub fn lua_get(&self, id: Id<I>) -> &I { self.get(id) }
 
 	#[lua_method(get_id)]
-	pub fn lua_get_id(&self, id: Identifier) -> Option<Id<I>> { self.get_id(&id) }
+	pub fn lua_get_id(&self, id: Identifier) -> Option<Id<I>> { self.get_id_from_identifier(&id) }
 
 	#[lua_method(get_identifier)]
 	pub fn lua_get_identifier(&self, id: Id<I>) -> Identifier { self.get_identifier(id).clone() }

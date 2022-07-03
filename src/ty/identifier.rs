@@ -34,6 +34,16 @@ impl Identifier {
 	}
 }
 
+#[cfg(feature = "testing")]
+impl Identifier {
+	pub fn test(path: &'static str) -> Identifier {
+		Identifier {
+			namespace: "test".to_string(),
+			path: path.to_string(),
+		}
+	}
+}
+
 impl FromLua for Identifier {
 	fn from_lua(lua_value: Value, _: &Lua) -> anyways::Result<Self> {
 		let string = lua_string(lua_value)?;

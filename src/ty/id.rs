@@ -2,6 +2,7 @@ use std::{
 	hash::{Hash, Hasher},
 	marker::PhantomData,
 };
+use std::fmt::{Debug, Formatter};
 
 use apollo::macros::*;
 
@@ -9,7 +10,7 @@ use crate::api::prototype::Prototype;
 
 /// The internal id is a instance bound identifier to the registry,
 /// absolutely not forward/backwards compatible across versions or even game instances.
-#[derive(Ord, PartialOrd, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Ord, PartialOrd, serde::Serialize, serde::Deserialize)]
 pub struct Id<P> {
 	id: u32,
 	prototype: PhantomData<P>,
@@ -50,6 +51,13 @@ impl<P> PartialEq<Self> for Id<P> {
 }
 
 impl<P> Eq for Id<P> {}
+
+impl<P> Debug for Id<P> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		write!(f, "ID:{}", self.id)
+	}
+}
+
 
 // This is needed as rustc cringes on the phantomdata
 impl<P> Clone for Id<P> {

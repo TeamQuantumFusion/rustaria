@@ -1,10 +1,17 @@
-use std::{fs::File, io, io::Read, path::PathBuf};
+use std::{
+	collections::HashMap,
+	fs::File,
+	io,
+	io::{ErrorKind, Read},
+	path::PathBuf,
+};
 
 use anyways::{audit::Audit, ext::AuditExt, Result};
 use parking_lot::Mutex;
 use zip::ZipArchive;
 
 pub enum Archive {
+	Direct(HashMap<String, Vec<u8>>),
 	Zip(Mutex<ZipArchive<File>>),
 	Directory(PathBuf),
 }
@@ -42,6 +49,15 @@ impl Archive {
 				Ok(out)
 			}
 			Archive::Directory(directory) => std::fs::read(directory.join(location)),
+			Archive::Direct(lookup) => Ok(lookup
+				.get(location)
+				.ok_or_else(|| {
+					io::Error::new(
+						ErrorKind::NotFound,
+						format!("Could not find asset {location}"),
+					)
+				})?
+				.clone()),
 		}
 	}
 }

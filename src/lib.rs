@@ -1,8 +1,9 @@
 #![allow(clippy::new_without_default)]
 
 use anyways::{ext::AuditExt, Result};
-use log::info;
+use log::{info, LevelFilter};
 use semver::Version;
+use simplelog::{ColorChoice, Config, TerminalMode, TermLogger};
 use ty::chunk_pos::ChunkPos;
 use world::{
 	chunk::{storage::ChunkStorage, Chunk},
@@ -24,6 +25,7 @@ pub mod player;
 pub mod ty;
 pub mod util;
 pub mod world;
+pub mod item;
 
 pub const TPS: usize = 60;
 pub const KERNEL_VERSION: Version = Version::new(0, 0, 1);
@@ -64,4 +66,21 @@ impl Server {
 			.wrap_err("Ticking player system.")?;
 		Ok(())
 	}
+}
+
+static mut INITILIZED: bool = false;
+pub fn initialize() -> Result<()> {
+	unsafe {
+		if !INITILIZED {
+			INITILIZED = true;
+			TermLogger::init(
+				LevelFilter::Trace,
+				Config::default(),
+				TerminalMode::Mixed,
+				ColorChoice::Auto,
+			)?;
+			info!("Logging initialized successfully for Rustaria {}", KERNEL_VERSION.to_string());
+		}
+	}
+	Ok(())
 }

@@ -1238,6 +1238,7 @@ dependencies = [
  "rayon",
  "semver",
  "serde",
+ "simplelog",
  "toml",
  "type-map",
  "zip",

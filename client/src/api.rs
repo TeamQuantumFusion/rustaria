@@ -81,7 +81,7 @@ impl ClientApi {
 			block_layer_renderer.push((id, None));
 		}
 		for (_, identifier, prototype) in block_layers.into_entries() {
-			if let Some(id) = self.api.carrier.block_layer.get_id(&identifier) {
+			if let Some(id) = self.api.carrier.block_layer.get_id_from_identifier(&identifier) {
 				let prototype = prototype
 					.bake(
 						&self.api.luna.lua,
@@ -99,7 +99,7 @@ impl ClientApi {
 		}
 
 		for (_, identifier, prototype) in entities.into_entries() {
-			if let Some(id) = self.api.carrier.entity.get_id(&identifier) {
+			if let Some(id) = self.api.carrier.entity.get_id_from_identifier(&identifier) {
 				let _ = replace(
 					&mut entity_renderer[id.index()],
 					(id, Some(prototype.bake(&atlas))),

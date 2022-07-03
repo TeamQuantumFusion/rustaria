@@ -17,6 +17,36 @@ pub struct Plugin {
 }
 
 impl Plugin {
+	#[cfg(feature = "testing")]
+	pub fn test(entrypoint: String) -> Plugin {
+		Self::new_test("test", HashMap::from(
+			[
+				("src/main.lua".to_string(), entrypoint.into_bytes())
+			]
+		))
+	}
+
+	#[cfg(feature = "testing")]
+	pub fn new_test(id: impl ToString, files: HashMap<String, Vec<u8>>) -> Plugin {
+		Plugin {
+			id: id.to_string(),
+			manifest: Manifest {
+				plugin: ManifestPlugin {
+					name: id.to_string(),
+					id: id.to_string(),
+					version: Version::new(0, 0, 0),
+					license: None,
+					author: None,
+					contributors: None,
+				},
+				dependencies: None,
+				breaks: None,
+				supports: None,
+			},
+			archive: Archive::Direct(files),
+		}
+	}
+
 	pub fn new(path: &PathBuf) -> Result<Plugin> {
 		let archive = Archive::new(path)?;
 		let data = archive

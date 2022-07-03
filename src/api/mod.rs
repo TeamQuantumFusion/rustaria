@@ -1,8 +1,9 @@
 use std::{collections::HashMap, io, io::ErrorKind, path::PathBuf, sync::Arc};
 
 use anyways::{ext::AuditExt, Result};
-use apollo::{macros::*, LuaScope};
 use rayon::{ThreadPool, ThreadPoolBuilder};
+
+use apollo::{LuaScope, macros::*};
 
 use crate::{
 	api::{
@@ -10,6 +11,7 @@ use crate::{
 		plugin::Plugin,
 		registry::Registry,
 	},
+	item::{ItemDesc},
 	multi_deref_fields,
 	ty::{identifier::Identifier, MultiDeref},
 	util::blake3::{Blake3Hash, Hasher},
@@ -18,6 +20,8 @@ use crate::{
 		entity::prototype::{EntityDesc, EntityPrototype},
 	},
 };
+use crate::api::luna::lib::stargate::Stargate;
+use crate::item::prototype::ItemPrototype;
 
 pub mod id_table;
 pub mod luna;
@@ -33,6 +37,7 @@ pub struct Api {
 	pub luna: Luna,
 	pub hash: Option<Blake3Hash>,
 }
+
 
 #[lua_impl]
 impl Api {
@@ -55,10 +60,10 @@ impl Api {
 		for path in paths {
 			if path.is_dir()
 				|| (path.is_file()
-					&& path
-						.extension()
-						.map(|extention| extention.to_str().unwrap() == "zip")
-						.unwrap_or(false))
+				&& path
+				.extension()
+				.map(|extention| extention.to_str().unwrap() == "zip")
+				.unwrap_or(false))
 			{
 				let plugin = Plugin::new(&path)?;
 				plugins.insert(plugin.id.clone(), plugin);
@@ -73,6 +78,7 @@ impl Api {
 			carrier: Carrier {
 				block_layer: Registry::default(),
 				entity: Registry::default(),
+				item: Registry::default()
 			},
 			resources,
 			thread_pool: Arc::new(ThreadPoolBuilder::new().build()?),
@@ -90,6 +96,9 @@ impl Api {
 		reload
 			.stargate
 			.register_builder::<EntityPrototype>(&self.luna.lua)?;
+		reload
+			.stargate
+			.register_builder::<ItemPrototype>(&self.luna.lua)?;
 
 		{
 			let reload_scope = LuaScope::from(&mut *reload);
@@ -129,6 +138,12 @@ impl Api {
 				.into_entries()
 				.map(|(id, ident, prototype)| (id.build(), ident, prototype.bake(id)))
 				.collect(),
+			item: reload
+				.stargate
+				.build_registry::<ItemPrototype>(&self.luna.lua)?
+				.into_entries()
+				.map(|(id, ident, prototype)| (id.build(), ident, prototype.bake()))
+				.collect(),
 		};
 
 		// Hash
@@ -137,6 +152,40 @@ impl Api {
 		self.carrier.entity.append_hasher(&mut hasher);
 		self.hash = Some(hasher.finalize());
 		Ok(())
+	}
+}
+
+#[cfg(feature = "testing")]
+impl Api {
+	pub fn test_simple(entrypoint: String) -> Api {
+		let mut api = Api::new_test(vec![Plugin::test(entrypoint)]);
+		api.reload(&mut Reload {
+			stargate: Stargate::new(),
+			client: false,
+		}).unwrap();
+		api
+	}
+
+	pub fn new_test(plugins: Vec<Plugin>) -> Api {
+		let resources = Plugins {
+			plugins: Arc::new(
+				plugins
+					.into_iter()
+					.map(|p| (p.id.clone(), p))
+					.collect()
+			)
+		};
+		Api {
+			carrier: Carrier {
+				block_layer: Default::default(),
+				entity: Default::default(),
+				item: Default::default()
+			},
+			luna: Luna::new(&resources).unwrap(),
+			resources,
+			thread_pool: Arc::new(ThreadPoolBuilder::new().num_threads(1).build().unwrap()),
+			hash: None
+		}
 	}
 }
 
@@ -170,11 +219,13 @@ impl Plugins {
 pub struct Carrier {
 	pub block_layer: Registry<BlockLayer>,
 	pub entity: Registry<EntityDesc>,
+	pub item: Registry<ItemDesc>,
 }
 
 multi_deref_fields!(Carrier {
 	block_layer: Registry<BlockLayer>,
-	entity: Registry<EntityDesc>
+	entity: Registry<EntityDesc>,
+	item: Registry<ItemDesc>
 });
 
 #[lua_impl]
@@ -184,4 +235,7 @@ impl Carrier {
 
 	#[lua_field(get entity)]
 	pub fn get_entity(&self) -> &Registry<EntityDesc> { &self.entity }
+
+	#[lua_field(get item)]
+	pub fn get_item(&self) -> &Registry<ItemDesc> { &self.item }
 }

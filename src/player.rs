@@ -54,7 +54,7 @@ impl PlayerSystem {
 			player_entity: api
 				.carrier
 				.entity
-				.get_id(&Identifier::new("player"))
+				.get_id_from_identifier(&Identifier::new("player"))
 				.ok_or("Could not find Player entity")?,
 		})
 	}

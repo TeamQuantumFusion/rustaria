@@ -67,15 +67,15 @@ impl PlayerSystem {
 		let layer_id = api
 			.carrier
 			.block_layer
-			.get_id(&Identifier::new("tile"))
+			.get_id_from_identifier(&Identifier::new("tile"))
 			.unwrap();
 		let layer = api.carrier.block_layer.get(layer_id);
-		let place_block = layer.blocks.get_id(&Identifier::new("dirt")).unwrap();
-		let remove_block = layer.blocks.get_id(&Identifier::new("air")).unwrap();
+		let place_block = layer.blocks.get_id_from_identifier(&Identifier::new("dirt")).unwrap();
+		let remove_block = layer.blocks.get_id_from_identifier(&Identifier::new("air")).unwrap();
 		let arrow = api
 			.carrier
 			.entity
-			.get_id(&Identifier::new("arrow"))
+			.get_id_from_identifier(&Identifier::new("arrow"))
 			.unwrap();
 
 		Ok(Self {
@@ -97,7 +97,7 @@ impl PlayerSystem {
 			player_entity: api
 				.carrier
 				.entity
-				.get_id(&Identifier::new("player"))
+				.get_id_from_identifier(&Identifier::new("player"))
 				.wrap_err("Player where")?,
 			presses: vec![],
 			layer_id,
