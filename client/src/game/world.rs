@@ -9,7 +9,7 @@ use rsa_network::client::{ClientNetwork, ClientSender};
 use rsa_world::ty::ChunkPos;
 use rsa_world::{CHUNK_SIZE_F32, ClientBoundWorldPacket, ServerBoundWorldPacket, World};
 use rsa_world::rpc::WorldRPC;
-use rsaclient_player::PlayerSystem;
+use rsa_client_player::PlayerSystem;
 use crate::ClientRPC;
 
 pub struct ClientWorld {

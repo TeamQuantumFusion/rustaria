@@ -9,10 +9,10 @@ use rsa_core::math::{Rect, Vector2D};
 use rsa_core::ty::{Identifier, WS};
 use rsa_world::entity::component::{PhysicsComponent, PositionComponent, PrototypeComponent};
 use rsa_world::entity::EntityWorld;
-use rsaclient_core::atlas::Atlas;
-use rsaclient_core::frontend::Frontend;
-use rsaclient_core::ty::{Draw, MeshBuilder, MeshDrawer, PosTexVertex};
-use rsaclient_player::PlayerSystem;
+use rsa_client_core::atlas::Atlas;
+use rsa_client_core::frontend::Frontend;
+use rsa_client_core::ty::{Draw, MeshBuilder, MeshDrawer, PosTexVertex};
+use rsa_client_player::PlayerSystem;
 use crate::GraphicsRPC;
 
 pub struct WorldEntityRenderer {

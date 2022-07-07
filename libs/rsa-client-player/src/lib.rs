@@ -29,8 +29,8 @@ use rsa_world::{
 use rsa_world::chunk::storage::ChunkStorage;
 use rsa_world::entity::{Component, Ref};
 use rsa_world::rpc::WorldRPC;
-use rsaclient_core::frontend::Frontend;
-use rsaclient_core::ty::Viewport;
+use rsa_client_core::frontend::Frontend;
+use rsa_client_core::ty::Viewport;
 
 const MAX_CORRECTION: f32 = 0.025;
 

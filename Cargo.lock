@@ -259,13 +259,13 @@ dependencies = [
  "apollo",
  "glfw",
  "glium",
+ "rsa-client-core",
+ "rsa-client-graphics",
+ "rsa-client-player",
  "rsa-core",
  "rsa-network",
  "rsa-player",
  "rsa-world",
- "rsaclient-core",
- "rsaclient-graphics",
- "rsaclient-player",
  "rustaria",
 ]
 
@@ -1208,6 +1208,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "rsa-client-core"
+version = "0.1.0"
+dependencies = [
+ "glfw",
+ "glium",
+ "image",
+ "rectangle-pack",
+ "rsa-core",
+]
+
+[[package]]
+name = "rsa-client-graphics"
+version = "0.1.0"
+dependencies = [
+ "apollo",
+ "glfw",
+ "glium",
+ "image",
+ "rectangle-pack",
+ "rsa-client-core",
+ "rsa-client-player",
+ "rsa-core",
+ "rsa-world",
+ "rustaria",
+]
+
+[[package]]
+name = "rsa-client-player"
+version = "0.1.0"
+dependencies = [
+ "glfw",
+ "rsa-client-core",
+ "rsa-core",
+ "rsa-network",
+ "rsa-player",
+ "rsa-world",
+]
+
+[[package]]
 name = "rsa-core"
 version = "0.1.0"
 dependencies = [
@@ -1267,45 +1306,6 @@ dependencies = [
  "rsa-core",
  "rsa-network",
  "serde",
-]
-
-[[package]]
-name = "rsaclient-core"
-version = "0.1.0"
-dependencies = [
- "glfw",
- "glium",
- "image",
- "rectangle-pack",
- "rsa-core",
-]
-
-[[package]]
-name = "rsaclient-graphics"
-version = "0.1.0"
-dependencies = [
- "apollo",
- "glfw",
- "glium",
- "image",
- "rectangle-pack",
- "rsa-core",
- "rsa-world",
- "rsaclient-core",
- "rsaclient-player",
- "rustaria",
-]
-
-[[package]]
-name = "rsaclient-player"
-version = "0.1.0"
-dependencies = [
- "glfw",
- "rsa-core",
- "rsa-network",
- "rsa-player",
- "rsa-world",
- "rsaclient-core",
 ]
 
 [[package]]

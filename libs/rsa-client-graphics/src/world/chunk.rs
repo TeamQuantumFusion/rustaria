@@ -14,9 +14,9 @@ use rsa_world::{
 	ty::{BlockPos, ChunkPos},
 	CHUNK_SIZE,
 };
-use rsaclient_core::debug::Debug;
-use rsaclient_core::frontend::Frontend;
-use rsaclient_core::ty::{Draw, MeshBuilder, MeshDrawer, PosTexVertex};
+use rsa_client_core::debug::Debug;
+use rsa_client_core::frontend::Frontend;
+use rsa_client_core::ty::{Draw, MeshBuilder, MeshDrawer, PosTexVertex};
 
 use crate::GraphicsRPC;
 

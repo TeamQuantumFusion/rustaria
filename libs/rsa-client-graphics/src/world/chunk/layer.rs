@@ -16,9 +16,9 @@ use rsa_world::{
 	ty::{BlockPos, ChunkPos},
 };
 use apollo::FromLua;
-use rsaclient_core::atlas::Atlas;
-use rsaclient_core::debug::Debug;
-use rsaclient_core::ty::{MeshBuilder, PosTexVertex};
+use rsa_client_core::atlas::Atlas;
+use rsa_client_core::debug::Debug;
+use rsa_client_core::ty::{MeshBuilder, PosTexVertex};
 
 use crate::{
 	world::{

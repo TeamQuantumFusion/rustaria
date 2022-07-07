@@ -4,13 +4,13 @@ use rsa_core::api::Core;
 use rsa_core::api::reload::{Reload, RustariaPrototypeCarrier};
 use rsa_core::api::stargate::Stargate;
 use rsa_core::blake3::Hasher;
-use rsaclient_graphics::GraphicsRPC;
+use rsa_client_graphics::GraphicsRPC;
 use rustaria::rpc::ServerRPC;
 use rsa_core::err::Result;
-use rsaclient_core::atlas::Atlas;
-use rsaclient_core::frontend::Frontend;
-use rsaclient_graphics::world::chunk::layer::BlockLayerRendererPrototype;
-use rsaclient_graphics::world::entity::EntityRendererPrototype;
+use rsa_client_core::atlas::Atlas;
+use rsa_client_core::frontend::Frontend;
+use rsa_client_graphics::world::chunk::layer::BlockLayerRendererPrototype;
+use rsa_client_graphics::world::entity::EntityRendererPrototype;
 use crate::AuditExt;
 
 #[derive(Default)]

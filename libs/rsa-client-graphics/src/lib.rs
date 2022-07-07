@@ -14,10 +14,10 @@ use rsa_core::{
 	ty::{IdTable, Registry},
 };
 use rsa_world::{chunk::layer::BlockLayer, entity::prototype::EntityDesc};
-use rsaclient_core::atlas::Atlas;
+use rsa_client_core::atlas::Atlas;
 use rustaria::rpc::ServerRPC;
 use rsa_core::err::Result;
-use rsaclient_core::frontend::Frontend;
+use rsa_client_core::frontend::Frontend;
 
 use crate::world::{
 	chunk::{

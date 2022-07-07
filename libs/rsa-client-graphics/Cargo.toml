@@ -1,5 +1,5 @@
 [package]
-name = "rsaclient-graphics"
+name = "rsa-client-graphics"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,8 +9,8 @@ edition = "2021"
 rsa-core = { path = "../rsa-core" }
 rsa-world = { path = "../rsa-world" }
 rustaria = { path = "../../" }
-rsaclient-core = { path = "../rsaclient-core" }
-rsaclient-player = { path = "../rsaclient-player" }
+rsa-client-core = { path = "../rsa-client-core" }
+rsa-client-player = { path = "../rsa-client-player" }
 
 apollo = { path = "../apollo", features = ["luajit", "vendored", "serialize", "macro"] }
 

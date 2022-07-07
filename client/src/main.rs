@@ -26,7 +26,7 @@ use rsa_world::{
 	ty::ChunkPos,
 	World,
 };
-use rsaclient_core::{
+use rsa_client_core::{
 	debug::Debug,
 	frontend::Frontend,
 	timing::Timing,

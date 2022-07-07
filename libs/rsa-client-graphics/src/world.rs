@@ -4,11 +4,11 @@ use rsa_core::err::ext::AuditExt;
 use crate::world::{chunk::WorldChunkRenderer, entity::WorldEntityRenderer};
 use rsa_core::err::Result;
 use rsa_world::World;
-use rsaclient_core::debug::Debug;
-use rsaclient_core::frontend::Frontend;
-use rsaclient_core::timing::Timing;
-use rsaclient_core::ty::{Draw, Viewport};
-use rsaclient_player::PlayerSystem;
+use rsa_client_core::debug::Debug;
+use rsa_client_core::frontend::Frontend;
+use rsa_client_core::timing::Timing;
+use rsa_client_core::ty::{Draw, Viewport};
+use rsa_client_player::PlayerSystem;
 use crate::GraphicsRPC;
 
 pub mod chunk;
@@ -31,11 +31,11 @@ impl WorldRenderer {
 			pos_color_program: Program::new(
 				&frontend.ctx,
 				SourceCode {
-					vertex_shader: include_str!("../../rsaclient-core/src/builtin/pos_tex.vert.glsl"),
+					vertex_shader: include_str!("../../rsa-client-core/src/builtin/pos_tex.vert.glsl"),
 					tessellation_control_shader: None,
 					tessellation_evaluation_shader: None,
 					geometry_shader: None,
-					fragment_shader: include_str!("../../rsaclient-core/src/builtin/pos_tex.frag.glsl"),
+					fragment_shader: include_str!("../../rsa-client-core/src/builtin/pos_tex.frag.glsl"),
 				},
 			)?,
 			chunk_renderer: WorldChunkRenderer::new()?,

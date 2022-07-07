@@ -32,7 +32,7 @@ members = [
     "libs/rsa-network",
     "libs/rsa-player",
     "libs/rsa-world",
-    "libs/rsaclient-graphics",
-    "libs/rsaclient-player",
-    "libs/rsaclient-core",
+    "libs/rsa-client-graphics",
+    "libs/rsa-client-player",
+    "libs/rsa-client-core",
 ]

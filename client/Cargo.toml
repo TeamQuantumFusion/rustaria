@@ -12,9 +12,9 @@ rsa-world = { path = "../libs/rsa-world" }
 rsa-network = { path = "../libs/rsa-network" }
 rsa-player = { path = "../libs/rsa-player" }
 
-rsaclient-core = { path = "../libs/rsaclient-core" }
-rsaclient-graphics = { path = "../libs/rsaclient-graphics" }
-rsaclient-player = { path = "../libs/rsaclient-player" }
+rsa-client-core = { path = "../libs/rsa-client-core" }
+rsa-client-graphics = { path = "../libs/rsa-client-graphics" }
+rsa-client-player = { path = "../libs/rsa-client-player" }
 
 apollo = { path = "../libs/apollo", features = ["luajit", "vendored", "serialize", "macro"] }
 glfw = { version = "0.45.0", features = ["image"] }

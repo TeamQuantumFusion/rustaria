@@ -1,5 +1,5 @@
 [package]
-name = "rsaclient-core"
+name = "rsa-client-player"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,8 +7,9 @@ edition = "2021"
 
 [dependencies]
 rsa-core = { path = "../rsa-core" }
+rsa-world = { path = "../rsa-world" }
+rsa-player = { path = "../rsa-player" }
+rsa-network = { path = "../rsa-network" }
+rsa-client-core = { path = "../rsa-client-core" }
 
-glium = { git = "https://github.com/alphaqu/glium", default-features = false, features = [] }
 glfw = { version = "0.45.0", features = ["image"] }
-image = { version = "0.24.2", default-features = false, features = ["png"] }
-rectangle-pack = "0.4.2"
