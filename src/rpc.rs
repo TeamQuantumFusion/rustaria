@@ -1,7 +1,6 @@
 use apollo::Lua;
 use rsa_core::{
 	api::{
-		reload::{Reload, RustariaPrototypeCarrier},
 		stargate::Stargate,
 		Core,
 	},

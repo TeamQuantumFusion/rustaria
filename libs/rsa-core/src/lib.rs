@@ -1,21 +1,17 @@
 //! # Rustaria Common Library
 //! Contains core types that are used across a lot of rustaria modules.
-use ::std::{collections::HashMap, io, io::ErrorKind, sync::Arc};
-use apollo::Lua;
 use semver::Version;
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
 
 use crate::{
 	api::{
-		create_lua,
 		plugin::{Plugin, Plugins},
 		reload::Reload,
 		stargate::Stargate,
 	},
 	blake3::Blake3Hash,
 	log::{info, LevelFilter},
-	thread_pool::{ThreadPool, ThreadPoolBuilder},
-	ty::Identifier,
+	thread_pool::{ThreadPool, ThreadPoolBuilder}
 };
 
 pub mod api;

@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use apollo::Lua;
 use rsa_core::{
 	api::{
-		reload::{Reload, RustariaPrototypeCarrier},
+		reload::{Reload},
 		stargate::Stargate,
 		Core,
 	},

@@ -39,7 +39,7 @@ pub mod rpc;
 fn main() -> Result<()> {
 	initialize()?;
 	let mut client = Client::new()?;
-	client.reload().wrap_err("Failed to load game.")?;
+	client.reload().wrap_err("Failed to loafd game.")?;
 	client.run()?;
 	Ok(())
 }

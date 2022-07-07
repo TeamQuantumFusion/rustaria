@@ -6,7 +6,7 @@ use apollo::Lua;
 use rsa_client_core::{atlas::Atlas, frontend::Frontend};
 use rsa_core::{
 	api::{
-		reload::{Reload, RustariaPrototypeCarrier},
+		reload::{Reload},
 		stargate::Stargate,
 		Core,
 	},

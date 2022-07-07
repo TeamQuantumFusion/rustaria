@@ -5,7 +5,7 @@ use apollo::{prelude::LuaError, Lua, LuaScope};
 use log::debug;
 
 use crate::{
-	api::reload::RustariaPrototypeCarrier, blake3::Hasher, err::Result, ty::Identifier, Blake3Hash,
+	blake3::Hasher, err::Result, ty::Identifier, Blake3Hash,
 	Plugin, Plugins, Reload, Stargate, ThreadPool, ThreadPoolBuilder,
 };
 

@@ -8,7 +8,7 @@ use rsa_client_graphics::{
 };
 use rsa_core::{
 	api::{
-		reload::{Reload, RustariaPrototypeCarrier},
+		reload::{Reload},
 		stargate::Stargate,
 		Core,
 	},

@@ -3,7 +3,7 @@
 use apollo::{macros::*, Lua};
 use rsa_core::{
 	api::{
-		reload::{Reload, RustariaPrototypeCarrier},
+		reload::{Reload},
 		stargate::Stargate,
 		Core,
 	},
