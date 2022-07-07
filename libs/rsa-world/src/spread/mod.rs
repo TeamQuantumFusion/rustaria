@@ -4,12 +4,13 @@ use std::collections::HashMap;
 
 use rand::SeedableRng;
 use rand_xoshiro::Xoroshiro64Star;
-use rsa_core::debug::{DebugCategory, DebugRendererImpl};
-use rsa_core::draw_debug;
-use rsa_core::ty::Id;
-use crate::{BlockDesc, BlockLayer, BlockPos, ChunkStorage};
-use crate::rpc::WorldRPC;
+use rsa_core::{
+	debug::{DebugCategory, DebugRendererImpl},
+	draw_debug,
+	ty::Id,
+};
 
+use crate::{rpc::WorldRPC, BlockDesc, BlockLayer, BlockPos, ChunkStorage};
 
 pub struct SpreaderSystem {
 	rand: Xoroshiro64Star,

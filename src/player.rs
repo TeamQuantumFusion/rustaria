@@ -1,17 +1,22 @@
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
-use rsa_core::ty::{Id, Identifier};
-use rsa_core::err::Result;
-use rsa_core::log::{debug, info, trace, warn};
-use rsa_core::math::vec2;
-use rsa_network::server::ServerSender;
-use rsa_network::Token;
+use std::collections::{hash_map::Entry, HashMap};
+
+use rsa_core::{
+	err::Result,
+	log::{debug, info, trace, warn},
+	math::vec2,
+	ty::{Id, Identifier},
+};
+use rsa_network::{server::ServerSender, Token};
 use rsa_player::packet::{ClientBoundPlayerPacket, ServerBoundPlayerPacket};
-use rsa_world::entity::{Entity, EntityRef, EntityWorld};
-use rsa_world::entity::component::{HumanoidComponent, PositionComponent};
-use rsa_world::entity::prototype::EntityDesc;
-use rsa_world::rpc::WorldRPC;
-use rsa_world::World;
+use rsa_world::{
+	entity::{
+		component::{HumanoidComponent, PositionComponent},
+		prototype::EntityDesc,
+		Entity, EntityRef, EntityWorld,
+	},
+	rpc::WorldRPC,
+	World,
+};
 
 pub struct PlayerSystem {
 	players: HashMap<Token, Option<Entity>>,

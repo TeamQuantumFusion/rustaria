@@ -1,8 +1,10 @@
 use apollo::{FromLua, Lua, ToLua, Value};
-use rsa_core::api::util::lua_table;
-use rsa_core::err::audit::Audit;
-use rsa_core::err::Result;
-use rsa_core::ty::{checked_add_signed_u8, Offset};
+use rsa_core::{
+	api::util::lua_table,
+	err::{audit::Audit, Result},
+	ty::{checked_add_signed_u8, Offset},
+};
+
 use crate::CHUNK_SIZE;
 
 #[derive(

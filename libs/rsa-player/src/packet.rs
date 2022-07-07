@@ -1,9 +1,12 @@
-use rsa_core::{math::Vector2D, ty::WS};
-use rsa_core::ty::Id;
-use rsa_world::chunk::block::BlockDesc;
-use rsa_world::chunk::layer::BlockLayer;
-use rsa_world::entity::Entity;
-use rsa_world::ty::BlockPos;
+use rsa_core::{
+	math::Vector2D,
+	ty::{Id, WS},
+};
+use rsa_world::{
+	chunk::{block::BlockDesc, layer::BlockLayer},
+	entity::Entity,
+	ty::BlockPos,
+};
 
 use crate::PlayerCommand;
 

@@ -1,11 +1,16 @@
 use apollo::{macros::*, FromLua, Lua, Value};
 use hecs::{BuiltEntityClone, EntityBuilderClone};
-use rsa_core::api::prototype::Prototype;
-use rsa_core::api::util::lua_table;
-use rsa_core::log::info;
-use rsa_core::ty::Id;
-use rsa_core::err::Result;
-use crate::entity::component::{CollisionComponent, GravityComponent, HumanoidComponent, PhysicsComponent, PositionComponent, PrototypeComponent};
+use rsa_core::{
+	api::{prototype::Prototype, util::lua_table},
+	err::Result,
+	log::info,
+	ty::Id,
+};
+
+use crate::entity::component::{
+	CollisionComponent, GravityComponent, HumanoidComponent, PhysicsComponent, PositionComponent,
+	PrototypeComponent,
+};
 
 #[derive(Clone)]
 pub struct EntityDesc {

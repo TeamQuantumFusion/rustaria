@@ -2,31 +2,30 @@
 //! Contains code for the world itself and all of its contents. Stuff like entities and blocks are here.
 use hecs::Entity;
 use rpc::WorldRPC;
-use rsa_core::{err::Result, ty::Id};
-use rsa_core::api::Core;
-use rsa_core::debug::DebugRendererImpl;
-use rsa_core::err::ext::AuditExt;
-use rsa_core::ty::Registry;
-use rsa_network::Token;
-use rsa_network::packet::PacketSetup;
-use rsa_network::server::ServerSender;
+use rsa_core::{
+	api::Core,
+	debug::DebugRendererImpl,
+	err::{ext::AuditExt, Result},
+	ty::{Id, Registry},
+};
+use rsa_network::{packet::PacketSetup, server::ServerSender, Token};
 
 use crate::{
-	chunk::{block::BlockDesc, Chunk, layer::BlockLayer, storage::ChunkStorage},
+	chunk::{block::BlockDesc, layer::BlockLayer, storage::ChunkStorage, Chunk},
 	entity::{
-		EntityWorld,
 		prototype::EntityDesc,
 		system::network::{EntityComponentPacket, EntityPacket},
+		EntityWorld,
 	},
+	spread::SpreaderSystem,
 	ty::{BlockPos, ChunkPos},
 };
-use crate::spread::SpreaderSystem;
 
 pub mod chunk;
 pub mod entity;
-pub mod ty;
-pub mod spread;
 pub mod rpc;
+pub mod spread;
+pub mod ty;
 
 pub const CHUNK_SIZE: usize = 16;
 pub const CHUNK_SIZE_F32: f32 = CHUNK_SIZE as f32;
@@ -63,7 +62,12 @@ impl World {
 		})
 	}
 
-	pub fn tick(&mut self, core: &Core, rpc: &WorldRPC, debug: &mut impl DebugRendererImpl) -> Result<()> {
+	pub fn tick(
+		&mut self,
+		core: &Core,
+		rpc: &WorldRPC,
+		debug: &mut impl DebugRendererImpl,
+	) -> Result<()> {
 		for (pos, layer_id, block_id) in self.spreader.tick(rpc, &mut self.chunks, debug) {
 			self.place_block(rpc, pos, layer_id, block_id);
 		}

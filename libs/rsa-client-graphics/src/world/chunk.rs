@@ -2,21 +2,23 @@ use std::collections::HashMap;
 
 use glium::{uniform, Blend, DrawParameters, Program};
 use layer::BlockLayerRenderer;
+use rsa_client_core::{
+	debug::Debug,
+	frontend::Frontend,
+	ty::{Draw, MeshBuilder, MeshDrawer, PosTexVertex},
+};
 use rsa_core::{
 	debug::DebugCategory,
 	draw_debug,
 	err::Result,
+	math::rect,
 	ty::{DirMap, Direction, IdTable, Offset},
 };
-use rsa_core::math::rect;
 use rsa_world::{
 	chunk::{layer::BlockLayer, storage::ChunkStorage},
 	ty::{BlockPos, ChunkPos},
 	CHUNK_SIZE,
 };
-use rsa_client_core::debug::Debug;
-use rsa_client_core::frontend::Frontend;
-use rsa_client_core::ty::{Draw, MeshBuilder, MeshDrawer, PosTexVertex};
 
 use crate::GraphicsRPC;
 

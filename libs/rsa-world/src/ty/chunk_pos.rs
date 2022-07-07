@@ -1,10 +1,13 @@
-use apollo::{Lua, ToLua, Value, FromLua, macros::from_lua};
-use rsa_core::api::util::lua_table;
-use rsa_core::debug::DebugDraw;
-use rsa_core::math::{rect, Vector2D};
-use rsa_core::err::Result;
-use rsa_core::num::{FromPrimitive, ToPrimitive};
-use rsa_core::ty::{checked_add_signed_u32, Direction, Error, Offset};
+use apollo::{macros::from_lua, FromLua, Lua, ToLua, Value};
+use rsa_core::{
+	api::util::lua_table,
+	debug::DebugDraw,
+	err::Result,
+	math::{rect, Vector2D},
+	num::{FromPrimitive, ToPrimitive},
+	ty::{checked_add_signed_u32, Direction, Error, Offset},
+};
+
 use crate::{CHUNK_SIZE, CHUNK_SIZE_F32};
 
 // ======================================== POSITION ========================================
@@ -118,4 +121,3 @@ impl Into<DebugDraw> for ChunkPos {
 		))
 	}
 }
-

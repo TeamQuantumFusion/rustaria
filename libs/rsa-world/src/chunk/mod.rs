@@ -4,9 +4,8 @@ use apollo::{macros::*, FromLua, ToLua, UserData};
 use block::Block;
 use layer::BlockLayer;
 use rsa_core::ty::IdTable;
-use crate::CHUNK_SIZE;
-use crate::ty::BlockLayerPos;
 
+use crate::{ty::BlockLayerPos, CHUNK_SIZE};
 
 pub mod block;
 pub mod layer;

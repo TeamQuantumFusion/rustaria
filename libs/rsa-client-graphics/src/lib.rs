@@ -3,6 +3,7 @@
 use std::{collections::HashSet, mem::replace};
 
 use apollo::Lua;
+use rsa_client_core::{atlas::Atlas, frontend::Frontend};
 use rsa_core::{
 	api::{
 		reload::{Reload, RustariaPrototypeCarrier},
@@ -10,14 +11,11 @@ use rsa_core::{
 		Core,
 	},
 	blake3::Hasher,
-	err::ext::AuditExt,
+	err::{ext::AuditExt, Result},
 	ty::{IdTable, Registry},
 };
 use rsa_world::{chunk::layer::BlockLayer, entity::prototype::EntityDesc};
-use rsa_client_core::atlas::Atlas;
 use rustaria::rpc::ServerRPC;
-use rsa_core::err::Result;
-use rsa_client_core::frontend::Frontend;
 
 use crate::world::{
 	chunk::{
@@ -43,7 +41,12 @@ impl GraphicsRPC {
 		Ok(())
 	}
 
-	pub fn build(frontend: &Frontend, server: &ServerRPC, core: &Core, stargate: &mut Stargate) -> Result<GraphicsRPC> {
+	pub fn build(
+		frontend: &Frontend,
+		server: &ServerRPC,
+		core: &Core,
+		stargate: &mut Stargate,
+	) -> Result<GraphicsRPC> {
 		let mut sprites = HashSet::new();
 		let block_layers = stargate.build_registry::<BlockLayerRendererPrototype>()?;
 		let entities = stargate.build_registry::<EntityRendererPrototype>()?;
@@ -63,10 +66,7 @@ impl GraphicsRPC {
 			block_layer_renderer.push((id, None));
 		}
 		for (_, identifier, prototype) in block_layers.into_entries() {
-			if let Some(id) = server.world
-				.block_layer
-				.get_id_from_identifier(&identifier)
-			{
+			if let Some(id) = server.world.block_layer.get_id_from_identifier(&identifier) {
 				let prototype = prototype
 					.bake(&core.lua, &atlas, server.world.block_layer.get(id))
 					.wrap_err_with(|| format!("Failed to bake {}", identifier))?;
@@ -91,7 +91,7 @@ impl GraphicsRPC {
 		Ok(GraphicsRPC {
 			block_layer_renderer: block_layer_renderer.into_iter().collect(),
 			entity_renderer: entity_renderer.into_iter().collect(),
-			atlas: Some(atlas)
+			atlas: Some(atlas),
 		})
 	}
 }

@@ -7,17 +7,7 @@ pub struct ItemStack {
 }
 
 impl ItemStack {
-	pub fn single(item: Item) -> ItemStack {
-		ItemStack {
-			item,
-			size: 1
-		}
-	}
+	pub fn single(item: Item) -> ItemStack { ItemStack { item, size: 1 } }
 
-	pub fn new(item: Item, size: u32) -> ItemStack {
-		ItemStack {
-			item,
-			size
-		}
-	}
+	pub fn new(item: Item, size: u32) -> ItemStack { ItemStack { item, size } }
 }

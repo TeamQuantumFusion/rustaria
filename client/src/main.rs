@@ -11,26 +11,24 @@ use std::{
 use apollo::LuaScope;
 use glfw::{Action, Key, WindowEvent};
 use glium::Surface;
-use rsa_core::{
-	api::Core,
-	err::{ext::AuditExt, Result},
-	initialize,
-	math::vec2,
-	ty::Identifier,
-};
-use rsa_core::api::reload::Reload;
-use rsa_core::api::stargate::Stargate;
-use rsa_core::blake3::Hasher;
-use rsa_world::{
-	chunk::{storage::ChunkStorage, Chunk, ChunkLayer},
-	ty::ChunkPos,
-	World,
-};
 use rsa_client_core::{
 	debug::Debug,
 	frontend::Frontend,
 	timing::Timing,
 	ty::{Draw, Viewport},
+};
+use rsa_core::{
+	api::{reload::Reload, stargate::Stargate, Core},
+	blake3::Hasher,
+	err::{ext::AuditExt, Result},
+	initialize,
+	math::vec2,
+	ty::Identifier,
+};
+use rsa_world::{
+	chunk::{storage::ChunkStorage, Chunk, ChunkLayer},
+	ty::ChunkPos,
+	World,
 };
 
 use crate::{game::ClientGame, rpc::ClientRPC};
@@ -177,9 +175,11 @@ impl Client {
 			stargate: Stargate::new(),
 			client: true,
 		};
-		ClientRPC::register(&mut reload.stargate, &self.core.lua).wrap_err("Failed to register ClientRPC")?;
+		ClientRPC::register(&mut reload.stargate, &self.core.lua)
+			.wrap_err("Failed to register ClientRPC")?;
 		self.core.reload(&mut reload).wrap_err("Failed to reload")?;
-		self.rpc = ClientRPC::build(&self.frontend, &self.core, &mut reload.stargate).wrap_err("Failed to build ClientRPC")?;
+		self.rpc = ClientRPC::build(&self.frontend, &self.core, &mut reload.stargate)
+			.wrap_err("Failed to build ClientRPC")?;
 
 		let mut hasher = Hasher::new();
 		self.rpc.append_hasher(&mut hasher);

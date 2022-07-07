@@ -5,9 +5,8 @@ use std::{
 };
 
 use laminar::{Packet, Socket, SocketEvent};
+use rsa_core::err::{audit::Audit, Result};
 use serde::{de::DeserializeOwned, Serialize};
-use rsa_core::err::audit::Audit;
-use rsa_core::err::Result;
 
 pub struct Connector {
 	socket: Socket,

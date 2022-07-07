@@ -1,4 +1,5 @@
 use glium::implement_vertex;
+
 use crate::ty::mesh_builder::Quad;
 
 #[repr(C)]

@@ -1,17 +1,16 @@
 use std::collections::HashMap;
 
+use apollo::{macros::*, FromLua};
 use rsa_core::{
 	api::prototype::Prototype,
 	err::Result,
 	ty::{Id, Identifier},
 };
-use apollo::macros::*;
-use apollo::FromLua;
 
 use crate::{
+	spread::block::{BlockSpreader, BlockSpreaderPrototype},
 	AuditExt,
 };
-use crate::spread::block::{BlockSpreader, BlockSpreaderPrototype};
 
 #[derive(Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Block {

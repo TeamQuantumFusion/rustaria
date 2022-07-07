@@ -6,19 +6,16 @@ pub mod network;
 mod player;
 
 use rsa_core::{
+	api::Core,
 	debug::DummyRenderer,
 	err::{ext::AuditExt, Result},
 	log::info,
 };
-use rsa_core::api::Core;
 use rsa_network::{packet::PacketSetup, server::ServerNetwork};
-use rsa_player::{
-	packet::{ClientBoundPlayerPacket, ServerBoundPlayerPacket},
-};
+use rsa_player::packet::{ClientBoundPlayerPacket, ServerBoundPlayerPacket};
 use rsa_world::{ClientBoundWorldPacket, ServerBoundWorldPacket, World};
 
-use crate::{rpc::ServerRPC, network::ServerBoundPacket};
-use crate::player::PlayerSystem;
+use crate::{network::ServerBoundPacket, player::PlayerSystem, rpc::ServerRPC};
 
 pub struct Rustaria {
 	network: ServerNetwork<Rustaria>,
@@ -27,7 +24,11 @@ pub struct Rustaria {
 }
 
 impl Rustaria {
-	pub fn new(rpc: &ServerRPC, network: ServerNetwork<Rustaria>, world: World) -> Result<Rustaria> {
+	pub fn new(
+		rpc: &ServerRPC,
+		network: ServerNetwork<Rustaria>,
+		world: World,
+	) -> Result<Rustaria> {
 		info!("Launching integrated server.");
 		Ok(Rustaria {
 			network,
@@ -55,7 +56,7 @@ impl Rustaria {
 		}
 
 		self.world
-			.tick(core, &rpc.world,  &mut DummyRenderer)
+			.tick(core, &rpc.world, &mut DummyRenderer)
 			.wrap_err("Ticking world")?;
 		self.player
 			.tick(&mut self.network.sender().map(), &self.world)

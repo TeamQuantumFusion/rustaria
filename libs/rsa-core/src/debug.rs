@@ -61,14 +61,17 @@ pub struct DebugEvent {
 #[macro_export]
 macro_rules! draw_debug {
 	($DEBUG:expr, $CATEGORY:expr, $DRAW:expr, $COLOR:expr, $LINE_SIZE:expr, $TIME:literal) => {
-		$crate::debug::DebugRendererImpl::event($DEBUG, $crate::debug::DebugEvent {
-			category: $CATEGORY,
-			draw: $DRAW.into(),
-			color: $COLOR,
-			line_size: $LINE_SIZE,
-			duration: ($TIME * $crate::TPS as f32) as u32,
-			ticks_remaining: ($TIME * $crate::TPS as f32) as u32,
-		});
+		$crate::debug::DebugRendererImpl::event(
+			$DEBUG,
+			$crate::debug::DebugEvent {
+				category: $CATEGORY,
+				draw: $DRAW.into(),
+				color: $COLOR,
+				line_size: $LINE_SIZE,
+				duration: ($TIME * $crate::TPS as f32) as u32,
+				ticks_remaining: ($TIME * $crate::TPS as f32) as u32,
+			},
+		);
 	};
 	($DEBUG:expr, $CATEGORY:expr, $DRAW:expr, $COLOR:expr, $LINE_SIZE:expr) => {
 		$crate::draw_debug!($DEBUG, $CATEGORY, $DRAW, $COLOR, $LINE_SIZE, 0.0)

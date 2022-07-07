@@ -75,7 +75,7 @@ local wall_rect_pos_lookup = {
 };
 
 return {
-    ["tile"] =  {
+    ["tile"] = {
         get_rect = function(kind)
             return {
                 origin = { 0.0, 0.0 },

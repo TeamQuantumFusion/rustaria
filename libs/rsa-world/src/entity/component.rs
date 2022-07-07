@@ -1,8 +1,11 @@
 use apollo::{FromLua, Function, Lua, LuaSerdeExt, Value};
-use rsa_core::api::util::lua_table;
-use rsa_core::math::{Rect, Vector2D};
-use rsa_core::ty::{DirMap, Id, WS};
-use rsa_core::err::Result;
+use rsa_core::{
+	api::util::lua_table,
+	err::Result,
+	math::{Rect, Vector2D},
+	ty::{DirMap, Id, WS},
+};
+
 use crate::EntityDesc;
 /// Our lovely components
 #[macro_export]

@@ -1,9 +1,10 @@
 use hecs::Entity;
-use rsa_core::log::warn;
-use rsa_core::math::Vector2D;
-use rsa_core::ty::WS;
-use crate::entity::component::{HumanoidComponent, PhysicsComponent, PositionComponent};
-use crate::entity::EntityStorage;
+use rsa_core::{log::warn, math::Vector2D, ty::WS};
+
+use crate::entity::{
+	component::{HumanoidComponent, PhysicsComponent, PositionComponent},
+	EntityStorage,
+};
 
 pub struct NetworkSystem;
 

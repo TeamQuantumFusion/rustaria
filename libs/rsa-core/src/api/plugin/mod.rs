@@ -1,13 +1,13 @@
-use std::{collections::HashMap, io, path::PathBuf};
-use std::io::ErrorKind;
-use std::sync::Arc;
+use std::{collections::HashMap, io, io::ErrorKind, path::PathBuf, sync::Arc};
 
 use anyways::{ext::AuditExt, Result};
 use apollo::Lua;
 use semver::{Version, VersionReq};
 
-use crate::{api::plugin::archive::Archive, ty::Identifier};
-use crate::api::ResourceKind;
+use crate::{
+	api::{plugin::archive::Archive, ResourceKind},
+	ty::Identifier,
+};
 
 mod archive;
 

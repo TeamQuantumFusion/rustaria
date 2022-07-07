@@ -1,7 +1,12 @@
-use rsa_core::debug::{DebugCategory, DebugRendererImpl};
-use rsa_core::{draw_debug, TPS};
-use crate::entity::component::{GravityComponent, PhysicsComponent, PositionComponent};
-use crate::entity::EntityStorage;
+use rsa_core::{
+	debug::{DebugCategory, DebugRendererImpl},
+	draw_debug, TPS,
+};
+
+use crate::entity::{
+	component::{GravityComponent, PhysicsComponent, PositionComponent},
+	EntityStorage,
+};
 
 pub mod collision;
 pub mod humanoid;

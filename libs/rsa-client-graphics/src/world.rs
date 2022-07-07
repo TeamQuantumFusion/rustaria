@@ -1,15 +1,18 @@
 use glium::{program::SourceCode, Frame, Program};
-use rsa_core::err::ext::AuditExt;
-
-use crate::world::{chunk::WorldChunkRenderer, entity::WorldEntityRenderer};
-use rsa_core::err::Result;
-use rsa_world::World;
-use rsa_client_core::debug::Debug;
-use rsa_client_core::frontend::Frontend;
-use rsa_client_core::timing::Timing;
-use rsa_client_core::ty::{Draw, Viewport};
+use rsa_client_core::{
+	debug::Debug,
+	frontend::Frontend,
+	timing::Timing,
+	ty::{Draw, Viewport},
+};
 use rsa_client_player::PlayerSystem;
-use crate::GraphicsRPC;
+use rsa_core::err::{ext::AuditExt, Result};
+use rsa_world::World;
+
+use crate::{
+	world::{chunk::WorldChunkRenderer, entity::WorldEntityRenderer},
+	GraphicsRPC,
+};
 
 pub mod chunk;
 pub mod entity;
@@ -31,11 +34,15 @@ impl WorldRenderer {
 			pos_color_program: Program::new(
 				&frontend.ctx,
 				SourceCode {
-					vertex_shader: include_str!("../../rsa-client-core/src/builtin/pos_tex.vert.glsl"),
+					vertex_shader: include_str!(
+						"../../rsa-client-core/src/builtin/pos_tex.vert.glsl"
+					),
 					tessellation_control_shader: None,
 					tessellation_evaluation_shader: None,
 					geometry_shader: None,
-					fragment_shader: include_str!("../../rsa-client-core/src/builtin/pos_tex.frag.glsl"),
+					fragment_shader: include_str!(
+						"../../rsa-client-core/src/builtin/pos_tex.frag.glsl"
+					),
 				},
 			)?,
 			chunk_renderer: WorldChunkRenderer::new()?,
@@ -43,11 +50,7 @@ impl WorldRenderer {
 		})
 	}
 
-	pub fn tick(
-		&mut self,
-		frontend: &Frontend,
-		world: &World,
-	) -> Result<()> {
+	pub fn tick(&mut self, frontend: &Frontend, world: &World) -> Result<()> {
 		self.chunk_renderer.tick(frontend, &world.chunks)?;
 		Ok(())
 	}

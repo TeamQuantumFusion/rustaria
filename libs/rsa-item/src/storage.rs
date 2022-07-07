@@ -1,7 +1,6 @@
 use std::mem::swap;
-use crate::ItemRPC;
-use crate::stack::ItemStack;
 
+use crate::{stack::ItemStack, ItemRPC};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Storage {
@@ -19,9 +18,7 @@ impl Storage {
 
 	pub fn len(&self) -> usize { self.values.len() }
 
-	pub fn get(&self, index: usize) -> Option<&ItemStack> {
-		self.values.get(index)?.as_ref()
-	}
+	pub fn get(&self, index: usize) -> Option<&ItemStack> { self.values.get(index)?.as_ref() }
 
 	pub fn insert(&mut self, index: usize, item: ItemStack) -> Option<ItemStack> {
 		self.values.get_mut(index).and_then(|old_value| {
@@ -75,16 +72,16 @@ impl Storage {
 
 #[cfg(all(test, feature = "testing"))]
 mod tests {
-	use rsa_core::api::Core;
-	use rsa_core::api::reload::Reload;
-	use rsa_core::api::stargate::Stargate;
-	use rsa_core::log::initialize;
-	use rsa_core::ty::Identifier;
-	use crate::Item;
+	use rsa_core::{
+		api::{reload::Reload, stargate::Stargate, Core},
+		log::initialize,
+		ty::Identifier,
+	};
 
 	use super::*;
+	use crate::Item;
 
-	fn init() -> (Core, ItemRPC)  {
+	fn init() -> (Core, ItemRPC) {
 		initialize().unwrap();
 
 		let mut rpc = ItemRPC::default();
@@ -101,7 +98,7 @@ mod tests {
 			},
 		}
 		"#
-				.to_string()
+			.to_string(),
 		);
 
 		let mut reload = Reload {
@@ -244,14 +241,14 @@ mod tests {
 		let mut stack = ItemStack::new(item.clone(), 100);
 		storage.add(&carrier, &mut stack);
 
-		assert_eq!(storage, Storage {
-			values: vec![
-				Some(ItemStack::new(item.clone(), 100))
-			]
-		});
-		assert_eq!(stack,  ItemStack::new(item.clone(), 50))
+		assert_eq!(
+			storage,
+			Storage {
+				values: vec![Some(ItemStack::new(item.clone(), 100))]
+			}
+		);
+		assert_eq!(stack, ItemStack::new(item.clone(), 50))
 	}
-
 
 	#[test]
 	fn test_clear() {
@@ -265,19 +262,14 @@ mod tests {
 
 		let mut storage = Storage::new(1);
 		storage.add(&carrier, &mut ItemStack::new(item.clone(), 50));
-		assert_eq!(storage, Storage {
-			values: vec![
-				Some(ItemStack::new(item.clone(), 50))
-			]
-		});
+		assert_eq!(
+			storage,
+			Storage {
+				values: vec![Some(ItemStack::new(item.clone(), 50))]
+			}
+		);
 
 		storage.clear();
-		assert_eq!(storage, Storage {
-			values: vec![
-				None
-			]
-		});
-
+		assert_eq!(storage, Storage { values: vec![None] });
 	}
-
 }

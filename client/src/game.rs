@@ -1,22 +1,17 @@
 use glfw::WindowEvent;
-use rsa_core::api::Core;
-use rsa_core::err::ext::AuditExt;
-use rsa_core::err::Result;
-use rsa_network::client::ClientNetwork;
-use rsa_network::new_networking;
-use rsa_player::packet::ServerBoundPlayerPacket;
-use rsa_world::chunk::storage::ChunkStorage;
-use rsa_world::World;
-use rsa_client_core::debug::Debug;
-use rsa_client_core::frontend::Frontend;
-use rsa_client_core::timing::Timing;
-use rsa_client_core::ty::Viewport;
+use rsa_client_core::{debug::Debug, frontend::Frontend, timing::Timing, ty::Viewport};
 use rsa_client_graphics::world::WorldRenderer;
 use rsa_client_player::PlayerSystem;
-use rustaria::network::ClientBoundPacket;
-use rustaria::Rustaria;
-use crate::ClientRPC;
-use crate::game::world::ClientWorld;
+use rsa_core::{
+	api::Core,
+	err::{ext::AuditExt, Result},
+};
+use rsa_network::{client::ClientNetwork, new_networking};
+use rsa_player::packet::ServerBoundPlayerPacket;
+use rsa_world::{chunk::storage::ChunkStorage, World};
+use rustaria::{network::ClientBoundPacket, Rustaria};
+
+use crate::{game::world::ClientWorld, ClientRPC};
 
 mod world;
 
@@ -43,9 +38,10 @@ impl ClientGame {
 		Ok(ClientGame {
 			network,
 			player: PlayerSystem::new(&rpc.world)?,
-			world: ClientWorld::new(World::new(
-				ChunkStorage::new(world.chunks.width(), world.chunks.height()),
-			)?),
+			world: ClientWorld::new(World::new(ChunkStorage::new(
+				world.chunks.width(),
+				world.chunks.height(),
+			))?),
 			renderer: WorldRenderer::new(frontend)?,
 			integrated: Some(
 				Rustaria::new(rpc, server_network, world).wrap_err("Failed to start server")?,
@@ -57,9 +53,7 @@ impl ClientGame {
 		self.player.event(event, frontend);
 	}
 
-	pub fn get_viewport(&mut self) -> Option<Viewport> {
-		Some(self.player.get_viewport())
-	}
+	pub fn get_viewport(&mut self) -> Option<Viewport> { Some(self.player.get_viewport()) }
 
 	pub fn tick(
 		&mut self,
@@ -70,12 +64,15 @@ impl ClientGame {
 		debug: &mut Debug,
 	) -> Result<()> {
 		if let Some(server) = &mut self.integrated {
-			server.tick(core, rpc).wrap_err("Ticking integrated server")?;
+			server
+				.tick(core, rpc)
+				.wrap_err("Ticking integrated server")?;
 		}
 		for packet in self.network.poll() {
 			match packet {
 				ClientBoundPacket::Player(packet) => {
-					self.player.packet(core, &rpc.world, packet, &mut self.world)?;
+					self.player
+						.packet(core, &rpc.world, packet, &mut self.world)?;
 				}
 				ClientBoundPacket::World(packet) => {
 					self.world.packet(&rpc.world, packet)?;
@@ -83,12 +80,16 @@ impl ClientGame {
 			}
 		}
 		let mut network = self.network.sender();
-		self.player
-			.tick(core, &rpc.world, viewport, &mut network.map(), &mut self.world)?;
+		self.player.tick(
+			core,
+			&rpc.world,
+			viewport,
+			&mut network.map(),
+			&mut self.world,
+		)?;
 		self.world
 			.tick_client(core, rpc, &self.player, &mut network.map(), debug)?;
-		self.renderer
-			.tick(frontend,  &self.world)?;
+		self.renderer.tick(frontend, &self.world)?;
 		self.world.chunks.reset_dirty();
 		Ok(())
 	}

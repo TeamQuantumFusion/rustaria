@@ -1,5 +1,4 @@
 {
-
   "properties": {
     "plugin": {
       "type": "object",
@@ -28,8 +27,7 @@
           "type": "string"
         }
       },
-      "required": [ "name", "id", "version" ]
-
+      "required": ["name", "id", "version"]
     },
     "dependencies": {
       "description": "All of the required dependencies. If one of them is missing the game will not launch.",
@@ -53,5 +51,5 @@
       }
     }
   },
-  "required": [ "plugin" ]
+  "required": ["plugin"]
 }

@@ -1,15 +1,20 @@
 use std::collections::HashSet;
-use rsa_core::api::prototype::Prototype;
-use rsa_core::draw_debug;
-use rsa_core::math::{Rect, size2, vec2};
-use rsa_core::ty::{Identifier, WS};
-use rsa_world::chunk::ConnectionType;
-use rsa_world::ty::BlockPos;
+
 use apollo::FromLua;
-use rsa_core::debug::DebugCategory;
-use rsa_client_core::atlas::Atlas;
-use rsa_client_core::debug::Debug;
-use rsa_client_core::ty::{MeshBuilder, PosTexVertex};
+use rsa_client_core::{
+	atlas::Atlas,
+	debug::Debug,
+	ty::{MeshBuilder, PosTexVertex},
+};
+use rsa_core::{
+	api::prototype::Prototype,
+	debug::DebugCategory,
+	draw_debug,
+	math::{size2, vec2, Rect},
+	ty::{Identifier, WS},
+};
+use rsa_world::{chunk::ConnectionType, ty::BlockPos};
+
 use crate::world::chunk;
 
 #[derive(Debug)]

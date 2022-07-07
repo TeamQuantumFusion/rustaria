@@ -1,18 +1,24 @@
 use std::collections::HashSet;
 
 use apollo::{FromLua, Lua, Value};
-use glium::{Blend, DrawParameters, Program, uniform};
-use rsa_core::api::prototype::Prototype;
-use rsa_core::api::util::lua_table;
-use rsa_core::err::Result;
-use rsa_core::math::{Rect, Vector2D};
-use rsa_core::ty::{Identifier, WS};
-use rsa_world::entity::component::{PhysicsComponent, PositionComponent, PrototypeComponent};
-use rsa_world::entity::EntityWorld;
-use rsa_client_core::atlas::Atlas;
-use rsa_client_core::frontend::Frontend;
-use rsa_client_core::ty::{Draw, MeshBuilder, MeshDrawer, PosTexVertex};
+use glium::{uniform, Blend, DrawParameters, Program};
+use rsa_client_core::{
+	atlas::Atlas,
+	frontend::Frontend,
+	ty::{Draw, MeshBuilder, MeshDrawer, PosTexVertex},
+};
 use rsa_client_player::PlayerSystem;
+use rsa_core::{
+	api::{prototype::Prototype, util::lua_table},
+	err::Result,
+	math::{Rect, Vector2D},
+	ty::{Identifier, WS},
+};
+use rsa_world::entity::{
+	component::{PhysicsComponent, PositionComponent, PrototypeComponent},
+	EntityWorld,
+};
+
 use crate::GraphicsRPC;
 
 pub struct WorldEntityRenderer {

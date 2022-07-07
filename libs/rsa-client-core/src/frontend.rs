@@ -7,13 +7,19 @@ use std::{
 use glfw::{
 	with_c_str, Context, Glfw, OpenGlProfileHint, SwapInterval, WindowEvent, WindowHint, WindowMode,
 };
-use glium::{backend::Backend, debug::{DebugCallbackBehavior, Severity}, Frame, Program, SwapBuffersError, Vertex};
-use glium::program::SourceCode;
+use glium::{
+	backend::Backend,
+	debug::{DebugCallbackBehavior, Severity},
+	program::SourceCode,
+	Frame, Program, SwapBuffersError, Vertex,
+};
 use image::imageops::FilterType;
-use rsa_core::{err::ext::AuditExt, err::Result, log::log};
-use rsa_core::log::Level;
-use crate::ty::MeshDrawer;
+use rsa_core::{
+	err::{ext::AuditExt, Result},
+	log::{log, Level},
+};
 
+use crate::ty::MeshDrawer;
 
 pub struct Frontend {
 	glfw: Glfw,

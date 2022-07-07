@@ -1,12 +1,19 @@
 use std::time::{Duration, Instant};
 
 use glium::{program::SourceCode, uniform, Blend, DrawParameters, Frame, Program};
-use rsa_core::{debug::{DebugCategory, DebugDraw, DebugEvent, DebugRendererImpl}, err::Result, log::info, math::{rect, vec2, Rect, Vector2D}, TPS, ty::WS};
+use rsa_core::{
+	debug::{DebugCategory, DebugDraw, DebugEvent, DebugRendererImpl},
+	err::Result,
+	log::info,
+	math::{rect, vec2, Rect, Vector2D},
+	ty::WS,
+	TPS,
+};
 
 use crate::{
 	frontend::Frontend,
+	ty::{MeshBuilder, MeshDrawer, PosColorVertex, Viewport},
 };
-use crate::ty::{MeshBuilder, MeshDrawer, PosColorVertex, Viewport};
 
 pub struct Debug {
 	program: Program,

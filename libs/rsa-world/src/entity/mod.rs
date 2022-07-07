@@ -2,14 +2,17 @@ pub use hecs::{
 	Component, DynamicBundle, Entity, EntityBuilder, EntityRef, Query, QueryBorrow, QueryMut, Ref,
 	RefMut, TakenEntity,
 };
-use rsa_core::{debug::DebugRendererImpl, err::Result, ty::Id};
-use rsa_core::api::Core;
+use rsa_core::{api::Core, debug::DebugRendererImpl, err::Result, ty::Id};
 
-use crate::{ChunkStorage, entity::system::{
-	collision::CollisionSystem, GravitySystem, humanoid::HumanoidSystem,
-	network::NetworkSystem, VelocitySystem,
-}, EntityDesc, EntityPacket, iter_components};
-use crate::rpc::WorldRPC;
+use crate::{
+	entity::system::{
+		collision::CollisionSystem, humanoid::HumanoidSystem, network::NetworkSystem,
+		GravitySystem, VelocitySystem,
+	},
+	iter_components,
+	rpc::WorldRPC,
+	ChunkStorage, EntityDesc, EntityPacket,
+};
 
 pub mod component;
 pub mod prototype;
@@ -31,8 +34,7 @@ impl EntityStorage {
 	}
 
 	pub fn insert(&mut self, rpc: &WorldRPC, entity: Entity, id: Id<EntityDesc>) {
-		self.world
-			.spawn_at(entity, &rpc.entity.get(id).template)
+		self.world.spawn_at(entity, &rpc.entity.get(id).template)
 	}
 
 	pub fn put_comp(&mut self, entity: Entity, components: impl DynamicBundle) {
@@ -113,7 +115,8 @@ impl EntityWorld {
 	) -> Result<()> {
 		self.gravity.tick(&mut self.storage);
 		self.humanoid.tick(&mut self.storage);
-		self.collision.tick(core, rpc, &mut self.storage, chunks, debug)?;
+		self.collision
+			.tick(core, rpc, &mut self.storage, chunks, debug)?;
 		self.velocity.tick(&mut self.storage, debug);
 		Ok(())
 	}

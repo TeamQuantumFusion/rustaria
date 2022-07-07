@@ -1,9 +1,10 @@
 use anyways::Result;
 use apollo::macros::*;
-use crate::api::Core;
 
-use crate::api::stargate::Stargate;
-use crate::blake3::Hasher;
+use crate::{
+	api::{stargate::Stargate, Core},
+	blake3::Hasher,
+};
 
 pub struct Reload {
 	pub stargate: Stargate,
@@ -21,9 +22,8 @@ impl Reload {
 	pub fn get_client(&mut self) -> Result<bool> { Ok(self.client) }
 }
 
-
 pub trait RustariaPrototypeCarrier {
 	fn register_registries(&mut self, core: &mut Core, reload: &mut Reload) -> Result<()>;
 	fn build_registries(&mut self, core: &mut Core, reload: &mut Reload) -> Result<()>;
-	fn append_hasher(&mut self, hasher: &mut Hasher)  -> Result<()>;
+	fn append_hasher(&mut self, hasher: &mut Hasher) -> Result<()>;
 }

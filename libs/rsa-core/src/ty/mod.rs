@@ -5,8 +5,7 @@ pub use id_table::{IdTable, IdTableIter};
 pub use identifier::Identifier;
 pub use registry::{Registry, RegistryBuilder};
 
-pub use self::direction::Direction;
-pub use self::direction::DirMap;
+pub use self::direction::{DirMap, Direction};
 
 mod direction;
 mod id;

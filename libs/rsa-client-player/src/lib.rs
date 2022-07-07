@@ -1,36 +1,32 @@
 use std::collections::VecDeque;
-use glfw::{Action, Key, MouseButton, WindowEvent};
 
+use glfw::{Action, Key, MouseButton, WindowEvent};
+use rsa_client_core::{frontend::Frontend, ty::Viewport};
 use rsa_core::{
 	api::Core,
-	err::Result,
+	debug::DummyRenderer,
+	err::{ext::AuditExt, Result},
+	log::debug,
 	math::{vec2, Vector2D},
 	ty::{Id, Identifier, WS},
 };
-use rsa_core::debug::DummyRenderer;
-use rsa_core::err::ext::AuditExt;
-use rsa_core::log::debug;
 use rsa_network::client::ClientSender;
 use rsa_player::{
 	packet::{ClientBoundPlayerPacket, ServerBoundPlayerPacket},
 	PlayerCommand,
 };
 use rsa_world::{
-	chunk::{block::BlockDesc, layer::BlockLayer},
+	chunk::{block::BlockDesc, layer::BlockLayer, storage::ChunkStorage},
 	entity::{
 		component::{HumanoidComponent, PositionComponent},
-		Entity,
-		EntityWorld,
-		prototype::EntityDesc, system::network::EntityComponentPacket,
+		prototype::EntityDesc,
+		system::network::EntityComponentPacket,
+		Component, Entity, EntityWorld, Ref,
 	},
-	ServerBoundWorldPacket,
-	ty::BlockPos, World,
+	rpc::WorldRPC,
+	ty::BlockPos,
+	ServerBoundWorldPacket, World,
 };
-use rsa_world::chunk::storage::ChunkStorage;
-use rsa_world::entity::{Component, Ref};
-use rsa_world::rpc::WorldRPC;
-use rsa_client_core::frontend::Frontend;
-use rsa_client_core::ty::Viewport;
 
 const MAX_CORRECTION: f32 = 0.025;
 
@@ -322,9 +318,7 @@ impl PlayerSystem {
 			.map(|entity| self.prediction_world.storage.get_comp::<C>(entity).unwrap())
 	}
 
-	pub fn get_viewport(&self) -> Viewport {
-		Viewport::new(self.get_pos(), self.zoom)
-	}
+	pub fn get_viewport(&self) -> Viewport { Viewport::new(self.get_pos(), self.zoom) }
 
 	// If the server says a different value try to correct it without freaking the player out.
 	fn correct_offset(&mut self, entity: Entity, entity_world: &EntityWorld) {
@@ -361,7 +355,12 @@ impl PlayerSystem {
 
 	// When a client receives a packet, rebase the base_server_entity and
 	// then apply the events not yet to be responded by the server.
-	fn compile_prediction(&mut self, core: &Core, rpc: &WorldRPC, chunks: &mut ChunkStorage) -> Option<()> {
+	fn compile_prediction(
+		&mut self,
+		core: &Core,
+		rpc: &WorldRPC,
+		chunks: &mut ChunkStorage,
+	) -> Option<()> {
 		let entity = self.server_player?;
 
 		// Put prediction on the server value
@@ -380,7 +379,8 @@ impl PlayerSystem {
 				prediction.dir = speed.dir;
 				prediction.jumping = speed.jumping;
 			}
-			self.prediction_world.tick(core, rpc, chunks, &mut DummyRenderer);
+			self.prediction_world
+				.tick(core, rpc, chunks, &mut DummyRenderer);
 		}
 
 		let mut prediction = self

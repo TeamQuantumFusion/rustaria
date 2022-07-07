@@ -1,4 +1,5 @@
 use std::time::{Duration, Instant};
+
 use rsa_core::TPS;
 
 pub const TICK_DURATION: Duration = Duration::from_nanos((1000000000 / TPS) as u64);

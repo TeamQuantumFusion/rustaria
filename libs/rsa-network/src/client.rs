@@ -1,22 +1,20 @@
+use rsa_core::{
+	err::Result,
+	sync::channel::{Receiver, Sender},
+};
+
 use crate::{Packet, PacketSetup};
-use rsa_core::err::Result;
-use rsa_core::sync::channel::{Receiver, Sender};
 
 pub struct ClientSender<'src, P: Packet> {
 	send: Box<dyn Fn(P) -> Result<()> + 'src>,
 }
 
-
-impl<'src,P: Packet> ClientSender<'src, P> {
-	pub fn send(&self, packet: P) -> Result<()> {
-		(self.send)(packet)
-	}
+impl<'src, P: Packet> ClientSender<'src, P> {
+	pub fn send(&self, packet: P) -> Result<()> { (self.send)(packet) }
 
 	pub fn map<T: Packet + Into<P>>(&self) -> ClientSender<T> {
 		ClientSender {
-			send: Box::new(|packet| {
-				self.send(packet.into())
-			})
+			send: Box::new(|packet| self.send(packet.into())),
 		}
 	}
 }

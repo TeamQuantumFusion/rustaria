@@ -11,14 +11,14 @@ use rsa_network::{
 	Token,
 };
 use rsa_world::{
-	ClientBoundWorldPacket,
 	entity::{
 		component::{HumanoidComponent, PositionComponent},
-		Entity,
-		EntityRef, EntityWorld, prototype::EntityDesc,
-	}, World,
+		prototype::EntityDesc,
+		Entity, EntityRef, EntityWorld,
+	},
+	rpc::WorldRPC,
+	ClientBoundWorldPacket, World,
 };
-use rsa_world::rpc::WorldRPC;
 
 use crate::packet::{ClientBoundPlayerPacket, ServerBoundPlayerPacket};
 

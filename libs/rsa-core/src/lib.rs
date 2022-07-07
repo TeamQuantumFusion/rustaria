@@ -3,19 +3,20 @@
 use ::std::{collections::HashMap, io, io::ErrorKind, sync::Arc};
 use apollo::Lua;
 use semver::Version;
-use simplelog::{ColorChoice, Config, TerminalMode, TermLogger};
+use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
 
 use crate::{
-	api::plugin::{Plugin, Plugins},
+	api::{
+		create_lua,
+		plugin::{Plugin, Plugins},
+		reload::Reload,
+		stargate::Stargate,
+	},
 	blake3::Blake3Hash,
 	log::{info, LevelFilter},
-	thread_pool::ThreadPool,
+	thread_pool::{ThreadPool, ThreadPoolBuilder},
 	ty::Identifier,
 };
-use crate::api::create_lua;
-use crate::api::reload::Reload;
-use crate::api::stargate::Stargate;
-use crate::thread_pool::ThreadPoolBuilder;
 
 pub mod api;
 pub mod blake3;
@@ -67,9 +68,9 @@ pub fn initialize() -> err::Result<()> {
 				ColorChoice::Auto,
 			)?;
 			info!(
-					"Logging initialized successfully for Rustaria {}",
-					KERNEL_VERSION.to_string()
-				);
+				"Logging initialized successfully for Rustaria {}",
+				KERNEL_VERSION.to_string()
+			);
 		}
 	}
 	Ok(())

@@ -5,12 +5,13 @@ use image::imageops::FilterType;
 use rectangle_pack::{
 	pack_rects, GroupedRectsToPlace, RectToInsert, RectanglePackError, TargetBin,
 };
-use rsa_core::api::Core;
-use rsa_core::math::{point2, Rect, size2};
-use rsa_core::ty::Identifier;
-use rsa_core::err::Result;
-use rsa_core::log::{error, trace, warn};
-use rsa_core::api::ResourceKind;
+use rsa_core::{
+	api::{Core, ResourceKind},
+	err::Result,
+	log::{error, trace, warn},
+	math::{point2, size2, Rect},
+	ty::Identifier,
+};
 
 use crate::frontend::Frontend;
 

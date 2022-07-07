@@ -1,17 +1,16 @@
 //! # Item API
 
-use apollo::Lua;
-use apollo::macros::*;
+use apollo::{macros::*, Lua};
 use rsa_core::{
 	api::{
 		reload::{Reload, RustariaPrototypeCarrier},
+		stargate::Stargate,
 		Core,
 	},
 	blake3::Hasher,
 	err::Result,
 	ty::{Id, Registry},
 };
-use rsa_core::api::stargate::Stargate;
 
 use crate::prototype::ItemPrototype;
 
@@ -32,16 +31,15 @@ impl ItemRPC {
 
 	pub fn build(stargate: &mut Stargate) -> Result<ItemRPC> {
 		Ok(ItemRPC {
-			item: stargate.build_registry::<ItemPrototype>()?
+			item: stargate
+				.build_registry::<ItemPrototype>()?
 				.into_entries()
 				.map(|(id, ident, prototype)| (id.build(), ident, prototype.bake()))
-				.collect()
+				.collect(),
 		})
 	}
 
-	pub fn append_hasher(&mut self, hasher: &mut Hasher) {
-		self.item.append_hasher(hasher);
-	}
+	pub fn append_hasher(&mut self, hasher: &mut Hasher) { self.item.append_hasher(hasher); }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]

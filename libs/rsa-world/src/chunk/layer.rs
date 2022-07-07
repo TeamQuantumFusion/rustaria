@@ -1,11 +1,12 @@
-use rsa_core::api::prototype::Prototype;
-use rsa_core::log::trace;
-use rsa_core::err::Result;
-use rsa_core::ty::{Id, Identifier, Registry, RegistryBuilder};
-use crate::{AuditExt, BlockDesc};
-use crate::chunk::block::BlockPrototype;
-use apollo::macros::*;
-use apollo::FromLua;
+use apollo::{macros::*, FromLua};
+use rsa_core::{
+	api::prototype::Prototype,
+	err::Result,
+	log::trace,
+	ty::{Id, Identifier, Registry, RegistryBuilder},
+};
+
+use crate::{chunk::block::BlockPrototype, AuditExt, BlockDesc};
 
 #[derive(Clone)]
 pub struct BlockLayer {

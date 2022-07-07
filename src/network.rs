@@ -22,7 +22,6 @@ macro_rules! impl_packet {
 	};
 }
 
-
 #[derive(serde::Serialize, serde::Deserialize)]
 pub enum ServerBoundPacket {
 	World(ServerBoundWorldPacket),

@@ -1,8 +1,11 @@
 use std::ops::{Deref, DerefMut};
-use rsa_core::ty::{Direction, DirMap};
-use rsa_world::chunk::{ChunkLayer, ConnectionType};
-use rsa_world::CHUNK_SIZE;
-use rsa_world::ty::BlockLayerPos;
+
+use rsa_core::ty::{DirMap, Direction};
+use rsa_world::{
+	chunk::{ChunkLayer, ConnectionType},
+	ty::BlockLayerPos,
+	CHUNK_SIZE,
+};
 
 #[derive(Clone)]
 pub(crate) struct NeighborMatrixBuilder {

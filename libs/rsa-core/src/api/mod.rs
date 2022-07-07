@@ -1,16 +1,13 @@
-use std::collections::HashMap;
-use std::fmt::Write;
-use std::hash::Hash;
-use std::path::PathBuf;
+use std::{collections::HashMap, fmt::Write, hash::Hash, path::PathBuf, sync::Arc};
 
 use anyways::ext::AuditExt;
-use apollo::{Lua, LuaScope, prelude::LuaError};
+use apollo::{prelude::LuaError, Lua, LuaScope};
 use log::debug;
-use std::sync::Arc;
 
-use crate::{Blake3Hash, err::Result, Plugin, Plugins, Reload, Stargate, ThreadPool, ThreadPoolBuilder, ty::Identifier};
-use crate::api::reload::RustariaPrototypeCarrier;
-use crate::blake3::Hasher;
+use crate::{
+	api::reload::RustariaPrototypeCarrier, blake3::Hasher, err::Result, ty::Identifier, Blake3Hash,
+	Plugin, Plugins, Reload, Stargate, ThreadPool, ThreadPoolBuilder,
+};
 
 pub mod lua;
 pub mod plugin;
@@ -43,10 +40,10 @@ impl Core {
 		for path in paths {
 			if path.is_dir()
 				|| (path.is_file()
-				&& path
-				.extension()
-				.map(|extention| extention.to_str().unwrap() == "zip")
-				.unwrap_or(false))
+					&& path
+						.extension()
+						.map(|extention| extention.to_str().unwrap() == "zip")
+						.unwrap_or(false))
 			{
 				let plugin = Plugin::new(&path)?;
 				plugins.insert(plugin.id.clone(), plugin);
@@ -69,8 +66,7 @@ impl Core {
 		self.hash = None;
 		{
 			let reload_scope = LuaScope::from(&mut *reload);
-			self
-				.lua
+			self.lua
 				.globals()
 				.insert("reload", reload_scope.lua())
 				.wrap_err("Failed to insert reload")?;
@@ -93,18 +89,13 @@ impl Core {
 
 	pub fn new_test(plugins: Vec<Plugin>) -> Core {
 		let plugins = Plugins {
-			plugins: Arc::new(
-				plugins
-					.into_iter()
-					.map(|p| (p.id.clone(), p))
-					.collect()
-			)
+			plugins: Arc::new(plugins.into_iter().map(|p| (p.id.clone(), p)).collect()),
 		};
 		Core {
 			lua: create_lua(&plugins).unwrap(),
 			plugins,
 			thread_pool: Arc::new(ThreadPoolBuilder::new().num_threads(1).build().unwrap()),
-			hash: None
+			hash: None,
 		}
 	}
 }
@@ -128,11 +119,10 @@ pub fn create_lua(plugins: &Plugins) -> Result<Lua> {
 			.set_name(format!("{location}"))?
 			.into_function()
 	})
-		.wrap_err("Failed to initialize file loader.")?;
+	.wrap_err("Failed to initialize file loader.")?;
 
 	Ok(lua)
 }
-
 
 pub enum ResourceKind {
 	Assets,

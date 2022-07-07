@@ -1,15 +1,19 @@
 use std::ops::{Deref, DerefMut};
-use rsa_core::api::Core;
-use rsa_core::debug::DebugRendererImpl;
-use rsa_core::err::ext::AuditExt;
-use rsa_core::std::FxHashSet;
-use rsa_core::err::Result;
-use rsa_core::math::{Rect, size2};
-use rsa_network::client::{ClientNetwork, ClientSender};
-use rsa_world::ty::ChunkPos;
-use rsa_world::{CHUNK_SIZE_F32, ClientBoundWorldPacket, ServerBoundWorldPacket, World};
-use rsa_world::rpc::WorldRPC;
+
 use rsa_client_player::PlayerSystem;
+use rsa_core::{
+	api::Core,
+	debug::DebugRendererImpl,
+	err::{ext::AuditExt, Result},
+	math::{size2, Rect},
+	std::FxHashSet,
+};
+use rsa_network::client::{ClientNetwork, ClientSender};
+use rsa_world::{
+	rpc::WorldRPC, ty::ChunkPos, ClientBoundWorldPacket, ServerBoundWorldPacket, World,
+	CHUNK_SIZE_F32,
+};
+
 use crate::ClientRPC;
 
 pub struct ClientWorld {

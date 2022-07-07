@@ -1,5 +1,7 @@
-use rsa_core::math::{Rect, rect, Vector2D};
-use rsa_core::ty::WS;
+use rsa_core::{
+	math::{rect, Rect, Vector2D},
+	ty::WS,
+};
 
 #[derive(Copy, Clone)]
 pub struct Viewport {

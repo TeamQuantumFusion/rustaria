@@ -1,10 +1,14 @@
 use std::collections::HashSet;
 
-use apollo::{Function, Lua, LuaSerdeExt};
+use apollo::{FromLua, Function, Lua, LuaSerdeExt};
+use rsa_client_core::{
+	atlas::Atlas,
+	debug::Debug,
+	ty::{MeshBuilder, PosTexVertex},
+};
 use rsa_core::{
-	err::Result,
 	api::prototype::Prototype,
-	err::ext::AuditExt,
+	err::{ext::AuditExt, Result},
 	ty::{DirMap, Direction, IdTable, Identifier, RegistryBuilder},
 };
 use rsa_world::{
@@ -15,16 +19,10 @@ use rsa_world::{
 	},
 	ty::{BlockPos, ChunkPos},
 };
-use apollo::FromLua;
-use rsa_client_core::atlas::Atlas;
-use rsa_client_core::debug::Debug;
-use rsa_client_core::ty::{MeshBuilder, PosTexVertex};
 
-use crate::{
-	world::{
-		chunk::block::{BlockRenderer, BlockRendererPrototype, KindDesc},
-		neighbor::{NeighborMatrixBuilder, SpriteConnectionKind},
-	},
+use crate::world::{
+	chunk::block::{BlockRenderer, BlockRendererPrototype, KindDesc},
+	neighbor::{NeighborMatrixBuilder, SpriteConnectionKind},
 };
 
 pub struct BlockLayerRenderer {

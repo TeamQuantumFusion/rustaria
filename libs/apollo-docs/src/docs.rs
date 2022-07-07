@@ -1,4 +1,4 @@
-use lua_docs::{Class, ClassGenerics, Field, FuncGenerics, Function, ty::Type as LuaType};
+use lua_docs::{ty::Type as LuaType, Class, ClassGenerics, Field, FuncGenerics, Function};
 use quote::ToTokens;
 use syn::{Attribute, GenericArgument, GenericParam, ItemImpl, Lit, Meta, PathArguments, Type};
 
@@ -18,23 +18,16 @@ impl DocsBuilder {
 				generics: get_generics(&item.generics),
 				fields: vec![],
 				functions: vec![],
-				comment: Default::default()
-			}
+				comment: Default::default(),
+			},
 		}
 	}
 
+	pub fn push_field(&mut self, field: Field) { self.class.fields.push(field); }
 
-	pub fn push_field(&mut self, field: Field) {
-		self.class.fields.push(field);
-	}
+	pub fn push_function(&mut self, func: Function) { self.class.functions.push(func); }
 
-	pub fn push_function(&mut self, func: Function) {
-		self.class.functions.push(func);
-	}
-
-	pub fn export(self) -> String {
-		format!("{}", self.class)
-	}
+	pub fn export(self) -> String { format!("{}", self.class) }
 }
 
 pub fn to_lua_type(ty: &Type) -> LuaType {
@@ -52,7 +45,7 @@ pub fn to_lua_type(ty: &Type) -> LuaType {
 				}
 				"Value" => {
 					return LuaType::Any;
-				},
+				}
 				"Self" => {
 					return LuaType::This;
 				}
@@ -113,14 +106,17 @@ pub fn to_lua_type(ty: &Type) -> LuaType {
 					}
 				}
 			}
-			LuaType::Custom { name: string, generics }
+			LuaType::Custom {
+				name: string,
+				generics,
+			}
 		}
 		Type::Tuple(tuple) => {
 			if tuple.elems.is_empty() {
 				LuaType::Nil
 			} else if tuple.elems.len() == 1 {
 				to_lua_type(&tuple.elems[0])
-			} else  {
+			} else {
 				panic!("Cannot convert tuple")
 			}
 		}
@@ -145,7 +141,6 @@ pub fn get_path_name(ty: &Type) -> String {
 	}
 }
 
-
 pub fn get_docs(attributes: &Vec<Attribute>) -> Vec<String> {
 	let mut comments = Vec::new();
 	for attr in attributes {
@@ -162,9 +157,7 @@ pub fn get_docs(attributes: &Vec<Attribute>) -> Vec<String> {
 }
 
 pub fn get_generics(generics: &syn::Generics) -> ClassGenerics {
-	let mut out = ClassGenerics {
-		entries: vec![]
-	};
+	let mut out = ClassGenerics { entries: vec![] };
 	for generic in &generics.params {
 		if let GenericParam::Type(ty) = &generic {
 			out.entries.push(ty.ident.to_string());

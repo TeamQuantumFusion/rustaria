@@ -1,13 +1,12 @@
 use std::{mem::size_of, rc::Rc};
 
-use rsa_core::err::{ext::AuditExt, Result};
 use glium::{
 	index::PrimitiveType, uniforms::Uniforms, DrawParameters, Frame, IndexBuffer, Program, Surface,
 	Vertex, VertexBuffer,
 };
-use crate::ty::mesh_builder::MeshBuilder;
+use rsa_core::err::{ext::AuditExt, Result};
 
-use crate::frontend::Frontend;
+use crate::{frontend::Frontend, ty::mesh_builder::MeshBuilder};
 
 pub struct MeshDrawer<T: Copy + Vertex> {
 	ctx: Rc<glium::backend::Context>,

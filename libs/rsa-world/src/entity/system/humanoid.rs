@@ -1,7 +1,9 @@
-use rsa_core::TPS;
-use rsa_core::ty::Direction;
-use crate::entity::component::{CollisionComponent, HumanoidComponent, PhysicsComponent};
-use crate::entity::EntityStorage;
+use rsa_core::{ty::Direction, TPS};
+
+use crate::entity::{
+	component::{CollisionComponent, HumanoidComponent, PhysicsComponent},
+	EntityStorage,
+};
 
 pub struct HumanoidSystem;
 

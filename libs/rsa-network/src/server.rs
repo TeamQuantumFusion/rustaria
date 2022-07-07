@@ -10,15 +10,11 @@ pub struct ServerSender<'src, P: Packet> {
 }
 
 impl<'src, P: Packet> ServerSender<'src, P> {
-	pub fn send(&self, to: Token, packet: P) -> Result<()> {
-		(self.send)(to, packet)
-	}
+	pub fn send(&self, to: Token, packet: P) -> Result<()> { (self.send)(to, packet) }
 
 	pub fn map<T: Packet + Into<P>>(&self) -> ServerSender<T> {
 		ServerSender {
-			send: Box::new(|to, packet| {
-				self.send(to, packet.into())
-			})
+			send: Box::new(|to, packet| self.send(to, packet.into())),
 		}
 	}
 }
