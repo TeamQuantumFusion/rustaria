@@ -337,7 +337,7 @@ impl Error {
 	pub fn report(self) -> Audit {
 		match self {
 			Error::CallbackError { traceback, cause } => {
-				let (mut cause, mut _full_traceback) = (cause, None);
+				let (cause, mut _full_traceback) = (cause, None);
 
 				let mut cause = &cause;
 				while let Some(Error::CallbackError {

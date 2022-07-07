@@ -101,7 +101,7 @@ impl ToLua for ChunkPos {
 
 impl FromLua for ChunkPos {
 	#[from_lua(shape(x: u32, y: u32))]
-	fn from_lua(lua_value: Value, lua: &Lua) -> Result<Self> {
+	fn from_lua(lua_value: Value, _: &Lua) -> Result<Self> {
 		let table = lua_table(lua_value)?;
 
 		Ok(ChunkPos::try_from((

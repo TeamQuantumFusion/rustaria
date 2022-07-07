@@ -1,12 +1,12 @@
-use std::{collections::HashMap, fmt::Write, hash::Hash, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, fmt::Write, path::PathBuf, sync::Arc};
 
 use anyways::ext::AuditExt;
 use apollo::{prelude::LuaError, Lua, LuaScope};
 use log::debug;
 
 use crate::{
-	blake3::Hasher, err::Result, ty::Identifier, Blake3Hash,
-	Plugin, Plugins, Reload, Stargate, ThreadPool, ThreadPoolBuilder,
+	err::Result, ty::Identifier, Blake3Hash,
+	Plugin, Plugins, Reload, ThreadPool, ThreadPoolBuilder,
 };
 
 pub mod lua;

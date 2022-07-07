@@ -69,7 +69,7 @@ impl Frontend {
 					false,
 					DebugCallbackBehavior::Custom {
 						synchronous: false,
-						callback: Box::new(|src, kind, severity, _, _, msg| match severity {
+						callback: Box::new(|_, _, severity, _, _, msg| match severity {
 							Severity::Notification => {
 								log!(target: "opengl", Level::Debug, "{}", msg);
 							}

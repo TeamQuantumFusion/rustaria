@@ -6,20 +6,17 @@ use apollo::Lua;
 use rsa_client_core::{atlas::Atlas, frontend::Frontend};
 use rsa_core::{
 	api::{
-		reload::{Reload},
 		stargate::Stargate,
 		Core,
 	},
-	blake3::Hasher,
 	err::{ext::AuditExt, Result},
-	ty::{IdTable, Registry},
+	ty::{IdTable},
 };
 use rsa_world::{chunk::layer::BlockLayer, entity::prototype::EntityDesc};
 use rustaria::rpc::ServerRPC;
 
 use crate::world::{
 	chunk::{
-		block::BlockRenderer,
 		layer::{BlockLayerRenderer, BlockLayerRendererPrototype},
 	},
 	entity::{EntityRenderer, EntityRendererPrototype},

@@ -1,5 +1,7 @@
+#![allow(non_upper_case_globals)]
+
 use bitflags::bitflags;
-use euclid::{rect, vec2, Rect, Vector2D};
+use euclid::{vec2, Rect, Vector2D};
 
 use crate::ty::WS;
 

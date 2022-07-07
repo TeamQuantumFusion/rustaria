@@ -1,5 +1,5 @@
 use glfw::WindowEvent;
-use rsa_client_core::{debug::Debug, frontend::Frontend, timing::Timing, ty::Viewport};
+use rsa_client_core::{debug::Debug, frontend::Frontend, ty::Viewport};
 use rsa_client_graphics::world::WorldRenderer;
 use rsa_client_player::PlayerSystem;
 use rsa_core::{
@@ -79,7 +79,7 @@ impl ClientGame {
 				}
 			}
 		}
-		let mut network = self.network.sender();
+		let network = self.network.sender();
 		self.player.tick(
 			core,
 			&rpc.world,

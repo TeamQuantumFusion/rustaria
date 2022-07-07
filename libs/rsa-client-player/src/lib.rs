@@ -20,12 +20,11 @@ use rsa_world::{
 	entity::{
 		component::{HumanoidComponent, PositionComponent},
 		prototype::EntityDesc,
-		system::network::EntityComponentPacket,
 		Component, Entity, EntityWorld, Ref,
 	},
 	rpc::WorldRPC,
 	ty::BlockPos,
-	ServerBoundWorldPacket, World,
+	 World,
 };
 
 const MAX_CORRECTION: f32 = 0.025;
@@ -213,7 +212,7 @@ impl PlayerSystem {
 								))?;
 							}
 						}
-						Press::SpawnEntity(x, y, entity) => {
+						Press::SpawnEntity(_, _, _) => {
 							//network.send(ServerBoundWorldPacket::SpawnEntity(
 							//	entity,
 							//	vec![EntityComponentPacket::Pos {
@@ -379,7 +378,7 @@ impl PlayerSystem {
 				prediction.dir = speed.dir;
 				prediction.jumping = speed.jumping;
 			}
-			self.prediction_world
+			let _result = self.prediction_world
 				.tick(core, rpc, chunks, &mut DummyRenderer);
 		}
 

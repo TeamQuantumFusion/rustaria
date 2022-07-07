@@ -12,7 +12,7 @@ use rsa_core::{
 
 use crate::{
 	ty::{block_layer_pos::BlockLayerPos, chunk_pos::ChunkPos},
-	CHUNK_SIZE, CHUNK_SIZE_F32,
+	CHUNK_SIZE,
 };
 
 #[derive(
@@ -129,7 +129,7 @@ impl ToLua for BlockPos {
 }
 
 impl FromLua for BlockPos {
-	fn from_lua(lua_value: Value, lua: &Lua) -> Result<Self> {
+	fn from_lua(lua_value: Value, _: &Lua) -> Result<Self> {
 		let table = lua_table(lua_value)?;
 
 		if table.contains_key("x")? && table.contains_key("y")? {

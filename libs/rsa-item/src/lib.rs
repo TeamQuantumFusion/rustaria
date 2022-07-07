@@ -3,9 +3,7 @@
 use apollo::{macros::*, Lua};
 use rsa_core::{
 	api::{
-		reload::{Reload},
 		stargate::Stargate,
-		Core,
 	},
 	blake3::Hasher,
 	err::Result,

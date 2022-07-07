@@ -82,7 +82,7 @@ impl ToLua for BlockLayerPos {
 }
 
 impl FromLua for BlockLayerPos {
-	fn from_lua(lua_value: Value, lua: &Lua) -> Result<Self> {
+	fn from_lua(lua_value: Value, _: &Lua) -> Result<Self> {
 		let table = lua_table(lua_value)?;
 		BlockLayerPos::try_new(table.get("x")?, table.get("y")?)
 			.ok_or_else(|| Audit::new("BlockLayerPos is out of bounds."))

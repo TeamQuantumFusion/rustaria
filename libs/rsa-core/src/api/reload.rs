@@ -2,8 +2,7 @@ use anyways::Result;
 use apollo::macros::*;
 
 use crate::{
-	api::{stargate::Stargate, Core},
-	blake3::Hasher,
+	api::{stargate::Stargate}
 };
 
 pub struct Reload {

@@ -6,9 +6,9 @@ use rsa_core::{
 	api::Core,
 	debug::DebugRendererImpl,
 	err::{ext::AuditExt, Result},
-	ty::{Id, Registry},
+	ty::{Id},
 };
-use rsa_network::{packet::PacketSetup, server::ServerSender, Token};
+use rsa_network::{server::ServerSender, Token};
 
 use crate::{
 	chunk::{block::BlockDesc, layer::BlockLayer, storage::ChunkStorage, Chunk},

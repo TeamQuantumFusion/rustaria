@@ -7,7 +7,7 @@ use crate::{
 	blake3::Hasher,
 	err::Result,
 	log::trace,
-	std::{FxBuildHasher, FxHashMap},
+	std::{FxHashMap},
 	ty::{id_table::IdTable, Id, Identifier},
 };
 

@@ -5,17 +5,16 @@ extern crate core;
 
 use std::{
 	path::PathBuf,
-	time::{Duration, Instant},
+	time::{Instant},
 };
 
-use apollo::LuaScope;
 use glfw::{Action, Key, WindowEvent};
 use glium::Surface;
 use rsa_client_core::{
 	debug::Debug,
 	frontend::Frontend,
 	timing::Timing,
-	ty::{Draw, Viewport},
+	ty::{Viewport},
 };
 use rsa_core::{
 	api::{reload::Reload, stargate::Stargate, Core},

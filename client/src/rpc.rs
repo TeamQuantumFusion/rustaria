@@ -1,14 +1,12 @@
-use std::{collections::HashSet, mem::replace, ops::Deref, path::PathBuf};
+use std::{ops::Deref};
 
 use apollo::Lua;
-use rsa_client_core::{atlas::Atlas, frontend::Frontend};
+use rsa_client_core::{frontend::Frontend};
 use rsa_client_graphics::{
-	world::{chunk::layer::BlockLayerRendererPrototype, entity::EntityRendererPrototype},
 	GraphicsRPC,
 };
 use rsa_core::{
 	api::{
-		reload::{Reload},
 		stargate::Stargate,
 		Core,
 	},

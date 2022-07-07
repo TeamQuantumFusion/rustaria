@@ -8,7 +8,7 @@ use rsa_core::{
 	math::{size2, Rect},
 	std::FxHashSet,
 };
-use rsa_network::client::{ClientNetwork, ClientSender};
+use rsa_network::client::{ClientSender};
 use rsa_world::{
 	rpc::WorldRPC, ty::ChunkPos, ClientBoundWorldPacket, ServerBoundWorldPacket, World,
 	CHUNK_SIZE_F32,

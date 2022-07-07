@@ -7,7 +7,6 @@ use crate::{
 	api::{
 		plugin::{Plugin, Plugins},
 		reload::Reload,
-		stargate::Stargate,
 	},
 	blake3::Blake3Hash,
 	log::{info, LevelFilter},

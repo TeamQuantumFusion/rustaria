@@ -213,7 +213,7 @@ where {
 	/// Load this chunk into a regular `Function`.
 	///
 	/// This simply compiles the chunk without actually executing it.
-	pub fn into_function(mut self) -> Result<Function> {
+	pub fn into_function(self) -> Result<Function> {
 		let name = self.convert_name()?;
 		self.lua.optional()?.load_chunk(
 			self.source?.as_ref(),

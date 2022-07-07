@@ -1,6 +1,5 @@
 use rsa_core::{
-	err::Result,
-	sync::channel::{unbounded, Receiver, Sender},
+	sync::channel::{unbounded},
 };
 
 use crate::{
@@ -31,12 +30,4 @@ pub fn new_networking<P: PacketSetup>() -> (ClientNetwork<P>, ServerNetwork<P>) 
 			receiver: s_receiver,
 		}),
 	)
-}
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	#[test]
-	fn compile() {}
 }
