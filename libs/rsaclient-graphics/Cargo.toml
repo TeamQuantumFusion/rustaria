@@ -1,0 +1,20 @@
+[package]
+name = "rsaclient-graphics"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rsa-core = { path = "../rsa-core" }
+rsa-world = { path = "../rsa-world" }
+rustaria = { path = "../../" }
+rsaclient-core = { path = "../rsaclient-core" }
+rsaclient-player = { path = "../rsaclient-player" }
+
+apollo = { path = "../apollo", features = ["luajit", "vendored", "serialize", "macro"] }
+
+glfw = { version = "0.45.0", features = ["image"] }
+glium = { git = "https://github.com/alphaqu/glium", default-features = false, features = [] }
+image = { version = "0.24.2", default-features = false, features = ["png"] }
+rectangle-pack = "0.4.2"

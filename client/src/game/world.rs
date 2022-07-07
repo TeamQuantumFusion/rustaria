@@ -1,17 +1,16 @@
 use std::ops::{Deref, DerefMut};
-
-use anyways::{ext::AuditExt, Result};
-use euclid::{size2, Rect};
-use fxhash::FxHashSet;
-use rustaria::{
-	api::Api,
-	debug::DebugRendererImpl,
-	network::ClientNetwork,
-	ty::chunk_pos::ChunkPos,
-	world::{chunk::CHUNK_SIZE_F32, ClientBoundWorldPacket, ServerBoundWorldPacket, World},
-};
-
-use crate::{ClientApi, PlayerSystem};
+use rsa_core::api::Core;
+use rsa_core::debug::DebugRendererImpl;
+use rsa_core::err::ext::AuditExt;
+use rsa_core::std::FxHashSet;
+use rsa_core::err::Result;
+use rsa_core::math::{Rect, size2};
+use rsa_network::client::{ClientNetwork, ClientSender};
+use rsa_world::ty::ChunkPos;
+use rsa_world::{CHUNK_SIZE_F32, ClientBoundWorldPacket, ServerBoundWorldPacket, World};
+use rsa_world::rpc::WorldRPC;
+use rsaclient_player::PlayerSystem;
+use crate::ClientRPC;
 
 pub struct ClientWorld {
 	pub inner: World,
@@ -29,9 +28,10 @@ impl ClientWorld {
 
 	pub fn tick_client(
 		&mut self,
-		api: &ClientApi,
+		core: &Core,
+		rpc: &ClientRPC,
 		player: &PlayerSystem,
-		network: &mut ClientNetwork,
+		network: &mut ClientSender<ServerBoundWorldPacket>,
 		debug: &mut impl DebugRendererImpl,
 	) -> Result<()> {
 		let pos = player.get_pos();
@@ -54,22 +54,22 @@ impl ClientWorld {
 			}
 		}
 		self.inner
-			.tick(api, debug)
+			.tick(core, &rpc.world, debug)
 			.wrap_err("Ticking client world.")?;
 		Ok(())
 	}
 
-	pub(crate) fn packet(&mut self, api: &Api, packet: ClientBoundWorldPacket) -> Result<()> {
+	pub(crate) fn packet(&mut self, rpc: &WorldRPC, packet: ClientBoundWorldPacket) -> Result<()> {
 		match packet {
 			ClientBoundWorldPacket::Chunk(chunk_pos, chunk) => {
 				self.inner.chunks.insert(chunk_pos, chunk);
 				self.requested_chunks.remove(&chunk_pos);
 			}
 			ClientBoundWorldPacket::SetBlock(pos, layer_id, block_id) => {
-				self.place_block(api, pos, layer_id, block_id);
+				self.place_block(rpc, pos, layer_id, block_id);
 			}
 			ClientBoundWorldPacket::SpawnEntity(entity, id) => {
-				self.inner.entities.storage.insert(api, entity, id);
+				self.inner.entities.storage.insert(rpc, entity, id);
 			}
 			ClientBoundWorldPacket::UpdateEntity(packet) => {
 				self.inner.entities.packet(&packet);

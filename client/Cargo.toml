@@ -6,46 +6,18 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# Errors
-anyways = "*"
-
-# Logging
-log = "0.4.17"
-simplelog = "^0.12.0"
-
-# Data
-serde = { version = "1.0.137", features = ["derive"] }
-semver = { version = "1.0.10", features = ["serde"] }
-
-# World
-hecs = "0.7.6"
 rustaria = { path = "../" }
+rsa-core = { path = "../libs/rsa-core" }
+rsa-world = { path = "../libs/rsa-world" }
+rsa-network = { path = "../libs/rsa-network" }
+rsa-player = { path = "../libs/rsa-player" }
 
-# Lua
+rsaclient-core = { path = "../libs/rsaclient-core" }
+rsaclient-graphics = { path = "../libs/rsaclient-graphics" }
+rsaclient-player = { path = "../libs/rsaclient-player" }
+
 apollo = { path = "../libs/apollo", features = ["luajit", "vendored", "serialize", "macro"] }
-
-# Rendering
 glfw = { version = "0.45.0", features = ["image"] }
 glium = { git = "https://github.com/alphaqu/glium", default-features = false, features = [] }
-image = { version = "0.24.2", default-features = false, features = ["png"] }
-
-# Networking
-laminar = "0.5.0"
-bincode = "1.3.3"
-
-# Async
-rayon = "1.5.3"
-crossbeam = "0.8.1"
-parking_lot = "0.12.0"
-
-# Math
-rectangle-pack = "0.4.2"
-euclid = "0.22.7"
-
-# Util
-fxhash = "0.2.1"
-bitflags = "1.3.2"
-type-map = "0.5"
-
 
 

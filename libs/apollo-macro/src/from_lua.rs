@@ -25,7 +25,7 @@ impl ItemsBuilder {
 			Some(name) => {
 				let lua_name = LitStr::new(&name.to_string(), name.span());
 				self.stream.append_all(quote!(
-					#name: anyways::ext::AuditExt::wrap_err_with(table.get(#lua_name), || format!("Failed to get \"{}\"", #lua_name))?,
+					#name: rsa_core::err::ext::AuditExt::wrap_err_with(table.get(#lua_name), || format!("Failed to get \"{}\"", #lua_name))?,
 				))
 			}
 		}

@@ -1,43 +1,19 @@
-use std::collections::{hash_map::Entry, HashMap};
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
+use rsa_core::ty::{Id, Identifier};
+use rsa_core::err::Result;
+use rsa_core::log::{debug, info, trace, warn};
+use rsa_core::math::vec2;
+use rsa_network::server::ServerSender;
+use rsa_network::Token;
+use rsa_player::packet::{ClientBoundPlayerPacket, ServerBoundPlayerPacket};
+use rsa_world::entity::{Entity, EntityRef, EntityWorld};
+use rsa_world::entity::component::{HumanoidComponent, PositionComponent};
+use rsa_world::entity::prototype::EntityDesc;
+use rsa_world::rpc::WorldRPC;
+use rsa_world::World;
 
-use anyways::Result;
-use euclid::{vec2, Vector2D};
-use hecs::{Entity, EntityRef};
-use log::{debug, info, trace, warn};
-
-use crate::{
-	api::Api,
-	network::Token,
-	packet,
-	ty::{id::Id, identifier::Identifier, WS},
-	world::entity::{
-		component::{HumanoidComponent, PositionComponent},
-		prototype::EntityDesc,
-	},
-	EntityWorld, ServerNetwork, World,
-};
-
-packet!(Player(ServerBoundPlayerPacket, ClientBoundPlayerPacket));
-
-#[derive(serde::Serialize, serde::Deserialize)]
-pub enum ServerBoundPlayerPacket {
-	SetMove(u32, PlayerCommand),
-	Join(),
-}
-
-#[derive(serde::Serialize, serde::Deserialize)]
-pub enum ClientBoundPlayerPacket {
-	RespondPos(u32, Option<Vector2D<f32, WS>>),
-	Joined(Entity),
-}
-
-#[derive(Default, Copy, Clone, serde::Serialize, serde::Deserialize)]
-pub struct PlayerCommand {
-	pub dir: Vector2D<f32, WS>,
-	pub jumping: bool,
-}
-
-pub(crate) struct PlayerSystem {
+pub struct PlayerSystem {
 	players: HashMap<Token, Option<Entity>>,
 	response_requests: Vec<(u32, Token)>,
 	joined: Vec<(Token, Entity)>,
@@ -45,14 +21,13 @@ pub(crate) struct PlayerSystem {
 }
 
 impl PlayerSystem {
-	pub fn new(api: &Api) -> Result<PlayerSystem> {
+	pub fn new(rpc: &WorldRPC) -> Result<PlayerSystem> {
 		info!("Initializing");
 		Ok(PlayerSystem {
 			players: Default::default(),
 			response_requests: vec![],
 			joined: Default::default(),
-			player_entity: api
-				.carrier
+			player_entity: rpc
 				.entity
 				.get_id_from_identifier(&Identifier::new("player"))
 				.ok_or("Could not find Player entity")?,
@@ -80,15 +55,19 @@ impl PlayerSystem {
 		None
 	}
 
-	pub fn tick(&mut self, networking: &mut ServerNetwork, world: &World) -> Result<()> {
+	pub fn tick(
+		&mut self,
+		sender: &mut ServerSender<ClientBoundPlayerPacket>,
+		world: &World,
+	) -> Result<()> {
 		for (token, entity) in self.joined.drain(..) {
 			debug!("Sent joined packet");
-			networking.send(token, ClientBoundPlayerPacket::Joined(entity))?;
+			sender.send(token, ClientBoundPlayerPacket::Joined(entity))?;
 		}
 
 		let responses: Vec<_> = self.response_requests.drain(..).collect();
 		for (tick, token) in responses {
-			networking.send(
+			sender.send(
 				token,
 				ClientBoundPlayerPacket::RespondPos(
 					tick,
@@ -103,7 +82,7 @@ impl PlayerSystem {
 
 	pub fn packet(
 		&mut self,
-		api: &Api,
+		rpc: &WorldRPC,
 		token: Token,
 		packet: ServerBoundPlayerPacket,
 		world: &mut World,
@@ -123,20 +102,13 @@ impl PlayerSystem {
 			}
 			ServerBoundPlayerPacket::Join() => {
 				info!("Player {:?} joined", token);
-				let entity = world.entities.storage.push(api, self.player_entity);
+				let entity = world.entities.storage.push(rpc, self.player_entity);
 				self.players.insert(token, Some(entity));
 				self.joined.push((token, entity));
 			}
+			ServerBoundPlayerPacket::PlaceBlock(pos, layer_id, block_id) => {
+				world.place_block(rpc, pos, layer_id, block_id);
+			}
 		}
 	}
-}
-
-#[derive(Clone)]
-pub struct Player {
-	pub pos: Vector2D<f32, WS>,
-	pub velocity: Vector2D<f32, WS>,
-}
-
-impl Player {
-	pub fn tick(&mut self, delta: f32) { self.pos += self.velocity * delta; }
 }

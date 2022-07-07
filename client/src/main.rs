@@ -8,54 +8,53 @@ use std::{
 	time::{Duration, Instant},
 };
 
-use anyways::{ext::AuditExt, Result};
 use apollo::LuaScope;
-use debug::Debug;
-use euclid::vec2;
 use glfw::{Action, Key, WindowEvent};
 use glium::Surface;
-use log::{info, LevelFilter};
-use render::ty::viewport::Viewport;
-use rustaria::{
-	ty::{chunk_pos::ChunkPos, identifier::Identifier},
-	world::{
-		chunk::{storage::ChunkStorage, Chunk, ChunkLayer},
-		World,
-	},
-	TPS,
+use rsa_core::{
+	api::Core,
+	err::{ext::AuditExt, Result},
+	initialize,
+	math::vec2,
+	ty::Identifier,
 };
-use simplelog::{ColorChoice, CombinedLogger, Config, TermLogger, TerminalMode};
-
-use crate::{
-	api::ClientApi,
+use rsa_core::api::reload::Reload;
+use rsa_core::api::stargate::Stargate;
+use rsa_core::blake3::Hasher;
+use rsa_world::{
+	chunk::{storage::ChunkStorage, Chunk, ChunkLayer},
+	ty::ChunkPos,
+	World,
+};
+use rsaclient_core::{
+	debug::Debug,
 	frontend::Frontend,
-	game::{player::PlayerSystem, ClientGame},
-	render::world::chunk::{block::BlockRenderer, layer::BlockLayerRenderer},
-	ty::Timing,
+	timing::Timing,
+	ty::{Draw, Viewport},
 };
 
-pub mod api;
-pub mod debug;
-mod frontend;
+use crate::{game::ClientGame, rpc::ClientRPC};
+
 mod game;
-mod render;
-mod ty;
+pub mod rpc;
 
 fn main() -> Result<()> {
-	rustaria::initialize()?;
+	initialize()?;
 	let mut client = Client::new()?;
-	client.api.reload(&client.frontend)?;
+	client.reload().wrap_err("Failed to load game.")?;
 	client.run()?;
 	Ok(())
 }
 
 pub struct Client {
+	core: Core,
+
 	viewport: Viewport,
 	debug: Debug,
 	game: Option<ClientGame>,
-	api: ClientApi,
-	frontend: Frontend,
+	rpc: ClientRPC,
 
+	frontend: Frontend,
 	reload_requested: bool,
 }
 
@@ -71,12 +70,13 @@ impl Client {
 		//debug.enable(DebugCategory::ChunkBorders);
 		//
 		Ok(Client {
-			api: ClientApi::new(run_dir, vec![PathBuf::from("../plugin")])?,
+			core: Core::new(run_dir, vec![PathBuf::from("../plugin")])?,
 			viewport: Viewport::new(vec2(0.0, 0.0), 1.0),
 			debug,
 			frontend,
 			game: None,
 			reload_requested: false,
+			rpc: Default::default(),
 		})
 	}
 
@@ -93,7 +93,7 @@ impl Client {
 			self.debug.tick();
 
 			if self.reload_requested {
-				self.api.reload(&self.frontend)?;
+				self.reload().wrap_err("Failed to reload")?;
 				timing = Timing::new();
 				self.reload_requested = false;
 			}
@@ -123,16 +123,19 @@ impl Client {
 	}
 
 	pub fn tick(&mut self) -> Result<()> {
-		let api_scope = LuaScope::from(&*self.api);
-		self.api
-			.api
-			.lua
-			.globals()
-			.insert("api", api_scope.lua())?;
+		// TODO carrier in lua
+		//let api_scope = LuaScope::from(&*self.core);
+		//self.core.lua.globals().insert("api", api_scope.lua())?;
 
 		let start = Instant::now();
 		if let Some(world) = &mut self.game {
-			world.tick(&self.frontend, &self.api, &self.viewport, &mut self.debug)?
+			world.tick(
+				&self.frontend,
+				&self.core,
+				&self.rpc,
+				&self.viewport,
+				&mut self.debug,
+			)?
 		}
 		self.debug.log_tick(start);
 		Ok(())
@@ -148,12 +151,14 @@ impl Client {
 				self.viewport.pos -= ((self.viewport.pos - viewport.pos) * 0.2) * timing.step();
 				//self.viewport.pos = viewport.pos;
 				self.viewport.zoom = viewport.zoom;
-				self.viewport.recompute_rect(Some(&self.frontend));
+				self.viewport.recompute_rect(self.frontend.aspect_ratio);
 			}
 
-			world.draw(
-				&self.api,
+			world.renderer.draw(
+				&self.rpc.graphics,
 				&self.frontend,
+				&world.player,
+				&world.world,
 				&mut frame,
 				&self.viewport,
 				&mut self.debug,
@@ -164,6 +169,21 @@ impl Client {
 		self.debug
 			.draw(&self.frontend, &self.viewport, &mut frame)?;
 		frame.finish()?;
+		Ok(())
+	}
+
+	pub fn reload(&mut self) -> Result<()> {
+		let mut reload = Reload {
+			stargate: Stargate::new(),
+			client: true,
+		};
+		ClientRPC::register(&mut reload.stargate, &self.core.lua).wrap_err("Failed to register ClientRPC")?;
+		self.core.reload(&mut reload).wrap_err("Failed to reload")?;
+		self.rpc = ClientRPC::build(&self.frontend, &self.core, &mut reload.stargate).wrap_err("Failed to build ClientRPC")?;
+
+		let mut hasher = Hasher::new();
+		self.rpc.append_hasher(&mut hasher);
+		self.core.hash = Some(hasher.finalize());
 		Ok(())
 	}
 
@@ -179,8 +199,8 @@ impl Client {
 					},
 					Chunk {
 						layers: self
-							.api
-							.carrier
+							.rpc
+							.world
 							.block_layer
 							.table
 							.iter()
@@ -235,10 +255,6 @@ impl Client {
 				);
 			}
 		}
-		ClientGame::new_integrated(
-			&self.frontend,
-			&self.api,
-			World::new(&self.api, storage).unwrap(),
-		)
+		ClientGame::new_integrated(&self.frontend, &self.rpc, World::new(storage).unwrap())
 	}
 }

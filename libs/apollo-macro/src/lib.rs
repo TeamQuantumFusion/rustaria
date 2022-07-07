@@ -48,7 +48,7 @@ pub fn FromLua(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
 						match variant.as_str() {
 							#variants
 							_ => {
-								return Err(anyways::audit::Audit::new(format!("{} is not a known {} variant.", variant, std::any::type_name::<Self>())))
+								return Err(rsa_core::err::audit::Audit::new(format!("{} is not a known {} variant.", variant, std::any::type_name::<Self>())))
 							}
 						}
 					)
@@ -76,11 +76,11 @@ pub fn FromLua(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
 	quote!(
 		impl FromLua for #ident {
-			fn from_lua(lua_value: apollo::Value, _: &apollo::Lua) -> anyways::Result<Self> {
+			fn from_lua(lua_value: apollo::Value, _: &apollo::Lua) -> rsa_core::err::Result<Self> {
 				if let apollo::Value::Table(table) = lua_value {
 					#from_lua
 				} else {
-					Err(anyways::audit::Audit::new("Type is supposed to be a Table"))
+					Err(rsa_core::err::audit::Audit::new("Type is supposed to be a Table"))
 				}
 			}
 		}
@@ -187,7 +187,7 @@ pub fn lua_impl(
 	let from_lua = from_lua
 		.map(|v| {
 			quote!(
-				fn from_lua(value: Value, lua: &Lua) -> Option<anyways::Result<Self>> {
+				fn from_lua(value: Value, lua: &Lua) -> Option<rsa_core::err::Result<Self>> {
 					Some(Self::#v(value, lua))
 				}
 			)

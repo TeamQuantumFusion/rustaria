@@ -256,27 +256,17 @@ dependencies = [
 name = "client"
 version = "0.1.0"
 dependencies = [
- "anyways",
  "apollo",
- "bincode",
- "bitflags",
- "crossbeam",
- "euclid",
- "fxhash",
  "glfw",
  "glium",
- "hecs",
- "image",
- "laminar",
- "log",
- "parking_lot",
- "rayon",
- "rectangle-pack",
+ "rsa-core",
+ "rsa-network",
+ "rsa-player",
+ "rsa-world",
+ "rsaclient-core",
+ "rsaclient-graphics",
+ "rsaclient-player",
  "rustaria",
- "semver",
- "serde",
- "simplelog",
- "type-map",
 ]
 
 [[package]]
@@ -1218,30 +1208,117 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustaria"
+name = "rsa-core"
 version = "0.1.0"
 dependencies = [
  "anyways",
  "apollo",
- "bincode",
  "bitflags",
  "crossbeam",
  "euclid",
  "fxhash",
- "hecs",
- "laminar",
  "log",
  "num",
  "parking_lot",
- "rand",
- "rand_xoshiro",
  "rayon",
  "semver",
  "serde",
  "simplelog",
  "toml",
- "type-map",
  "zip",
+]
+
+[[package]]
+name = "rsa-item"
+version = "0.1.0"
+dependencies = [
+ "apollo",
+ "rsa-core",
+]
+
+[[package]]
+name = "rsa-network"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "laminar",
+ "rsa-core",
+ "serde",
+]
+
+[[package]]
+name = "rsa-player"
+version = "0.1.0"
+dependencies = [
+ "rsa-core",
+ "rsa-network",
+ "rsa-world",
+ "serde",
+]
+
+[[package]]
+name = "rsa-world"
+version = "0.1.0"
+dependencies = [
+ "apollo",
+ "hecs",
+ "rand",
+ "rand_xoshiro",
+ "rsa-core",
+ "rsa-network",
+ "serde",
+]
+
+[[package]]
+name = "rsaclient-core"
+version = "0.1.0"
+dependencies = [
+ "glfw",
+ "glium",
+ "image",
+ "rectangle-pack",
+ "rsa-core",
+]
+
+[[package]]
+name = "rsaclient-graphics"
+version = "0.1.0"
+dependencies = [
+ "apollo",
+ "glfw",
+ "glium",
+ "image",
+ "rectangle-pack",
+ "rsa-core",
+ "rsa-world",
+ "rsaclient-core",
+ "rsaclient-player",
+ "rustaria",
+]
+
+[[package]]
+name = "rsaclient-player"
+version = "0.1.0"
+dependencies = [
+ "glfw",
+ "rsa-core",
+ "rsa-network",
+ "rsa-player",
+ "rsa-world",
+ "rsaclient-core",
+]
+
+[[package]]
+name = "rustaria"
+version = "0.1.0"
+dependencies = [
+ "apollo",
+ "rsa-core",
+ "rsa-item",
+ "rsa-network",
+ "rsa-player",
+ "rsa-world",
+ "serde",
 ]
 
 [[package]]
@@ -1459,15 +1536,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d82e1a7758622a465f8cee077614c73484dac5b836c02ff6a40d5d1010324d7"
 dependencies = [
  "serde",
-]
-
-[[package]]
-name = "type-map"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "deb68604048ff8fa93347f02441e4487594adc20bb8a084f9e564d2b827a0a9f"
-dependencies = [
- "rustc-hash",
 ]
 
 [[package]]

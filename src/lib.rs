@@ -1,86 +1,65 @@
 #![allow(clippy::new_without_default)]
 
-use anyways::{ext::AuditExt, Result};
-use log::{info, LevelFilter};
-use semver::Version;
-use simplelog::{ColorChoice, Config, TerminalMode, TermLogger};
-use ty::chunk_pos::ChunkPos;
-use world::{
-	chunk::{storage::ChunkStorage, Chunk},
-	entity::EntityWorld,
-};
-
-use crate::{
-	api::Api,
-	debug::DummyRenderer,
-	network::{packet::ServerBoundPacket, ServerNetwork},
-	player::PlayerSystem,
-	world::World,
-};
-
-pub mod api;
-pub mod debug;
+pub mod rpc;
+#[macro_use]
 pub mod network;
-pub mod player;
-pub mod ty;
-pub mod util;
-pub mod world;
-pub mod item;
+mod player;
 
-pub const TPS: usize = 60;
-pub const KERNEL_VERSION: Version = Version::new(0, 0, 1);
+use rsa_core::{
+	debug::DummyRenderer,
+	err::{ext::AuditExt, Result},
+	log::info,
+};
+use rsa_core::api::Core;
+use rsa_network::{packet::PacketSetup, server::ServerNetwork};
+use rsa_player::{
+	packet::{ClientBoundPlayerPacket, ServerBoundPlayerPacket},
+};
+use rsa_world::{ClientBoundWorldPacket, ServerBoundWorldPacket, World};
 
-pub struct Server {
-	network: ServerNetwork,
+use crate::{rpc::ServerRPC, network::ServerBoundPacket};
+use crate::player::PlayerSystem;
+
+pub struct Rustaria {
+	network: ServerNetwork<Rustaria>,
 	player: PlayerSystem,
 	world: World,
 }
 
-impl Server {
-	pub fn new(api: &Api, network: ServerNetwork, world: World) -> Result<Server> {
+impl Rustaria {
+	pub fn new(rpc: &ServerRPC, network: ServerNetwork<Rustaria>, world: World) -> Result<Rustaria> {
 		info!("Launching integrated server.");
-		Ok(Server {
+		Ok(Rustaria {
 			network,
-			player: PlayerSystem::new(api)?,
+			player: PlayerSystem::new(&rpc.world)?,
 			world,
 		})
 	}
 
-	pub fn tick(&mut self, api: &Api) -> Result<()> {
+	pub fn tick(&mut self, core: &Core, rpc: &ServerRPC) -> Result<()> {
 		for (token, packet) in self.network.poll() {
 			match packet {
 				ServerBoundPacket::Player(packet) => {
-					self.player.packet(api, token, packet, &mut self.world);
+					self.player
+						.packet(&rpc.world, token, packet, &mut self.world);
 				}
 				ServerBoundPacket::World(packet) => {
-					self.world.packet(api, token, packet, &mut self.network)?;
+					self.world.packet(
+						&rpc.world,
+						token,
+						packet,
+						&mut self.network.sender().map(),
+					)?;
 				}
 			}
 		}
 
 		self.world
-			.tick(api, &mut DummyRenderer)
+			.tick(core, &rpc.world,  &mut DummyRenderer)
 			.wrap_err("Ticking world")?;
 		self.player
-			.tick(&mut self.network, &self.world)
+			.tick(&mut self.network.sender().map(), &self.world)
 			.wrap_err("Ticking player system.")?;
 		Ok(())
 	}
-}
-
-static mut INITILIZED: bool = false;
-pub fn initialize() -> Result<()> {
-	unsafe {
-		if !INITILIZED {
-			INITILIZED = true;
-			TermLogger::init(
-				LevelFilter::Trace,
-				Config::default(),
-				TerminalMode::Mixed,
-				ColorChoice::Auto,
-			)?;
-			info!("Logging initialized successfully for Rustaria {}", KERNEL_VERSION.to_string());
-		}
-	}
-	Ok(())
 }

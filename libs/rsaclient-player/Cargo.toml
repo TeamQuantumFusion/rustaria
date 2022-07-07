@@ -1,0 +1,15 @@
+[package]
+name = "rsaclient-player"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rsa-core = { path = "../rsa-core" }
+rsa-world = { path = "../rsa-world" }
+rsa-player = { path = "../rsa-player" }
+rsa-network = { path = "../rsa-network" }
+rsaclient-core = { path = "../rsaclient-core" }
+
+glfw = { version = "0.45.0", features = ["image"] }

@@ -8,44 +8,14 @@ build = "build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# Core
-anyways = "*"
-log = "0.4.17"
-simplelog = "^0.12.0"
+rsa-core = { path = "./libs/rsa-core" }
+rsa-item = { path = "./libs/rsa-item" }
+rsa-network = { path = "./libs/rsa-network" }
+rsa-player = { path = "./libs/rsa-player" }
+rsa-world = { path = "./libs/rsa-world" }
+
 serde = { version = "1.0.137", features = ["derive"] }
-
-# World
-hecs = { version = "0.7.6", features = ["serde"] }
-
-# Plugin
-zip = "0.6.2"
-semver = { version = "1.0.10", features = ["serde"] }
-toml = "0.5.9"
-
-# Lua
 apollo = { path = "./libs/apollo", features = ["luajit", "vendored", "serialize", "macro"] }
-
-# Networking
-laminar = "0.5.0"
-bincode = "1.3.3"
-
-# Async
-rayon = "1.5.3"
-crossbeam = "0.8.1"
-parking_lot = "0.12.0"
-
-# Random
-rand = "0.8.5"
-rand_xoshiro = "0.6.0"
-
-# Math
-num = "0.4"
-euclid = { version = "0.22.7", features = ["serde"] }
-
-# Util
-fxhash = "0.2.1"
-bitflags = "1.3.2"
-type-map = "0.5"
 
 [features]
 testing = []
@@ -57,4 +27,12 @@ members = [
     "libs/apollo",
     "libs/apollo-macro",
     "libs/apollo-docs",
+    "libs/rsa-core",
+    "libs/rsa-item",
+    "libs/rsa-network",
+    "libs/rsa-player",
+    "libs/rsa-world",
+    "libs/rsaclient-graphics",
+    "libs/rsaclient-player",
+    "libs/rsaclient-core",
 ]
