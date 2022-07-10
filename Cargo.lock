@@ -1235,6 +1235,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rsa-client-gui"
+version = "0.1.0"
+dependencies = [
+ "apollo",
+ "rsa-client-core",
+ "rsa-core",
+]
+
+[[package]]
 name = "rsa-client-player"
 version = "0.1.0"
 dependencies = [

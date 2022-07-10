@@ -34,5 +34,6 @@ members = [
     "libs/rsa-world",
     "libs/rsa-client-graphics",
     "libs/rsa-client-player",
+    "libs/rsa-client-gui",
     "libs/rsa-client-core",
 ]
