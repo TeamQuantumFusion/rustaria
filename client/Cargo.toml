@@ -9,6 +9,8 @@ edition = "2021"
 rustaria = { path = "../" }
 rsa-core = { path = "../libs/rsa-core" }
 rsa-world = { path = "../libs/rsa-world" }
+rsa-registry = { path = "../libs/rsa-registry" }
+rsa-hash = { path = "../libs/rsa-hash" }
 rsa-network = { path = "../libs/rsa-network" }
 rsa-player = { path = "../libs/rsa-player" }
 

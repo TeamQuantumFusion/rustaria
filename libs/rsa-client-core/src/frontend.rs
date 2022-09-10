@@ -18,6 +18,7 @@ use rsa_core::{
 	err::{ext::AuditExt, Result},
 	log::{log, Level},
 };
+use rsa_core::log::info;
 
 use crate::ty::MeshDrawer;
 
@@ -33,11 +34,13 @@ pub struct Frontend {
 
 impl Frontend {
 	pub fn new() -> Result<Frontend> {
+		info!("Initializing GLFW backend");
 		let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS)?;
 		glfw.window_hint(WindowHint::OpenGlProfile(OpenGlProfileHint::Core));
 		glfw.window_hint(WindowHint::ContextVersion(4, 6));
 		glfw.window_hint(WindowHint::Samples(None));
 
+		info!("Initializing Window");
 		let (mut window, events) = glfw
 			.create_window(900, 600, "Rustaria", WindowMode::Windowed)
 			.wrap_err("Failed to create window")?;

@@ -1,12 +1,13 @@
-use apollo::{macros::*, FromLua};
+use apollo::{FromLua, macros::*};
 use rsa_core::{
 	api::prototype::Prototype,
 	err::Result,
 	log::trace,
-	ty::{Id, Identifier, Registry, RegistryBuilder},
 };
+use rsa_registry::{Id, Identifier, Registry, RegistryBuilder};
 
-use crate::{chunk::block::BlockPrototype, AuditExt, BlockDesc};
+use crate::{AuditExt, BlockDesc};
+use crate::chunk::block::prototype::BlockPrototype;
 
 #[derive(Clone)]
 pub struct BlockLayer {
@@ -17,7 +18,6 @@ pub struct BlockLayer {
 
 #[lua_impl]
 impl BlockLayer {
-	#[lua_field(get blocks)]
 	pub fn blocks(&self) -> &Registry<BlockDesc> { &self.blocks }
 }
 
@@ -31,28 +31,14 @@ pub struct BlockLayerPrototype {
 impl BlockLayerPrototype {
 	pub fn bake(self) -> Result<BlockLayer> {
 		let blocks = self.blocks.build().wrap_err("Failed to build blocks")?;
-		let lookup = blocks
-			.ident_to_id
-			.iter()
-			.map(|(ident, id)| (ident.clone(), id.build()))
-			.collect();
+		let baked_blocks = blocks.map(|id, lookup, prototype| {
+			prototype.bake(lookup).wrap_err_with(|| format!("Failed to bake block {}", lookup.get_identifier(id)))
+		})?;
 
-		let mut out = Vec::new();
-		for (id, ident, entry) in blocks.into_entries() {
-			trace!("Baked block {ident} {entry:?}");
-			let prototype = entry
-				.bake(&lookup)
-				.wrap_err_with(|| format!("Failed to bake block {}", ident))?;
-			out.push((id.build(), ident, prototype));
-		}
-
-		let registry: Registry<BlockDesc> = out.into_iter().collect();
 		Ok(BlockLayer {
-			default: *registry
-				.ident_to_id
-				.get(&self.default)
+			default: baked_blocks.lookup().get_id(&self.default)
 				.wrap_err("Could not find default tile registered")?,
-			blocks: registry,
+			blocks: baked_blocks,
 			collision: self.collision,
 		})
 	}

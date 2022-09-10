@@ -150,7 +150,7 @@ stargate.entity:register {
                 chunks:get_mut({
                     x = 0,
                     y = 0
-                })    :get_mut_layers():get_mut(layer_id):set_entry({
+                }):get_mut_layers():get_mut(layer_id):set_entry({
                     x = 0,
                     y = 0
                 }, stone_block);

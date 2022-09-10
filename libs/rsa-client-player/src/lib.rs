@@ -8,13 +8,14 @@ use rsa_core::{
 	err::{ext::AuditExt, Result},
 	log::debug,
 	math::{vec2, Vector2D},
-	ty::{Id, Identifier, WS},
+	ty::{WS},
 };
 use rsa_network::client::ClientSender;
 use rsa_player::{
 	packet::{ClientBoundPlayerPacket, ServerBoundPlayerPacket},
 	PlayerCommand,
 };
+use rsa_registry::{Id, Identifier};
 use rsa_world::{
 	chunk::{block::BlockDesc, layer::BlockLayer, storage::ChunkStorage},
 	entity::{
@@ -67,21 +68,21 @@ pub enum Press {
 impl PlayerSystem {
 	pub fn new(rpc: &WorldRPC) -> Result<Self> {
 		let layer_id = rpc
-			.block_layer
-			.get_id_from_identifier(&Identifier::new("tile"))
+			.block_layer.lookup()
+			.get_id(&Identifier::new("tile"))
 			.unwrap();
-		let layer = rpc.block_layer.get(layer_id);
+		let layer = &rpc.block_layer[layer_id];
 		let place_block = layer
-			.blocks
-			.get_id_from_identifier(&Identifier::new("dirt"))
+			.blocks.lookup()
+			.get_id(&Identifier::new("dirt"))
 			.unwrap();
 		let remove_block = layer
-			.blocks
-			.get_id_from_identifier(&Identifier::new("air"))
+			.blocks.lookup()
+			.get_id(&Identifier::new("air"))
 			.unwrap();
 		let arrow = rpc
-			.entity
-			.get_id_from_identifier(&Identifier::new("arrow"))
+			.entity.lookup()
+			.get_id(&Identifier::new("arrow"))
 			.unwrap();
 
 		Ok(Self {
@@ -101,8 +102,8 @@ impl PlayerSystem {
 			unprocessed_events: Default::default(),
 			tick: 0,
 			player_entity: rpc
-				.entity
-				.get_id_from_identifier(&Identifier::new("player"))
+				.entity.lookup()
+				.get_id(&Identifier::new("player"))
 				.wrap_err("Player where")?,
 			presses: vec![],
 			layer_id,

@@ -13,6 +13,9 @@ rsa-item = { path = "./libs/rsa-item" }
 rsa-network = { path = "./libs/rsa-network" }
 rsa-player = { path = "./libs/rsa-player" }
 rsa-world = { path = "./libs/rsa-world" }
+rsa-registry = { path = "./libs/rsa-registry" }
+rsa-hash = { path = "./libs/rsa-hash" }
+
 
 serde = { version = "1.0.137", features = ["derive"] }
 apollo = { path = "./libs/apollo", features = ["luajit", "vendored", "serialize", "macro"] }
@@ -27,11 +30,13 @@ members = [
     "libs/apollo",
     "libs/apollo-macro",
     "libs/apollo-docs",
+    "libs/rsa-registry",
     "libs/rsa-core",
     "libs/rsa-item",
     "libs/rsa-network",
     "libs/rsa-player",
     "libs/rsa-world",
+    "libs/rsa-hash",
     "libs/rsa-client-graphics",
     "libs/rsa-client-player",
     "libs/rsa-client-gui",

@@ -9,5 +9,6 @@ edition = "2021"
 rsa-core = { path = "../rsa-core" }
 rsa-network = { path = "../rsa-network" }
 rsa-world = { path = "../rsa-world" }
+rsa-registry = { path = "../rsa-registry" }
 
 serde = { version = "1.0.137", features = ["derive"] }

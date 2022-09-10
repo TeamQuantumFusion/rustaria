@@ -2,6 +2,7 @@ use std::{
 	iter::{self, FromIterator},
 	slice, str, vec,
 };
+use anyways::audit::Audit;
 
 #[cfg(feature = "macro")]
 pub use apollo_macro::FromLua;
@@ -91,6 +92,20 @@ try_into!(UserData => AnyUserData);
 try_into!(Error => Error);
 
 impl Value {
+	pub fn lua_table(self) -> anyways::Result<Table> {
+		match self {
+			Value::Table(value) => Ok(value),
+			_ => Err(Audit::new(format!("Expected table not {self:?}"))),
+		}
+	}
+
+	pub fn lua_string(self) -> anyways::Result<std::string::String> {
+		match self {
+			Value::String(value) => Ok(value.to_str()?.to_string()),
+			_ => Err(Audit::new(format!("Expected string not {self:?}"))),
+		}
+	}
+
 	pub const fn type_name(&self) -> &'static str {
 		match *self {
 			Value::Nil => "nil",

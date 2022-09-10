@@ -2,10 +2,12 @@ use std::{collections::HashMap, fmt::Write, path::PathBuf, sync::Arc};
 
 use anyways::ext::AuditExt;
 use apollo::{prelude::LuaError, Lua, LuaScope};
-use log::debug;
+use log::{debug, info};
+use rsa_hash::Blake3Hash;
+use rsa_registry::Identifier;
 
 use crate::{
-	err::Result, ty::Identifier, Blake3Hash,
+	err::Result,
 	Plugin, Plugins, Reload, ThreadPool, ThreadPoolBuilder,
 };
 
@@ -45,11 +47,13 @@ impl Core {
 						.map(|extention| extention.to_str().unwrap() == "zip")
 						.unwrap_or(false))
 			{
+
 				let plugin = Plugin::new(&path)?;
 				plugins.insert(plugin.id.clone(), plugin);
 			}
 		}
 
+		info!("Initialized {} plugins", plugins.len());
 		let plugins = Plugins {
 			plugins: Arc::new(plugins),
 		};

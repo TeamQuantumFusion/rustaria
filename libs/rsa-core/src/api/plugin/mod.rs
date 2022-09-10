@@ -1,12 +1,13 @@
 use std::{collections::HashMap, io, io::ErrorKind, path::PathBuf, sync::Arc};
 
 use anyways::{ext::AuditExt, Result};
+use log::{debug, info};
 use apollo::Lua;
 use semver::{Version, VersionReq};
+use rsa_registry::Identifier;
 
 use crate::{
 	api::{plugin::archive::Archive, ResourceKind},
-	ty::Identifier,
 };
 
 mod archive;
@@ -70,6 +71,8 @@ impl Plugin {
 	}
 
 	pub fn new(path: &PathBuf) -> Result<Plugin> {
+		debug!("Loading plugin at {path:?}");
+
 		let archive = Archive::new(path)?;
 		let data = archive
 			.get("manifest.toml")

@@ -2,7 +2,8 @@ pub use hecs::{
 	Component, DynamicBundle, Entity, EntityBuilder, EntityRef, Query, QueryBorrow, QueryMut, Ref,
 	RefMut, TakenEntity,
 };
-use rsa_core::{api::Core, debug::DebugRendererImpl, err::Result, ty::Id};
+use rsa_core::{api::Core, debug::DebugRendererImpl, err::Result};
+use rsa_registry::Id;
 
 use crate::{
 	entity::system::{
@@ -30,11 +31,11 @@ impl EntityStorage {
 	}
 
 	pub fn push(&mut self, rpc: &WorldRPC, id: Id<EntityDesc>) -> Entity {
-		self.world.spawn(&rpc.entity.get(id).template)
+		self.world.spawn(&rpc.entity[id].template)
 	}
 
 	pub fn insert(&mut self, rpc: &WorldRPC, entity: Entity, id: Id<EntityDesc>) {
-		self.world.spawn_at(entity, &rpc.entity.get(id).template)
+		self.world.spawn_at(entity, &rpc.entity[id].template)
 	}
 
 	pub fn put_comp(&mut self, entity: Entity, components: impl DynamicBundle) {

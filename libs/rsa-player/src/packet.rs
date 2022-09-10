@@ -1,7 +1,8 @@
 use rsa_core::{
 	math::Vector2D,
-	ty::{Id, WS},
+	ty::{WS},
 };
+use rsa_registry::Id;
 use rsa_world::{
 	chunk::{block::BlockDesc, layer::BlockLayer},
 	entity::Entity,

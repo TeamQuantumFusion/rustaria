@@ -6,9 +6,9 @@ use rsa_core::{
 	api::Core,
 	debug::DebugRendererImpl,
 	err::{ext::AuditExt, Result},
-	ty::{Id},
 };
 use rsa_network::{server::ServerSender, Token};
+use rsa_registry::Id;
 
 use crate::{
 	chunk::{block::BlockDesc, layer::BlockLayer, storage::ChunkStorage, Chunk},
@@ -87,11 +87,11 @@ impl World {
 	) {
 		if let Some(chunk) = self.chunks.get_mut(pos.chunk) {
 			// Layer
-			let layer = chunk.layers.get_mut(layer_id);
-			let prototype = rpc.block_layer.get(layer_id);
+			let layer = &mut chunk.layers[layer_id];
+			let prototype = &rpc.block_layer[layer_id];
 
 			// Block
-			let block_prototype = prototype.blocks.get(block_id);
+			let block_prototype = &prototype.blocks[block_id];
 			layer[pos.entry] = block_prototype.create(block_id);
 
 			self.spreader

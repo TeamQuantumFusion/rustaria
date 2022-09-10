@@ -11,8 +11,9 @@ use rsa_core::{
 	debug::DebugCategory,
 	draw_debug,
 	math::{size2, vec2, Rect},
-	ty::{Identifier, WS},
+	ty::{WS},
 };
+use rsa_registry::Identifier;
 use rsa_world::{chunk::ConnectionType, ty::BlockPos};
 
 use crate::world::chunk;

@@ -4,8 +4,8 @@ use rsa_core::{
 	api::{prototype::Prototype, util::lua_table},
 	err::Result,
 	log::info,
-	ty::Id,
 };
+use rsa_registry::Id;
 
 use crate::entity::component::{
 	CollisionComponent, GravityComponent, HumanoidComponent, PhysicsComponent, PositionComponent,
@@ -30,11 +30,11 @@ pub struct EntityPrototype {
 }
 
 impl EntityPrototype {
-	pub fn bake(self, id: Id<Self>) -> EntityDesc {
+	pub fn bake(self, id: Id<EntityDesc>) -> EntityDesc {
 		info!("{self:?}");
 		let mut builder = EntityBuilderClone::new();
 		builder.add(self.position.clone());
-		builder.add(PrototypeComponent { id: id.build() });
+		builder.add(PrototypeComponent { id: id });
 		if let Some(comp) = self.velocity.as_ref() {
 			builder.add(comp.clone());
 		};

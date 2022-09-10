@@ -12,8 +12,9 @@ use rsa_core::{
 	api::{prototype::Prototype, util::lua_table},
 	err::Result,
 	math::{Rect, Vector2D},
-	ty::{Identifier, WS},
+	ty::{WS},
 };
+use rsa_registry::Identifier;
 use rsa_world::entity::{
 	component::{PhysicsComponent, PositionComponent, PrototypeComponent},
 	EntityWorld,
@@ -46,7 +47,7 @@ impl WorldEntityRenderer {
 			.query::<(&PositionComponent, &PrototypeComponent, &PhysicsComponent)>()
 			.iter()
 		{
-			if let Some(renderer) = rpd.entity_renderer.get(prototype.id) {
+			if let Some(renderer) = rpd.entity_renderer[prototype.id].as_ref() {
 				// If this entity is our player, we use its predicted position instead of its server confirmed position.
 				let (mut position, mut vel) = (position.pos, physics.vel - physics.accel);
 				if let Some(player_entity) = player.server_player {

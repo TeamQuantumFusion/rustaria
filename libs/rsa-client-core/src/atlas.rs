@@ -10,8 +10,8 @@ use rsa_core::{
 	err::Result,
 	log::{error, trace, warn},
 	math::{point2, size2, Rect},
-	ty::Identifier,
 };
+use rsa_registry::Identifier;
 
 use crate::frontend::Frontend;
 

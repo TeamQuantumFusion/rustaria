@@ -29,7 +29,7 @@ impl Storage {
 	}
 
 	pub fn add(&mut self, carrier: &ItemRPC, item: &mut ItemStack) {
-		let desc = carrier.item.get(item.item.id);
+		let desc = &carrier.item[item.item.id];
 
 		for slot in &mut self.values {
 			if let Some(slot) = slot {

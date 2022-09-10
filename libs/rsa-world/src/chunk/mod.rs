@@ -3,7 +3,7 @@ use std::ops::{Index, IndexMut};
 use apollo::{macros::*, FromLua, ToLua, UserData};
 use block::Block;
 use layer::BlockLayer;
-use rsa_core::ty::IdTable;
+use rsa_registry::Storage;
 
 use crate::{ty::BlockLayerPos, CHUNK_SIZE};
 
@@ -13,16 +13,13 @@ pub mod storage;
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct Chunk {
-	pub layers: IdTable<BlockLayer, ChunkLayer<Block>>,
+	pub layers: Storage<ChunkLayer<Block>, BlockLayer>,
 }
 
-#[lua_impl]
 impl Chunk {
-	#[lua_method]
-	pub fn get_layers(&self) -> &IdTable<BlockLayer, ChunkLayer<Block>> { &self.layers }
+	pub fn get_layers(&self) -> &Storage< ChunkLayer<Block>, BlockLayer> { &self.layers }
 
-	#[lua_method]
-	pub fn get_mut_layers(&mut self) -> &mut IdTable<BlockLayer, ChunkLayer<Block>> {
+	pub fn get_mut_layers(&mut self) -> &mut Storage< ChunkLayer<Block>, BlockLayer> {
 		&mut self.layers
 	}
 }

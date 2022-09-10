@@ -9,8 +9,9 @@ use rsa_client_core::{
 use rsa_core::{
 	api::prototype::Prototype,
 	err::{ext::AuditExt, Result},
-	ty::{DirMap, Direction, IdTable, Identifier, RegistryBuilder},
+	ty::{DirMap, Direction},
 };
+use rsa_registry::{Identifier, RegistryBuilder, Storage};
 use rsa_world::{
 	chunk::{
 		block::{Block, BlockDesc},
@@ -26,7 +27,7 @@ use crate::world::{
 };
 
 pub struct BlockLayerRenderer {
-	block_renderers: IdTable<BlockDesc, Option<BlockRenderer>>,
+	block_renderers: Storage<Option<BlockRenderer>, BlockDesc>,
 	kind_descs: Vec<KindDesc>,
 }
 
@@ -40,8 +41,7 @@ impl BlockLayerRenderer {
 		debug: &mut Debug,
 	) {
 		let func = |tile: &Block| {
-			self.block_renderers
-				.get(tile.id)
+			self.block_renderers[tile.id]
 				.as_ref()
 				.map(|renderer| renderer.connection_type)
 		};
@@ -57,7 +57,7 @@ impl BlockLayerRenderer {
 
 		let connection_layer = matrix.export();
 		layer.entries(|entry, connection| {
-			if let Some(renderer) = self.block_renderers.get(connection.id) {
+			if let Some(renderer) = &self.block_renderers[connection.id] {
 				renderer.mesh(
 					BlockPos::new(chunk, entry),
 					&self.kind_descs[connection_layer[entry] as u8 as usize],
@@ -99,18 +99,18 @@ impl BlockLayerRendererPrototype {
 		Ok(BlockLayerRenderer {
 			block_renderers: parent
 				.blocks
-				.id_to_ident
+				.lookup()
+				.id_to_identifier()
 				.iter()
 				.map(|(id, entry)| {
 					(
 						id,
 						blocks
-							.ident_to_id
+							.lookup().identifier_to_id()
 							.get(entry)
-							.map(|entry| blocks.get(*entry).bake(atlas)),
+							.map(|entry| blocks[*entry].bake(atlas)),
 					)
-				})
-				.collect(),
+				}).collect(),
 			kind_descs: kind_uvs,
 		})
 	}

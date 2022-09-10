@@ -1,20 +1,18 @@
 [package]
-name = "rsa-world"
+name = "rsa-registry"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rsa-core = { path = "../rsa-core" }
-rsa-network = { path = "../rsa-network" }
 rsa-hash = { path = "../rsa-hash" }
-rsa-registry = { path = "../rsa-registry" }
 
+anyways = "*"
 
+log = "0.4.17"
+ahash = "0.8.0"
+serde = { version = "1.0.140", features = ["derive"] }
 apollo = { path = "../apollo", features = ["luajit", "vendored", "serialize", "macro"] }
-serde = { version = "1.0.137", features = ["derive"] }
 
-hecs = { version = "0.7.6", features = ["serde"] }
-rand = "0.8.5"
-rand_xoshiro = "0.6.0"
+[features]

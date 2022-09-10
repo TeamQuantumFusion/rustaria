@@ -5,20 +5,15 @@ use std::{collections::HashSet, mem::replace};
 use apollo::Lua;
 use rsa_client_core::{atlas::Atlas, frontend::Frontend};
 use rsa_core::{
-	api::{
-		stargate::Stargate,
-		Core,
-	},
+	api::{stargate::Stargate, Core},
 	err::{ext::AuditExt, Result},
-	ty::{IdTable},
 };
+use rsa_registry::Storage;
 use rsa_world::{chunk::layer::BlockLayer, entity::prototype::EntityDesc};
 use rustaria::rpc::ServerRPC;
 
 use crate::world::{
-	chunk::{
-		layer::{BlockLayerRenderer, BlockLayerRendererPrototype},
-	},
+	chunk::layer::{BlockLayerRenderer, BlockLayerRendererPrototype},
 	entity::{EntityRenderer, EntityRendererPrototype},
 };
 
@@ -26,8 +21,8 @@ pub mod world;
 
 #[derive(Default)]
 pub struct GraphicsRPC {
-	pub block_layer_renderer: IdTable<BlockLayer, Option<BlockLayerRenderer>>,
-	pub entity_renderer: IdTable<EntityDesc, Option<EntityRenderer>>,
+	pub block_layer_renderer: Storage<Option<BlockLayerRenderer>, BlockLayer>,
+	pub entity_renderer: Storage<Option<EntityRenderer>, EntityDesc>,
 	pub atlas: Option<Atlas>,
 }
 
@@ -48,46 +43,27 @@ impl GraphicsRPC {
 		let block_layers = stargate.build_registry::<BlockLayerRendererPrototype>()?;
 		let entities = stargate.build_registry::<EntityRendererPrototype>()?;
 
-		for (_, prototype) in block_layers.table.iter() {
+		for (_, prototype) in block_layers.iter() {
 			prototype.get_sprites(&mut sprites);
 		}
 
-		for (_, prototype) in entities.table.iter() {
+		for (_, prototype) in entities.iter() {
 			prototype.get_sprites(&mut sprites);
 		}
 
 		let atlas = Atlas::new(frontend, core, sprites)?;
 
-		let mut block_layer_renderer = Vec::new();
-		for (id, _, _) in server.world.block_layer.entries() {
-			block_layer_renderer.push((id, None));
-		}
-		for (_, identifier, prototype) in block_layers.into_entries() {
-			if let Some(id) = server.world.block_layer.get_id_from_identifier(&identifier) {
-				let prototype = prototype
-					.bake(&core.lua, &atlas, server.world.block_layer.get(id))
-					.wrap_err_with(|| format!("Failed to bake {}", identifier))?;
-				let _ = replace(&mut block_layer_renderer[id.index()], (id, Some(prototype)));
-			}
-		}
-
-		let mut entity_renderer = Vec::new();
-		for (id, _, _) in server.world.entity.entries() {
-			entity_renderer.push((id, None));
-		}
-
-		for (_, identifier, prototype) in entities.into_entries() {
-			if let Some(id) = server.world.entity.get_id_from_identifier(&identifier) {
-				let _ = replace(
-					&mut entity_renderer[id.index()],
-					(id, Some(prototype.bake(&atlas))),
-				);
-			}
-		}
-
 		Ok(GraphicsRPC {
-			block_layer_renderer: block_layer_renderer.into_iter().collect(),
-			entity_renderer: entity_renderer.into_iter().collect(),
+			block_layer_renderer: server
+				.world
+				.block_layer
+				.zip(block_layers, |_, _, _, parent, prototype| {
+					prototype.bake(&core.lua, &atlas, parent)
+				})?,
+			entity_renderer: server
+				.world
+				.entity
+				.zip(entities, |_, _, _, _, prototype| Ok(prototype.bake(&atlas)))?,
 			atlas: Some(atlas),
 		})
 	}

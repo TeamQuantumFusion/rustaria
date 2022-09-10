@@ -18,12 +18,13 @@ use rsa_client_core::{
 };
 use rsa_core::{
 	api::{reload::Reload, stargate::Stargate, Core},
-	blake3::Hasher,
 	err::{ext::AuditExt, Result},
 	initialize,
 	math::vec2,
-	ty::Identifier,
 };
+use rsa_core::log::info;
+use rsa_hash::Hasher;
+use rsa_registry::Identifier;
 use rsa_world::{
 	chunk::{storage::ChunkStorage, Chunk, ChunkLayer},
 	ty::ChunkPos,
@@ -38,25 +39,32 @@ pub mod rpc;
 fn main() -> Result<()> {
 	initialize()?;
 	let mut client = Client::new()?;
-	client.reload().wrap_err("Failed to loafd game.")?;
-	client.run()?;
+	match client.reload().wrap_err("Failed to load game.") {
+		Ok(_) => {
+			client.run()?;
+		}
+		Err(err) => {
+			println!("{:?}", err);
+		}
+	};
 	Ok(())
 }
 
 pub struct Client {
-	core: Core,
 
 	viewport: Viewport,
 	debug: Debug,
 	game: Option<ClientGame>,
 	rpc: ClientRPC,
 
+	core: Core,
 	frontend: Frontend,
 	reload_requested: bool,
 }
 
 impl Client {
 	pub fn new() -> Result<Client> {
+		info!("Initializing Rustaria Client");
 		let run_dir = std::env::current_dir().wrap_err("Could not find current directory.")?;
 		let frontend = Frontend::new().wrap_err("Could not initialize frontend.")?;
 		let debug = Debug::new(&frontend).wrap_err("Could not initialize debug render.")?;
@@ -78,6 +86,7 @@ impl Client {
 	}
 
 	pub fn run(&mut self) -> Result<()> {
+		info!("Running");
 		let mut timing = Timing::new();
 		while self.frontend.running() {
 			self.tick_events()?;
@@ -170,6 +179,7 @@ impl Client {
 	}
 
 	pub fn reload(&mut self) -> Result<()> {
+		info!("Reloading rustaria");
 		let mut reload = Reload {
 			stargate: Stargate::new(),
 			client: true,
@@ -201,20 +211,19 @@ impl Client {
 							.rpc
 							.world
 							.block_layer
-							.table
 							.iter()
 							.map(|(layer_id, prototype)| {
 								let id = prototype
-									.blocks
-									.get_id_from_identifier(&Identifier::new("dirt"))
+									.blocks.lookup()
+									.get_id(&Identifier::new("dirt"))
 									.expect("where dirt");
-								let dirt = prototype.blocks.get(id).create(id);
+								let dirt = prototype.blocks[id].create(id);
 
 								let id = prototype
-									.blocks
-									.get_id_from_identifier(&Identifier::new("air"))
+									.blocks.lookup()
+									.get_id(&Identifier::new("air"))
 									.expect("where air");
-								let air = prototype.blocks.get(id).create(id);
+								let air = prototype.blocks[id].create(id);
 
 								(
 									layer_id,

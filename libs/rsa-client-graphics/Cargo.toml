@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 rsa-core = { path = "../rsa-core" }
 rsa-world = { path = "../rsa-world" }
+rsa-registry = { path = "../rsa-registry" }
+rsa-hash = { path = "../rsa-hash" }
 rustaria = { path = "../../" }
 rsa-client-core = { path = "../rsa-client-core" }
 rsa-client-player = { path = "../rsa-client-player" }

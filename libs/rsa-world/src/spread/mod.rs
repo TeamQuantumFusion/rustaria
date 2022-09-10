@@ -7,8 +7,8 @@ use rand_xoshiro::Xoroshiro64Star;
 use rsa_core::{
 	debug::{DebugCategory, DebugRendererImpl},
 	draw_debug,
-	ty::Id,
 };
+use rsa_registry::Id;
 
 use crate::{rpc::WorldRPC, BlockDesc, BlockLayer, BlockPos, ChunkStorage};
 
@@ -35,7 +35,7 @@ impl SpreaderSystem {
 		let mut remove = Vec::new();
 		let mut spread = Vec::new();
 		for ((pos, layer_id), block_id) in &self.active_spreads {
-			let prototype = rpc.block_layer.get(*layer_id).blocks.get(*block_id);
+			let prototype = &rpc.block_layer[*layer_id].blocks[*block_id];
 			if let Some(prototype) = &prototype.spread {
 				let result = prototype.tick_spread(*pos, *layer_id, chunks, &mut self.rand);
 				if let Some(result) = result.spread {

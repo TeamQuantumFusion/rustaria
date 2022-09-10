@@ -12,8 +12,9 @@ use rsa_core::{
 	draw_debug,
 	err::Result,
 	math::rect,
-	ty::{DirMap, Direction, IdTable, Offset},
+	ty::{DirMap, Direction, Offset},
 };
+use rsa_registry::Storage;
 use rsa_world::{
 	chunk::{layer::BlockLayer, storage::ChunkStorage},
 	ty::{BlockPos, ChunkPos},
@@ -133,7 +134,7 @@ impl ChunkMesh {
 		&mut self,
 		pos: ChunkPos,
 		chunks: &ChunkStorage,
-		renderers: &IdTable<BlockLayer, Option<BlockLayerRenderer>>,
+		renderers: &Storage<Option<BlockLayerRenderer>, BlockLayer>,
 		debug: &mut Debug,
 	) -> Result<()> {
 		if self.dirty {
@@ -161,11 +162,11 @@ impl ChunkMesh {
 				}
 
 				for (id, layer) in chunk.layers.iter() {
-					if let Some(renderer) = renderers.get(id) {
+					if let Some(renderer) = &renderers[id]{
 						renderer.mesh_chunk_layer(
 							pos,
 							layer,
-							neighbors.map(|_, option| option.map(|c| c.layers.get(id))),
+							neighbors.map(|_, option| option.map(|c| &c.layers[id])),
 							&mut self.builder,
 							debug,
 						);

@@ -10,9 +10,9 @@ use rsa_core::{
 		stargate::Stargate,
 		Core,
 	},
-	blake3::Hasher,
 	err::Result,
 };
+use rsa_hash::Hasher;
 use rustaria::rpc::ServerRPC;
 
 use crate::AuditExt;

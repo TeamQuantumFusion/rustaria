@@ -2,10 +2,10 @@ use std::{collections::HashMap, time::Instant};
 
 use anyways::{ext::AuditExt, Result};
 use apollo::{macros::*, Lua, UserDataCell, Value};
+use rsa_registry::{Registry, RegistryBuilder};
 
 use crate::{
 	api::prototype::Prototype,
-	ty::{Registry, RegistryBuilder},
 };
 
 pub struct Stargate {

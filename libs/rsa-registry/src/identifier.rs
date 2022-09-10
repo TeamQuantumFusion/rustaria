@@ -2,7 +2,6 @@ use std::fmt::{Display, Formatter, Write};
 
 use apollo::{FromLua, Lua, ToLua, Value};
 
-use crate::{api::util::lua_string, err::Result};
 
 /// The identifier is a dual-string notifying which mod (namespace) the entry is from. and what it is.
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -19,7 +18,7 @@ impl Identifier {
 		}
 	}
 
-	pub fn new_lua(string: String) -> Result<Self> {
+	pub fn new_lua(string: String) -> anyways::Result<Self> {
 		if let Some((namespace, path)) = string.split_once(':') {
 			Ok(Identifier {
 				namespace: namespace.to_string(),
@@ -45,14 +44,14 @@ impl Identifier {
 }
 
 impl FromLua for Identifier {
-	fn from_lua(lua_value: Value, _: &Lua) -> Result<Self> {
-		let string = lua_string(lua_value)?;
+	fn from_lua(lua_value: Value, _: &Lua) -> anyways::Result<Self> {
+		let string = lua_value.lua_string()?;
 		Identifier::new_lua(string)
 	}
 }
 
 impl ToLua for Identifier {
-	fn to_lua(self, lua: &Lua) -> Result<Value> {
+	fn to_lua(self, lua: &Lua) -> anyways::Result<Value> {
 		Ok(Value::String(lua.create_string(&format!(
 			"{}:{}",
 			self.namespace, self.path

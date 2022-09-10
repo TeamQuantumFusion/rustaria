@@ -3,8 +3,9 @@ use rsa_core::{
 	api::util::lua_table,
 	err::Result,
 	math::{Rect, Vector2D},
-	ty::{DirMap, Id, WS},
+	ty::{DirMap, WS},
 };
+use rsa_registry::Id;
 
 use crate::EntityDesc;
 /// Our lovely components

@@ -1,17 +1,8 @@
 use std::fmt::{Display, Formatter};
 
-pub use id::Id;
-pub use id_table::{IdTable, IdTableIter};
-pub use identifier::Identifier;
-pub use registry::{Registry, RegistryBuilder};
-
 pub use self::direction::{DirMap, Direction};
 
 mod direction;
-mod id;
-mod id_table;
-mod identifier;
-mod registry;
 
 /// World Space
 pub struct WS;

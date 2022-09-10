@@ -8,13 +8,11 @@ use crate::{
 		plugin::{Plugin, Plugins},
 		reload::Reload,
 	},
-	blake3::Blake3Hash,
 	log::{info, LevelFilter},
 	thread_pool::{ThreadPool, ThreadPoolBuilder}
 };
 
 pub mod api;
-pub mod blake3;
 pub mod debug;
 pub mod ty;
 

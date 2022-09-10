@@ -3,9 +3,9 @@ use rsa_core::{
 	api::{
 		stargate::Stargate,
 	},
-	blake3::Hasher,
 	err::{ext::AuditExt, Result},
 };
+use rsa_hash::Hasher;
 use rsa_item::ItemRPC;
 use rsa_world::rpc::WorldRPC;
 

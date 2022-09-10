@@ -4,10 +4,10 @@ use rsa_core::{
 	err::Result,
 	log::{debug, info, trace, warn},
 	math::vec2,
-	ty::{Id, Identifier},
 };
 use rsa_network::{server::ServerSender, Token};
 use rsa_player::packet::{ClientBoundPlayerPacket, ServerBoundPlayerPacket};
+use rsa_registry::{Id, Identifier};
 use rsa_world::{
 	entity::{
 		component::{HumanoidComponent, PositionComponent},
@@ -33,8 +33,8 @@ impl PlayerSystem {
 			response_requests: vec![],
 			joined: Default::default(),
 			player_entity: rpc
-				.entity
-				.get_id_from_identifier(&Identifier::new("player"))
+				.entity.lookup()
+				.get_id(&Identifier::new("player"))
 				.ok_or("Could not find Player entity")?,
 		})
 	}

@@ -5,9 +5,10 @@ use rand::Rng;
 use rand_xoshiro::Xoroshiro64Star;
 use rsa_core::{
 	err::{ext::AuditExt, Result},
-	ty::{Direction, Id, Identifier, Offset},
+	ty::{Direction, Offset},
 	TPS,
 };
+use rsa_registry::{Id, Identifier, RegistryLookup};
 
 use crate::{BlockDesc, BlockLayer, BlockPos, ChunkStorage};
 
@@ -31,7 +32,7 @@ impl BlockSpreader {
 			for dir in Direction::values() {
 				if let Some(pos) = pos.checked_offset(dir.offset()) {
 					if let Some(chunk) = chunks.get_mut(pos.chunk) {
-						let layer = chunk.layers.get_mut(layer_id);
+						let layer = &mut chunk.layers[layer_id];
 						let id = layer[pos.entry].id;
 						if let Some(next_id) = self.convert_table.get(&id) {
 							if spread.is_some() {
@@ -69,16 +70,16 @@ pub struct BlockSpreaderPrototype {
 
 #[lua_impl]
 impl BlockSpreaderPrototype {
-	pub fn bake(self, blocks: &HashMap<Identifier, Id<BlockDesc>>) -> Result<BlockSpreader> {
+	pub fn bake(self, blocks: &RegistryLookup<BlockDesc>) -> Result<BlockSpreader> {
 		let mut convert_table = HashMap::new();
 		for (from, to) in &self.convert_table {
 			convert_table.insert(
-				*blocks
-					.get(from)
+				blocks
+					.get_id(from)
 					.wrap_err_with(|| format!("Could not find from target {}", from))?,
-				*blocks
-					.get(to)
-					.wrap_err_with(|| format!("Could not find to target {}", to))?,
+				blocks
+					.get_id(to)
+					.wrap_err_with(|| format!("Could not find to target {}", from))?,
 			);
 		}
 

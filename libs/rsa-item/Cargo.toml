@@ -7,6 +7,8 @@ edition = "2021"
 
 [dependencies]
 rsa-core = { path = "../rsa-core" }
+rsa-registry = { path = "../rsa-registry" }
+rsa-hash = { path = "../rsa-hash" }
 apollo = { path = "../apollo", features = ["luajit", "vendored", "serialize", "macro"] }
 
 
