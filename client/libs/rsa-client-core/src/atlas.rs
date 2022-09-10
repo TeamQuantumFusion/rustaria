@@ -39,7 +39,7 @@ impl Atlas {
 		let mut images = HashMap::new();
 		images.insert(
 			Identifier::new("missing"),
-			image::load_from_memory(include_bytes!("./builtin/missing.png"))?,
+			image::load_from_memory(include_bytes!("builtin/missing.png"))?,
 		);
 
 		// Load all images

@@ -10,7 +10,7 @@ use rsa_core::{
 };
 use rsa_registry::Storage;
 use rsa_world::{chunk::layer::BlockLayer, entity::prototype::EntityDesc};
-use rustaria::rpc::ServerRPC;
+use rustaria_server::rpc::ServerRPC;
 
 use crate::world::{
 	chunk::layer::{BlockLayerRenderer, BlockLayerRendererPrototype},

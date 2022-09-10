@@ -13,6 +13,6 @@ anyways = "*"
 log = "0.4.17"
 ahash = "0.8.0"
 serde = { version = "1.0.140", features = ["derive"] }
-apollo = { path = "../apollo", features = ["luajit", "vendored", "serialize", "macro"] }
+apollo = { path = "../../../libs/apollo", features = ["luajit", "vendored", "serialize", "macro"] }
 
 [features]

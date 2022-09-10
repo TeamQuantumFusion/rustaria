@@ -1,44 +1,23 @@
-[package]
-name = "rustaria"
-version = "0.1.0"
-edition = "2021"
-
-build = "build.rs"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-rsa-core = { path = "./libs/rsa-core" }
-rsa-item = { path = "./libs/rsa-item" }
-rsa-network = { path = "./libs/rsa-network" }
-rsa-player = { path = "./libs/rsa-player" }
-rsa-world = { path = "./libs/rsa-world" }
-rsa-registry = { path = "./libs/rsa-registry" }
-rsa-hash = { path = "./libs/rsa-hash" }
-
-
-serde = { version = "1.0.137", features = ["derive"] }
-apollo = { path = "./libs/apollo", features = ["luajit", "vendored", "serialize", "macro"] }
-
-[features]
-testing = []
-
 [workspace]
 members = [
-    "client",
+    # Libs
     "libs/lua_docs",
     "libs/apollo",
     "libs/apollo-macro",
     "libs/apollo-docs",
-    "libs/rsa-registry",
-    "libs/rsa-core",
-    "libs/rsa-item",
-    "libs/rsa-network",
-    "libs/rsa-player",
-    "libs/rsa-world",
-    "libs/rsa-hash",
-    "libs/rsa-client-graphics",
-    "libs/rsa-client-player",
-    "libs/rsa-client-gui",
-    "libs/rsa-client-core",
+    # Client
+    "client",
+    "client/libs/rsa-client-graphics",
+    "client/libs/rsa-client-player",
+    "client/libs/rsa-client-gui",
+    "client/libs/rsa-client-core",
+    # Server
+    "server",
+    "server/libs/rsa-registry",
+    "server/libs/rsa-core",
+    "server/libs/rsa-item",
+    "server/libs/rsa-network",
+    "server/libs/rsa-player",
+    "server/libs/rsa-world",
+    "server/libs/rsa-hash",
 ]

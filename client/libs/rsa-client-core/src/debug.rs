@@ -34,11 +34,11 @@ impl Debug {
 	pub fn new(frontend: &Frontend) -> Result<Debug> {
 		Ok(Debug {
 			program: frontend.create_program(SourceCode {
-				vertex_shader: include_str!("./builtin/pos_color.vert.glsl"),
+				vertex_shader: include_str!("builtin/pos_color.vert.glsl"),
 				tessellation_control_shader: None,
 				tessellation_evaluation_shader: None,
 				geometry_shader: None,
-				fragment_shader: include_str!("./builtin/pos_color.frag.glsl"),
+				fragment_shader: include_str!("builtin/pos_color.frag.glsl"),
 			})?,
 			drawer: frontend.create_drawer()?,
 			builder: MeshBuilder::new(),

@@ -55,7 +55,7 @@ impl Frontend {
 		window.set_mouse_button_polling(true);
 		window.set_framebuffer_size_polling(true);
 
-		let icon = image::load_from_memory(include_bytes!("./builtin/icon.png"))?;
+		let icon = image::load_from_memory(include_bytes!("builtin/icon.png"))?;
 		window.set_icon(vec![
 			icon.resize(16, 16, FilterType::Lanczos3).to_rgba8(),
 			icon.resize(32, 32, FilterType::Lanczos3).to_rgba8(),

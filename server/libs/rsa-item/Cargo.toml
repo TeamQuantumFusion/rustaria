@@ -9,7 +9,7 @@ edition = "2021"
 rsa-core = { path = "../rsa-core" }
 rsa-registry = { path = "../rsa-registry" }
 rsa-hash = { path = "../rsa-hash" }
-apollo = { path = "../apollo", features = ["luajit", "vendored", "serialize", "macro"] }
+apollo = { path = "../../../libs/apollo", features = ["luajit", "vendored", "serialize", "macro"] }
 
 
 [features]

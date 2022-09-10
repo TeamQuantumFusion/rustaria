@@ -13,7 +13,7 @@ use rsa_core::{
 	err::Result,
 };
 use rsa_hash::Hasher;
-use rustaria::rpc::ServerRPC;
+use rustaria_server::rpc::ServerRPC;
 
 use crate::AuditExt;
 

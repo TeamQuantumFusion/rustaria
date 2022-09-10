@@ -1,0 +1,22 @@
+[package]
+name = "rustaria-server"
+version = "0.1.0"
+edition = "2021"
+
+build = "build.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+rsa-core = { path = "./libs/rsa-core" }
+rsa-item = { path = "./libs/rsa-item" }
+rsa-network = { path = "./libs/rsa-network" }
+rsa-player = { path = "./libs/rsa-player" }
+rsa-world = { path = "./libs/rsa-world" }
+rsa-registry = { path = "./libs/rsa-registry" }
+rsa-hash = { path = "./libs/rsa-hash" }
+
+serde = { version = "1.0.137", features = ["derive"] }
+apollo = { path = "../libs/apollo", features = ["luajit", "vendored", "serialize", "macro"] }
+
+[features]
+testing = []

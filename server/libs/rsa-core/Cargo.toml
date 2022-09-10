@@ -31,7 +31,7 @@ fxhash = "0.2.1"
 bitflags = "1.3.2"
 semver = { version = "1.0.10", features = ["serde"] }
 # Lua
-apollo = { path = "../apollo", features = ["luajit", "vendored", "serialize", "macro"] }
+apollo = { path = "../../../libs/apollo", features = ["luajit", "vendored", "serialize", "macro"] }
 
 [features]
 testing = []

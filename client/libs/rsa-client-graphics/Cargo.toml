@@ -6,15 +6,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rsa-core = { path = "../rsa-core" }
-rsa-world = { path = "../rsa-world" }
-rsa-registry = { path = "../rsa-registry" }
-rsa-hash = { path = "../rsa-hash" }
-rustaria = { path = "../../" }
+rsa-core = { path = "../../../server/libs/rsa-core" }
+rsa-world = { path = "../../../server/libs/rsa-world" }
+rsa-registry = { path = "../../../server/libs/rsa-registry" }
+rsa-hash = { path = "../../../server/libs/rsa-hash" }
+rustaria-server = { path = "../../../server" }
 rsa-client-core = { path = "../rsa-client-core" }
 rsa-client-player = { path = "../rsa-client-player" }
 
-apollo = { path = "../apollo", features = ["luajit", "vendored", "serialize", "macro"] }
+apollo = { path = "../../../libs/apollo", features = ["luajit", "vendored", "serialize", "macro"] }
 
 glfw = { version = "0.45.0", features = ["image"] }
 glium = { git = "https://github.com/alphaqu/glium", default-features = false, features = [] }

@@ -265,25 +265,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "client"
-version = "0.1.0"
-dependencies = [
- "apollo",
- "glfw",
- "glium",
- "rsa-client-core",
- "rsa-client-graphics",
- "rsa-client-player",
- "rsa-core",
- "rsa-hash",
- "rsa-network",
- "rsa-player",
- "rsa-registry",
- "rsa-world",
- "rustaria",
-]
-
-[[package]]
 name = "cmake"
 version = "0.1.48"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1248,7 +1229,7 @@ dependencies = [
  "rsa-hash",
  "rsa-registry",
  "rsa-world",
- "rustaria",
+ "rustaria-server",
 ]
 
 [[package]]
@@ -1271,6 +1252,7 @@ dependencies = [
  "rsa-player",
  "rsa-registry",
  "rsa-world",
+ "rustaria-server",
 ]
 
 [[package]]
@@ -1359,7 +1341,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustaria"
+name = "rustaria-client"
+version = "0.1.0"
+dependencies = [
+ "apollo",
+ "glfw",
+ "glium",
+ "rsa-client-core",
+ "rsa-client-graphics",
+ "rsa-client-player",
+ "rsa-core",
+ "rsa-hash",
+ "rsa-network",
+ "rsa-player",
+ "rsa-registry",
+ "rsa-world",
+ "rustaria-server",
+]
+
+[[package]]
+name = "rustaria-server"
 version = "0.1.0"
 dependencies = [
  "apollo",
