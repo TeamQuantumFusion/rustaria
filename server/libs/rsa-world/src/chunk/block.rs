@@ -10,15 +10,13 @@ use rsa_core::{
 };
 use rsa_registry::Id;
 
-use crate::{
-	AuditExt,
-	spread::block::{BlockSpreader, BlockSpreaderPrototype},
-};
+use crate::{AuditExt, BlockLayer, spread::block::{BlockSpreader, BlockSpreaderPrototype}};
 use crate::chunk::block::state::BlockStates;
 
 #[derive(Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Block {
 	pub id: Id<BlockDesc>,
+	pub layer: Id<BlockLayer>,
 	pub collision: bool,
 }
 
@@ -28,8 +26,6 @@ impl Block {
 	pub fn get_collision(&self) -> bool { self.collision }
 }
 
-
-
 #[derive(Clone)]
 pub struct BlockDesc {
 	pub collision: bool,
@@ -38,9 +34,10 @@ pub struct BlockDesc {
 
 #[lua_impl]
 impl BlockDesc {
-	pub fn create(&self, id: Id<BlockDesc>) -> Block {
+	pub fn create(&self, id: Id<BlockDesc>, layer: Id<BlockLayer>) -> Block {
 		Block {
 			id,
+			layer,
 			collision: self.collision,
 		}
 	}

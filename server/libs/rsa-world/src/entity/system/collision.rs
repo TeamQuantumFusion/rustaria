@@ -14,7 +14,7 @@ use crate::{
 		component::{CollisionComponent, PhysicsComponent, PositionComponent},
 		EntityStorage,
 	},
-	rpc::WorldRPC,
+	rpc::WorldAPI,
 	BlockPos, ChunkStorage, CHUNK_SIZE,
 };
 
@@ -24,7 +24,7 @@ impl CollisionSystem {
 	pub fn tick(
 		&mut self,
 		core: &Core,
-		rpc: &WorldRPC,
+		rpc: &WorldAPI,
 		storage: &mut EntityStorage,
 		chunks: &mut ChunkStorage,
 		debug: &mut impl DebugRendererImpl,

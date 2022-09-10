@@ -217,13 +217,13 @@ impl Client {
 									.blocks.lookup()
 									.get_id(&Identifier::new("dirt"))
 									.expect("where dirt");
-								let dirt = prototype.blocks[id].create(id);
+								let dirt = prototype.blocks[id].create(id, layer_id);
 
 								let id = prototype
 									.blocks.lookup()
 									.get_id(&Identifier::new("air"))
 									.expect("where air");
-								let air = prototype.blocks[id].create(id);
+								let air = prototype.blocks[id].create(id, layer_id);
 
 								(
 									layer_id,

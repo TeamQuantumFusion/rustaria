@@ -16,17 +16,13 @@ use rsa_player::{
 	PlayerCommand,
 };
 use rsa_registry::{Id, Identifier};
-use rsa_world::{
-	chunk::{block::BlockDesc, layer::BlockLayer, storage::ChunkStorage},
-	entity::{
-		component::{HumanoidComponent, PositionComponent},
-		prototype::EntityDesc,
-		Component, Entity, EntityWorld, Ref,
-	},
-	rpc::WorldRPC,
-	ty::BlockPos,
-	 World,
-};
+use rsa_world::{chunk::{block::BlockDesc, layer::BlockLayer, storage::ChunkStorage}, entity::{
+	component::{HumanoidComponent, PositionComponent},
+	prototype::EntityDesc,
+	Component, Entity, EntityWorld, Ref,
+}, rpc::WorldAPI, ServerBoundWorldPacket, ty::BlockPos, World};
+use rsa_world::entity::system::network::EntityComponentPacket;
+use rustaria_server::network::ServerBoundPacket;
 
 const MAX_CORRECTION: f32 = 0.025;
 
@@ -66,7 +62,7 @@ pub enum Press {
 }
 
 impl PlayerSystem {
-	pub fn new(rpc: &WorldRPC) -> Result<Self> {
+	pub fn new(rpc: &WorldAPI) -> Result<Self> {
 		let layer_id = rpc
 			.block_layer.lookup()
 			.get_id(&Identifier::new("tile"))
@@ -168,9 +164,9 @@ impl PlayerSystem {
 	pub fn tick(
 		&mut self,
 		core: &Core,
-		rpc: &WorldRPC,
+		rpc: &WorldAPI,
 		viewport: &Viewport,
-		network: &mut ClientSender<ServerBoundPlayerPacket>,
+		network: &mut ClientSender<ServerBoundPacket>,
 		world: &mut World,
 	) -> Result<()> {
 		self.prediction_world
@@ -213,13 +209,13 @@ impl PlayerSystem {
 								))?;
 							}
 						}
-						Press::SpawnEntity(_, _, _) => {
-							//network.send(ServerBoundWorldPacket::SpawnEntity(
-							//	entity,
-							//	vec![EntityComponentPacket::Pos {
-							//		set_pos: vec2(x, y) + viewport.pos,
-							//	}],
-							//))?;
+						Press::SpawnEntity(x, y, entity) => {
+							network.send(ServerBoundWorldPacket::SpawnEntity(
+								entity,
+								vec![EntityComponentPacket::Pos {
+									set_pos: vec2(x, y) + viewport.pos,
+								}],
+							))?;
 						}
 					}
 				}
@@ -233,7 +229,7 @@ impl PlayerSystem {
 	pub fn packet(
 		&mut self,
 		core: &Core,
-		rpc: &WorldRPC,
+		rpc: &WorldAPI,
 		packet: ClientBoundPlayerPacket,
 		world: &mut World,
 	) -> Result<()> {
@@ -358,7 +354,7 @@ impl PlayerSystem {
 	fn compile_prediction(
 		&mut self,
 		core: &Core,
-		rpc: &WorldRPC,
+		rpc: &WorldAPI,
 		chunks: &mut ChunkStorage,
 	) -> Option<()> {
 		let entity = self.server_player?;

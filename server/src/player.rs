@@ -14,7 +14,7 @@ use rsa_world::{
 		prototype::EntityDesc,
 		Entity, EntityRef, EntityWorld,
 	},
-	rpc::WorldRPC,
+	rpc::WorldAPI,
 	World,
 };
 
@@ -26,7 +26,7 @@ pub struct PlayerSystem {
 }
 
 impl PlayerSystem {
-	pub fn new(rpc: &WorldRPC) -> Result<PlayerSystem> {
+	pub fn new(rpc: &WorldAPI) -> Result<PlayerSystem> {
 		info!("Initializing");
 		Ok(PlayerSystem {
 			players: Default::default(),
@@ -87,7 +87,7 @@ impl PlayerSystem {
 
 	pub fn packet(
 		&mut self,
-		rpc: &WorldRPC,
+		rpc: &WorldAPI,
 		token: Token,
 		packet: ServerBoundPlayerPacket,
 		world: &mut World,

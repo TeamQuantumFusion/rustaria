@@ -123,7 +123,12 @@ impl Display for BlockPos {
 impl ToLua for BlockPos {
 	fn to_lua(self, lua: &Lua) -> Result<Value> {
 		Ok(Value::Table(
-			lua.create_table_from([("x", self.x()), ("y", self.y())])?,
+			lua.create_table_from([
+				("chunk", self.chunk.to_lua(lua)?),
+				("entry", self.entry.to_lua(lua)?),
+				("x", self.x().to_lua(lua)?),
+				("y", self.y().to_lua(lua)?)
+			])?,
 		))
 	}
 }
@@ -132,16 +137,16 @@ impl FromLua for BlockPos {
 	fn from_lua(lua_value: Value, _: &Lua) -> Result<Self> {
 		let table = lua_table(lua_value)?;
 
-		if table.contains_key("x")? && table.contains_key("y")? {
-			Ok(BlockPos::try_from((
-				table.get::<_, u64>("x")?,
-				table.get::<_, u64>("y")?,
-			))?)
-		} else {
+		if table.contains_key("chunk")? && table.contains_key("entry")? {
 			Ok(BlockPos {
 				chunk: table.get("chunk")?,
 				entry: table.get("entry")?,
 			})
+		} else {
+			Ok(BlockPos::try_from((
+				table.get::<_, u64>("x")?,
+				table.get::<_, u64>("y")?,
+			))?)
 		}
 	}
 }

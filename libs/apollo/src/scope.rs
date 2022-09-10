@@ -8,6 +8,8 @@ use std::{
 	marker::PhantomData,
 	rc::Rc,
 };
+use std::any::type_name;
+use log::trace;
 
 use crate::{userdata::UserDataCell, UserData};
 
@@ -21,6 +23,8 @@ pub struct LuaScope<'a, V: 'static + UserData> {
 
 impl<'a, V: 'static + UserData> LuaScope<'a, V> {
 	unsafe fn new(value: *const V, mutable: bool) -> LuaScope<'a, V> {
+		trace!("Created scope for {}", type_name::<V>());
+
 		LuaScope {
 			alive: Rc::new(Box::new(())),
 			value,
@@ -47,77 +51,10 @@ impl<'a, V: 'static + UserData> From<&'a V> for LuaScope<'a, V> {
 }
 
 impl<V: 'static + UserData> Drop for LuaScope<'_, V> {
-	fn drop(&mut self) {}
+	fn drop(&mut self) {
+		trace!("Dropped scope for {}", type_name::<V>())
+	}
 }
-
-// pub struct LuaWeak<V> {
-// 	lock: Weak<()>,
-// 	value: *const V,
-// 	mutable: bool,
-// }
-//
-// impl<V> LuaWeak<V> {
-// 	pub fn get(&self, local: &'static str) -> Result<&V, RefError> {
-// 		let _ = self.lock.upgrade().ok_or(RefError::Dropped(local))?;
-// 		unsafe { Ok(&*self.value) }
-// 	}
-//
-// 	pub fn get_mut(&self, local: &'static str) -> Result<&mut V, RefError> {
-// 		if !self.mutable {
-// 			return Err(RefError::Immutable(local));
-// 		}
-//
-// 		let _ = self.lock.upgrade().ok_or(RefError::Dropped(local))?;
-// 		unsafe { Ok(&mut *(self.value as *mut V)) }
-// 	}
-//
-// 	pub unsafe fn extend<O>(&self, value: *const O, mutable: bool) -> Result<LuaWeak<O>, RefError> {
-// 		if mutable && !self.mutable {
-// 			return Err(RefError::ReturnMutable);
-// 		}
-// 		Ok(LuaWeak {
-// 			lock: self.lock.clone(),
-// 			value,
-// 			mutable
-// 		})
-// 	}
-// }
-//
-// unsafe impl<V: Send> Send for LuaWeak<V> {}
-//
-// impl<V> Clone for LuaWeak<V> {
-// 	fn clone(&self) -> Self {
-// 		LuaWeak {
-// 			lock: self.lock.clone(),
-// 			value: self.value,
-// 			mutable: self.mutable,
-// 		}
-// 	}
-// }
-//
-// impl<V: UserData> UserData for LuaWeak<V> {
-// 	fn add_fields<F: UserDataFields<Self>>(fields: &mut F) {
-// 		V::add_fields(&mut GlueUserDataFields {
-// 			fields,
-// 			data: Default::default(),
-// 		});
-//
-// 		fields.add_field_method_get("__mut", |lua, weak| {
-// 			Ok(weak.mutable)
-// 		});
-//
-// 		fields.add_field_method_get("__type", |lua, weak| {
-// 			Ok(type_name::<V>())
-// 		});
-// 	}
-//
-// 	fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
-// 		V::add_methods(&mut GlueUserDataMethods {
-// 			methods,
-// 			data: Default::default(),
-// 		})
-// 	}
-// }
 
 #[derive(Clone, Debug)]
 pub enum RefError {

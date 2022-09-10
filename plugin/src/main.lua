@@ -21,6 +21,7 @@ if reload.client then
             }
         }
     }
+
     stargate.block_layer_renderer:register({
         ["tile"] = {
             get_rect = connected_blocks["tile"].get_rect,
@@ -135,25 +136,10 @@ stargate.entity:register {
                 size = { 1.1, 1.1 }
             },
             hit_callback = function(chunks)
-
-                --- @type Carrier
-                local carrier = api.carrier;
-                local layer_registry = carrier.block_layer;
-
-                local layer_id = layer_registry:get_id("tile");
-                local layer_prot = layer_registry:get(layer_id);
-
-                local block_id = layer_prot.blocks:get_id("stone");
-                local block = layer_prot.blocks:get(block_id);
-                local stone_block = block:create(block_id);
-
-                chunks:get_mut({
-                    x = 0,
-                    y = 0
-                }):get_mut_layers():get_mut(layer_id):set_entry({
-                    x = 0,
-                    y = 0
-                }, stone_block);
+                --- @type Block
+                local block = api.world:create_block("tile", "stone");
+                local pos = api.util.new_block_pos(0, 0);
+                chunks:get_mut(pos.chunk):set_block(pos.chunk, block);
             end
         },
         gravity = {

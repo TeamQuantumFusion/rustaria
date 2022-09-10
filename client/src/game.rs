@@ -1,4 +1,5 @@
 use glfw::WindowEvent;
+use apollo::LuaScope;
 use rsa_client_core::{debug::Debug, frontend::Frontend, ty::Viewport};
 use rsa_client_graphics::world::WorldRenderer;
 use rsa_client_player::PlayerSystem;
@@ -63,6 +64,8 @@ impl ClientGame {
 		viewport: &Viewport,
 		debug: &mut Debug,
 	) -> Result<()> {
+		let lua = LuaScope::from(&rpc.server);
+		core.lua.globals().insert("api", lua.lua())?;
 		if let Some(server) = &mut self.integrated {
 			server
 				.tick(core, rpc)

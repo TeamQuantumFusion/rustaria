@@ -11,7 +11,7 @@ use crate::{
 		GravitySystem, VelocitySystem,
 	},
 	iter_components,
-	rpc::WorldRPC,
+	rpc::WorldAPI,
 	ChunkStorage, EntityDesc, EntityPacket,
 };
 
@@ -30,11 +30,11 @@ impl EntityStorage {
 		}
 	}
 
-	pub fn push(&mut self, rpc: &WorldRPC, id: Id<EntityDesc>) -> Entity {
+	pub fn push(&mut self, rpc: &WorldAPI, id: Id<EntityDesc>) -> Entity {
 		self.world.spawn(&rpc.entity[id].template)
 	}
 
-	pub fn insert(&mut self, rpc: &WorldRPC, entity: Entity, id: Id<EntityDesc>) {
+	pub fn insert(&mut self, rpc: &WorldAPI, entity: Entity, id: Id<EntityDesc>) {
 		self.world.spawn_at(entity, &rpc.entity[id].template)
 	}
 
@@ -110,7 +110,7 @@ impl EntityWorld {
 	pub fn tick(
 		&mut self,
 		core: &Core,
-		rpc: &WorldRPC,
+		rpc: &WorldAPI,
 		chunks: &mut ChunkStorage,
 		debug: &mut impl DebugRendererImpl,
 	) -> Result<()> {

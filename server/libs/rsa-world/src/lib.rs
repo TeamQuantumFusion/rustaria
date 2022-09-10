@@ -1,7 +1,7 @@
 //! # Rustaria World
 //! Contains code for the world itself and all of its contents. Stuff like entities and blocks are here.
 use hecs::Entity;
-use rpc::WorldRPC;
+use rpc::WorldAPI;
 use rsa_core::{
 	api::Core,
 	debug::DebugRendererImpl,
@@ -65,7 +65,7 @@ impl World {
 	pub fn tick(
 		&mut self,
 		core: &Core,
-		rpc: &WorldRPC,
+		rpc: &WorldAPI,
 		debug: &mut impl DebugRendererImpl,
 	) -> Result<()> {
 		for (pos, layer_id, block_id) in self.spreader.tick(rpc, &mut self.chunks, debug) {
@@ -80,7 +80,7 @@ impl World {
 
 	pub fn place_block(
 		&mut self,
-		rpc: &WorldRPC,
+		rpc: &WorldAPI,
 		pos: BlockPos,
 		layer_id: Id<BlockLayer>,
 		block_id: Id<BlockDesc>,
@@ -92,7 +92,7 @@ impl World {
 
 			// Block
 			let block_prototype = &prototype.blocks[block_id];
-			layer[pos.entry] = block_prototype.create(block_id);
+			layer[pos.entry] = block_prototype.create(block_id, layer_id);
 
 			self.spreader
 				.place_block(pos, layer_id, block_id, block_prototype);
@@ -101,7 +101,7 @@ impl World {
 
 	pub fn packet(
 		&mut self,
-		carrier: &WorldRPC,
+		carrier: &WorldAPI,
 		token: Token,
 		packet: ServerBoundWorldPacket,
 		network: &mut ServerSender<ClientBoundWorldPacket>,

@@ -1,6 +1,7 @@
 use std::{collections::HashMap, time::Instant};
 
 use anyways::{ext::AuditExt, Result};
+use log::trace;
 use apollo::{macros::*, Lua, UserDataCell, Value};
 use rsa_registry::{Registry, RegistryBuilder};
 

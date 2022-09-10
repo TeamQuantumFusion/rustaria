@@ -16,11 +16,20 @@ pub struct Chunk {
 	pub layers: Storage<ChunkLayer<Block>, BlockLayer>,
 }
 
+#[lua_impl]
 impl Chunk {
-	pub fn get_layers(&self) -> &Storage< ChunkLayer<Block>, BlockLayer> { &self.layers }
+	pub fn get_layers(&self) -> &Storage<ChunkLayer<Block>, BlockLayer> {
+		&self.layers
+	}
 
-	pub fn get_mut_layers(&mut self) -> &mut Storage< ChunkLayer<Block>, BlockLayer> {
+	pub fn get_mut_layers(&mut self) -> &mut Storage<ChunkLayer<Block>, BlockLayer> {
 		&mut self.layers
+	}
+
+	#[lua_method]
+	pub fn set_block(&mut self, pos: BlockLayerPos, block: Block) {
+		let layer = &mut self.layers[block.layer];
+		layer[pos] = block;
 	}
 }
 

@@ -1,20 +1,22 @@
 #![allow(clippy::new_without_default)]
 
-pub mod rpc;
+pub mod api;
 #[macro_use]
 pub mod network;
 mod player;
 
+use apollo::LuaScope;
 use rsa_core::{
 	api::Core,
 	debug::DummyRenderer,
 	err::{ext::AuditExt, Result},
 	log::info,
 };
+use rsa_core::log::trace;
 use rsa_network::{server::ServerNetwork};
 use rsa_world::{ World};
 
-use crate::{network::ServerBoundPacket, player::PlayerSystem, rpc::ServerRPC};
+use crate::{network::ServerBoundPacket, player::PlayerSystem, api::RustariaAPI};
 
 pub struct Rustaria {
 	network: ServerNetwork<Rustaria>,
@@ -24,7 +26,7 @@ pub struct Rustaria {
 
 impl Rustaria {
 	pub fn new(
-		rpc: &ServerRPC,
+		rpc: &RustariaAPI,
 		network: ServerNetwork<Rustaria>,
 		world: World,
 	) -> Result<Rustaria> {
@@ -36,7 +38,7 @@ impl Rustaria {
 		})
 	}
 
-	pub fn tick(&mut self, core: &Core, rpc: &ServerRPC) -> Result<()> {
+	pub fn tick(&mut self, core: &Core, rpc: &RustariaAPI) -> Result<()> {
 		for (token, packet) in self.network.poll() {
 			match packet {
 				ServerBoundPacket::Player(packet) => {

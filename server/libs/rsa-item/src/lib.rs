@@ -12,18 +12,24 @@ pub mod stack;
 pub mod storage;
 
 #[derive(Default)]
-pub struct ItemRPC {
+pub struct ItemAPI {
 	pub item: Registry<ItemDesc>,
 }
 
-impl ItemRPC {
+#[lua_impl]
+impl ItemAPI {
+	#[lua_field(get item)]
+	pub fn item(&self) -> &Registry<ItemDesc> {
+		&self.item
+	}
+
 	pub fn register(stargate: &mut Stargate, lua: &Lua) -> Result<()> {
 		stargate.register_builder::<ItemPrototype>(lua)?;
 		Ok(())
 	}
 
-	pub fn build(stargate: &mut Stargate) -> Result<ItemRPC> {
-		Ok(ItemRPC {
+	pub fn build(stargate: &mut Stargate) -> Result<ItemAPI> {
+		Ok(ItemAPI {
 			item: stargate
 				.build_registry::<ItemPrototype>()?
 				.map(|_, _, prototype| Ok(prototype.bake()))?,

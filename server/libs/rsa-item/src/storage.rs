@@ -1,6 +1,6 @@
 use std::mem::swap;
 
-use crate::{stack::ItemStack, ItemRPC};
+use crate::{stack::ItemStack, ItemAPI};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Storage {
@@ -28,7 +28,7 @@ impl Storage {
 		})
 	}
 
-	pub fn add(&mut self, carrier: &ItemRPC, item: &mut ItemStack) {
+	pub fn add(&mut self, carrier: &ItemAPI, item: &mut ItemStack) {
 		let desc = &carrier.item[item.item.id];
 
 		for slot in &mut self.values {
@@ -81,10 +81,10 @@ mod tests {
 	use super::*;
 	use crate::Item;
 
-	fn init() -> (Core, ItemRPC) {
+	fn init() -> (Core, ItemAPI) {
 		initialize().unwrap();
 
-		let mut rpc = ItemRPC::default();
+		let mut rpc = ItemAPI::default();
 		let mut core = Core::test_simple(
 			r#"
 		reload.stargate.item:register {
@@ -105,9 +105,9 @@ mod tests {
 			stargate: Stargate::new(),
 			client: false,
 		};
-		ItemRPC::register(&mut reload.stargate, &core.lua).unwrap();
+		ItemAPI::register(&mut reload.stargate, &core.lua).unwrap();
 		core.reload(&mut reload).unwrap();
-		let rpc = ItemRPC::build(&mut reload.stargate).unwrap();
+		let rpc = ItemAPI::build(&mut reload.stargate).unwrap();
 		(core, rpc)
 	}
 

@@ -10,7 +10,7 @@ pub struct ClientSender<'src, P: Packet> {
 }
 
 impl<'src, P: Packet> ClientSender<'src, P> {
-	pub fn send(&self, packet: P) -> Result<()> { (self.send)(packet) }
+	pub fn send(&self, packet: impl Into<P>) -> Result<()> { (self.send)(packet.into()) }
 
 	pub fn map<T: Packet + Into<P>>(&self) -> ClientSender<T> {
 		ClientSender {

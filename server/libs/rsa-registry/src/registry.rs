@@ -106,6 +106,20 @@ impl<V> Registry<V> {
 	}
 
 	pub fn lookup(&self) -> &RegistryLookup<V> { &self.lookup }
+
+	pub fn get(&self, identifier: &Identifier) -> Option<&V> {
+		self.lookup.get_id(identifier).map(|v| {
+			&self[v]
+		})
+	}
+}
+
+#[lua_impl]
+impl<V: 'static + UserData> Registry<V> {
+	#[lua_method(get)]
+	pub fn lua_get(&self, identifier: Identifier) -> Option<&V> {
+		self.get(&identifier)
+	}
 }
 
 impl<V> Default for Registry<V> {

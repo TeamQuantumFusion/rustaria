@@ -10,7 +10,7 @@ use rsa_core::{
 };
 use rsa_network::client::{ClientSender};
 use rsa_world::{
-	rpc::WorldRPC, ty::ChunkPos, ClientBoundWorldPacket, ServerBoundWorldPacket, World,
+	rpc::WorldAPI, ty::ChunkPos, ClientBoundWorldPacket, ServerBoundWorldPacket, World,
 	CHUNK_SIZE_F32,
 };
 
@@ -63,7 +63,7 @@ impl ClientWorld {
 		Ok(())
 	}
 
-	pub(crate) fn packet(&mut self, rpc: &WorldRPC, packet: ClientBoundWorldPacket) -> Result<()> {
+	pub(crate) fn packet(&mut self, rpc: &WorldAPI, packet: ClientBoundWorldPacket) -> Result<()> {
 		match packet {
 			ClientBoundWorldPacket::Chunk(chunk_pos, chunk) => {
 				self.inner.chunks.insert(chunk_pos, chunk);

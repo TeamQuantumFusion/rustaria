@@ -13,25 +13,25 @@ use rsa_core::{
 	err::Result,
 };
 use rsa_hash::Hasher;
-use rustaria_server::rpc::ServerRPC;
+use rustaria_server::api::RustariaAPI;
 
 use crate::AuditExt;
 
 #[derive(Default)]
 pub struct ClientRPC {
-	pub server: ServerRPC,
+	pub server: RustariaAPI,
 	pub graphics: GraphicsRPC,
 }
 
 impl ClientRPC {
 	pub fn register(stargate: &mut Stargate, lua: &Lua) -> Result<()> {
-		ServerRPC::register(stargate, lua)?;
+		RustariaAPI::register(stargate, lua)?;
 		GraphicsRPC::register(stargate, lua)?;
 		Ok(())
 	}
 
 	pub fn build(frontend: &Frontend, core: &Core, stargate: &mut Stargate) -> Result<ClientRPC> {
-		let server = ServerRPC::build(stargate).wrap_err("Failed to build ServerRPC")?;
+		let server = RustariaAPI::build(stargate).wrap_err("Failed to build ServerRPC")?;
 		let graphics = GraphicsRPC::build(&frontend, &server, core, stargate)
 			.wrap_err("Failed to build GraphicsRPC")?;
 		Ok(ClientRPC { graphics, server })
@@ -41,7 +41,7 @@ impl ClientRPC {
 }
 
 impl Deref for ClientRPC {
-	type Target = ServerRPC;
+	type Target = RustariaAPI;
 
 	fn deref(&self) -> &Self::Target { &self.server }
 }

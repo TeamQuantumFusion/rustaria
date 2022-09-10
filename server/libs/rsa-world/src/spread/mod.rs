@@ -10,7 +10,7 @@ use rsa_core::{
 };
 use rsa_registry::Id;
 
-use crate::{rpc::WorldRPC, BlockDesc, BlockLayer, BlockPos, ChunkStorage};
+use crate::{rpc::WorldAPI, BlockDesc, BlockLayer, BlockPos, ChunkStorage};
 
 pub struct SpreaderSystem {
 	rand: Xoroshiro64Star,
@@ -27,7 +27,7 @@ impl SpreaderSystem {
 
 	pub fn tick(
 		&mut self,
-		rpc: &WorldRPC,
+		rpc: &WorldAPI,
 		chunks: &mut ChunkStorage,
 		debug: &mut impl DebugRendererImpl,
 	) -> Vec<(BlockPos, Id<BlockLayer>, Id<BlockDesc>)> {

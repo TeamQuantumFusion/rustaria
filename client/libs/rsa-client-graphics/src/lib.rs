@@ -2,7 +2,7 @@
 
 use std::{collections::HashSet, mem::replace};
 
-use apollo::Lua;
+use apollo::{macros::*, Lua};
 use rsa_client_core::{atlas::Atlas, frontend::Frontend};
 use rsa_core::{
 	api::{stargate::Stargate, Core},
@@ -10,7 +10,7 @@ use rsa_core::{
 };
 use rsa_registry::Storage;
 use rsa_world::{chunk::layer::BlockLayer, entity::prototype::EntityDesc};
-use rustaria_server::rpc::ServerRPC;
+use rustaria_server::api::RustariaAPI;
 
 use crate::world::{
 	chunk::layer::{BlockLayerRenderer, BlockLayerRendererPrototype},
@@ -35,7 +35,7 @@ impl GraphicsRPC {
 
 	pub fn build(
 		frontend: &Frontend,
-		server: &ServerRPC,
+		server: &RustariaAPI,
 		core: &Core,
 		stargate: &mut Stargate,
 	) -> Result<GraphicsRPC> {
