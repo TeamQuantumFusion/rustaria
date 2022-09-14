@@ -3,26 +3,18 @@
 
 extern crate core;
 
-use std::{
-	path::PathBuf,
-	time::{Instant},
-};
+use std::{path::PathBuf, time::Instant};
 
 use glfw::{Action, Key, WindowEvent};
 use glium::Surface;
-use rsa_client_core::{
-	debug::Debug,
-	frontend::Frontend,
-	timing::Timing,
-	ty::{Viewport},
-};
+use rsa_client_core::{debug::Debug, frontend::Frontend, timing::Timing, ty::Viewport};
 use rsa_core::{
 	api::{reload::Reload, stargate::Stargate, Core},
 	err::{ext::AuditExt, Result},
 	initialize,
+	log::info,
 	math::vec2,
 };
-use rsa_core::log::info;
 use rsa_hash::Hasher;
 use rsa_registry::Identifier;
 use rsa_world::{
@@ -41,6 +33,7 @@ fn main() -> Result<()> {
 	let mut client = Client::new()?;
 	match client.reload().wrap_err("Failed to load game.") {
 		Ok(_) => {
+			client.join_world()?;
 			client.run()?;
 		}
 		Err(err) => {
@@ -51,7 +44,6 @@ fn main() -> Result<()> {
 }
 
 pub struct Client {
-
 	viewport: Viewport,
 	debug: Debug,
 	game: Option<ClientGame>,
@@ -112,7 +104,7 @@ impl Client {
 		let start = Instant::now();
 		for event in self.frontend.poll_events() {
 			if let WindowEvent::Key(Key::O, _, _, _) = event {
-				self.game = Some(self.join_world()?);
+				self.join_world()?;
 			}
 			if let WindowEvent::Key(Key::R, _, Action::Press, _) = event {
 				self.reload_requested = true;
@@ -196,7 +188,7 @@ impl Client {
 		Ok(())
 	}
 
-	pub fn join_world(&self) -> Result<ClientGame> {
+	pub fn join_world(&mut self) -> Result<()> {
 		let mut storage = ChunkStorage::new(9, 9);
 
 		for y in 0..9 {
@@ -212,19 +204,13 @@ impl Client {
 							.world
 							.block_layer
 							.iter()
-							.map(|(layer_id, prototype)| {
-								let id = prototype
-									.blocks.lookup()
-									.get_id(&Identifier::new("dirt"))
-									.expect("where dirt");
-								let dirt = prototype.blocks[id].create(id, layer_id);
-
-								let id = prototype
-									.blocks.lookup()
-									.get_id(&Identifier::new("air"))
-									.expect("where air");
-								let air = prototype.blocks[id].create(id, layer_id);
-
+							.map(|(layer_id, layer)| {
+								let dirt = layer
+									.create_block(layer_id, (&Identifier::new("dirt")).into(), None)
+									.unwrap();
+								let air = layer
+									.create_block(layer_id, (&Identifier::new("air")).into(), None)
+									.unwrap();
 								(
 									layer_id,
 									if x == 2 && y == 1 {
@@ -252,9 +238,9 @@ impl Client {
 											],
 										}
 									} else if x == 0 || (y > 0 && x != 2) || x > 3 {
-										ChunkLayer::new_copy(air)
+										ChunkLayer::new(air)
 									} else {
-										ChunkLayer::new_copy(dirt)
+										ChunkLayer::new(dirt)
 									},
 								)
 							})
@@ -263,6 +249,11 @@ impl Client {
 				);
 			}
 		}
-		ClientGame::new_integrated(&self.frontend, &self.rpc, World::new(storage).unwrap())
+		self.game = Some(ClientGame::new_integrated(
+			&self.frontend,
+			&self.rpc,
+			World::new(storage)?,
+		)?);
+		Ok(())
 	}
 }

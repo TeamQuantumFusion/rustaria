@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use glium::{uniform, Blend, DrawParameters, Program};
-use layer::BlockLayerRenderer;
+use layer::ChunkLayerRenderer;
 use rsa_client_core::{
 	debug::Debug,
 	frontend::Frontend,
@@ -16,7 +16,7 @@ use rsa_core::{
 };
 use rsa_registry::Storage;
 use rsa_world::{
-	chunk::{layer::BlockLayer, storage::ChunkStorage},
+	chunk::{layer::ChunkLayerType, storage::ChunkStorage},
 	ty::{BlockPos, ChunkPos},
 	CHUNK_SIZE,
 };
@@ -134,7 +134,7 @@ impl ChunkMesh {
 		&mut self,
 		pos: ChunkPos,
 		chunks: &ChunkStorage,
-		renderers: &Storage<Option<BlockLayerRenderer>, BlockLayer>,
+		renderers: &Storage<Option<ChunkLayerRenderer>, ChunkLayerType>,
 		debug: &mut Debug,
 	) -> Result<()> {
 		if self.dirty {
@@ -152,21 +152,11 @@ impl ChunkMesh {
 				0.5
 			);
 			if let Some(chunk) = chunks.get(pos) {
-				let mut neighbors = DirMap::new([None; 4]);
-				for dir in Direction::values() {
-					if let Some(pos) = pos.checked_offset(dir) {
-						if let Some(chunk) = chunks.get(pos) {
-							neighbors[dir] = Some(chunk);
-						}
-					}
-				}
-
 				for (id, layer) in chunk.layers.iter() {
 					if let Some(renderer) = &renderers[id]{
 						renderer.mesh_chunk_layer(
 							pos,
 							layer,
-							neighbors.map(|_, option| option.map(|c| &c.layers[id])),
 							&mut self.builder,
 							debug,
 						);

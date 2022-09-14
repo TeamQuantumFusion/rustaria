@@ -16,7 +16,7 @@ use crate::{
 
 pub mod chunk;
 pub mod entity;
-pub mod neighbor;
+//pub mod neighbor;
 
 pub struct WorldRenderer {
 	pos_color_program: Program,

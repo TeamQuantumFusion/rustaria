@@ -1,0 +1,4 @@
+--- An Identifier is a table which contains a namespace and path.
+--- A Namespace is bound to the plugin id.
+--- A Path points to an asset, model or prototype
+---@alias Identifier string | table | {namespace:string, path:string}

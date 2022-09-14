@@ -9,12 +9,12 @@ use rsa_client_core::{
 };
 use rsa_client_player::PlayerSystem;
 use rsa_core::{
-	api::{prototype::Prototype, util::lua_table},
+	api::{util::lua_table},
 	err::Result,
 	math::{Rect, Vector2D},
 	ty::{WS},
 };
-use rsa_registry::Identifier;
+use rsa_registry::{Identifier, IdValue, Prototype};
 use rsa_world::entity::{
 	component::{PhysicsComponent, PositionComponent, PrototypeComponent},
 	EntityWorld,
@@ -96,6 +96,10 @@ impl EntityRenderer {
 		rect.origin += pos;
 		builder.push_quad((rect, self.image));
 	}
+}
+
+impl IdValue for EntityRenderer {
+	type Idx = u32;
 }
 
 #[derive(Debug)]

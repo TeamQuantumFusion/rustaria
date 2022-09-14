@@ -6,11 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rsa-core = { path = "../../../server/libs/rsa-core" }
-rsa-world = { path = "../../../server/libs/rsa-world" }
-rsa-registry = { path = "../../../server/libs/rsa-registry" }
-rsa-hash = { path = "../../../server/libs/rsa-hash" }
-rustaria-server = { path = "../../../server" }
+rsa-core = { path = "../../../libs/rsa-core" }
+rsa-world = { path = "../../../libs/rsa-world" }
+rsa-registry = { path = "../../../libs/rsa-registry" }
+rsa-hash = { path = "../../../libs/rsa-hash" }
+rustaria = { path = "../../../" }
 rsa-client-core = { path = "../rsa-client-core" }
 rsa-client-player = { path = "../rsa-client-player" }
 

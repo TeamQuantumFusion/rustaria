@@ -8,7 +8,7 @@ use rsa_core::{
 	err::{ext::AuditExt, Result},
 	log::debug,
 	math::{vec2, Vector2D},
-	ty::{WS},
+	ty::WS,
 };
 use rsa_network::client::ClientSender;
 use rsa_player::{
@@ -16,13 +16,14 @@ use rsa_player::{
 	PlayerCommand,
 };
 use rsa_registry::{Id, Identifier};
-use rsa_world::{chunk::{block::BlockDesc, layer::BlockLayer, storage::ChunkStorage}, entity::{
+use rsa_world::{chunk::{layer::ChunkLayerType, storage::ChunkStorage}, entity::{
 	component::{HumanoidComponent, PositionComponent},
-	prototype::EntityDesc,
-	Component, Entity, EntityWorld, Ref,
+	Component,
+	Entity, EntityWorld, prototype::EntityType, Ref,
 }, rpc::WorldAPI, ServerBoundWorldPacket, ty::BlockPos, World};
+use rsa_world::chunk::block::ty::BlockType;
 use rsa_world::entity::system::network::EntityComponentPacket;
-use rustaria_server::network::ServerBoundPacket;
+use rustaria::network::ServerBoundPacket;
 
 const MAX_CORRECTION: f32 = 0.025;
 
@@ -47,18 +48,18 @@ pub struct PlayerSystem {
 
 	unprocessed_events: VecDeque<(u32, PlayerCommand)>,
 	tick: u32,
-	player_entity: Id<EntityDesc>,
+	player_entity: Id<EntityType>,
 	presses: Vec<Press>,
 
-	layer_id: Id<BlockLayer>,
-	place_block: Id<BlockDesc>,
-	remove_block: Id<BlockDesc>,
-	arrow: Id<EntityDesc>,
+	layer_id: Id<ChunkLayerType>,
+	place_block: Id<BlockType>,
+	remove_block: Id<BlockType>,
+	arrow: Id<EntityType>,
 }
 
 pub enum Press {
-	Use(f32, f32, Id<BlockDesc>),
-	SpawnEntity(f32, f32, Id<EntityDesc>),
+	Use(f32, f32, Id<BlockType>),
+	SpawnEntity(f32, f32, Id<EntityType>),
 }
 
 impl PlayerSystem {
@@ -201,7 +202,7 @@ impl PlayerSystem {
 						Press::Use(x, y, tile) => {
 							if let Ok(pos) = BlockPos::try_from(vec2::<_, WS>(x, y) + viewport.pos)
 							{
-								world.place_block(rpc, pos, self.layer_id, tile);
+								world.place_block(rpc, pos, self.layer_id, tile, None)?;
 								network.send(ServerBoundPlayerPacket::PlaceBlock(
 									pos,
 									self.layer_id,

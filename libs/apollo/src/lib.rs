@@ -90,7 +90,7 @@ pub use crate::{
 	chunk::{AsChunk, Chunk, ChunkMode},
 	error::{Error, ExternalError, ExternalResult, Result},
 	ffi::{lua_CFunction, lua_State},
-	function::Function,
+	function::{Function, TypedFunction},
 	hook::{Debug, DebugEvent, DebugNames, DebugSource, DebugStack, HookTriggers},
 	lua::{GCMode, Lua, LuaOptions},
 	multi::Variadic,

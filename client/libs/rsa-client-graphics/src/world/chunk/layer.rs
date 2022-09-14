@@ -7,60 +7,39 @@ use rsa_client_core::{
 	ty::{MeshBuilder, PosTexVertex},
 };
 use rsa_core::{
-	api::prototype::Prototype,
 	err::{ext::AuditExt, Result},
-	ty::{DirMap, Direction},
+	ty::{Direction, DirMap},
 };
-use rsa_registry::{Identifier, RegistryBuilder, Storage};
+use rsa_registry::{Identifier, IdValue, Prototype, Registry, RegistryBuilder, Storage};
 use rsa_world::{
 	chunk::{
-		block::{Block, BlockDesc},
-		layer::BlockLayer,
-		ChunkLayer, ConnectionType,
+		block::{Block, state::BlockStateType},
+		ChunkLayer,
+		layer::ChunkLayerType,
 	},
 	ty::{BlockPos, ChunkPos},
 };
+use rsa_world::chunk::block::ty::BlockType;
 
-use crate::world::{
-	chunk::block::{BlockRenderer, BlockRendererPrototype, KindDesc},
-	neighbor::{NeighborMatrixBuilder, SpriteConnectionKind},
-};
+use crate::world::chunk::block::{BlockRenderer, BlockRendererPrototype, StateRenderer};
 
-pub struct BlockLayerRenderer {
-	block_renderers: Storage<Option<BlockRenderer>, BlockDesc>,
-	kind_descs: Vec<KindDesc>,
+pub struct ChunkLayerRenderer {
+	block_renderers: Storage<Option<BlockRenderer>, BlockType>,
 }
 
-impl BlockLayerRenderer {
+impl ChunkLayerRenderer {
 	pub fn mesh_chunk_layer(
 		&self,
 		chunk: ChunkPos,
-		layer: &ChunkLayer<Block>,
-		neighbors: DirMap<Option<&ChunkLayer<Block>>>,
+		layer: &ChunkLayer,
 		builder: &mut MeshBuilder<PosTexVertex>,
 		debug: &mut Debug,
 	) {
-		let func = |tile: &Block| {
-			self.block_renderers[tile.id]
-				.as_ref()
-				.map(|renderer| renderer.connection_type)
-		};
-
-		let mut matrix = NeighborMatrixBuilder::new(layer.map(ConnectionType::Isolated, func));
-		matrix.compile_internal();
-
-		for dir in Direction::values() {
-			if let Some(neighbor) = neighbors[dir] {
-				matrix.compile_edge(dir, &neighbor.map(ConnectionType::Isolated, func));
-			}
-		}
-
-		let connection_layer = matrix.export();
-		layer.entries(|entry, connection| {
-			if let Some(renderer) = &self.block_renderers[connection.id] {
+		layer.entries(|entry, block| {
+			if let Some(renderer) = &self.block_renderers[block.id] {
 				renderer.mesh(
 					BlockPos::new(chunk, entry),
-					&self.kind_descs[connection_layer[entry] as u8 as usize],
+					block,
 					builder,
 					debug,
 				);
@@ -69,61 +48,35 @@ impl BlockLayerRenderer {
 	}
 }
 
-#[derive(Debug, FromLua)]
-pub struct BlockLayerRendererPrototype {
-	pub blocks: RegistryBuilder<BlockRendererPrototype>,
-	pub get_uv: Function,
-	pub get_rect: Function,
+impl IdValue for ChunkLayerRenderer {
+	type Idx = u16;
 }
 
-impl BlockLayerRendererPrototype {
-	pub fn bake(self, lua: &Lua, atlas: &Atlas, parent: &BlockLayer) -> Result<BlockLayerRenderer> {
-		let mut kind_uvs = Vec::new();
-		for value in SpriteConnectionKind::iter() {
-			let value = format!("{:?}", value);
-			kind_uvs.push(KindDesc {
-				uv: lua
-					.from_value(
-						self.get_uv
-							.call(value.clone())
-							.wrap_err("Failed to get uv.")?,
-					)
-					.wrap_err("Failed to get uv result.")?,
-				rect: lua
-					.from_value(self.get_rect.call(value).wrap_err("Failed to get rect.")?)
-					.wrap_err("Failed to get rect result.")?,
-			});
-		}
+#[derive(Debug, FromLua)]
+pub struct ChunkLayerRendererPrototype {
+	pub blocks: RegistryBuilder<BlockRendererPrototype>,
+}
 
-		let blocks = self.blocks.build()?;
-		Ok(BlockLayerRenderer {
+impl ChunkLayerRendererPrototype {
+	pub fn bake(self, lua: &Lua, atlas: &Atlas, parent: &ChunkLayerType) -> Result<ChunkLayerRenderer> {
+		Ok(ChunkLayerRenderer {
 			block_renderers: parent
 				.blocks
-				.lookup()
-				.id_to_identifier()
-				.iter()
-				.map(|(id, entry)| {
-					(
-						id,
-						blocks
-							.lookup().identifier_to_id()
-							.get(entry)
-							.map(|entry| blocks[*entry].bake(atlas)),
-					)
-				}).collect(),
-			kind_descs: kind_uvs,
+				.zip(self.blocks.build()?, |id, idd, lookup, desc, prototype| {
+					prototype.bake(&desc.states, atlas)
+				})?,
 		})
 	}
 
 	pub fn get_sprites(&self, sprites: &mut HashSet<Identifier>) {
-		for (_, entry) in self.blocks.values.values() {
+		for (_, (_, entry)) in self.blocks.values.iter() {
 			entry.get_sprites(sprites);
 		}
 	}
 }
 
-impl Prototype for BlockLayerRendererPrototype {
-	type Output = BlockLayerRenderer;
+impl Prototype for ChunkLayerRendererPrototype {
+	type Output = ChunkLayerRenderer;
 
 	fn get_name() -> &'static str { "block_layer_renderer" }
 }

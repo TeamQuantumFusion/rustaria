@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rsa-core = { path = "../../../server/libs/rsa-core" }
+rsa-core = { path = "../../../libs/rsa-core" }
 rsa-client-core = { path = "../rsa-client-core" }
 
 apollo = { path = "../../../libs/apollo", features = ["luajit", "vendored", "serialize", "macro"] }

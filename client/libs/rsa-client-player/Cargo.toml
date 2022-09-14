@@ -6,12 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rustaria-server = { path = "../../../server" }
-rsa-core = { path = "../../../server/libs/rsa-core" }
-rsa-world = { path = "../../../server/libs/rsa-world" }
-rsa-player = { path = "../../../server/libs/rsa-player" }
-rsa-registry = { path = "../../../server/libs/rsa-registry" }
-rsa-network = { path = "../../../server/libs/rsa-network" }
+rustaria = { path = "../../../" }
+rsa-core = { path = "../../../libs/rsa-core" }
+rsa-world = { path = "../../../libs/rsa-world" }
+rsa-player = { path = "../../../libs/rsa-player" }
+rsa-registry = { path = "../../../libs/rsa-registry" }
+rsa-network = { path = "../../../libs/rsa-network" }
 rsa-client-core = { path = "../rsa-client-core" }
 
 glfw = { version = "0.45.0", features = ["image"] }

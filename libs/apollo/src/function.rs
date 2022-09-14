@@ -1,4 +1,5 @@
 use std::{os::raw::c_int, ptr};
+use std::marker::PhantomData;
 
 use anyways::audit::Audit;
 #[cfg(feature = "async")]
@@ -251,4 +252,24 @@ impl Function {
 
 impl PartialEq for Function {
 	fn eq(&self, other: &Self) -> bool { self.0 == other.0 }
+}
+
+
+pub struct TypedFunction<A: ToLuaMulti, R: FromLuaMulti> {
+	pub(crate) inner: Function,
+	_t: PhantomData<(A, R)>
+}
+
+impl<A: ToLuaMulti, R: FromLuaMulti> TypedFunction<A, R> {
+	pub fn inner(&self) -> Function {
+		self.inner.clone()
+	}
+	
+	pub fn call(&self, args: A) -> anyways::Result<R> { 
+		self.inner.call(args)
+	}
+
+	pub fn bind(&self, args: A) -> anyways::Result<Function> {
+		self.inner.bind(args)
+	}
 }

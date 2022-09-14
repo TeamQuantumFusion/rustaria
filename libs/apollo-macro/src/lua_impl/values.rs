@@ -42,9 +42,9 @@ impl ValueManager {
 				let mutable = receiver.mutability.is_some();
 				let value = if self.fields {
 					if mutable {
-						quote!(v0.borrow_mut())
+						quote!(&mut *(v0.value as *const Self as *mut Self))
 					} else {
-						quote!(v0.borrow())
+						quote!(&*v0.value)
 					}
 				} else {
 					self.new_value(
@@ -167,7 +167,7 @@ impl ValueManager {
 		self.closure_types.push(if kind.is_userdata() {
 			quote!(apollo::UserDataCell<#ty>)
 		} else {
-			ty
+			ty.clone()
 		});
 
 		self.var += 1;
@@ -181,9 +181,9 @@ impl ValueManager {
 			});
 
 			if mutable {
-				quote!(#ident.borrow_mut())
+				quote!(&mut *(#ident.value as *const #ty as *mut #ty))
 			} else {
-				quote!(#ident.borrow())
+				quote!(&*#ident.value)
 			}
 		} else {
 			quote!(#ident)

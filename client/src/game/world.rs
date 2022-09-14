@@ -70,7 +70,7 @@ impl ClientWorld {
 				self.requested_chunks.remove(&chunk_pos);
 			}
 			ClientBoundWorldPacket::SetBlock(pos, layer_id, block_id) => {
-				self.place_block(rpc, pos, layer_id, block_id);
+				self.place_block(rpc, pos, layer_id, block_id, None);
 			}
 			ClientBoundWorldPacket::SpawnEntity(entity, id) => {
 				self.inner.entities.storage.insert(rpc, entity, id);

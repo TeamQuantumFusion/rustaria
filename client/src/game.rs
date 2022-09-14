@@ -10,7 +10,7 @@ use rsa_core::{
 use rsa_network::{client::ClientNetwork, new_networking};
 use rsa_player::packet::ServerBoundPlayerPacket;
 use rsa_world::{chunk::storage::ChunkStorage, World};
-use rustaria_server::{network::ClientBoundPacket, Rustaria};
+use rustaria::{network::ClientBoundPacket, Rustaria};
 
 use crate::{game::world::ClientWorld, ClientRPC};
 

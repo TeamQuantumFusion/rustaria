@@ -1,0 +1,38 @@
+[package]
+name = "rsa-core"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rsa-registry = { path = "../rsa-registry" }
+rsa-hash = { path = "../rsa-hash" }
+
+
+# Errors
+anyways = "*"
+# Logging
+log = "0.4.17"
+simplelog = "^0.12.0"
+# Data
+serde = { version = "1.0.137", features = ["derive"] }
+toml = "0.5.9"
+zip = "0.6.2"
+# Math
+num = "0.4"
+euclid = { version = "0.22.7", features = ["serde"] }
+# Async
+rayon = "1.5.3"
+crossbeam = "0.8.1"
+parking_lot = "0.12.0"
+# Util
+fxhash = "0.2.1"
+bitflags = "1.3.2"
+semver = { version = "1.0.10", features = ["serde"] }
+# Lua
+apollo = { path = "../apollo", features = ["luajit", "vendored", "serialize", "macro"] }
+
+[features]
+testing = []
+

@@ -1,9 +1,9 @@
 use std::{collections::HashMap, fmt::Write};
+use anyways::ext::AuditExt;
 
-use eyre::WrapErr;
 use lua_docs::{ty::Type, visibility::Visibility, Class, ClassGenerics, Field, Function, Return};
 use proc_macro2::Ident;
-use syn::{Attribute, FnArg, ImplItem, ImplItemMethod, ItemImpl};
+use syn::{Attribute, FnArg, Generics, ImplItem, ImplItemMethod, ItemImpl};
 
 use crate::{
 	util,
@@ -14,24 +14,24 @@ use crate::{
 #[derive(Debug)]
 pub struct ClassInfo {
 	pub doc_comments: Vec<String>,
-	pub name: String,
+	pub name: Type,
 	pub generics: ClassGenerics,
 	pub fields: HashMap<String, Field>,
 	pub methods: HashMap<String, Function>,
 }
 
 impl ClassInfo {
-	pub fn new(item: &ItemImpl) -> eyre::Result<ClassInfo> {
+	pub fn new(docs: &Vec<Attribute>, ty: Type, generics: &Generics) -> anyways::Result<ClassInfo> {
 		Ok(ClassInfo {
-			doc_comments: get_doc_comments(&item.attrs),
-			name: get_type_name(&*item.self_ty),
-			generics: get_generics(&item.generics),
+			doc_comments: get_doc_comments(docs),
+			name: ty,
+			generics: get_generics(generics),
 			fields: HashMap::new(),
 			methods: HashMap::new(),
 		})
 	}
 
-	pub fn export(&self, from_luas: &mut HashMap<String, Type>) -> String {
+	pub fn export(&self, from_luas: &mut HashMap<Type, Type>) -> String {
 		let mut string = String::new();
 
 		let name = if let Some(ty) = from_luas.remove(&self.name) {
@@ -44,8 +44,9 @@ impl ClassInfo {
 			.unwrap();
 			userdata_name
 		} else {
-			self.name.clone()
+			e
 		};
+
 		write!(
 			&mut string,
 			"{}",
@@ -64,7 +65,7 @@ impl ClassInfo {
 		string
 	}
 
-	pub fn extend(&mut self, item: &ItemImpl) -> eyre::Result<()> {
+	pub fn extend(&mut self, item: &ItemImpl) -> anyways::Result<()> {
 		if util::attribute_contains(&item.attrs, "lua_impl") {
 			for value in get_doc_comments(&item.attrs) {
 				self.doc_comments.push(value);
@@ -90,7 +91,7 @@ impl ClassInfo {
 		Ok(())
 	}
 
-	fn fetch_method(attr: &Attribute, item: &ImplItemMethod) -> eyre::Result<Function> {
+	fn fetch_method(attr: &Attribute, item: &ImplItemMethod) -> anyways::Result<Function> {
 		let name: Option<Ident> = if !attr.tokens.is_empty() {
 			attr.parse_args()?
 		} else {
@@ -113,7 +114,7 @@ impl ClassInfo {
 		})
 	}
 
-	fn fetch_field(attr: &Attribute, item: &ImplItemMethod) -> eyre::Result<Field> {
+	fn fetch_field(attr: &Attribute, item: &ImplItemMethod) -> anyways::Result<Field> {
 		let attr: FieldAttr = attr.parse_args()?;
 		let lua_name = attr.lua_name.unwrap_or_else(|| item.sig.ident.to_string());
 

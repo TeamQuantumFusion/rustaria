@@ -2,7 +2,6 @@ use std::{collections::VecDeque, fs, fs::read_to_string, path::PathBuf, str::Fro
 
 use attr::{FieldAttr, FieldBindKind};
 use class::ClassInfo;
-use eyre::WrapErr;
 use syn::Item;
 
 use crate::index::Index;
@@ -21,6 +20,13 @@ pub fn main() {
 	let mut index = Index::default();
 
 	queue.push_front(PathBuf::from_str("./src/").unwrap());
+	queue.push_front(PathBuf::from_str("./libs/rsa-core").unwrap());
+	queue.push_front(PathBuf::from_str("./libs/rsa-hash").unwrap());
+	queue.push_front(PathBuf::from_str("./libs/rsa-item").unwrap());
+	queue.push_front(PathBuf::from_str("./libs/rsa-network").unwrap());
+	queue.push_front(PathBuf::from_str("./libs/rsa-player").unwrap());
+	queue.push_front(PathBuf::from_str("./libs/rsa-registry").unwrap());
+	queue.push_front(PathBuf::from_str("./libs/rsa-world").unwrap());
 	queue.push_front(PathBuf::from_str("./client/src/").unwrap());
 	while let Some(path) = queue.pop_back() {
 		for entry in fs::read_dir(path).unwrap().flatten() {
@@ -34,9 +40,7 @@ pub fn main() {
 							syn::parse_str(&read_to_string(path).unwrap()).unwrap();
 
 						for item in &file.items {
-							if let Item::Impl(item) = item {
-								index.consume(item).unwrap();
-							}
+							index.consume(item).unwrap();
 						}
 					}
 				}

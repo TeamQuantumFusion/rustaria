@@ -9,11 +9,11 @@ use rsa_core::{
 	err::{ext::AuditExt, Result},
 };
 use rsa_registry::Storage;
-use rsa_world::{chunk::layer::BlockLayer, entity::prototype::EntityDesc};
-use rustaria_server::api::RustariaAPI;
+use rsa_world::{chunk::layer::ChunkLayerType, entity::prototype::EntityType};
+use rustaria::api::RustariaAPI;
 
 use crate::world::{
-	chunk::layer::{BlockLayerRenderer, BlockLayerRendererPrototype},
+	chunk::layer::{ChunkLayerRenderer, ChunkLayerRendererPrototype},
 	entity::{EntityRenderer, EntityRendererPrototype},
 };
 
@@ -21,14 +21,14 @@ pub mod world;
 
 #[derive(Default)]
 pub struct GraphicsRPC {
-	pub block_layer_renderer: Storage<Option<BlockLayerRenderer>, BlockLayer>,
-	pub entity_renderer: Storage<Option<EntityRenderer>, EntityDesc>,
+	pub block_layer_renderer: Storage<Option<ChunkLayerRenderer>, ChunkLayerType>,
+	pub entity_renderer: Storage<Option<EntityRenderer>, EntityType>,
 	pub atlas: Option<Atlas>,
 }
 
 impl GraphicsRPC {
 	pub fn register(stargate: &mut Stargate, lua: &Lua) -> Result<()> {
-		stargate.register_builder::<BlockLayerRendererPrototype>(lua)?;
+		stargate.register_builder::<ChunkLayerRendererPrototype>(lua)?;
 		stargate.register_builder::<EntityRendererPrototype>(lua)?;
 		Ok(())
 	}
@@ -40,7 +40,7 @@ impl GraphicsRPC {
 		stargate: &mut Stargate,
 	) -> Result<GraphicsRPC> {
 		let mut sprites = HashSet::new();
-		let block_layers = stargate.build_registry::<BlockLayerRendererPrototype>()?;
+		let block_layers = stargate.build_registry::<ChunkLayerRendererPrototype>()?;
 		let entities = stargate.build_registry::<EntityRendererPrototype>()?;
 
 		for (_, prototype) in block_layers.iter() {

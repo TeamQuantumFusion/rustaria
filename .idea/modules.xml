@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/rustaria-v3.iml" filepath="$PROJECT_DIR$/.idea/rustaria-v3.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/rustaria-main.iml" filepath="$PROJECT_DIR$/.idea/rustaria-main.iml" />
     </modules>
   </component>
 </project>

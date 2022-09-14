@@ -13,6 +13,7 @@ use std::{
 	ptr, str,
 	sync::{Arc, Mutex, Weak},
 };
+use std::any::type_name;
 
 use anyways::{audit::Audit, ext::AuditExt};
 use rustc_hash::FxHashMap;
@@ -1424,7 +1425,7 @@ impl Lua {
 
 	/// Converts a `Value` instance into a value that implements `FromLua`.
 	pub fn unpack<T: FromLua>(&self, value: Value) -> anyways::Result<T> {
-		Ok(T::from_lua(value, self).wrap_err("Failed to unpack value")?)
+		Ok(T::from_lua(value, self).wrap_err_with(|| format!("Failed to unpack {}", type_name::<T>()))?)
 	}
 
 	/// Converts a value that implements `ToLuaMulti` into a `MultiValue` instance.

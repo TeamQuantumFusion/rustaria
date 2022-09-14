@@ -5,6 +5,23 @@ use syn::{
 	MetaNameValue, Pat, PathArguments, ReturnType, Token, Type,
 };
 
+pub fn derive_contains(attrs: &Vec<Attribute>, string: &str) -> bool {
+	for attr in attrs {
+		if attr.path.segments.last().unwrap().ident.to_string() == "derive" {
+			return attr
+				.tokens
+				.to_string()
+				.replace("(", "")
+				.replace(")", "")
+				.split(",")
+				.map(|v| v.trim())
+				.any(|v| v == string);
+		}
+	}
+
+	false
+}
+
 pub fn attribute_contains(attrs: &Vec<Attribute>, string: &str) -> bool {
 	for attr in attrs {
 		if attr.path.segments.last().unwrap().ident == string {

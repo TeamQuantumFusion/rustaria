@@ -1,9 +1,20 @@
-local connected_blocks = require "connected_blocks";
+local block_states = require "block_states";
 
 --- @type Stargate
 local stargate = reload.stargate;
 
 if reload.client then
+    stargate.entity_renderer:register(
+            "player",
+            {
+                test = { hello = {} },
+                image = "image/entity/alpha.png",
+                panel = {
+                    origin = { -0.9, -1.4 },
+                    size = { 1.8, 2.8 }
+                }
+            }
+    );
     stargate.entity_renderer:register {
         ["player"] = {
             test = { hello = {} },
@@ -24,81 +35,118 @@ if reload.client then
 
     stargate.block_layer_renderer:register({
         ["tile"] = {
-            get_rect = connected_blocks["tile"].get_rect,
-            get_uv = connected_blocks["tile"].get_uv,
+            -- get_rect = connected_blocks["tile"].get_rect,
+            -- get_uv = connected_blocks["tile"].get_uv,
             blocks = {
                 ["dirt"] = {
                     image = "image/tile/dirt.png",
-                    connection_type = { "Connected" }
+                    states = block_states.tile_client
                 },
                 ["stone"] = {
                     image = "image/tile/stone.png",
-                    connection_type = { "Connected" }
+                    states = block_states.tile_client
                 },
                 ["grass"] = {
                     image = "image/tile/grass.png",
-                    connection_type = { "Connected" },
+                    states = block_states.tile_client
                 },
                 ["corrupt_grass"] = {
                     image = "image/tile/corrupt_grass.png",
-                    connection_type = { "Connected" },
+                    states = block_states.tile_client
                 }
             }
         },
         [{ name = "wall", priority = 0 }] = {
-            get_rect = connected_blocks["wall"].get_rect,
-            get_uv = connected_blocks["wall"].get_uv,
+            -- get_rect = connected_blocks["wall"].get_rect,
+            -- get_uv = connected_blocks["wall"].get_uv,
             blocks = {
                 ["dirt"] = {
                     image = "image/wall/glass.png",
-                    connection_type = { "Connected" }
+                    states = block_states.tile_client
                 }
             }
         }
     })
 end
 
-stargate.block_layer:register {
-    ["tile"] = {
-        collision = true,
-        default = "air",
-        blocks = {
-            ["dirt"] = {
-                collision = true,
-            },
-            ["stone"] = {
-                collision = true,
-            },
-            ["grass"] = {
-                collision = true
-            },
-            ["corrupt_grass"] = {
-                collision = true,
-                spread = {
-                    chance = 10.0,
-                    convert_table = {
-                        ["dirt"] = "corrupt_grass"
+stargate.chunk_layer:register("tile",
+            --- @type ChunkLayerPrototype
+        {
+            collision = true,
+            default = "air",
+            blocks = {
+                ["dirt"] = {
+                    collision = true,
+                    states = block_states.tile,
+                },
+                ["stone"] = {
+                    collision = true,
+                    states = block_states.tile,
+                },
+                ["grass"] = {
+                    collision = true,
+                    states = block_states.tile,
+                },
+                ["corrupt_grass"] = {
+                    collision = true,
+                    states = block_states.tile,
+                    spread = {
+                        chance = 10.0,
+                        convert_table = {
+                            ["dirt"] = "corrupt_grass"
+                        }
                     }
+                },
+                ["air"] = {
+                    states = {
+                        states = {
+                            ["NONE"] = { name = "" }
+                        },
+                        default_state = "NONE"
+                    },
+                    collision = false,
                 }
-            },
-            ["air"] = {
-                collision = false,
             }
-        }
+        });
+
+local blocks = new.RegistryBuilder({
+    ["dirt"] = --[[---@type BlockPrototype]] {
+        states = block_states.tile,
+        collision = true,
     },
-    [{ name = "wall", priority = 1 }] = {
-        default = "air",
-        collision = false,
-        blocks = {
-            ["dirt"] = {
-                collision = true,
+    ["air"] = --[[---@type BlockPrototype]] {
+        states = {
+            states = {
+                ["NONE"] = { name = "" }
             },
-            ["air"] = {
-                collision = false,
-            }
-        }
+            default_state = "NONE"
+        },
+        collision = false,
     }
-}
+});
+
+stargate.chunk_layer:register({ name = "wall", priority = 1 },
+        {
+            default = "air",
+            collision = false,
+            blocks =
+            {
+                ["dirt"] =
+                {
+                    states = block_states.tile,
+                    collision = true,
+                },
+                ["air"] = {
+                    states = {
+                        states = {
+                            ["NONE"] = { name = "" }
+                        },
+                        default_state = "NONE"
+                    },
+                    collision = false,
+                }
+            }
+        })
 
 stargate.entity:register {
     ["player"] = {

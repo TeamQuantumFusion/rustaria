@@ -2,7 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 use rsa_core::ty::{DirMap, Direction};
 use rsa_world::{
-	chunk::{ChunkLayer, ConnectionType},
+	chunk::{ChunkLayer},
 	ty::BlockLayerPos,
 	CHUNK_SIZE,
 };

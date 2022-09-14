@@ -9,6 +9,7 @@ use std::{
 	rc::{Rc, Weak},
 	string::String as StdString,
 };
+use std::marker::PhantomData;
 
 use anyways::audit::Audit;
 #[cfg(feature = "serialize")]
@@ -771,7 +772,7 @@ impl<V: 'static + UserData> Clone for UserDataCell<V> {
 // da locks
 pub struct Ref<'a, V> {
 	lock: Rc<dyn Any>,
-	value: &'a V,
+	pub value: &'a V,
 }
 
 impl<'a, V> Ref<'a, V> {
@@ -796,14 +797,10 @@ impl<'a, V> Ref<'a, V> {
 
 pub struct RefMut<'a, V> {
 	lock: Rc<dyn Any>,
-	value: &'a mut V,
+	pub value: &'a mut V,
 }
 
 impl<'a, V> RefMut<'a, V> {
-	pub fn borrow(&self) -> &V { self.value }
-
-	pub unsafe fn borrow_mut(&self) -> &mut V { &mut *(self.borrow() as *const V as *mut V) }
-
 	pub fn map<O: 'static + UserData>(&self, value_ref: &'a O) -> Result<UserDataCell<O>> {
 		self.map_inner(value_ref, false)
 	}
